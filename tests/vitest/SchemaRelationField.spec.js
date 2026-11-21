@@ -51,7 +51,8 @@ describe('REQ-BQCV-003 relation fields', () => {
 
 		expect(saved.type).toBe('string')
 		expect(saved).not.toHaveProperty('items')
-		expect(saved['x-openregister-relation']).toEqual({ target: 'person', cardinality: 'one' })
+		expect(saved.$ref).toBe('person')
+		expect(saved['x-openregister-relation']).toEqual({ label: 'applicant', target: 'person', cardinality: 'one' })
 	})
 
 	it('the Relations section lists applicant with target person', async () => {
@@ -75,8 +76,9 @@ describe('REQ-BQCV-003 relation fields', () => {
 		const saved = fieldsToSchema(fields, 'project').properties.members
 
 		expect(saved.type).toBe('array')
-		expect(saved.items).toEqual({ type: 'string' })
-		expect(saved['x-openregister-relation']).toEqual({ target: 'person', cardinality: 'many' })
+		expect(saved.items).toEqual({ type: 'string', $ref: 'person' })
+		expect(saved).not.toHaveProperty('$ref')
+		expect(saved['x-openregister-relation']).toEqual({ label: 'members', target: 'person', cardinality: 'many' })
 		expect(relationsFromFields(fields)).toEqual([{ name: 'members', target: 'person', cardinality: 'many' }])
 	})
 
@@ -85,8 +87,8 @@ describe('REQ-BQCV-003 relation fields', () => {
 			properties: {
 				members: {
 					type: 'array',
-					items: { type: 'string' },
-					'x-openregister-relation': { target: 'person', cardinality: 'many' },
+					items: { type: 'string', $ref: 'person' },
+					'x-openregister-relation': { label: 'Members', target: 'person', cardinality: 'many' },
 				},
 			},
 		}
@@ -106,6 +108,28 @@ describe('REQ-BQCV-003 relation fields', () => {
 		const saved = fieldsToSchema(fields).properties.members
 		expect(saved.type).toBe('string')
 		expect(saved).not.toHaveProperty('items')
+		expect(saved.$ref).toBe('person')
+	})
+
+	it('a relation names itself the way OpenRegister accepts: a kept label or type, else the title, else the name', () => {
+		const saved = (property) => fieldsToSchema(schemaToFields({ properties: { owner: property } })).properties.owner['x-openregister-relation']
+		const relation = { target: 'person', cardinality: 'one' }
+
+		expect(saved({ type: 'string', 'x-openregister-relation': { ...relation, label: { nl: 'Eigenaar' } } }).label).toEqual({ nl: 'Eigenaar' })
+		expect(saved({ type: 'string', 'x-openregister-relation': { ...relation, type: 'owns' } })).not.toHaveProperty('label')
+		expect(saved({ type: 'string', title: 'Owner', 'x-openregister-relation': relation }).label).toBe('Owner')
+		expect(saved({ type: 'string', 'x-openregister-relation': relation }).label).toBe('owner')
+	})
+
+	it('a relation without a target writes no reference, and a field that stops being a relation drops it', () => {
+		const untargeted = schemaToFields({ properties: { owner: { type: 'string', 'x-openregister-relation': { cardinality: 'one' } } } })
+		expect(fieldsToSchema(untargeted).properties.owner).not.toHaveProperty('$ref')
+
+		const fields = schemaToFields({ properties: { owner: { type: 'string', $ref: 'person', 'x-openregister-relation': { label: 'Owner', target: 'person', cardinality: 'one' } } } })
+		fields[0].type = 'string'
+		const saved = fieldsToSchema(fields).properties.owner
+		expect(saved).not.toHaveProperty('$ref')
+		expect(saved).not.toHaveProperty('x-openregister-relation')
 	})
 
 	it('the Relations section shows no field rows when the schema has no relation field', () => {

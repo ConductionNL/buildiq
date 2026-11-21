@@ -1748,6 +1748,10 @@ function ownedKeys(type, loadedType) {
 		if (named === 'user') {
 			USER_KEYS.forEach((key) => keys.add(key))
 		}
+		if (named === 'relation') {
+			// REQ-BQCV-003: a relation writes its own `$ref`; another type drops it.
+			keys.add('$ref')
+		}
 	}
 	return keys
 }
@@ -1827,7 +1831,7 @@ function propertyFromField(field, schemaSlug = '') {
 		}
 	}
 	if (field.type === 'relation') {
-		writeRelation(prop, raw, v)
+		writeRelation(prop, raw, v, field.name)
 	}
 	if (field.facetable === true) {
 		prop.facetable = true
@@ -2004,42 +2008,53 @@ function baseProperty(field, raw) {
 }
 
 /**
- * Write a relation row onto its property: the relation block, and for a
- * many relation a list of references (`type: array` with string items)
- * instead of a single one.
+ * Write a relation row onto its property: the relation block, and the
+ * `$ref` OpenRegister needs to accept it, on the property for a one relation
+ * and on its items for a many relation, which is stored as a list of
+ * references (`type: array` with string items) instead of a single one.
  *
  * @param {object} prop The property being saved.
  * @param {object} raw The property as it was loaded.
  * @param {object} v The row's validation values.
+ * @param {string} name The field name, the label when the relation has none.
  * @return {void}
  * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-schema-designer/spec.md#requirement-a-maker-links-one-object-type-to-another-req-bqcv-003
  */
-function writeRelation(prop, raw, v) {
-	const relation = relationFromField(raw, v)
+function writeRelation(prop, raw, v, name) {
+	const relation = relationFromField(raw, v, name)
+	const ref = relation.target ? { $ref: relation.target } : {}
 	prop['x-openregister-relation'] = relation
 	if (relation.cardinality !== 'many') {
+		Object.assign(prop, ref)
 		return
 	}
 	prop.type = 'array'
-	prop.items = { ...withoutKeys(raw.items, ['type']), type: 'string' }
+	prop.items = { ...withoutKeys(raw.items, ['type', '$ref']), type: 'string', ...ref }
 }
 
 /**
  * The `x-openregister-relation` block of a relation row: the loaded block
  * minus the keys the row owns, then the row's target, cardinality and
- * (when set) inverse.
+ * (when set) inverse. A block with neither a `label` nor a `type` gets the
+ * property's title, else the field name, as its label: OpenRegister refuses
+ * a relation that names neither.
  *
  * @param {object} raw The property as it was loaded.
  * @param {object} v The row's validation values.
+ * @param {string} name The field name.
  * @return {object} The relation block.
+ * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-schema-designer/spec.md#requirement-a-maker-links-one-object-type-to-another-req-bqcv-003
  */
-function relationFromField(raw, v) {
+function relationFromField(raw, v, name) {
+	const kept = withoutKeys(raw['x-openregister-relation'], [
+		'target',
+		'cardinality',
+		'inverseOf',
+	])
+	const named = kept.label || kept.type ? {} : { label: raw.title || name }
 	return {
-		...withoutKeys(raw['x-openregister-relation'], [
-			'target',
-			'cardinality',
-			'inverseOf',
-		]),
+		...kept,
+		...named,
 		target: v.target || '',
 		cardinality: v.cardinality || 'one',
 		...(v.inverseOf ? { inverseOf: v.inverseOf } : {}),
