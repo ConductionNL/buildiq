@@ -60,7 +60,13 @@ final class RunAutomationNodesTest extends TestCase {
 	 */
 	private static function target(array $fields = []): array {
 		return array_merge(
-			['slug' => 'check-address', 'name' => 'Controleer adres', 'applicationSlug' => 'subsidies', 'shared' => true, 'provenance' => ['flowUuid' => 'flow-7']],
+			[
+				'slug' => 'check-address',
+				'name' => 'Controleer adres',
+				'applicationSlug' => 'subsidies',
+				'shared' => true,
+				'provenance' => ['flowUuid' => 'flow-7'],
+			],
 			$fields
 		);
 	}//end target()
@@ -71,9 +77,12 @@ final class RunAutomationNodesTest extends TestCase {
 	 * @return void
 	 */
 	public function testASharedAutomationCompilesToAWaitingSubFlow(): void {
-		$node = self::nodes(['t-1' => self::target()])->build(action: ['type' => 'run-automation', 'automation' => 't-1'], index: 0);
+		$node = self::nodes(targets: ['t-1' => self::target()])->build(action: ['type' => 'run-automation', 'automation' => 't-1'], index: 0);
 
-		$this->assertSame(['id' => 'step-1', 'type' => 'openregister.sub-flow', 'config' => ['flowId' => 'flow-7', 'wait' => true]], $node);
+		$this->assertSame(
+			expected: ['id' => 'step-1', 'type' => 'openregister.sub-flow', 'config' => ['flowId' => 'flow-7', 'wait' => true]],
+			actual: $node
+		);
 	}//end testASharedAutomationCompilesToAWaitingSubFlow()
 
 	/**
@@ -82,11 +91,11 @@ final class RunAutomationNodesTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAutomationOfTheSameAppNeedsNoSharing(): void {
-		$node = self::nodes(['t-1' => self::target(['applicationSlug' => 'permits', 'shared' => false])])
+		$node = self::nodes(targets: ['t-1' => self::target(fields: ['applicationSlug' => 'permits', 'shared' => false])])
 			->build(action: ['type' => 'run-automation', 'automation' => 't-1'], index: 2);
 
-		$this->assertSame('step-3', $node['id']);
-		$this->assertSame('flow-7', $node['config']['flowId']);
+		$this->assertSame(expected: 'step-3', actual: $node['id']);
+		$this->assertSame(expected: 'flow-7', actual: $node['config']['flowId']);
 	}//end testAnAutomationOfTheSameAppNeedsNoSharing()
 
 	/**
@@ -99,10 +108,14 @@ final class RunAutomationNodesTest extends TestCase {
 			'no automation named' => [['type' => 'run-automation'], [], RunAutomationNodes::MISSING_REFUSAL],
 			'itself' => [['type' => 'run-automation', 'automation' => 'own-uuid'], ['own-uuid' => self::target()], RunAutomationNodes::SELF_REFUSAL],
 			'unknown' => [['type' => 'run-automation', 'automation' => 'gone'], [], RunAutomationNodes::UNKNOWN_REFUSAL],
-			'not shared' => [['type' => 'run-automation', 'automation' => 't-1'], ['t-1' => self::target(['shared' => false])], RunAutomationNodes::NOT_SHARED_REFUSAL],
+			'not shared' => [
+				['type' => 'run-automation', 'automation' => 't-1'],
+				['t-1' => self::target(fields: ['shared' => false])],
+				RunAutomationNodes::NOT_SHARED_REFUSAL,
+			],
 			'no flow' => [
 				['type' => 'run-automation', 'automation' => 't-1'],
-				['t-1' => self::target(['provenance' => []])],
+				['t-1' => self::target(fields: ['provenance' => []])],
 				'The automation "Controleer adres" has no flow yet; compile it before another automation runs it.',
 			],
 		];
@@ -120,10 +133,10 @@ final class RunAutomationNodesTest extends TestCase {
 	 * @dataProvider refusals
 	 */
 	public function testAStepThatCannotRunIsRefused(array $action, array $targets, string $message): void {
-		$this->expectException(UnsupportedAutomationCombinationException::class);
-		$this->expectExceptionMessage($message);
+		$this->expectException(exception: UnsupportedAutomationCombinationException::class);
+		$this->expectExceptionMessage(message: $message);
 
-		self::nodes($targets)->build(action: $action, index: 0);
+		self::nodes(targets: $targets)->build(action: $action, index: 0);
 	}//end testAStepThatCannotRunIsRefused()
 
 	/**
@@ -141,6 +154,6 @@ final class RunAutomationNodesTest extends TestCase {
 			'not an action',
 		];
 
-		$this->assertSame(['b', 'a'], RunAutomationNodes::targetUuids(actions: $actions));
+		$this->assertSame(expected: ['b', 'a'], actual: RunAutomationNodes::targetUuids(actions: $actions));
 	}//end testTheTargetUuidsAreListedOnceInOrder()
 }//end class

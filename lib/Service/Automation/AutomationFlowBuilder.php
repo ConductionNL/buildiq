@@ -81,6 +81,13 @@ final class AutomationFlowBuilder {
 	public const BARE_URL_REFUSAL = 'Pick a source for this webhook.';
 
 	/**
+	 * The automations the run-automation steps name, by uuid (logic-shared-flows-and-automations D4).
+	 *
+	 * @var array<string, array<string, mixed>>
+	 */
+	private array $subFlowTargets = [];
+
+	/**
 	 * @param FeelToJsonLogic $feel Translates a FEEL condition for the filter node.
 	 *
 	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-condition-gates-the-actions-req-bqar-004
@@ -89,6 +96,22 @@ final class AutomationFlowBuilder {
 		private readonly FeelToJsonLogic $feel,
 	) {
 	}//end __construct()
+
+	/**
+	 * A builder that runs the given automations for the run-automation steps.
+	 *
+	 * @param array<string, array<string, mixed>> $targets The named automations, by uuid.
+	 *
+	 * @return self A copy; this builder is unchanged.
+	 *
+	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+	 */
+	public function withSubFlowTargets(array $targets): self {
+		$copy = clone $this;
+		$copy->subFlowTargets = $targets;
+
+		return $copy;
+	}//end withSubFlowTargets()
 
 	/**
 	 * Whether the automation compiles to a flow: a manual trigger, or any
@@ -121,8 +144,6 @@ final class AutomationFlowBuilder {
 	 *                                                      `ruleType`, `tableRef`, `outputs` (D7).
 	 * @param array<string, mixed>|null           $schemaProperties The trigger schema's properties, which an AI
 	 *                                                              classify step checks its labels against.
-	 * @param array<string, array<string, mixed>> $subFlowTargets   The automations the run-automation steps
-	 *                                                              name, by uuid (logic-shared-flows D4).
 	 *
 	 * @return array{name: string, nodes: list<array<string, mixed>>, edges: list<array<string, mixed>>}
 	 *
@@ -132,14 +153,7 @@ final class AutomationFlowBuilder {
 	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
 	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
 	 */
-	public function build(
-		CompileInput $input,
-		string $register,
-		array $schemas,
-		array $ruleSets = [],
-		?array $schemaProperties = null,
-		array $subFlowTargets = []
-	): array {
+	public function build(CompileInput $input, string $register, array $schemas, array $ruleSets = [], ?array $schemaProperties = null): array {
 		$this->assertNoOwnBackend(input: $input);
 		$schema = (string)($input->trigger['schema'] ?? '');
 		$aiSteps = new AiStepNodes(register: $register, schema: $schema, properties: $schemaProperties);
@@ -149,21 +163,22 @@ final class AutomationFlowBuilder {
 		array_push($nodes, ...$this->conditionNodes(condition: $input->condition, ruleSets: $ruleSets));
 
 		$decisions = new RuleDecisionNodes(register: $register, schema: $schema, ruleSets: $ruleSets);
-		$subFlows = new RunAutomationNodes(automation: $input->automation, targets: $subFlowTargets);
+		$subFlows = new RunAutomationNodes(automation: $input->automation, targets: $this->subFlowTargets);
+		// The steps that build more than one node, or need more than the action, by kind.
+		$stepBuilders = [
+			'rule-decision' => static fn (array $action, int $index): array => $decisions->build(action: $action, index: $index),
+			AiStepNodes::ACTION => static fn (array $action, int $index): array => $aiSteps->stepNodes(
+				action: $action,
+				index: $index,
+				triggerType: $input->triggerType
+			),
+			RunAutomationNodes::ACTION => static fn (array $action, int $index): array => [$subFlows->build(action: $action, index: $index)],
+		];
 		foreach ($input->actions as $index => $action) {
 			$action = (array)$action;
-			if ((string)($action['type'] ?? '') === RunAutomationNodes::ACTION) {
-				$nodes[] = $subFlows->build(action: $action, index: (int)$index);
-				continue;
-			}
-
-			if ((string)($action['type'] ?? '') === 'rule-decision') {
-				array_push($nodes, ...$decisions->build(action: $action, index: (int)$index));
-				continue;
-			}
-
-			if ((string)($action['type'] ?? '') === AiStepNodes::ACTION) {
-				array_push($nodes, ...$aiSteps->stepNodes(action: $action, index: (int)$index, triggerType: $input->triggerType));
+			$stepBuilder = ($stepBuilders[(string)($action['type'] ?? '')] ?? null);
+			if ($stepBuilder !== null) {
+				array_push($nodes, ...$stepBuilder($action, (int)$index));
 				continue;
 			}
 

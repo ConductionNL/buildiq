@@ -433,7 +433,7 @@
 							:modelValue="runAutomationOption(action.automation)"
 							:inputLabel="t('buildiq', 'Automation to run')"
 							:options="runAutomationChoices"
-							:loading="runAutomationsLoading"
+							:loading="runAutomations.loading"
 							label="label"
 							data-testid="run-automation-select"
 							@update:modelValue="
@@ -606,6 +606,7 @@ import {
 	withInboundSettings,
 } from './automationInboundTrigger.js'
 import { toPersistedAction } from './automationPersistedActions.js'
+import { missingStepField } from './automationStepRequirements.js'
 import {
 	cadenceById,
 	cadenceOptions,
@@ -709,9 +710,7 @@ export default {
 			// Ai-llm-steps-and-computed-fields D6: off until the node catalogue says Hermiq's node is there.
 			agentNodeAvailable: false,
 			aiAgentOptions: [],
-			// The automations a "Run another automation" step may name (REQ-BQSF-004).
-			runAutomationRecords: [],
-			runAutomationsLoading: false,
+			runAutomations: { records: [], loading: false },
 			aiAgentsLoading: false,
 			aiFieldOptions: [],
 			docudeskTemplatesLoading: false,
@@ -964,7 +963,7 @@ export default {
 		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
 		 */
 		runAutomationChoices() {
-			return runAutomationOptions(this.runAutomationRecords, {
+			return runAutomationOptions(this.runAutomations.records, {
 				applicationSlug: (this.automation && this.automation.applicationSlug) || '',
 				ownId: this.id || '',
 			})
@@ -1043,21 +1042,14 @@ export default {
 		 */
 		incompleteStepMessage() {
 			for (const action of this.actions) {
-				if (action.type === RUN_AUTOMATION && String(action.automation || '').trim() === '') {
-					return t('buildiq', 'Pick the automation this step runs.')
-				}
 				if (action.type === 'ai-step' && aiStepIncomplete(action) !== '') {
 					return aiStepIncomplete(action)
 				}
-				if (action.type === 'webhook' && String(action.source || '').trim() === '') {
-					return t('buildiq', 'Pick a source for this webhook.')
-				}
-				if (
-					action.type === 'rule-decision'
-					&& (String(action.ruleSetSlug || '').trim() === ''
-						|| String(action.outputField || '').trim() === '')
-				) {
-					return t('buildiq', 'Pick a rule set and the field its decision is written to.')
+				// A webhook, a rule decision and "Run another automation"
+				// each need their fields (REQ-BQAR-003, REQ-BQAR-005, REQ-BQSF-004).
+				const missing = missingStepField(action)
+				if (missing !== '') {
+					return missing
 				}
 			}
 			return ''
@@ -1535,13 +1527,14 @@ export default {
 		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
 		 */
 		async fetchRunAutomationTargets() {
-			this.runAutomationsLoading = true
+			// The automations a "Run another automation" step may name (REQ-BQSF-004).
+			this.runAutomations.loading = true
 			try {
-				this.runAutomationRecords = await fetchAutomations()
+				this.runAutomations.records = await fetchAutomations()
 			} catch {
-				this.runAutomationRecords = []
+				this.runAutomations.records = []
 			} finally {
-				this.runAutomationsLoading = false
+				this.runAutomations.loading = false
 			}
 		},
 

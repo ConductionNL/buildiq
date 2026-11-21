@@ -68,11 +68,11 @@ final class AutomationSubFlowTargetsTest extends TestCase {
 	 * @return void
 	 */
 	public function testReadableAutomationsAreReturnedAndOthersLeftOut(): void {
-		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects = $this->createMock(originalClassName: ObjectServiceInterface::class);
 		$objects->method('find')->willReturnCallback(
-			static function (string $id): ?ObjectEntity {
+			callback: static function (string $id): ?ObjectEntity {
 				return match ($id) {
-					'a-1' => self::entity([
+					'a-1' => self::entity(payload: [
 						'slug' => 'check-address',
 						'name' => 'Controleer adres',
 						'applicationSlug' => 'permits',
@@ -80,7 +80,7 @@ final class AutomationSubFlowTargetsTest extends TestCase {
 						'provenance' => ['flowUuid' => 'flow-7'],
 						'actions' => [['type' => 'object-op']],
 					]),
-					'a-2' => self::entity(['slug' => 'plain', 'shared' => 'yes', 'provenance' => 'broken']),
+					'a-2' => self::entity(payload: ['slug' => 'plain', 'shared' => 'yes', 'provenance' => 'broken']),
 					'missing' => null,
 					default => throw new RuntimeException('no access'),
 				};
@@ -90,13 +90,19 @@ final class AutomationSubFlowTargetsTest extends TestCase {
 		$targets = (new AutomationSubFlowTargets(objectService: $objects, logger: new NullLogger()))
 			->targets(uuids: ['a-1', 'a-2', 'missing', 'forbidden']);
 
-		$this->assertSame(['a-1', 'a-2'], array_keys($targets));
+		$this->assertSame(expected: ['a-1', 'a-2'], actual: array_keys(array: $targets));
 		$this->assertSame(
-			['slug' => 'check-address', 'name' => 'Controleer adres', 'applicationSlug' => 'permits', 'shared' => true, 'provenance' => ['flowUuid' => 'flow-7']],
-			$targets['a-1']
+			expected: [
+				'slug' => 'check-address',
+				'name' => 'Controleer adres',
+				'applicationSlug' => 'permits',
+				'shared' => true,
+				'provenance' => ['flowUuid' => 'flow-7'],
+			],
+			actual: $targets['a-1']
 		);
 		// Only a literal true shares, and a malformed provenance reads as none.
-		$this->assertFalse($targets['a-2']['shared']);
-		$this->assertSame([], $targets['a-2']['provenance']);
+		$this->assertFalse(condition: $targets['a-2']['shared']);
+		$this->assertSame(expected: [], actual: $targets['a-2']['provenance']);
 	}//end testReadableAutomationsAreReturnedAndOthersLeftOut()
 }//end class

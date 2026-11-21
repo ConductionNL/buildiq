@@ -69,12 +69,17 @@ class AutomationSubFlowTargets {
 				continue;
 			}
 
+			$provenance = ($automation['provenance'] ?? []);
+			if (is_array($provenance) === false) {
+				$provenance = [];
+			}
+
 			$out[(string)$uuid] = [
 				'slug' => (string)($automation['slug'] ?? ''),
 				'name' => (string)($automation['name'] ?? ''),
 				'applicationSlug' => (string)($automation['applicationSlug'] ?? ''),
 				'shared' => (($automation['shared'] ?? false) === true),
-				'provenance' => self::arrayOf(value: $automation['provenance'] ?? null),
+				'provenance' => $provenance,
 			];
 		}
 
@@ -107,19 +112,4 @@ class AutomationSubFlowTargets {
 
 		return AutomationRecords::toArray(object: $entity);
 	}//end find()
-
-	/**
-	 * A value when it is an array, else [].
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return array<mixed>
-	 */
-	private static function arrayOf(mixed $value): array {
-		if (is_array($value) === true) {
-			return $value;
-		}
-
-		return [];
-	}//end arrayOf()
 }//end class

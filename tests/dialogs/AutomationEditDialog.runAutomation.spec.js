@@ -94,7 +94,7 @@ describe('AutomationEditDialog — Run another automation', () => {
 		const wrapper = await openWith([])
 
 		expect(wrapper.vm.runAutomationChoices).toEqual([])
-		expect(wrapper.vm.runAutomationsLoading).toBe(false)
+		expect(wrapper.vm.runAutomations.loading).toBe(false)
 	})
 
 	it('stores the step with only the automation it names', () => {

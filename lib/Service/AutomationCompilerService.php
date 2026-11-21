@@ -456,13 +456,12 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 			$subFlowTargets = $this->container->get(AutomationSubFlowTargets::class)->targets(uuids: $targetUuids);
 		}
 
-		$plan['flow'] = $this->flowBuilder()->build(
+		$plan['flow'] = $this->flowBuilder()->withSubFlowTargets(targets: $subFlowTargets)->build(
 			input: $input,
 			register: $scope['register'],
 			schemas: $scope['schemas'],
 			ruleSets: $ruleSets,
-			schemaProperties: $properties,
-			subFlowTargets: $subFlowTargets
+			schemaProperties: $properties
 		);
 		$plan['hash'] = $this->hashPlan(plan: $plan);
 

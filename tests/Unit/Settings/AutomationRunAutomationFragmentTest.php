@@ -42,14 +42,14 @@ final class AutomationRunAutomationFragmentTest extends TestCase {
 	 */
 	private function actionSchema(): array {
 		$settings = __DIR__ . '/../../../lib/Settings';
-		$merged = json_decode((string)file_get_contents($settings . '/openbuild_register.json'), true);
-		$this->assertIsArray($merged);
-		$files = glob($settings . '/register.d/*.json');
-		sort($files);
+		$merged = json_decode(json: (string)file_get_contents(filename: $settings . '/openbuild_register.json'), associative: true);
+		$this->assertIsArray(actual: $merged);
+		$files = glob(pattern: $settings . '/register.d/*.json');
+		sort(array: $files);
 		$merge = new ReflectionMethod(SettingsService::class, 'deepMergeConfig');
 		foreach ($files as $file) {
-			$fragment = json_decode((string)file_get_contents($file), true);
-			$this->assertIsArray($fragment, basename($file));
+			$fragment = json_decode(json: (string)file_get_contents(filename: $file), associative: true);
+			$this->assertIsArray(actual: $fragment, message: basename(path: $file));
 			$merged = $merge->invoke(null, $merged, $fragment);
 		}
 
@@ -65,14 +65,14 @@ final class AutomationRunAutomationFragmentTest extends TestCase {
 	 */
 	private function errors(array $action): string {
 		$result = (new Validator())->validate(
-			json_decode((string)json_encode($action)),
-			json_decode((string)json_encode($this->actionSchema()))
+			data: json_decode(json: (string)json_encode(value: $action)),
+			schema: json_decode(json: (string)json_encode(value: $this->actionSchema()))
 		);
 		if ($result->isValid() === true) {
 			return '';
 		}
 
-		return (string)json_encode((new ErrorFormatter())->format($result->error()));
+		return (string)json_encode(value: (new ErrorFormatter())->format(error: $result->error()));
 	}//end errors()
 
 	/**
@@ -81,7 +81,9 @@ final class AutomationRunAutomationFragmentTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheImportAcceptsARunAutomationStep(): void {
-		$this->assertSame('', $this->errors(['type' => 'run-automation', 'automation' => '0b6f3f5e-2a4c-4d8e-9f10-1a2b3c4d5e6f']));
+		$step = ['type' => 'run-automation', 'automation' => '0b6f3f5e-2a4c-4d8e-9f10-1a2b3c4d5e6f'];
+
+		$this->assertSame(expected: '', actual: $this->errors(action: $step));
 	}//end testTheImportAcceptsARunAutomationStep()
 
 	/**
@@ -92,10 +94,10 @@ final class AutomationRunAutomationFragmentTest extends TestCase {
 	public function testTheKindIsAddedBesideTheOthers(): void {
 		$enum = $this->actionSchema()['properties']['type']['enum'];
 
-		$this->assertContains('run-automation', $enum);
-		$this->assertContains('script-step', $enum);
-		$this->assertContains('object-op', $enum);
-		$this->assertSame(count($enum), count(array_unique($enum)));
+		$this->assertContains(needle: 'run-automation', haystack: $enum);
+		$this->assertContains(needle: 'script-step', haystack: $enum);
+		$this->assertContains(needle: 'object-op', haystack: $enum);
+		$this->assertSame(expected: count(value: $enum), actual: count(value: array_unique(array: $enum)));
 	}//end testTheKindIsAddedBesideTheOthers()
 
 	/**
@@ -104,6 +106,6 @@ final class AutomationRunAutomationFragmentTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnknownKindIsStillRefused(): void {
-		$this->assertNotSame('', $this->errors(['type' => 'run-anything']));
+		$this->assertNotSame(expected: '', actual: $this->errors(action: ['type' => 'run-anything']));
 	}//end testAnUnknownKindIsStillRefused()
 }//end class

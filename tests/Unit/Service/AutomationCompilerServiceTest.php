@@ -1828,13 +1828,13 @@ final class AutomationCompilerServiceTest extends TestCase {
 	 * @return AutomationCompilerService
 	 */
 	private function compilerWithSubFlowTargets(array $targets): AutomationCompilerService {
-		$resolver = $this->createMock(AutomationSubFlowTargets::class);
+		$resolver = $this->createMock(originalClassName: AutomationSubFlowTargets::class);
 		$resolver->method('targets')->willReturnCallback(
-			static fn (array $uuids): array => array_intersect_key($targets, array_flip($uuids))
+			callback: static fn (array $uuids): array => array_intersect_key($targets, array_flip(array: $uuids))
 		);
-		$container = $this->createMock(ContainerInterface::class);
+		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			fn (string $id): object => match ($id) {
+			callback: fn (string $id): object => match ($id) {
 				AutomationSubFlowTargets::class => $resolver,
 				default => $this->objectService,
 			}
@@ -1858,7 +1858,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 	 */
 	public function testARunAutomationStepCompilesToAWaitingSubFlowBeforeTheRecordStep(): void {
 		$compiler = $this->compilerWithSubFlowTargets(
-			['check-uuid' => ['slug' => 'check-address', 'name' => 'Controleer adres', 'applicationSlug' => 'subsidies', 'shared' => true, 'provenance' => ['flowUuid' => 'flow-check']]]
+			targets: ['check-uuid' => ['slug' => 'check-address', 'name' => 'Controleer adres', 'applicationSlug' => 'subsidies', 'shared' => true, 'provenance' => ['flowUuid' => 'flow-check']]]
 		);
 		$automation = [
 			'id' => 'own-uuid',
@@ -1872,15 +1872,15 @@ final class AutomationCompilerServiceTest extends TestCase {
 			],
 		];
 
-		$plan = $compiler->compile($automation);
+		$plan = $compiler->compile(automation: $automation);
 
 		$this->assertSame(
-			['openregister.trigger-object', 'openregister.sub-flow', 'openregister.object-write'],
-			array_column($plan['flow']['nodes'], 'type')
+			expected: ['openregister.trigger-object', 'openregister.sub-flow', 'openregister.object-write'],
+			actual: array_column(array: $plan['flow']['nodes'], column_key: 'type')
 		);
-		$this->assertSame(['flowId' => 'flow-check', 'wait' => true], $plan['flow']['nodes'][1]['config']);
-		$this->assertSame(['step-1'], $plan['flow']['edges'][1]['from']);
-		$this->assertSame(['step-2'], $plan['flow']['edges'][1]['to']);
+		$this->assertSame(expected: ['flowId' => 'flow-check', 'wait' => true], actual: $plan['flow']['nodes'][1]['config']);
+		$this->assertSame(expected: ['step-1'], actual: $plan['flow']['edges'][1]['from']);
+		$this->assertSame(expected: ['step-2'], actual: $plan['flow']['edges'][1]['to']);
 	}//end testARunAutomationStepCompilesToAWaitingSubFlowBeforeTheRecordStep()
 
 	/**
@@ -1890,14 +1890,14 @@ final class AutomationCompilerServiceTest extends TestCase {
 	 */
 	public function testARunAutomationStepNamingItselfIsRefused(): void {
 		$compiler = $this->compilerWithSubFlowTargets(
-			['own-uuid' => ['slug' => 'intake', 'name' => 'Intake', 'applicationSlug' => 'claims', 'shared' => false, 'provenance' => ['flowUuid' => 'flow-own']]]
+			targets: ['own-uuid' => ['slug' => 'intake', 'name' => 'Intake', 'applicationSlug' => 'claims', 'shared' => false, 'provenance' => ['flowUuid' => 'flow-own']]]
 		);
-		$this->flowBackend->expects($this->never())->method('apply');
+		$this->flowBackend->expects(invocationRule: $this->never())->method('apply');
 
-		$this->expectException(UnsupportedAutomationCombinationException::class);
-		$this->expectExceptionMessage('An automation cannot run itself.');
+		$this->expectException(exception: UnsupportedAutomationCombinationException::class);
+		$this->expectExceptionMessage(message: 'An automation cannot run itself.');
 
-		$compiler->compile([
+		$compiler->compile(automation: [
 			'id' => 'own-uuid',
 			'slug' => 'intake',
 			'applicationSlug' => 'claims',
@@ -1914,13 +1914,13 @@ final class AutomationCompilerServiceTest extends TestCase {
 	 */
 	public function testARunAutomationStepNamingAnUnsharedAutomationOfAnotherAppIsRefused(): void {
 		$compiler = $this->compilerWithSubFlowTargets(
-			['other-uuid' => ['slug' => 'archive', 'name' => 'Archiveer', 'applicationSlug' => 'subsidies', 'shared' => false, 'provenance' => ['flowUuid' => 'flow-other']]]
+			targets: ['other-uuid' => ['slug' => 'archive', 'name' => 'Archiveer', 'applicationSlug' => 'subsidies', 'shared' => false, 'provenance' => ['flowUuid' => 'flow-other']]]
 		);
 
-		$this->expectException(UnsupportedAutomationCombinationException::class);
-		$this->expectExceptionMessage('Only a shared automation of another app can be run from this one.');
+		$this->expectException(exception: UnsupportedAutomationCombinationException::class);
+		$this->expectExceptionMessage(message: 'Only a shared automation of another app can be run from this one.');
 
-		$compiler->compile([
+		$compiler->compile(automation: [
 			'id' => 'own-uuid',
 			'slug' => 'intake',
 			'applicationSlug' => 'claims',
