@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
+use OCA\Buildiq\Exception\InvalidServedManifestException;
 use OCA\Buildiq\Service\AppVisibilityResolver;
 use OCA\Buildiq\Service\ManifestBaseResolver;
 use OCA\Buildiq\Service\RegisterRecordLookup;
@@ -46,6 +47,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\Buildiq\Service\ManifestResolverService
  *
  * @spec openspec/changes/app-delta-override/tasks.md#task-4.1
+ * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
  */
 final class ManifestResolverDeltaTest extends TestCase {
 
@@ -54,6 +56,20 @@ final class ManifestResolverDeltaTest extends TestCase {
 		'slug' => 'permits',
 		'version' => '1.0.0',
 		'manifest' => ['version' => '1.0.0', 'menu' => [], 'pages' => [['id' => 'home', 'title' => 'Home'], ['id' => 'list', 'title' => 'List']]],
+	];
+
+	private const RENDERABLE_TEMPLATE = [
+		'uuid' => 't-2',
+		'slug' => 'tickets',
+		'version' => '1.0.0',
+		'manifest' => [
+			'version' => '1.0.0',
+			'menu' => [],
+			'pages' => [
+				['id' => 'home', 'route' => '/', 'type' => 'dashboard', 'title' => 'Home'],
+				['id' => 'list', 'route' => '/list', 'type' => 'index', 'title' => 'List'],
+			],
+		],
 	];
 
 	/**
@@ -215,4 +231,106 @@ final class ManifestResolverDeltaTest extends TestCase {
 		$this->assertSame(expected: ['List'], actual: array_column($service->servedManifest(version: $version, caller: null)['pages'], 'title'));
 		$this->assertSame(expected: ['pages' => []], actual: $service->servedManifest(version: ['manifest' => ['pages' => []]], caller: null));
 	}//end testServedManifestMergesAVersionDirectly()
+
+	/**
+	 * An application whose inline production version extends the renderable template with a delta.
+	 *
+	 * @param array<string, mixed> $delta The version's manifestDelta.
+	 *
+	 * @return ManifestResolverService
+	 */
+	private function servedService(array $delta): ManifestResolverService {
+		return $this->service(
+			application: ['uuid' => 'app-1', 'slug' => 'crm', 'productionVersion' => [
+				'uuid' => 'v-1',
+				'manifest' => (object)[],
+				'baseRef' => ['kind' => 'template', 'id' => 'tickets'],
+				'manifestDelta' => $delta,
+			]],
+			baseRows: ['application-template' => [self::RENDERABLE_TEMPLATE]]
+		);
+	}//end servedService()
+
+	/**
+	 * The serving path hands out a merged manifest that has what the renderer needs.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
+	 */
+	public function testTheServingPathServesASoundMergedManifest(): void {
+		$manifest = $this->servedService(delta: ['pages' => [['id' => 'list', 'title' => 'Tickets']]])->resolveServed('crm', null, null);
+
+		$this->assertSame(expected: ['Home', 'Tickets'], actual: array_column($manifest['pages'], 'title'));
+	}//end testTheServingPathServesASoundMergedManifest()
+
+	/**
+	 * A delta that blanks a page key the renderer needs is refused on the serving path, and only there.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
+	 */
+	public function testTheServingPathRefusesAMergedManifestTheRendererCannotDraw(): void {
+		$service = $this->servedService(delta: ['pages' => [['id' => 'list', 'route' => null]]]);
+
+		// The editor and the other read paths still see the merged manifest.
+		$this->assertSame(expected: 'list', actual: $service->resolve('crm', null, null)['pages'][1]['id']);
+
+		$this->expectException(exception: InvalidServedManifestException::class);
+		$this->expectExceptionMessage(message: '`pages[1].route` is not a string');
+		$service->resolveServed('crm', null, null);
+	}//end testTheServingPathRefusesAMergedManifestTheRendererCannotDraw()
+
+	/**
+	 * A named version is checked on the serving path too.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
+	 */
+	public function testTheServingPathChecksANamedVersion(): void {
+		$application = [
+			'uuid' => 'app-1',
+			'slug' => 'crm',
+			'productionVersion' => ['uuid' => 'v-1', 'manifest' => ['pages' => [['id' => 'legacy']]]],
+			'permissions' => ['owners' => ['user:alice'], 'editors' => []],
+		];
+		$draft = [
+			'uuid' => 'v-2',
+			'slug' => 'next',
+			'application' => 'app-1',
+			'manifest' => (object)[],
+			'baseRef' => ['kind' => 'template', 'id' => 'tickets'],
+			'manifestDelta' => ['pages' => [['id' => 'extra', 'title' => 'Extra']]],
+		];
+		$service = $this->service(application: $application, versions: [$draft], baseRows: ['application-template' => [self::RENDERABLE_TEMPLATE]]);
+
+		$this->expectException(exception: InvalidServedManifestException::class);
+		$this->expectExceptionMessage(message: '`pages[2].route` is not a string');
+		$service->resolveServed('crm', 'next', $this->user(uid: 'alice'));
+	}//end testTheServingPathChecksANamedVersion()
+
+	/**
+	 * A stored blob is served as stored on the serving path: a legacy version, and the
+	 * fallback when a delta version's base cannot be read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
+	 */
+	public function testTheServingPathLeavesAStoredBlobAlone(): void {
+		$legacy = $this->service(application: ['uuid' => 'app-1', 'slug' => 'crm', 'productionVersion' => [
+			'uuid' => 'v-1',
+			'manifest' => ['pages' => [['id' => 'legacy']]],
+		]]);
+		$this->assertSame(expected: ['pages' => [['id' => 'legacy']]], actual: $legacy->resolveServed('crm', null, null));
+
+		$unreadableBase = $this->service(application: ['uuid' => 'app-1', 'slug' => 'crm', 'productionVersion' => [
+			'uuid' => 'v-1',
+			'manifest' => ['pages' => [['id' => 'own']]],
+			'baseRef' => ['kind' => 'template', 'id' => 'gone'],
+		]]);
+		$this->assertSame(expected: ['pages' => [['id' => 'own']]], actual: $unreadableBase->resolveServed('crm', null, null));
+	}//end testTheServingPathLeavesAStoredBlobAlone()
 }//end class

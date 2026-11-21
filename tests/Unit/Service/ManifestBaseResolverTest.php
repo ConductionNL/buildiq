@@ -128,6 +128,7 @@ final class ManifestBaseResolverTest extends TestCase {
 		$this->assertSame(expected: $blob, actual: $result['manifest']);
 		$this->assertSame(expected: [], actual: $result['orphanedDeltaPaths']);
 		$this->assertSame(expected: [], actual: $result['diagnostics']);
+		$this->assertFalse(condition: $result['merged']);
 		$this->assertSame(expected: $blob, actual: $resolver->manifestOf(version: ['manifest' => $blob, 'baseRef' => ['kind' => 'template']]));
 	}//end testALegacyBlobIsServedUnchanged()
 

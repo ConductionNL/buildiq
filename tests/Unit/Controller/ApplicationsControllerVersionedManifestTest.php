@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\ApplicationsController;
+use OCA\Buildiq\Exception\InvalidServedManifestException;
 use OCA\Buildiq\Kernel\Contracts\AppChannelApplierInterface;
 use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
 use OCA\Buildiq\Service\CallerContext;
@@ -116,7 +117,7 @@ class ApplicationsControllerVersionedManifestTest extends TestCase {
 	 */
 	public function testAnUnresolvedVersionIsNotFound(): void {
 		$this->manifestResolver->expects($this->once())
-			->method('resolve')
+			->method('resolveServed')
 			->with('crm', 'v-2', $this->user)
 			->willReturn(null);
 		$this->objectService->expects($this->never())->method('searchObjects');
@@ -139,7 +140,7 @@ class ApplicationsControllerVersionedManifestTest extends TestCase {
 	 */
 	public function testAResolverFailureIsAnInternalErrorWithACorrelationId(): void {
 		$failure = new RuntimeException('register offline');
-		$this->manifestResolver->method('resolve')->willThrowException($failure);
+		$this->manifestResolver->method('resolveServed')->willThrowException($failure);
 
 		$logged = null;
 		$this->logger->expects($this->once())
@@ -163,6 +164,27 @@ class ApplicationsControllerVersionedManifestTest extends TestCase {
 		$this->assertMatchesRegularExpression('/^[0-9a-f]{16}$/', $data['correlationId']);
 		$this->assertSame($data['correlationId'], $logged['correlationId']);
 	}//end testAResolverFailureIsAnInternalErrorWithACorrelationId()
+
+	/**
+	 * A merged manifest the renderer cannot draw answers the same correlation-id envelope, not a stack.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
+	 */
+	public function testAnUnservableMergedManifestIsTheCorrelationIdError(): void {
+		$this->manifestResolver->method('resolveServed')->willThrowException(
+			new InvalidServedManifestException('The merged manifest cannot be served: `pages[0].route` is not a string')
+		);
+		$this->logger->expects($this->once())->method('error');
+
+		$response = $this->controller()->getManifest(slug: 'crm');
+		$data = $response->getData();
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+		$this->assertSame(['error', 'message', 'correlationId'], array_keys($data));
+		$this->assertSame('Failed to resolve manifest', $data['message']);
+	}//end testAnUnservableMergedManifestIsTheCorrelationIdError()
 
 	/**
 	 * The controller under test, signed in as alice.

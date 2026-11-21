@@ -406,7 +406,7 @@ class ApplicationsControllerTest extends TestCase {
 			'permissions' => ['owners' => ['user:bob'], 'editors' => [], 'viewers' => []],
 		]);
 		$this->objectService->method('find')->with('abc-123')->willReturn($applicationEntity);
-		$this->manifestResolver->method('resolve')->willReturn(['version' => '1.0.0', 'menu' => [], 'pages' => []]);
+		$this->manifestResolver->method('resolveServed')->willReturn(['version' => '1.0.0', 'menu' => [], 'pages' => []]);
 
 		$result = $controller->getManifest(slug: 'hello-world');
 
@@ -720,7 +720,7 @@ class ApplicationsControllerTest extends TestCase {
 	public function testVersionedManifestSuppliesApplicationName(): void {
 		$controller = $this->buildController(uid: 'bob', versionParam: 'development');
 		$this->wireApplicationWithName(appName: 'Pet Store', manifestName: null);
-		$this->manifestResolver->method('resolve')->willReturn(
+		$this->manifestResolver->method('resolveServed')->willReturn(
 			['version' => '1.0.0', 'menu' => [], 'pages' => []]
 		);
 
