@@ -33,6 +33,11 @@ namespace OCA\Buildiq\Service;
  */
 final class RuleStorage {
 	/**
+	 * The name an exported rule set file carries in its `format` field.
+	 */
+	public const EXPORT_FORMAT = 'buildiq.rule-set-export.v1';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param RuleObjectReader $reader Reads rule objects.
@@ -65,4 +70,46 @@ final class RuleStorage {
 
 		return RuleSetColumns::fromTable(table: (array)($tables[0] ?? []));
 	}//end decisionColumns()
+
+	/**
+	 * A rule set as one exportable document: its metadata, decision tables,
+	 * condition-action rules and test cases.
+	 *
+	 * Execution logs are never read, so they cannot end up in the file. Each
+	 * object loses its `@self` block, which names this instance's ids,
+	 * organisation and owner and means nothing where the file is imported.
+	 *
+	 * @param array<string,mixed> $ruleSet The resolved RuleSet.
+	 *
+	 * @return array<string,mixed> The export document.
+	 *
+	 * @spec openspec/changes/capability-requirements-backfill/specs/business-rules-engine/spec.md#requirement-a-rule-set-can-be-exported-as-a-file-req-bqcv-017
+	 */
+	public function exportBundle(array $ruleSet): array {
+		$slug = (string)($ruleSet['slug'] ?? '');
+		$caRules = $this->reader->findScoped(schema: 'condition-action-rule', filters: ['ruleSetId' => $slug]);
+		$testCases = $this->reader->findScoped(schema: 'rule-test-case', filters: ['ruleSetId' => $slug]);
+
+		return [
+			'format' => self::EXPORT_FORMAT,
+			'ruleSet' => self::withoutSelf(row: $ruleSet),
+			'decisionTables' => $this->tables->forRuleSet(ruleSet: $ruleSet),
+			'conditionActionRules' => array_map(callback: self::withoutSelf(...), array: $caRules),
+			'testCases' => array_map(callback: self::withoutSelf(...), array: $testCases),
+		];
+	}//end exportBundle()
+
+	/**
+	 * An object without its `@self` metadata block.
+	 *
+	 * @param array<string,mixed> $row The object.
+	 *
+	 * @return array<string,mixed> The object without `@self`.
+	 *
+	 * @spec openspec/changes/capability-requirements-backfill/specs/business-rules-engine/spec.md#requirement-a-rule-set-can-be-exported-as-a-file-req-bqcv-017
+	 */
+	private static function withoutSelf(array $row): array {
+		unset($row['@self']);
+		return $row;
+	}//end withoutSelf()
 }//end class

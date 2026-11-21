@@ -9,6 +9,7 @@
  *   - POST /api/rules/{ruleSetSlug}/evaluate   — synchronous evaluation (+ dry-run, version pin)
  *   - GET  /api/rules/{ruleSetSlug}/schema     — RuleSet metadata + active version for UI binding
  *   - POST /api/rules/{ruleSetSlug}/test-all   — run every TestCase for the RuleSet
+ *   - GET  /api/rules/{ruleSetSlug}/export     — the RuleSet with its tables, rules and test cases
  *
  * All endpoints carry `#[NoAdminRequired]` per ADR-005: any authenticated user
  * may evaluate a RuleSet of their own organisation. Every read goes through
@@ -322,6 +323,40 @@ class RulesController extends Controller {
 		);
 
 	}//end schema()
+
+	/**
+	 * Export a rule set as one JSON document.
+	 *
+	 * The document holds the rule set's metadata, its decision tables,
+	 * condition-action rules and test cases, so it can be imported elsewhere.
+	 * Execution logs are not part of it. The rule set page downloads it as
+	 * `<slug>.json`.
+	 *
+	 * @param string $ruleSetSlug The RuleSet slug.
+	 *
+	 * @return JSONResponse 200 with the export document, 401 or 404.
+	 *
+	 * @spec openspec/changes/capability-requirements-backfill/specs/business-rules-engine/spec.md#requirement-a-rule-set-can-be-exported-as-a-file-req-bqcv-017
+	 *
+	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister: the rule set, its
+	 *   condition-action rules and its test cases are read through RuleObjectReader::findScoped(),
+	 *   which searches with `_rbac: true` and `_multitenancy: true`, so a rule set held by another
+	 *   organisation resolves to 404; the decision table is reached only through that resolved
+	 *   rule set's organisation key, as for evaluate.
+	 */
+	#[NoAdminRequired]
+	public function export(string $ruleSetSlug): JSONResponse {
+		if ($this->caller->userSession->getUser() === null) {
+			return $this->error(code: 'unauthenticated', detail: null, status: Http::STATUS_UNAUTHORIZED);
+		}
+
+		$ruleSet = $this->findRuleSet(slug: $ruleSetSlug);
+		if ($ruleSet === null) {
+			return $this->error(code: 'not_found', detail: 'RuleSet ' . $ruleSetSlug . ' not found', status: Http::STATUS_NOT_FOUND);
+		}
+
+		return new JSONResponse(data: $this->storage->exportBundle(ruleSet: $ruleSet), statusCode: Http::STATUS_OK);
+	}//end export()
 
 	/**
 	 * Write a rule set's decision table into OpenRegister's decision-tables register.

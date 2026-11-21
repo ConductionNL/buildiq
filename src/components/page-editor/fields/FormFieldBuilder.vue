@@ -381,6 +381,24 @@
 		<button type="button" class="form-field-builder__add" @click="addField">
 			+ {{ t('buildiq', 'Add field') }}
 		</button>
+		<!-- REQ-BQCV-024: add a property of the bound schema as a field. -->
+		<select
+			v-if="schemaPropertyChoices.length"
+			class="form-field-builder__add-property"
+			data-testid="form-field-add-property"
+			value=""
+			:aria-label="t('buildiq', 'Add a field from {schema}', { schema: targetSchemaName })"
+			@change="onAddProperty($event)">
+			<option value="">
+				+ {{ t('buildiq', 'Add a field from {schema}', { schema: targetSchemaName }) }}
+			</option>
+			<option
+				v-for="choice in schemaPropertyChoices"
+				:key="choice.key"
+				:value="choice.key">
+				{{ choice.label }}
+			</option>
+		</select>
 	</div>
 </template>
 
@@ -420,6 +438,28 @@ import {
  * (forms-signature-audio-and-location, REQ-BQSA-001).
  */
 const FIELD_TYPES = [...BASE_FIELD_TYPES, ...DEVICE_FIELD_TYPES]
+
+/**
+ * The field type a schema property is filled in with: a number, a yes or no,
+ * a date, or text.
+ *
+ * @param {?object} property - the JSON-schema property.
+ * @return {string} the field type.
+ * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-maker-picks-and-orders-the-fields-of-a-form-page-req-bqcv-024
+ */
+function fieldTypeForProperty(property) {
+	const type = property && property.type
+	if (type === 'integer' || type === 'number') {
+		return 'number'
+	}
+	if (type === 'boolean') {
+		return 'boolean'
+	}
+	if (property && (property.format === 'date' || property.format === 'date-time')) {
+		return 'date'
+	}
+	return 'string'
+}
 
 
 /**
@@ -625,6 +665,32 @@ export default {
 			return this.localFields
 				.map((f) => f && f.key)
 				.filter((k) => typeof k === 'string' && k !== '')
+		},
+
+		/**
+		 * The name of the schema the form saves into, for the add control.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-maker-picks-and-orders-the-fields-of-a-form-page-req-bqcv-024
+		 */
+		targetSchemaName() {
+			const entry = this.targetSchemaEntry
+			return (entry && (entry.title || entry.slug)) || this.parentSchema
+		},
+
+		/**
+		 * The properties of the bound schema that are not on the form yet, in
+		 * the schema's order, each with the label the field gets.
+		 *
+		 * @return {Array<{key: string, label: string}>}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-maker-picks-and-orders-the-fields-of-a-form-page-req-bqcv-024
+		 */
+		schemaPropertyChoices() {
+			const properties = (this.targetSchemaEntry && this.targetSchemaEntry.properties) || {}
+			const used = new Set(this.declaredKeys)
+			return Object.keys(properties)
+				.filter((key) => !used.has(key))
+				.map((key) => ({ key, label: (properties[key] && properties[key].title) || key }))
 		},
 	},
 
@@ -1000,6 +1066,29 @@ export default {
 		},
 
 		/**
+		 * Add the picked schema property as a field at the end of the form,
+		 * with the property's title as its label and a type that fits it,
+		 * and set the picker back to its prompt.
+		 *
+		 * @param {Event} event - the change event of the add control.
+		 * @return {void}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-maker-picks-and-orders-the-fields-of-a-form-page-req-bqcv-024
+		 */
+		onAddProperty(event) {
+			const key = event.target.value
+			event.target.value = ''
+			const choice = this.schemaPropertyChoices.find((entry) => entry.key === key)
+			if (!choice) {
+				return
+			}
+			const property = this.targetSchemaEntry.properties[key]
+			this.$emit('update:modelValue', [
+				...this.localFields,
+				{ key, label: choice.label, type: fieldTypeForProperty(property) },
+			])
+		},
+
+		/**
 		 * Write one device field option as given (a `false` is kept, unlike
 		 * updateField), or delete it on `null` / `NaN`.
 		 *
@@ -1317,6 +1406,11 @@ export default {
 .form-field-builder__add {
 	align-self: flex-start;
 	@include c.add-button;
+}
+
+.form-field-builder__add-property {
+	align-self: flex-start;
+	@include c.control;
 }
 
 .form-field-builder__details {

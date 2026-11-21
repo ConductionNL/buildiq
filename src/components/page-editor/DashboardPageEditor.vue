@@ -25,6 +25,13 @@
 				@click="addChart">
 				+ {{ t('buildiq', 'Add chart') }}
 			</button>
+			<button
+				type="button"
+				class="dashboard-page-editor__add-chart"
+				data-testid="dashboard-page-add-count"
+				@click="addCount">
+				+ {{ t('buildiq', 'Add count') }}
+			</button>
 			<InlineFieldMark :error="markFor('widgets')" />
 		</fieldset>
 
@@ -46,6 +53,7 @@ import WidgetBuilder from './fields/WidgetBuilder.vue'
 import { pageEditorBaseMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 import { layoutWithItemFor, newChartWidget, nextChartId } from './fields/chartWidget.js'
+import { newCountWidget, nextCountId } from './fields/countWidget.js'
 
 export default {
 	name: 'DashboardPageEditor',
@@ -149,6 +157,24 @@ export default {
 			this.$emit('update:config', {
 				...this.config,
 				widgets: [...widgets, newChartWidget(id)],
+				layout: layoutWithItemFor(this.config.layout, id),
+			})
+		},
+
+		/**
+		 * Add a count tile (a `stats-block` widget) with a unique id and, in
+		 * the same change, a layout item for it at the first free row, so it
+		 * is drawn on the page.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-maker-adds-a-dashboard-page-req-bqcv-007
+		 */
+		addCount() {
+			const widgets = Array.isArray(this.config.widgets) ? this.config.widgets : []
+			const id = nextCountId(widgets)
+			this.$emit('update:config', {
+				...this.config,
+				widgets: [...widgets, newCountWidget(id)],
 				layout: layoutWithItemFor(this.config.layout, id),
 			})
 		},

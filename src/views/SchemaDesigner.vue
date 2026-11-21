@@ -191,6 +191,7 @@
 
 				<RelationEditor
 					:relations="staged.relations"
+					:fieldRelations="fieldRelations"
 					:schemaSlugs="otherSchemaSlugs"
 					@update:relations="onRelationsChange" />
 
@@ -298,6 +299,7 @@ import LifecycleEditor, {
 import NotificationEditor from '../components/schema-editor/NotificationEditor.vue'
 import RelationEditor, {
 	editorToRelations,
+	relationsFromFields,
 	relationsToEditor,
 } from '../components/schema-editor/RelationEditor.vue'
 import SchemaHeaderForm from '../components/schema-editor/SchemaHeaderForm.vue'
@@ -582,6 +584,16 @@ export default {
 			return this.schemas
 				.map((s) => s.slug || (s['@self'] && s['@self'].slug) || s.id)
 				.filter((slug) => slug && slug !== this.schemaId)
+		},
+
+		/**
+		 * The staged schema's relation fields, for the Relations section.
+		 *
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-schema-designer/spec.md#requirement-a-maker-links-one-object-type-to-another-req-bqcv-003
+		 * @return {Array<{name: string, target: string, cardinality: string}>} The relation fields.
+		 */
+		fieldRelations() {
+			return relationsFromFields(this.staged ? this.staged.fields : [])
 		},
 
 		/**

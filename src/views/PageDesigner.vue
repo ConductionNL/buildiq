@@ -295,6 +295,7 @@ import StubPageEditor from '../components/page-editor/StubPageEditor.vue'
 import WidgetPlacementPanel from '../components/page-editor/WidgetPlacementPanel.vue'
 import WidgetSelectionPanel from '../components/page-editor/WidgetSelectionPanel.vue'
 import WikiPageEditor from '../components/page-editor/WikiPageEditor.vue'
+import BuildiqFormPage from '../components/runtime/BuildiqFormPage.vue'
 import TranslationsView from './TranslationsView.vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { useDebugLog } from '../composables/useDebugLog.js'
@@ -700,14 +701,17 @@ export default {
 		},
 
 		/**
-		 * The built-in page-type registry the preview sandbox dispatches
-		 * `page.type` against — the same `defaultPageTypes` App.vue passes.
+		 * The page-type registry the preview sandbox dispatches `page.type`
+		 * against — the same map the published app (`builder.js`) passes, so a
+		 * form page previews as buildiq's form page, with its calculated
+		 * fields and eligibility check, the way the app's users see it.
 		 *
 		 * @return {object} page-type map.
 		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-2.3
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-form-page-is-previewed-as-its-users-see-it-before-it-is-published-req-bqcv-025
 		 */
 		previewPageTypes() {
-			return { ...defaultPageTypes }
+			return { ...defaultPageTypes, form: BuildiqFormPage }
 		},
 
 		/**

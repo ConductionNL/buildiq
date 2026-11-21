@@ -1750,4 +1750,73 @@ final class AutomationCompilerServiceTest extends TestCase {
 			}
 		}
 	}//end testAScriptStepDoesNotCompileYet()
+	/**
+	 * REQ-BQCV-028: a status-change automation compiles to ONE notification
+	 * bound to exactly the transition it listens for, addressed to the group;
+	 * OpenRegister's notifications dialect fires it on that transition only,
+	 * so another transition does not start it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/capability-requirements-backfill/specs/automation-designer/spec.md#requirement-a-status-change-starts-an-automation-req-bqcv-028
+	 */
+	public function testAStatusChangeAutomationListensToItsTransitionOnly(): void {
+		$plan = $this->compiler->compile(automation: [
+			'id' => 'auto-review',
+			'slug' => 'notify-reviewers',
+			'applicationSlug' => 'permit-tracker',
+			'versionUuid' => 'version-1',
+			'enabled' => true,
+			'trigger' => ['type' => 'lifecycle-transition', 'schema' => 'request', 'transition' => 'review'],
+			'condition' => null,
+			'actions' => [
+				['type' => 'send-notification', 'recipients' => [['kind' => 'group', 'group' => 'reviewers']], 'subject' => ['en' => 'A request is in review']],
+			],
+		]);
+
+		$this->assertCount(expectedCount: 1, haystack: $plan['notifications']);
+		$entry = $plan['notifications'][0];
+		$this->assertSame(expected: 'request', actual: $entry['schema']);
+		$this->assertSame(expected: ['type' => 'transition', 'action' => 'review'], actual: $entry['entry']['trigger']);
+		$this->assertSame(expected: [['kind' => 'group', 'group' => 'reviewers']], actual: $entry['entry']['recipients']);
+		$this->assertSame(expected: [], actual: $plan['lifecycleActions'], message: 'Nothing else is bound to any transition.');
+	}//end testAStatusChangeAutomationListensToItsTransitionOnly()
+
+	/**
+	 * REQ-BQCV-029: an approval step compiles to the approval chain for the
+	 * group and to nothing that runs on the trigger, so the record keeps its
+	 * status until a manager decides. The on-approve and on-reject paths are
+	 * dispatched by ApprovalOutcomeListener on the decision (asserted in
+	 * ApprovalOutcomeListenerTest::testApprovedDispatchesOnApproveFollowUps
+	 * and ::testRejectedDispatchesOnRejectFollowUps).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/capability-requirements-backfill/specs/automation-approval-action/spec.md#requirement-an-approval-step-holds-the-run-until-it-is-approved-req-bqcv-029
+	 */
+	public function testAnApprovalStepHoldsTheRunUntilADecision(): void {
+		$plan = $this->compiler->compile(automation: [
+			'id' => 'auto-approve',
+			'slug' => 'approve-request',
+			'applicationSlug' => 'permit-tracker',
+			'versionUuid' => 'version-1',
+			'enabled' => true,
+			'trigger' => ['type' => 'object-created', 'schema' => 'request'],
+			'condition' => null,
+			'actions' => [
+				[
+					'type' => 'approval',
+					'assigneeGroup' => 'managers',
+					'onApprove' => [['type' => 'object-op', 'operation' => 'update', 'schema' => 'request', 'fieldMapping' => ['status' => 'approved']]],
+					'onReject' => [['type' => 'send-notification', 'subject' => ['en' => 'Rejected']]],
+				],
+			],
+		]);
+
+		$this->assertSame(expected: 'managers', actual: $plan['approvalChain']['assigneeGroup']);
+		$this->assertSame(expected: 'request', actual: $plan['approvalChain']['schema']);
+		$this->assertSame(expected: [], actual: $plan['notifications']);
+		$this->assertSame(expected: [], actual: $plan['lifecycleActions']);
+		$this->assertArrayNotHasKey(key: 'flow', array: $plan, message: 'No flow runs the on-approve step on the trigger.');
+	}//end testAnApprovalStepHoldsTheRunUntilADecision()
 }//end class

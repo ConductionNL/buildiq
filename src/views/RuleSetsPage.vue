@@ -318,13 +318,34 @@ export default {
 			return `${result.passed}/${result.total}`
 		},
 
-		exportRuleSet(ruleSet) {
-			const blob = new Blob([JSON.stringify(ruleSet, null, 2)], {
+		/**
+		 * Download a rule set as one JSON file named after its slug.
+		 *
+		 * The server assembles the file: the rule set's metadata with its
+		 * decision tables, condition-action rules and test cases, and no
+		 * execution logs, so it can be imported elsewhere.
+		 *
+		 * @param {object} ruleSet - the rule set row.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/business-rules-engine/spec.md#requirement-a-rule-set-can-be-exported-as-a-file-req-bqcv-017
+		 */
+		async exportRuleSet(ruleSet) {
+			this.errorMessage = ''
+			let exported
+			try {
+				const url = generateUrl('/apps/buildiq/api/rules/{slug}/export', { slug: ruleSet.slug })
+				const { data } = await axios.get(url)
+				exported = data
+			} catch {
+				this.errorMessage = t('buildiq', 'Could not export the rule set.')
+				return
+			}
+			const blob = new Blob([JSON.stringify(exported, null, 2)], {
 				type: 'application/json',
 			})
 			const link = document.createElement('a')
 			link.href = URL.createObjectURL(blob)
-			link.download = `${ruleSet.slug || 'rule-set'}.json`
+			link.download = `${ruleSet.slug}.json`
 			link.click()
 			URL.revokeObjectURL(link.href)
 		},

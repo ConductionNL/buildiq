@@ -164,6 +164,15 @@ export const CnChartWidgetForm = {
 	emits: ['update:content'],
 	render: () => h('div', { class: 'cnchartwidgetform-stub' }),
 }
+export const CnStatsBlockWidgetForm = {
+	name: 'CnStatsBlockWidgetForm',
+	props: {
+		editingWidget: { type: Object, default: null },
+		value: { type: Object, default: null },
+	},
+	emits: ['update:content'],
+	render: () => h('div', { class: 'cnstatsblockwidgetform-stub' }),
+}
 export const CnCard = {
 	name: 'CnCard',
 	props: [
