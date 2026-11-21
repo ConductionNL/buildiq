@@ -29,10 +29,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Kernel\Contracts\VersionPromotionServiceInterface;
-use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
@@ -81,17 +79,24 @@ class AppDemoRecordsService {
 	/**
 	 * Create demo records in every schema of the app's register and list them on the Application.
 	 *
+	 * The records go into the register of the app's production version.
+	 *
 	 * @param string               $applicationUuid The Application's uuid.
 	 * @param array<string, mixed> $application     The Application.
-	 * @param string               $register        The app's register.
 	 *
-	 * @return array{created: int, skipped: list<string>, failed: int, total: int}
-	 *         `skipped` names the schemas no valid demo record can be made for;
-	 *         `total` is how many demo records the app lists now.
+	 * @return array{created: int, skipped: list<string>, failed: int, total: int}|null
+	 *         Null when the app has no production register. `skipped` names the
+	 *         schemas no valid demo record can be made for; `total` is how many
+	 *         demo records the app lists now.
 	 *
 	 * @spec openspec/changes/capability-requirements-backfill/specs/application-creation-wizard/spec.md#requirement-a-maker-fills-a-new-app-with-demo-records-req-bqcv-030
 	 */
-	public function fill(string $applicationUuid, array $application, string $register): array {
+	public function fill(string $applicationUuid, array $application): ?array {
+		$register = $this->productionRegister(application: $application);
+		if ($register === '') {
+			return null;
+		}
+
 		$listed = self::listed(application: $application);
 		$result = ['created' => 0, 'skipped' => [], 'failed' => 0];
 		foreach ($this->schemas(register: $register) as $schema) {
@@ -188,11 +193,11 @@ class AppDemoRecordsService {
 	/**
 	 * The demo records of one schema, [] when its required properties cannot all be filled.
 	 *
-	 * @param Schema $schema The schema.
+	 * @param object $schema The OpenRegister schema.
 	 *
 	 * @return list<array<string, mixed>>
 	 */
-	private function recordsFor(Schema $schema): array {
+	private function recordsFor(object $schema): array {
 		$properties = (array)$schema->getProperties();
 		$required = array_values(array_map('strval', (array)$schema->getRequired()));
 		$records = [];
@@ -213,7 +218,7 @@ class AppDemoRecordsService {
 	 *
 	 * @param string $register The register id or slug.
 	 *
-	 * @return list<Schema>
+	 * @return list<object> The OpenRegister schemas.
 	 */
 	private function schemas(string $register): array {
 		try {
@@ -242,8 +247,6 @@ class AppDemoRecordsService {
 	 * @param ObjectFindTarget     $target Its register and schema.
 	 *
 	 * @return string|null Null when it was refused.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function create(array $record, ObjectFindTarget $target): ?string {
 		try {
@@ -254,10 +257,6 @@ class AppDemoRecordsService {
 		}
 
 		$uuid = (string)($entity->getUuid() ?? '');
-		if ($uuid === '') {
-			$uuid = (string)(ObjectRecord::toArray(object: $entity)['id'] ?? '');
-		}
-
 		if ($uuid === '') {
 			return null;
 		}
@@ -297,7 +296,10 @@ class AppDemoRecordsService {
 	 * @return void
 	 */
 	private function saveApplication(string $applicationUuid, array $application): void {
-		$target = new ObjectFindTarget(register: VersionPromotionServiceInterface::REGISTER_SLUG, schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA);
+		$target = new ObjectFindTarget(
+			register: VersionPromotionServiceInterface::REGISTER_SLUG,
+			schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA
+		);
 		$options = new ObjectSaveOptions(target: $target, uuid: $applicationUuid);
 		$this->objectService->saveObject(object: $application, options: $options, _rbac: false, _multitenancy: false);
 	}//end saveApplication()
@@ -309,8 +311,6 @@ class AppDemoRecordsService {
 	 * @param string $schema Its schema.
 	 *
 	 * @return array<string, mixed>|null
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function buildiqObject(string $uuid, string $schema): ?array {
 		$entity = null;
@@ -323,11 +323,12 @@ class AppDemoRecordsService {
 			}
 		}
 
-		if ($entity === null) {
+		$data = $entity?->jsonSerialize();
+		if (is_array($data) === false) {
 			return null;
 		}
 
-		return ObjectRecord::toArray(object: $entity);
+		return $data;
 	}//end buildiqObject()
 
 	/**

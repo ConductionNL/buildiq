@@ -68,7 +68,7 @@ class AppDemoRecordsController extends Controller {
 	 *
 	 * @param string $appUuid The Application's uuid.
 	 *
-	 * @return JSONResponse `{created, skipped, failed, total}`; 401, 403, 404, 409 or 500 otherwise.
+	 * @return JSONResponse `{created, skipped, failed, total}`; 401, 403, 404, 409 (no production register) or 500 otherwise.
 	 *
 	 * @spec openspec/changes/capability-requirements-backfill/specs/application-creation-wizard/spec.md#requirement-a-maker-fills-a-new-app-with-demo-records-req-bqcv-030
 	 */
@@ -80,15 +80,14 @@ class AppDemoRecordsController extends Controller {
 			return $application;
 		}
 
-		$register = $this->demoRecords->productionRegister(application: $application);
-		if ($register === '') {
-			return new JSONResponse(data: ['error' => 'no_register'], statusCode: Http::STATUS_CONFLICT);
+		try {
+			$result = $this->demoRecords->fill(applicationUuid: $appUuid, application: $application);
+		} catch (Throwable $e) {
+			return $this->failed(what: 'demo records of application ' . $appUuid . ' could not be filled', error: $e);
 		}
 
-		try {
-			$result = $this->demoRecords->fill(applicationUuid: $appUuid, application: $application, register: $register);
-		} catch (Throwable $e) {
-			return $this->failed(appUuid: $appUuid, what: 'filled', error: $e);
+		if ($result === null) {
+			return new JSONResponse(data: ['error' => 'no_register'], statusCode: Http::STATUS_CONFLICT);
 		}
 
 		return new JSONResponse(data: $result);
@@ -114,7 +113,7 @@ class AppDemoRecordsController extends Controller {
 		try {
 			$result = $this->demoRecords->remove(applicationUuid: $appUuid, application: $application);
 		} catch (Throwable $e) {
-			return $this->failed(appUuid: $appUuid, what: 'removed', error: $e);
+			return $this->failed(what: 'demo records of application ' . $appUuid . ' could not be removed', error: $e);
 		}
 
 		return new JSONResponse(data: $result);
@@ -162,19 +161,15 @@ class AppDemoRecordsController extends Controller {
 	}//end admitted()
 
 	/**
-	 * The 500 answer of a fill or removal that threw, logged with the app.
+	 * The 500 answer of a fill or removal that threw, logged with what failed.
 	 *
-	 * @param string    $appUuid The Application's uuid.
-	 * @param string    $what    What failed: `filled` or `removed`.
-	 * @param Throwable $error   The error.
+	 * @param string    $what  What failed, naming the app.
+	 * @param Throwable $error The error.
 	 *
 	 * @return JSONResponse
 	 */
-	private function failed(string $appUuid, string $what, Throwable $error): JSONResponse {
-		$this->logger->error(
-			'Buildiq: demo records of application {uuid} could not be {what}: {message}',
-			['uuid' => $appUuid, 'what' => $what, 'message' => $error->getMessage()]
-		);
+	private function failed(string $what, Throwable $error): JSONResponse {
+		$this->logger->error('Buildiq: {what}: {message}', ['what' => $what, 'message' => $error->getMessage()]);
 
 		return new JSONResponse(data: ['error' => 'internal_error'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
 	}//end failed()

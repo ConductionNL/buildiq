@@ -90,7 +90,6 @@ final class AppDemoRecordsControllerTest extends TestCase {
 				return self::APPLICATION;
 			}
 		);
-		$this->service->method('productionRegister')->willReturn('meldingen');
 	}//end setUp()
 
 	/**
@@ -146,7 +145,7 @@ final class AppDemoRecordsControllerTest extends TestCase {
 	 */
 	public function testAnEditorFillsTheApp(): void {
 		$this->service->expects($this->once())->method('fill')
-			->with(self::APP, self::APPLICATION, 'meldingen')
+			->with(self::APP, self::APPLICATION)
 			->willReturn(['created' => 3, 'skipped' => [], 'failed' => 0, 'total' => 4]);
 
 		$response = $this->controller(uid: 'joris')->fill(appUuid: self::APP);
@@ -210,11 +209,7 @@ final class AppDemoRecordsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAppWithoutARegisterIsAConflict(): void {
-		$service = $this->createMock(originalClassName: AppDemoRecordsService::class);
-		$service->method('application')->willReturn(self::APPLICATION);
-		$service->method('productionRegister')->willReturn('');
-		$service->expects($this->never())->method('fill');
-		$this->service = $service;
+		$this->service->method('fill')->willReturn(null);
 
 		$this->assertSame(expected: Http::STATUS_CONFLICT, actual: $this->controller(uid: 'sanne')->fill(appUuid: self::APP)->getStatus());
 	}//end testAnAppWithoutARegisterIsAConflict()

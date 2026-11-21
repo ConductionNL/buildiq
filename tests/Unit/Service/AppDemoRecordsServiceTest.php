@@ -143,7 +143,7 @@ final class AppDemoRecordsServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testFillingMakesRecordsAndListsThemOnTheApp(): void {
-		$result = $this->service()->fill(applicationUuid: self::APP, application: ['slug' => 'meldingen'], register: 'meldingen');
+		$result = $this->service()->fill(applicationUuid: self::APP, application: ['slug' => 'meldingen', 'productionVersion' => ['register' => 'meldingen']]);
 
 		$this->assertSame(expected: ['created' => 3, 'skipped' => ['case'], 'failed' => 0, 'total' => 3], actual: $result);
 		$this->assertSame(expected: ['report', 'report', 'report', 'built-app'], actual: array_column($this->saved, 1));
@@ -164,9 +164,13 @@ final class AppDemoRecordsServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testASecondFillAddsToTheList(): void {
-		$application = ['slug' => 'meldingen', 'demoRecords' => [['register' => 'meldingen', 'schema' => 'report', 'uuid' => 'old-1']]];
+		$application = [
+			'slug' => 'meldingen',
+			'productionVersion' => ['register' => 'meldingen'],
+			'demoRecords' => [['register' => 'meldingen', 'schema' => 'report', 'uuid' => 'old-1']],
+		];
 
-		$result = $this->service()->fill(applicationUuid: self::APP, application: $application, register: 'meldingen');
+		$result = $this->service()->fill(applicationUuid: self::APP, application: $application);
 
 		$listed = $this->saved[3][0]['demoRecords'];
 		$this->assertSame(expected: 4, actual: count($listed));
@@ -184,7 +188,7 @@ final class AppDemoRecordsServiceTest extends TestCase {
 		$objects->expects($this->exactly(count: 3))->method('saveObject')->willThrowException(new RuntimeException('invalid'));
 		$this->objects = $objects;
 
-		$result = $this->service()->fill(applicationUuid: self::APP, application: [], register: 'meldingen');
+		$result = $this->service()->fill(applicationUuid: self::APP, application: ['productionVersion' => ['register' => 'meldingen']]);
 
 		$this->assertSame(expected: ['created' => 0, 'skipped' => ['case'], 'failed' => 3, 'total' => 0], actual: $result);
 	}//end testARefusedRecordIsCountedAndNothingIsListed()
@@ -197,10 +201,21 @@ final class AppDemoRecordsServiceTest extends TestCase {
 	public function testAnUnreadableRegisterMakesNothing(): void {
 		$this->objects->expects($this->never())->method('saveObject');
 
-		$result = $this->service()->fill(applicationUuid: self::APP, application: [], register: 'other');
+		$result = $this->service()->fill(applicationUuid: self::APP, application: ['productionVersion' => ['register' => 'other']]);
 
 		$this->assertSame(expected: ['created' => 0, 'skipped' => [], 'failed' => 0, 'total' => 0], actual: $result);
 	}//end testAnUnreadableRegisterMakesNothing()
+
+	/**
+	 * An app without a production register is not filled.
+	 *
+	 * @return void
+	 */
+	public function testAnAppWithoutAProductionRegisterIsNotFilled(): void {
+		$this->objects->expects($this->never())->method('saveObject');
+
+		$this->assertNull(actual: $this->service()->fill(applicationUuid: self::APP, application: ['slug' => 'meldingen']));
+	}//end testAnAppWithoutAProductionRegisterIsNotFilled()
 
 	/**
 	 * Removing deletes exactly the listed records; one that cannot be deleted stays listed.
