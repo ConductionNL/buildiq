@@ -26,11 +26,14 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\IconController;
+use OCA\Buildiq\Service\CallerContext;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\IconService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\StreamResponse;
 use OCP\IRequest;
 use OCP\IUser;
+use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -93,7 +96,7 @@ class IconControllerTest extends TestCase {
 		$this->controller = new IconController(
 			$this->request,
 			$this->iconService,
-			$this->userSession,
+			$this->caller($this->userSession),
 			$this->logger
 		);
 	}//end setUp()
@@ -216,7 +219,7 @@ class IconControllerTest extends TestCase {
 		$controller = new IconController(
 			$this->request,
 			$this->iconService,
-			$unauthSession,
+			$this->caller($unauthSession),
 			$this->logger
 		);
 
@@ -247,4 +250,43 @@ class IconControllerTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
 	}//end testIconLightReturns500OnException()
+
+	/**
+	 * REQ-BQOS-002: the controller lets the service serve an app's own icon only
+	 * when the caller may see the app; a scoped app with no organisation guard
+	 * to admit the caller is hidden, a shared app is not.
+	 *
+	 * @return void
+	 */
+	public function testTheIconIsServedOnlyForAnAppTheCallerMaySee(): void {
+		$decisions = [];
+		$this->iconService->method('getIconStream')->willReturnCallback(
+			static function (string $slug, bool $dark, ?\Closure $mayServe) use (&$decisions): array {
+				$decisions[] = $mayServe !== null && $mayServe(['slug' => $slug, 'organisationScope' => 'holder']);
+				$decisions[] = $mayServe !== null && $mayServe(['slug' => $slug]);
+				return ['stream' => null, 'mimeType' => 'image/svg+xml'];
+			}
+		);
+
+		$this->controller->iconLight('hello-world');
+		$this->controller->iconDark('hello-world');
+		$this->controller->touchIcon('hello-world');
+
+		$this->assertSame([false, true, false, true, false, true], $decisions);
+	}//end testTheIconIsServedOnlyForAnAppTheCallerMaySee()
+
+	/**
+	 * The caller context over a session, without an organisation guard.
+	 *
+	 * @param IUserSession $session The session.
+	 *
+	 * @return CallerContext
+	 */
+	private function caller(IUserSession $session): CallerContext {
+		return new CallerContext(
+			userSession: $session,
+			groupManager: $this->createMock(IGroupManager::class),
+			permissionResolver: $this->createMock(PermissionResolver::class)
+		);
+	}//end caller()
 }//end class

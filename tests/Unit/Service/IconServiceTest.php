@@ -267,6 +267,40 @@ class IconServiceTest extends TestCase {
 		}
 	}//end testGetIconStreamUnknownSlugFallsBack()
 
+	/**
+	 * REQ-BQOS-002: an app the caller may not see is served as an unknown slug
+	 * is, without reading its own icon; one the caller may see serves its icon.
+	 *
+	 * @return void
+	 */
+	public function testAnAppTheCallerMayNotSeeIsServedAsAnUnknownOne(): void {
+		$application = ['slug' => 'hello-world', 'uuid' => 'app-uuid-1', 'organisationScope' => 'holder', 'icon' => ['ref' => 'app-icon.svg']];
+		$this->objectService->method('findAll')->willReturn([$application]);
+		$fileMock = $this->createMock(File::class);
+		$fileMock->method('getContent')->willReturn('<svg/>');
+		$this->fileService->expects($this->once())->method('getFile')->willReturn($fileMock);
+		$seen = [];
+
+		$hidden = $this->service->getIconStream(
+			slug: 'hello-world',
+			dark: false,
+			mayServe: static function (array $app) use (&$seen): bool {
+				$seen[] = $app['slug'];
+				return false;
+			}
+		);
+		$shown = $this->service->getIconStream(slug: 'hello-world', dark: false, mayServe: static fn (array $app): bool => true);
+
+		$this->assertSame(['hello-world'], $seen);
+		$this->assertSame('image/svg+xml', $hidden['mimeType']);
+		$this->assertSame('<svg/>', stream_get_contents($shown['stream']));
+		foreach ([$hidden['stream'], $shown['stream']] as $stream) {
+			if ($stream !== null) {
+				fclose($stream);
+			}
+		}
+	}//end testAnAppTheCallerMayNotSeeIsServedAsAnUnknownOne()
+
 	// -------------------------------------------------------------------------
 	// FileService throws → falls back to filesystem
 	// -------------------------------------------------------------------------

@@ -46,6 +46,7 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\IconServiceInterface;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\Icon\SvgRasteriser;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -55,7 +56,6 @@ use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Http\StreamResponse;
 use OCP\IRequest;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -83,7 +83,7 @@ class IconController extends Controller {
 	 *
 	 * @param IRequest $request The incoming HTTP request.
 	 * @param IconServiceInterface $iconService The icon-resolution service.
-	 * @param IUserSession $userSession User session for authentication guard.
+	 * @param CallerContext $caller The caller's session (the authentication guard) and the organisation guard.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param SvgRasteriser $rasteriser Turns the SVG icon into the PNG touch icon.
 	 *
@@ -92,7 +92,7 @@ class IconController extends Controller {
 	public function __construct(
 		IRequest $request,
 		private readonly IconServiceInterface $iconService,
-		private readonly IUserSession $userSession,
+		private readonly CallerContext $caller,
 		private readonly LoggerInterface $logger,
 		private readonly SvgRasteriser $rasteriser=new SvgRasteriser(),
 	) {
@@ -117,7 +117,7 @@ class IconController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function iconLight(string $slug): Response {
-		if ($this->userSession->getUser() === null) {
+		if ($this->caller->userSession->getUser() === null) {
 			$response = new Response();
 			$response->setStatus(Http::STATUS_UNAUTHORIZED);
 			return $response;
@@ -144,7 +144,7 @@ class IconController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function iconDark(string $slug): Response {
-		if ($this->userSession->getUser() === null) {
+		if ($this->caller->userSession->getUser() === null) {
 			$response = new Response();
 			$response->setStatus(Http::STATUS_UNAUTHORIZED);
 			return $response;
@@ -168,7 +168,7 @@ class IconController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function touchIcon(string $slug): Response {
-		if ($this->userSession->getUser() === null) {
+		if ($this->caller->userSession->getUser() === null) {
 			$response = new Response();
 			$response->setStatus(Http::STATUS_UNAUTHORIZED);
 			return $response;
@@ -176,7 +176,11 @@ class IconController extends Controller {
 
 		$png = null;
 		try {
-			['stream' => $stream, 'mimeType' => $mimeType] = $this->iconService->getIconStream(slug: $slug, dark: false);
+			['stream' => $stream, 'mimeType' => $mimeType] = $this->iconService->getIconStream(
+				slug: $slug,
+				dark: false,
+				mayServe: $this->mayServe(...)
+			);
 			$png = $this->pngOf(stream: $stream, mimeType: (string)$mimeType);
 		} catch (\Throwable $e) {
 			$this->logger->warning('IconController: no touch icon for slug "' . $slug . '": ' . $e->getMessage());
@@ -227,6 +231,22 @@ class IconController extends Controller {
 	}//end pngOf()
 
 	/**
+	 * Whether the caller may see an Application, so its own icon may be served.
+	 *
+	 * Another organisation's scoped app gets the built-in icon, as an unknown
+	 * slug does (operate-organisation-scoped-apps REQ-BQOS-002).
+	 *
+	 * @param array<string,mixed> $application The Application.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function mayServe(array $application): bool {
+		return $this->caller->seesApplication(application: $application);
+	}//end mayServe()
+
+	/**
 	 * Shared icon-response builder.
 	 *
 	 * Calls IconService, sets required headers, streams the resource.
@@ -252,7 +272,8 @@ class IconController extends Controller {
 		try {
 			['stream' => $stream, 'mimeType' => $mimeType] = $this->iconService->getIconStream(
 				slug: $slug,
-				dark: $dark
+				dark: $dark,
+				mayServe: $this->mayServe(...)
 			);
 		} catch (\Throwable $e) {
 			$this->logger->error(
