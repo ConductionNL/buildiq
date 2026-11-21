@@ -44,6 +44,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Dashboard;
 
+use OCA\Buildiq\Service\CallerContext;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Dashboard\VirtualAppWidget;
 use OCA\Buildiq\Dashboard\VirtualAppWidgetContext;
 use OCA\Buildiq\Kernel\Values\WidgetApplication;
@@ -305,8 +307,11 @@ class SyntheticServiceResolutionPinTest extends TestCase {
 
 		return new VirtualAppWidgetContext(
 			urlGenerator: $this->createMock(IURLGenerator::class),
-			userSession: $userSession,
-			groupManager: $groupManager,
+			caller: new CallerContext(
+				userSession: $userSession,
+				groupManager: $groupManager,
+				permissionResolver: $this->createMock(originalClassName: PermissionResolver::class)
+			),
 			visibility: new AppVisibilityResolver(),
 			projector: $this->createMock(WidgetItemProjector::class),
 			initialState: $this->createMock(IInitialState::class)

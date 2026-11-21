@@ -274,8 +274,7 @@ final class ServiceRegistrar {
 	public function registerDashboardWidgets(ContainerInterface $container): void {
 		$widgetContext = new VirtualAppWidgetContext(
 			urlGenerator: $container->get(IURLGenerator::class),
-			userSession: $container->get('OCP\\IUserSession'),
-			groupManager: $container->get('OCP\\IGroupManager'),
+			caller: $container->get(CallerContext::class),
 			visibility: $container->get(AppVisibilityResolver::class),
 			projector: $container->get(WidgetItemProjector::class),
 			initialState: $container->get(IInitialState::class)

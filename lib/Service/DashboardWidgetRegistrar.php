@@ -128,9 +128,10 @@ class DashboardWidgetRegistrar {
 			return 0;
 		}
 
+		$scopes = $this->scopesByApplication(applications: $applications);
 		$registered = 0;
 		foreach ($this->collectDescriptors(applications: $applications) as $descriptor) {
-			$context->addDescriptor(descriptor: $descriptor);
+			$context->addDescriptor(descriptor: $descriptor, scope: ($scopes[$descriptor->applicationUuid] ?? []));
 
 			$serviceName = self::serviceNameFor(widgetId: $descriptor->id);
 			$container->registerService(
@@ -223,6 +224,40 @@ class DashboardWidgetRegistrar {
 
 		return new WidgetApplication(uuid: $uuid, slug: $slug, name: (string)($application['name'] ?? $slug));
 	}//end widgetApplication()
+
+	/**
+	 * The organisation scope of each Application, by uuid (REQ-BQOS-002).
+	 *
+	 * @param array<int,array<string,mixed>> $applications The published Applications.
+	 *
+	 * @return array<string,array<string,mixed>>
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	public function scopesByApplication(array $applications): array {
+		$scopes = [];
+		foreach ($applications as $application) {
+			$uuid = $this->applicationUuid(application: (array)$application);
+			if ($uuid !== '') {
+				$scopes[$uuid] = self::scopeOf(application: (array)$application);
+			}
+		}
+
+		return $scopes;
+	}//end scopesByApplication()
+
+	/**
+	 * The keys of an Application the organisation guard reads: its scope and
+	 * the holder OpenRegister stamped on it (REQ-BQOS-002). Absent keys are left out.
+	 *
+	 * @param array<string,mixed> $application One published Application record.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 */
+	private static function scopeOf(array $application): array {
+		return array_intersect_key($application, array_flip(['organisationScope', 'organisation', '@self']));
+	}//end scopeOf()
 
 	/**
 	 * The Application's uuid, or its id when the record carries no uuid.
