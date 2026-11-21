@@ -436,6 +436,7 @@ import AppEmbedSettings from '../components/AppEmbedSettings.vue'
 import { fetchConnectedDatabases } from '../composables/useConnectedDatabases.js'
 import { languageName, NEXTCLOUD_LANGUAGES } from '../services/appLanguages.js'
 import { normaliseOffline, OFFLINE_LIMIT_DEFAULT, OFFLINE_TTL_DEFAULT } from '../services/offlineManifest.js'
+import { isPickable } from '../services/sharedAutomations.js'
 import {
 	FROM_RECORD,
 	isWrapperBinding,
@@ -445,7 +446,6 @@ import {
 	withRunOn,
 	WRAPPER_PREFIX,
 } from '../utils/flowBindings.js'
-import { isPickable } from '../services/sharedAutomations.js'
 
 export default {
 	name: 'AppSettingsModal',

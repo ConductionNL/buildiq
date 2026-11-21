@@ -19,8 +19,8 @@ vi.mock('@nextcloud/axios', () => ({
 
 import axios from '@nextcloud/axios'
 import AutomationEditDialog from '../../src/dialogs/AutomationEditDialog.vue'
-import { toPersistedAction } from '../../src/dialogs/automationPersistedActions.js'
 import { clearAppStatusCache } from '../../src/composables/useAppStatus.js'
+import { toPersistedAction } from '../../src/dialogs/automationPersistedActions.js'
 
 const stub = (name, template = '<div><slot /></div>') => ({ name, props: ['modelValue', 'options', 'inputLabel', 'label', 'loading'], template })
 const stubs = {

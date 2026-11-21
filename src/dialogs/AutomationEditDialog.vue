@@ -594,6 +594,7 @@ import {
 } from '../services/automationStepSources.js'
 import { fetchConnectorSynchronizations } from '../services/connectorSynchronizations.js'
 import { resolveFleetAppId } from '../services/fleetAppId.js'
+import { fetchAutomations, RUN_AUTOMATION, runAutomationOptions } from '../services/sharedAutomations.js'
 import { slugify } from '../utils/slugify.js'
 import { askableFieldOptions, formFieldsOf } from './approvalFormFields.js'
 import {
@@ -605,7 +606,6 @@ import {
 	withInboundSettings,
 } from './automationInboundTrigger.js'
 import { toPersistedAction } from './automationPersistedActions.js'
-import { fetchAutomations, RUN_AUTOMATION, runAutomationOptions } from '../services/sharedAutomations.js'
 import {
 	cadenceById,
 	cadenceOptions,
