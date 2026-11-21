@@ -40,8 +40,6 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use DateTimeImmutable;
-use DateTimeInterface;
 use OCA\Buildiq\Kernel\Contracts\AppOverrideServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -260,6 +258,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 	 * @throws \RuntimeException When the app does not exist or does not allow user overrides.
 	 *
 	 * @spec openspec/specs/layered-app-deltas/spec.md
+	 * @spec openspec/changes/openbuild-inline-edit-persistence/specs/app-override-persistence/spec.md#requirement-write-endpoint-upserts-the-delta-and-records-who-saved
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function upsertUserDelta(string $appId, array $delta, string $uid): array {
@@ -276,7 +275,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 			throw new RuntimeException('This app does not allow per-user overrides.');
 		}
 
-		$now = (new DateTimeImmutable())->format(DateTimeInterface::ATOM);
+		$now = date(DATE_ATOM);
 		$appUuid = $this->extractUuid(object: $application);
 		$adminVersion = $this->findHybridProductionVersion(appId: $appId, application: $application);
 		$adminUuid = '';
@@ -483,9 +482,10 @@ class AppOverrideService implements AppOverrideServiceInterface {
 	 * @return array<string, mixed> A normalised summary: appId, updatedBy, updatedAt, applicationUuid.
 	 *
 	 * @spec openspec/specs/app-override-persistence/spec.md
+	 * @spec openspec/changes/openbuild-inline-edit-persistence/specs/app-override-persistence/spec.md#requirement-write-endpoint-upserts-the-delta-and-records-who-saved
 	 */
 	public function upsert(string $appId, array $delta, ?string $baseRef, string $updatedBy, bool $systemContext = false): array {
-		$now = (new DateTimeImmutable())->format(DateTimeInterface::ATOM);
+		$now = date(DATE_ATOM);
 		$application = $this->findHybridApplication(appId: $appId);
 
 		// Both paths write, so exactly one must run — an early return replaces

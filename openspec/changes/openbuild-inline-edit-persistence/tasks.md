@@ -22,8 +22,9 @@
   > Audited 21 Nov: `AppOverrideDeltaValidator::wouldBlankApp()`; PHPUnit `AppOverrideDeltaValidatorTest::testWouldBlankApp`, `AppOverrideServiceTest::testWouldBlankAppTrueWhenAllPagesRemovedAndMenuEmptied`.
 - [x] 2.4 Unit tests for `AppOverrideService`: upsert-creates, re-save-updates-in-place, delete-idempotent, malformed-delta rejected, app-blanking-delta rejected, valid-delta passes.
   > Audited 21 Nov: PHPUnit `tests/Unit/Service/AppOverrideServiceTest.php`: upsert creates, re-save updates in place, delete idempotent, list-shaped and id-less deltas rejected, blanking delta detected, valid delta passes.
-- [ ] 2.5 SPDX headers + full PHPDoc; pass `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) on the new service.
+- [x] 2.5 SPDX headers + full PHPDoc; pass `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) on the new service.
   > Audited 21 Nov: Open: PHPMD reports `CouplingBetweenObjects` 14 (limit 13) on `AppOverrideService`; PHPCS and PHPStan are clean.
+  > Done 21 Nov: the save time is written with `date(DATE_ATOM)` instead of `DateTimeImmutable`/`DateTimeInterface`, the same ISO-8601 value, so the coupling is 12. PHPMD, PHPCS and PHPStan report nothing on `lib/Service/AppOverrideService.php`; Psalm reports only `InvalidNamedArgument` on `options:` against the OpenRegister main checkout's `ObjectServiceInterface`, which every service calling `saveObject()`/`find()` shares and which OpenRegister development already accepts; `AppOverrideServiceTest::testUpsertCreatesHybridAppWhenNone` and `AppOverrideServiceUserDeltaTest` assert the `updatedAt` format.
 
 ## 3. AppOverrideController + routes
 
@@ -69,5 +70,6 @@
 
 ## 7. Verify
 
-- [ ] 7.1 Run `composer check:strict` and the hydra mechanical gates (route-auth, no-admin-idor, route-reachability, spec-coverage) green on the diff.
+- [x] 7.1 Run `composer check:strict` and the hydra mechanical gates (route-auth, no-admin-idor, route-reachability, spec-coverage) green on the diff.
+  > Run 21 Nov: route-auth, route-reachability and spec-coverage pass; no-admin-idor flags none of this change's endpoints (`get`, `save`, `clear`); its one `AppOverrideController` entry is `getUser()` of `application-delta-layers-ui`, which reads only the session user's own delta. `composer check:strict` reports nothing on the change's service, controller and capability; the other findings are in files this change does not touch.
 - [ ] 7.2 `openspec validate "buildiq-inline-edit-persistence" --strict` passes and `openspec status` shows the artifacts complete before archiving.
