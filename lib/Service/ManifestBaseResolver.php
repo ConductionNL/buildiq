@@ -38,17 +38,12 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use OCA\Buildiq\Support\ObjectRecord;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * Resolves a version's `baseRef` + `manifestDelta` into one merged manifest.
  *
  * @spec openspec/changes/app-delta-override/tasks.md#task-3.1
- *
- * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
  */
 class ManifestBaseResolver {
 	/**
@@ -57,8 +52,6 @@ class ManifestBaseResolver {
 	 * @var int
 	 */
 	public const MAX_DEPTH = 5;
-
-	private const REGISTER = 'buildiq';
 
 	private const TEMPLATE_SCHEMA = 'application-template';
 
@@ -76,16 +69,16 @@ class ManifestBaseResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectServiceInterface     $objectService OpenRegister object service.
-	 * @param LoggerInterface            $logger        Records why a base could not be used.
-	 * @param BundledManifestReader|null $bundles       Reads a fleet app's bundled manifest; without it no fleet base resolves.
+	 * @param RegisterRecordLookup       $records Reads templates, apps and versions.
+	 * @param LoggerInterface            $logger  Records why a base could not be used.
+	 * @param BundledManifestReader|null $bundles Reads a fleet app's bundled manifest; without it no fleet base resolves.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/app-delta-override/tasks.md#task-3.1
 	 */
 	public function __construct(
-		private readonly ObjectServiceInterface $objectService,
+		private readonly RegisterRecordLookup $records,
 		private readonly LoggerInterface $logger,
 		private readonly ?BundledManifestReader $bundles=null,
 	) {
@@ -189,7 +182,7 @@ class ManifestBaseResolver {
 
 		$version = match ($baseRef['kind']) {
 			'buildiq-app' => $this->appVersion(appRef: $id, pin: $pin, visible: $visible),
-			'application-version' => $this->findByUuid(schema: self::VERSION_SCHEMA, uuid: $id),
+			'application-version' => $this->records->byUuid(schema: self::VERSION_SCHEMA, uuid: $id),
 			default => null,
 		};
 		if ($version === null) {
@@ -230,16 +223,17 @@ class ManifestBaseResolver {
 	 * @return array<string, mixed>|null
 	 */
 	private function templateManifest(string $templateRef, string $pin): ?array {
-		$template = $this->firstBySlug(schema: self::TEMPLATE_SCHEMA, filters: ['slug' => $templateRef]);
-		if ($template === null) {
-			$template = $this->findByUuid(schema: self::TEMPLATE_SCHEMA, uuid: $templateRef);
-		}
-
+		$template = $this->records->bySlugOrUuid(schema: self::TEMPLATE_SCHEMA, ref: $templateRef);
 		if ($template === null || $this->pinMatches(pin: $pin, actual: $template['version'] ?? null) === false) {
 			return null;
 		}
 
-		return ObjectRecord::arrayOrNull(object: $template['manifest'] ?? null);
+		$manifest = ($template['manifest'] ?? null);
+		if (is_array($manifest) === false) {
+			return null;
+		}
+
+		return $manifest;
 	}//end templateManifest()
 
 	/**
@@ -252,10 +246,7 @@ class ManifestBaseResolver {
 	 * @return array<string, mixed>|null
 	 */
 	private function appVersion(string $appRef, string $pin, ?callable $visible): ?array {
-		$application = $this->firstBySlug(schema: self::APPLICATION_SCHEMA, filters: ['slug' => $appRef]);
-		if ($application === null) {
-			$application = $this->findByUuid(schema: self::APPLICATION_SCHEMA, uuid: $appRef);
-		}
+		$application = $this->records->bySlugOrUuid(schema: self::APPLICATION_SCHEMA, ref: $appRef);
 
 		if ($application === null || ($visible !== null && $visible($application) !== true)) {
 			return null;
@@ -283,7 +274,7 @@ class ManifestBaseResolver {
 			$production = ($production['uuid'] ?? $production['id'] ?? '');
 		}
 
-		$version = $this->findByUuid(schema: self::VERSION_SCHEMA, uuid: (string)$production);
+		$version = $this->records->byUuid(schema: self::VERSION_SCHEMA, uuid: (string)$production);
 		if ($version === null || $this->belongsTo(version: $version, appUuid: $appUuid) === false) {
 			return null;
 		}
@@ -301,7 +292,7 @@ class ManifestBaseResolver {
 	 */
 	private function pinnedVersion(string $appUuid, string $pin): ?array {
 		foreach (['slug', 'semver'] as $field) {
-			$version = $this->firstBySlug(schema: self::VERSION_SCHEMA, filters: ['application' => $appUuid, $field => $pin]);
+			$version = $this->records->first(schema: self::VERSION_SCHEMA, filters: ['application' => $appUuid, $field => $pin]);
 			if ($version !== null
 				&& $this->belongsTo(version: $version, appUuid: $appUuid) === true
 				&& ($version['status'] ?? 'draft') !== 'draft'
@@ -358,48 +349,6 @@ class ManifestBaseResolver {
 	private function pinMatches(string $pin, mixed $actual): bool {
 		return $pin === '' || (is_scalar($actual) === true && (string)$actual === $pin);
 	}//end pinMatches()
-
-	/**
-	 * The first object of a schema in Buildiq's register matching the filters.
-	 *
-	 * @param string               $schema  The schema slug.
-	 * @param array<string, mixed> $filters Equality filters.
-	 *
-	 * @return array<string, mixed>|null
-	 */
-	private function firstBySlug(string $schema, array $filters): ?array {
-		try {
-			$rows = $this->objectService->searchObjectsBySlug(self::REGISTER, $schema, $filters, _rbac: false, _multitenancy: false);
-		} catch (Throwable $e) {
-			$this->logger->debug('ManifestBaseResolver: lookup in {schema} failed: {message}', ['schema' => $schema, 'message' => $e->getMessage()]);
-			return null;
-		}
-
-		if (is_array($rows) === false || $rows === []) {
-			return null;
-		}
-
-		return ObjectRecord::arrayOrNull(object: reset($rows));
-	}//end firstBySlug()
-
-	/**
-	 * One object of a schema in Buildiq's register by uuid.
-	 *
-	 * Read through the slug search with a metadata filter, which every
-	 * OpenRegister version of the contract takes the same way.
-	 *
-	 * @param string $schema The schema slug.
-	 * @param string $uuid   The uuid.
-	 *
-	 * @return array<string, mixed>|null
-	 */
-	private function findByUuid(string $schema, string $uuid): ?array {
-		if ($uuid === '') {
-			return null;
-		}
-
-		return $this->firstBySlug(schema: $schema, filters: ['@self' => ['uuid' => $uuid]]);
-	}//end findByUuid()
 
 	/**
 	 * Log why a base was not used and return the reason.

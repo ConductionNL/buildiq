@@ -29,6 +29,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\BundledManifestReader;
 use OCA\Buildiq\Service\ManifestBaseResolver;
+use OCA\Buildiq\Service\RegisterRecordLookup;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;
@@ -37,6 +38,7 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\Buildiq\Service\ManifestBaseResolver
  * @covers \OCA\Buildiq\Service\BundledManifestReader
+ * @covers \OCA\Buildiq\Service\RegisterRecordLookup
  *
  * @spec openspec/changes/app-delta-override/tasks.md#task-7.2
  */
@@ -88,7 +90,11 @@ final class ManifestBaseResolverTest extends TestCase {
 			$bundles = new BundledManifestReader(appManager: $appManager, logger: $logger);
 		}
 
-		return new ManifestBaseResolver(objectService: $objects, logger: $logger, bundles: $bundles);
+		return new ManifestBaseResolver(
+			records: new RegisterRecordLookup(objectService: $objects, logger: $logger),
+			logger: $logger,
+			bundles: $bundles
+		);
 	}//end resolver()
 
 	/**
@@ -114,7 +120,8 @@ final class ManifestBaseResolverTest extends TestCase {
 		$blob = self::manifest(pages: [['id' => 'home', 'title' => 'Home']]);
 		$objects = $this->createMock(originalClassName: ObjectServiceInterface::class);
 		$objects->expects($this->never())->method('searchObjectsBySlug');
-		$resolver = new ManifestBaseResolver(objectService: $objects, logger: $this->createMock(originalClassName: LoggerInterface::class));
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
+		$resolver = new ManifestBaseResolver(records: new RegisterRecordLookup(objectService: $objects, logger: $logger), logger: $logger);
 
 		$result = $resolver->resolveVersion(version: ['manifest' => $blob, 'manifestDelta' => ['pages' => []]]);
 
@@ -430,7 +437,8 @@ final class ManifestBaseResolverTest extends TestCase {
 
 		$objects = $this->createMock(originalClassName: ObjectServiceInterface::class);
 		$objects->method('searchObjectsBySlug')->willThrowException(new \RuntimeException('register down'));
-		$resolver = new ManifestBaseResolver(objectService: $objects, logger: $this->createMock(originalClassName: LoggerInterface::class));
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
+		$resolver = new ManifestBaseResolver(records: new RegisterRecordLookup(objectService: $objects, logger: $logger), logger: $logger);
 		$this->assertSame(
 			expected: $blob,
 			actual: $resolver->manifestOf(version: ['manifest' => $blob, 'baseRef' => ['kind' => 'template', 'id' => 'tpl']])

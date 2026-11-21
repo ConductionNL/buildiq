@@ -28,6 +28,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\AppVisibilityResolver;
 use OCA\Buildiq\Service\ManifestBaseResolver;
+use OCA\Buildiq\Service\RegisterRecordLookup;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\ManifestWidgetRoleFilter;
 use OCA\Buildiq\Service\PermissionResolver;
@@ -103,7 +104,7 @@ final class ManifestResolverDeltaTest extends TestCase {
 			logger: $logger,
 			permissionResolver: new PermissionResolver(groupManager: $groupManager, logger: $logger),
 			widgetRoleFilter: new ManifestWidgetRoleFilter(visibility: new AppVisibilityResolver(), groupManager: $groupManager),
-			baseResolver: new ManifestBaseResolver(objectService: $objects, logger: $logger),
+			baseResolver: new ManifestBaseResolver(records: new RegisterRecordLookup(objectService: $objects, logger: $logger), logger: $logger),
 		);
 	}//end service()
 
