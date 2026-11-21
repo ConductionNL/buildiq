@@ -58,6 +58,10 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 		'lib/Service/AutomationWriteService.php' => 'seesApplication(',
 		'lib/Service/CopilotService.php' => 'seesApplication(',
 		'lib/Controller/GitHubSyncController.php' => 'seesApplication(',
+		// The icon routes hand the caller's guard to the service, which serves an
+		// app the caller may not see as an unknown slug (IconController::mayServe()).
+		'lib/Service/IconService.php' => '$mayServe($application)',
+		'lib/Controller/IconController.php' => 'seesApplication(',
 	];
 
 	/**
@@ -98,16 +102,12 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 	/**
 	 * Readers of the Application schema not yet reviewed for the organisation
 	 * scope (operate-organisation-scoped-apps, T04 follow-up). Shrink this list;
-	 * never grow it. The icon service serves a scoped app's own icon to anyone
-	 * who knows its slug; guarding it needs the caller and the guard, and its
-	 * constructor is already at the five-parameter limit, so it waits for a
-	 * smaller seam.
+	 * never grow it. Empty since the icon service takes the caller's guard from
+	 * its controller (21 Nov).
 	 *
 	 * @var array<int, string>
 	 */
-	private const NOT_YET_REVIEWED = [
-		'lib/Service/IconService.php',
-	];
+	private const NOT_YET_REVIEWED = [];
 
 	/**
 	 * Each named door consults the guard.

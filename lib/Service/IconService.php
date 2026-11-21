@@ -137,8 +137,13 @@ class IconService implements IconServiceInterface {
 	 * Light chain:  icon.ref → /img/app.svg
 	 * Dark  chain:  iconDark.ref → icon.ref → /img/app-dark.svg → /img/app.svg
 	 *
-	 * @param string $slug The Application slug.
-	 * @param bool $dark True to apply the dark-icon fallback chain.
+	 * An Application the caller may not see is served as an unknown one is,
+	 * with the built-in icon, so the answer tells nothing about it.
+	 *
+	 * @param string        $slug     The Application slug.
+	 * @param bool          $dark     True to apply the dark-icon fallback chain.
+	 * @param \Closure|null $mayServe Given the Application, whether the caller may see it;
+	 *                                null serves every app (REQ-BQOS-002).
 	 *
 	 * @return array{stream: resource|null, mimeType: string} The stream and MIME type.
 	 *                                                        stream is null only when
@@ -147,9 +152,10 @@ class IconService implements IconServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
-	public function getIconStream(string $slug, bool $dark): array {
+	public function getIconStream(string $slug, bool $dark, ?\Closure $mayServe = null): array {
 		// Keep the entity, not just its serialized form. fetchAttachedFileStream()
 		// hands it straight back to OpenRegister, which saves OR from having to work
 		// out which magic table the object lives in — see fetchAttachedFileStream().
@@ -157,6 +163,13 @@ class IconService implements IconServiceInterface {
 		$application = null;
 		if ($entity !== null) {
 			$application = ObjectRecord::toArray(object: $entity);
+		}
+
+		// Operate-organisation-scoped-apps REQ-BQOS-002: an app the caller may
+		// not see answers exactly as an unknown slug does.
+		if ($application !== null && $mayServe !== null && $mayServe($application) !== true) {
+			$entity = null;
+			$application = null;
 		}
 
 		if ($dark === true) {

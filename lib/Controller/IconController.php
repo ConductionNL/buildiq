@@ -46,6 +46,7 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\IconServiceInterface;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\Icon\SvgRasteriser;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -55,7 +56,6 @@ use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Http\StreamResponse;
 use OCP\IRequest;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -83,7 +83,7 @@ class IconController extends Controller {
 	 *
 	 * @param IRequest $request The incoming HTTP request.
 	 * @param IconServiceInterface $iconService The icon-resolution service.
-	 * @param IUserSession $userSession User session for authentication guard.
+	 * @param CallerContext $caller The caller's session (the authentication guard) and the organisation guard.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param SvgRasteriser $rasteriser Turns the SVG icon into the PNG touch icon.
 	 *
@@ -92,7 +92,7 @@ class IconController extends Controller {
 	public function __construct(
 		IRequest $request,
 		private readonly IconServiceInterface $iconService,
-		private readonly IUserSession $userSession,
+		private readonly CallerContext $caller,
 		private readonly LoggerInterface $logger,
 		private readonly SvgRasteriser $rasteriser=new SvgRasteriser(),
 	) {
@@ -113,11 +113,14 @@ class IconController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
+	 * @no-admin-idor-exempt The caller-supplied slug only picks an icon: the service gets the caller's
+	 *                        organisation check (`seesApplication`) and answers an app the caller may not
+	 *                        see with the built-in icon, as it answers an unknown slug (REQ-BQOS-002).
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function iconLight(string $slug): Response {
-		if ($this->userSession->getUser() === null) {
+		if ($this->caller->userSession->getUser() === null) {
 			$response = new Response();
 			$response->setStatus(Http::STATUS_UNAUTHORIZED);
 			return $response;
@@ -140,11 +143,14 @@ class IconController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
+	 * @no-admin-idor-exempt The caller-supplied slug only picks an icon: the service gets the caller's
+	 *                        organisation check (`seesApplication`) and answers an app the caller may not
+	 *                        see with the built-in icon, as it answers an unknown slug (REQ-BQOS-002).
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function iconDark(string $slug): Response {
-		if ($this->userSession->getUser() === null) {
+		if ($this->caller->userSession->getUser() === null) {
 			$response = new Response();
 			$response->setStatus(Http::STATUS_UNAUTHORIZED);
 			return $response;
@@ -164,11 +170,14 @@ class IconController extends Controller {
 	 * @return Response
 	 *
 	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+	 * @no-admin-idor-exempt The caller-supplied slug only picks an icon: the service gets the caller's
+	 *                        organisation check (`seesApplication`) and answers an app the caller may not
+	 *                        see with the built-in icon, as it answers an unknown slug (REQ-BQOS-002).
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function touchIcon(string $slug): Response {
-		if ($this->userSession->getUser() === null) {
+		if ($this->caller->userSession->getUser() === null) {
 			$response = new Response();
 			$response->setStatus(Http::STATUS_UNAUTHORIZED);
 			return $response;
@@ -176,7 +185,11 @@ class IconController extends Controller {
 
 		$png = null;
 		try {
-			['stream' => $stream, 'mimeType' => $mimeType] = $this->iconService->getIconStream(slug: $slug, dark: false);
+			['stream' => $stream, 'mimeType' => $mimeType] = $this->iconService->getIconStream(
+				slug: $slug,
+				dark: false,
+				mayServe: fn (array $application): bool => $this->caller->seesApplication(application: $application)
+			);
 			$png = $this->pngOf(stream: $stream, mimeType: (string)$mimeType);
 		} catch (\Throwable $e) {
 			$this->logger->warning('IconController: no touch icon for slug "' . $slug . '": ' . $e->getMessage());
@@ -229,7 +242,9 @@ class IconController extends Controller {
 	/**
 	 * Shared icon-response builder.
 	 *
-	 * Calls IconService, sets required headers, streams the resource.
+	 * Calls IconService, sets required headers, streams the resource. Another
+	 * organisation's scoped app gets the built-in icon, as an unknown slug does
+	 * (operate-organisation-scoped-apps REQ-BQOS-002).
 	 * When the service returns a null stream (no icon at all), returns 404.
 	 * Session guard is enforced by the calling public method before this is
 	 * invoked, per ADR-005 / hydra gate-7 (design.md Decision 6).
@@ -252,7 +267,8 @@ class IconController extends Controller {
 		try {
 			['stream' => $stream, 'mimeType' => $mimeType] = $this->iconService->getIconStream(
 				slug: $slug,
-				dark: $dark
+				dark: $dark,
+				mayServe: fn (array $application): bool => $this->caller->seesApplication(application: $application)
 			);
 		} catch (\Throwable $e) {
 			$this->logger->error(
