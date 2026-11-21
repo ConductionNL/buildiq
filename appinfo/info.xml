@@ -22,7 +22,7 @@ Vrij en open source onder de EUPL-1.2-licentie.
 
 **Ondersteuning:** Voor ondersteuning, neem contact op via support@conduction.nl.
     ]]></description>
-    <version>0.7.20-unstable.20261121133618</version>
+    <version>0.7.21-unstable.20261121172745</version>
     <!-- @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-007, #REQ-PLAT-009 -->
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
