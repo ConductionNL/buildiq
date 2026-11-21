@@ -108,6 +108,25 @@ describe('ConnectorDataView', () => {
 		expect(wrapper.find('table').exists()).toBe(true)
 	})
 
+	it('offers a retry beside the stale notice that asks the resolver again', async () => {
+		resolver.data.value = [{ name: 'Acme', kvk: '123' }]
+		resolver.isStale.value = true
+		const wrapper = mountView()
+
+		const retry = wrapper.find('.connector-data-view__stale-bar .retry')
+		expect(retry.exists()).toBe(true)
+		expect(retry.text()).toBe('Retry')
+		await retry.trigger('click')
+		expect(resolver.retry).toHaveBeenCalledTimes(1)
+	})
+
+	it('offers no retry on a fresh result', () => {
+		resolver.data.value = [{ name: 'Acme', kvk: '123' }]
+		const wrapper = mountView()
+
+		expect(wrapper.find('.retry').exists()).toBe(false)
+	})
+
 	it('follows the resolver as its state changes', async () => {
 		resolver.loading.value = true
 		const wrapper = mountView()

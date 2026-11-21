@@ -87,8 +87,8 @@ Acceptance criteria:
 Acceptance criteria:
 - Gate-16 spec-coverage passes on the diff.
 
-- [ ] 5.2 Reference the new scenarios from the e2e specs so gate-19 e2e-coverage resolves every added scenario.
-  > Partly done 21 Nov: the REQ-CWR-004, REQ-CWR-002 object-table and REQ-OCAS-006 error and published-route scenarios are referenced from `tests/e2e/connector-widget-runtime.spec.ts`; REQ-CWR-001 and REQ-CWR-003 carry a reason-bearing `@e2e exclude`. Open: the REQ-CWR-002 "Both bindings on one widget are rejected" scenario has no test in buildiq (nextcloud-vue's `validateManifestV2()` enforces it), and the REQ-OCAS-006 index, cache-hit and stale-on-error scenarios are asserted only in Vitest.
+- [x] 5.2 Reference the new scenarios from the e2e specs so gate-19 e2e-coverage resolves every added scenario.
+  > Done 21 Nov: the tags in `tests/e2e/connector-widget-runtime.spec.ts` were in a path form gate-19 reads as prose; they are now `@e2e <spec>::<scenario>` anchors, in the header and in the test that proves each one. Two tests were added there: three `connector-data` widgets on one endpoint and query make one request (cache hit), and a failed refresh past the TTL shows the cached rows with the notice and a Retry (stale on error). The stale notice had no Retry, which the scenario asks for: `ConnectorDataView` now offers one beside it (Vitest `tests/components/runtime/ConnectorDataView.spec.js`). The index-page scenario is anchored on the REQ-BQCB-001 test in `tests/e2e/connector-bound-pages.spec.ts`. "Documented matrix" and "Both bindings on one widget are rejected" carry a reason-bearing `@e2e exclude` and are asserted in Vitest (`endpointBindingMatrix.spec.js`, new `endpointBindingExclusive.spec.js`). Gate-19 lists none of this change's scenarios as missing. The e2e specs are written, not run here (no live instance).
 
 Acceptance criteria:
 - Scenarios not covered by a test carry a reason-bearing `@e2e exclude`.

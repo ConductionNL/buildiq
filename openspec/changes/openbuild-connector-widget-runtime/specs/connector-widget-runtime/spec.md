@@ -35,6 +35,8 @@ Buildiq SHALL treat the following as the closed, normative set of ways a widget 
 
 #### Scenario: Documented matrix matches the canonical manifest schema
 
+@e2e exclude a schema rule with no runtime surface: the matrix is checked against the vendored v2 schema in Vitest `tests/services/endpointBindingMatrix.spec.js`
+
 - **GIVEN** `@conduction/nextcloud-vue/src/schemas/app-manifest-v2.schema.json`
 - **WHEN** the endpoint-capable widget keys named in this requirement are checked against it
 - **THEN** each of `object-table`, `chart`, `stat`, `delta` and `workspace-filter` accepts an `endpointSource` at the stated location
@@ -48,6 +50,8 @@ Buildiq SHALL treat the following as the closed, normative set of ways a widget 
 - **AND** no `Unknown widgetKey` warning is emitted
 
 #### Scenario: Both bindings on one widget are rejected
+
+@e2e exclude a manifest validation rule with no runtime surface: the canonical validator's refusal, naming the widget, is asserted in Vitest `tests/services/endpointBindingExclusive.spec.js`
 
 - **GIVEN** a widget declaring an OpenRegister source and an `endpointSource` at the same time
 - **WHEN** manifest validation runs

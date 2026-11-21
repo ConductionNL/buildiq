@@ -18,7 +18,14 @@
  *     widget must show its error state with Retry (4.2);
  *   - widget `cwr-table`: a library `object-table` whose
  *     `content.endpointSource` reads `pw-cwr-table` and plucks its rows at
- *     `responsePath` (4.4, the `props.endpointSource` half of the matrix).
+ *     `responsePath` (4.4, the `props.endpointSource` half of the matrix);
+ *   - widgets `cwr-shared-a` and `cwr-shared-b`: two more `connector-data`
+ *     widgets on the same endpoint and query as `cwr-connector`, so three
+ *     widgets share one cache entry and one request (REQ-OCAS-006).
+ *
+ * A second, empty dashboard page `cwr-other` lets a test leave the page and
+ * come back inside the app, which remounts the widgets while the module cache
+ * stays, for the stale-on-error case.
  *
  * The endpoints are answered by the browser with `page.route`, on both fleet
  * app ids (`integriq` and `openconnector`), so no connector install, source or
@@ -37,12 +44,14 @@
  * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-004-published-path-proof-obligation
  * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-002-normative-endpoint-binding-matrix-for-the-published-path
  * @spec openspec/changes/openbuild-connector-widget-runtime/specs/openconnector-api-sources/spec.md#requirement-req-ocas-006-runtime-fetch-path-with-caching
- * @e2e connector-widget-runtime/requirement-req-cwr-004-published-path-proof-obligation/connector-data-resolves-on-the-published-route
- * @e2e connector-widget-runtime/requirement-req-cwr-004-published-path-proof-obligation/an-unresolved-widget-key-fails-the-test
- * @e2e connector-widget-runtime/requirement-req-cwr-004-published-path-proof-obligation/fixture-carries-no-credential
- * @e2e connector-widget-runtime/requirement-req-cwr-002-normative-endpoint-binding-matrix-for-the-published-path/an-endpoint-bound-object-table-renders-on-the-published-path
- * @e2e openconnector-api-sources/requirement-req-ocas-006-runtime-fetch-path-with-caching/error-state-without-cache
- * @e2e openconnector-api-sources/requirement-req-ocas-006-runtime-fetch-path-with-caching/the-binding-is-exercised-on-the-published-route-not-only-in-preview
+ * @e2e connector-widget-runtime::connector-data-resolves-on-the-published-route
+ * @e2e connector-widget-runtime::an-unresolved-widget-key-fails-the-test
+ * @e2e connector-widget-runtime::fixture-carries-no-credential
+ * @e2e connector-widget-runtime::an-endpoint-bound-object-table-renders-on-the-published-path
+ * @e2e openconnector-api-sources::error-state-without-cache
+ * @e2e openconnector-api-sources::the-binding-is-exercised-on-the-published-route-not-only-in-preview
+ * @e2e openconnector-api-sources::cache-hit-suppresses-duplicate-calls
+ * @e2e openconnector-api-sources::stale-on-error-fallback
  */
 
 import type { Page } from '@playwright/test'
@@ -56,6 +65,7 @@ const ADMIN_STORAGE_STATE = 'tests/e2e/.auth/admin.json'
 const APP_SLUG = 'pw-cwr-fixture'
 const MANIFEST = `/index.php/apps/buildiq/api/applications/${APP_SLUG}/manifest`
 const PAGE_ID = 'cwr-dashboard'
+const OTHER_PAGE_ID = 'cwr-other'
 
 /** Keys a connector binding must never carry (REQ-CWR-004). */
 const CREDENTIAL_KEYS = ['headers', 'token', 'apiKey', 'authorization']
@@ -69,6 +79,8 @@ const CONNECTOR = {
 	],
 }
 const DOWN = { widgetId: 'cwr-down', endpoint: 'pw-cwr-down' }
+/** Widgets bound to the same endpoint and query as CONNECTOR (one cache entry). */
+const SHARED = ['cwr-shared-a', 'cwr-shared-b']
 const TABLE = {
 	widgetId: 'cwr-table',
 	endpoint: 'pw-cwr-table',
@@ -105,6 +117,7 @@ function fixturePage() {
 	const widgets = [
 		{ id: CONNECTOR.widgetId, title: 'Connector rows', type: 'connector-data', content: { dataSource: connectorSource(CONNECTOR.endpoint) } },
 		{ id: DOWN.widgetId, title: 'Connector down', type: 'connector-data', content: { dataSource: connectorSource(DOWN.endpoint) } },
+		...SHARED.map((id) => ({ id, title: `Connector rows (${id})`, type: 'connector-data', content: { dataSource: connectorSource(CONNECTOR.endpoint) } })),
 		{
 			id: TABLE.widgetId,
 			title: 'Endpoint table',
@@ -124,6 +137,21 @@ function fixturePage() {
 			widgets,
 			layout: widgets.map((w, i) => ({ id: w.id, widgetId: w.id, gridX: 0, gridY: i * 4, gridWidth: 12, gridHeight: 4 })),
 		},
+	}
+}
+
+/**
+ * An empty second page, so a test can leave the fixture page and come back.
+ *
+ * @return The manifest page.
+ */
+function otherPage() {
+	return {
+		id: OTHER_PAGE_ID,
+		type: 'dashboard',
+		route: `/${OTHER_PAGE_ID}`,
+		title: 'Widget runtime other',
+		config: { widgets: [], layout: [] },
 	}
 }
 
@@ -169,11 +197,13 @@ async function seedPage(page: Page): Promise<void> {
 	const read = await call(page, 'GET', MANIFEST)
 	expect(read.status, 'GET manifest').toBe(200)
 	const manifest = read.data
-	const pages = (manifest.pages || []).filter((p: { id: string }) => p.id !== PAGE_ID)
-	pages.push(fixturePage())
+	const ours = [PAGE_ID, OTHER_PAGE_ID]
+	const pages = (manifest.pages || []).filter((p: { id: string }) => !ours.includes(p.id))
+	pages.push(fixturePage(), otherPage())
 	const menu = [
-		...(manifest.menu || []).filter((m: { id: string }) => m.id !== PAGE_ID),
+		...(manifest.menu || []).filter((m: { id: string }) => !ours.includes(m.id)),
 		{ id: PAGE_ID, label: 'Widget runtime', route: PAGE_ID },
+		{ id: OTHER_PAGE_ID, label: 'Widget runtime other', route: OTHER_PAGE_ID },
 	]
 	const write = await call(page, 'PUT', MANIFEST, { manifest: { ...manifest, description: 'Playwright fixture (openbuild-connector-widget-runtime)', pages, menu } })
 	expect(write.status, `seed page: ${JSON.stringify(write.data).slice(0, 200)}`).toBeLessThan(300)
@@ -283,13 +313,14 @@ test.describe('openbuild-connector-widget-runtime: registry widgets render on th
 	})
 
 	test('REQ-CWR-004: the stored connector bindings carry no credential-bearing key', async ({ page }) => {
+		// @e2e connector-widget-runtime::fixture-carries-no-credential
 		await page.goto(`${BASE_URL}/index.php/apps/buildiq/`, { waitUntil: 'domcontentloaded' })
 		const read = await call(page, 'GET', MANIFEST)
 		expect(read.status).toBe(200)
 		const stored = (read.data.pages || []).find((p: { id: string }) => p.id === PAGE_ID)
 		expect(stored, 'the fixture page is stored').toBeTruthy()
 		const connectors = (stored.config.widgets || []).filter((w: { type: string }) => w.type === 'connector-data')
-		expect(connectors).toHaveLength(2)
+		expect(connectors).toHaveLength(2 + SHARED.length)
 		for (const widget of connectors) {
 			const binding = widget.content.dataSource.connector
 			for (const key of CREDENTIAL_KEYS) {
@@ -299,6 +330,9 @@ test.describe('openbuild-connector-widget-runtime: registry widgets render on th
 	})
 
 	test('REQ-CWR-004: a connector-data widget renders its projected table on /apps/buildiq/builder/{slug}', async ({ page }) => {
+		// @e2e connector-widget-runtime::connector-data-resolves-on-the-published-route
+		// @e2e connector-widget-runtime::an-unresolved-widget-key-fails-the-test
+		// @e2e openconnector-api-sources::the-binding-is-exercised-on-the-published-route-not-only-in-preview
 		const unresolved = watchUnresolvedKeys(page)
 		const { connector } = await openPublished(page)
 
@@ -317,6 +351,7 @@ test.describe('openbuild-connector-widget-runtime: registry widgets render on th
 	})
 
 	test('REQ-OCAS-006: a connector-data widget whose endpoint fails shows the error with Retry', async ({ page }) => {
+		// @e2e openconnector-api-sources::error-state-without-cache
 		const unresolved = watchUnresolvedKeys(page)
 		const errors = watchPageErrors(page)
 		const { down } = await openPublished(page)
@@ -334,6 +369,7 @@ test.describe('openbuild-connector-widget-runtime: registry widgets render on th
 	})
 
 	test('REQ-CWR-002: an endpoint-bound object-table renders the rows at responsePath', async ({ page }) => {
+		// @e2e connector-widget-runtime::an-endpoint-bound-object-table-renders-on-the-published-path
 		const unresolved = watchUnresolvedKeys(page)
 		const { table } = await openPublished(page)
 
@@ -346,5 +382,53 @@ test.describe('openbuild-connector-widget-runtime: registry widgets render on th
 		expect(table.hits, 'the table read its endpoint, not OpenRegister').toBeGreaterThan(0)
 
 		expect(unresolved, 'no unresolved widgetKey warning is logged').toEqual([])
+	})
+
+	test('REQ-OCAS-006: three widgets on one endpoint and query share one request', async ({ page }) => {
+		// @e2e openconnector-api-sources::cache-hit-suppresses-duplicate-calls
+		const unresolved = watchUnresolvedKeys(page)
+		const { connector } = await openPublished(page)
+
+		const sharing = page.locator('.connector-data-view').filter({ hasText: 'PW-002' })
+		await expect(sharing, 'all three widgets render the shared rows').toHaveCount(1 + SHARED.length, { timeout: 45_000 })
+		for (let i = 0; i < 1 + SHARED.length; i++) {
+			await expect(sharing.nth(i).locator('tbody tr')).toHaveCount(CONNECTOR.items.length)
+		}
+		expect(connector.hits, 'one request serves every widget within the TTL').toBe(1)
+
+		expect(unresolved, 'no unresolved widgetKey warning is logged').toEqual([])
+	})
+
+	test('REQ-OCAS-006: a failed refresh after the TTL shows the cached rows with a notice', async ({ page }) => {
+		// @e2e openconnector-api-sources::stale-on-error-fallback
+		const errors = watchPageErrors(page)
+		await page.clock.install()
+		await openPublished(page)
+
+		const first = page.locator('.connector-data-view').filter({ hasText: 'PW-002' }).first()
+		await expect(first, 'the rows load fresh first').toBeVisible({ timeout: 45_000 })
+		await expect(first.locator('.connector-data-view__stale')).toHaveCount(0)
+
+		// The upstream API now fails; a route registered later answers first.
+		const failing = await fixtureEndpoint(page, CONNECTOR.endpoint, 502)
+		// 90 s later: past the 60 s TTL, within 10x the TTL.
+		await page.clock.fastForward(90_000)
+
+		// Leave the page and come back inside the app: the widgets remount,
+		// the module cache stays.
+		await page.getByRole('link', { name: 'Widget runtime other', exact: true }).first().click()
+		await expect(page.locator('.connector-data-view')).toHaveCount(0)
+		await page.getByRole('link', { name: 'Widget runtime', exact: true }).first().click()
+
+		const stale = page.locator('.connector-data-view').filter({ hasText: 'PW-002' }).first()
+		await expect(stale.locator('.connector-data-view__stale'), 'the cached rows carry the notice').toBeVisible({ timeout: 45_000 })
+		await expect(stale.locator('tbody tr')).toHaveCount(CONNECTOR.items.length)
+		expect(failing.hits, 'the refresh was tried and failed').toBeGreaterThan(0)
+
+		const before = failing.hits
+		await stale.getByRole('button', { name: 'Retry' }).click()
+		await expect.poll(() => failing.hits, { message: 'Retry beside the notice asks the endpoint again' }).toBeGreaterThan(before)
+
+		expect(errors, 'no uncaught error or rejection reaches the page').toEqual([])
 	})
 })
