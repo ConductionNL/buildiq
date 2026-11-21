@@ -65,6 +65,9 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 		// A base app named by a version's baseRef is read only when the manifest
 		// resolver's guard closure admits the caller (app-delta-override 3.1).
 		'lib/Service/ManifestBaseResolver.php' => '$visible($application)',
+		// The designer's base endpoint: the app comes from the manifest resolver's
+		// organisation-scoped lookup, and a base app is read only when it is visible.
+		'lib/Service/EditorBaseService.php' => 'seesApplication(',
 	];
 
 	/**
