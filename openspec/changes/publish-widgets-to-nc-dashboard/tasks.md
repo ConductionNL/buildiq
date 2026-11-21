@@ -140,6 +140,8 @@ Acceptance criteria:
 
 > Deferred: the spec starts by promoting a widget in the designer, which needs task 8.1, which needs the published `ncDashboard` schema and the v2 placement editor.
 
+> Written 21 Nov (8.1 is built): `tests/e2e/nc-dashboard-widgets.spec.ts` promotes a placement in the designer (id and `ncDashboard` stored), demotes it and promotes it again (same id), publishes two fixture apps, finds both panels once each in the Nextcloud widget picker, adds one and asserts its title and content in a dashboard `.panel`, and asserts that `rbac-viewer`, a viewer outside the placement's roles, is not offered it and sees nothing with its id stored in their layout. It carries the five `@e2e` annotations listed below. Left: running it against the live instance.
+
 Acceptance criteria:
 - The spec carries `@e2e` annotations for `nc-dashboard-widgets::every-promoted-widget-becomes-a-selectable-dashboard-widget`, `nc-dashboard-widgets::a-user-outside-every-listed-role-is-not-offered-the-widget`, `nc-dashboard-widgets::a-promoted-widget-renders-with-the-native-panel-chrome`, `openbuild-page-designer::promoting-a-widget-assigns-it-a-stable-id` and `openbuild-page-designer::demoting-a-widget-keeps-its-identity`, so hydra gate 19 passes on the changed scenarios.
 - A second user outside every listed role is asserted not to be offered the widget.
