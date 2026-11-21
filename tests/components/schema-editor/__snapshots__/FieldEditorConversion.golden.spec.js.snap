@@ -49,10 +49,12 @@ exports[`FieldEditor conversions golden > fieldsToSchema over hand-written rows,
    "title": "kept",
    "type": "string",
    "x-openregister-relation": {
+    "label": "kept",
     "target": "t",
     "cardinality": "one",
     "inverseOf": "back"
-   }
+   },
+   "$ref": "t"
   },
   "r7": {
    "title": "kept",
@@ -145,10 +147,12 @@ exports[`FieldEditor conversions golden > fieldsToSchema over hand-written rows,
    "title": "kept",
    "type": "string",
    "x-openregister-relation": {
+    "label": "kept",
     "target": "t",
     "cardinality": "one",
     "inverseOf": "back"
-   }
+   },
+   "$ref": "t"
   },
   "r7": {
    "title": "kept",
@@ -241,10 +245,12 @@ exports[`FieldEditor conversions golden > fieldsToSchema over hand-written rows,
    "title": "kept",
    "type": "string",
    "x-openregister-relation": {
+    "label": "kept",
     "target": "t",
     "cardinality": "one",
     "inverseOf": "back"
-   }
+   },
+   "$ref": "t"
   },
   "r7": {
    "title": "kept",
@@ -349,10 +355,12 @@ exports[`FieldEditor conversions golden > fieldsToSchema over hand-written rows,
    "title": "kept",
    "type": "string",
    "x-openregister-relation": {
+    "label": "kept",
     "target": "t",
     "cardinality": "one",
     "inverseOf": "back"
-   }
+   },
+   "$ref": "t"
   },
   "r7": {
    "title": "kept",
@@ -881,12 +889,14 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
    "type": "array",
    "x-openregister-relation": {
     "extra": true,
+    "label": "p_relation",
     "target": "person",
     "cardinality": "many",
     "inverseOf": "cases"
    },
    "items": {
-    "type": "string"
+    "type": "string",
+    "$ref": "person"
    }
   },
   "p_unknown": {
@@ -933,6 +943,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
   "relationEmpty": {
    "type": "string",
    "x-openregister-relation": {
+    "label": "relationEmpty",
     "target": "",
     "cardinality": "one"
    }
@@ -1323,12 +1334,14 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 2
    "type": "array",
    "x-openregister-relation": {
     "extra": true,
+    "label": "p_relation",
     "target": "person",
     "cardinality": "many",
     "inverseOf": "cases"
    },
    "items": {
-    "type": "string"
+    "type": "string",
+    "$ref": "person"
    }
   },
   "p_unknown": {
@@ -1373,6 +1386,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 2
   "relationEmpty": {
    "type": "string",
    "x-openregister-relation": {
+    "label": "relationEmpty",
     "target": "",
     "cardinality": "one"
    }
@@ -1862,12 +1876,14 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 2
    "type": "array",
    "x-openregister-relation": {
     "extra": true,
+    "label": "p_relation",
     "target": "person",
     "cardinality": "many",
     "inverseOf": "cases"
    },
    "items": {
-    "type": "string"
+    "type": "string",
+    "$ref": "person"
    }
   },
   "p_unknown": {
@@ -1912,6 +1928,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 2
   "relationEmpty": {
    "type": "string",
    "x-openregister-relation": {
+    "label": "relationEmpty",
     "target": "",
     "cardinality": "one"
    }
@@ -2431,12 +2448,14 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 2`
    "type": "array",
    "x-openregister-relation": {
     "extra": true,
+    "label": "p_relation",
     "target": "person",
     "cardinality": "many",
     "inverseOf": "cases"
    },
    "items": {
-    "type": "string"
+    "type": "string",
+    "$ref": "person"
    }
   },
   "p_unknown": {
@@ -2485,6 +2504,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 2`
   "relationEmpty": {
    "type": "string",
    "x-openregister-relation": {
+    "label": "relationEmpty",
     "target": "",
     "cardinality": "one"
    }
