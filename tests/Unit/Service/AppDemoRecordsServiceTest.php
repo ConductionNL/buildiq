@@ -143,7 +143,9 @@ final class AppDemoRecordsServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testFillingMakesRecordsAndListsThemOnTheApp(): void {
-		$result = $this->service()->fill(applicationUuid: self::APP, application: ['slug' => 'meldingen', 'productionVersion' => ['register' => 'meldingen']]);
+		$application = ['slug' => 'meldingen', 'productionVersion' => ['register' => 'meldingen']];
+
+		$result = $this->service()->fill(applicationUuid: self::APP, application: $application);
 
 		$this->assertSame(expected: ['created' => 3, 'skipped' => ['case'], 'failed' => 0, 'total' => 3], actual: $result);
 		$this->assertSame(expected: ['report', 'report', 'report', 'built-app'], actual: array_column($this->saved, 1));

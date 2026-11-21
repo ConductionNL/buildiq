@@ -47,17 +47,24 @@ use Throwable;
 class AppDemoRecordsController extends Controller {
 
 	/**
+	 * The roles that may change an app's data, and so its demo records.
+	 *
+	 * @var list<string>
+	 */
+	private const MAKER_ROLES = ['owners', 'editors'];
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IRequest               $request       The request.
-	 * @param AppDemoRecordsService $demoRecords Loads the app, creates and removes the records.
-	 * @param CallerContext         $caller      The caller's session, the role matcher and the organisation guard.
-	 * @param LoggerInterface       $logger      Records a failed fill or removal.
+	 * @param IRequest              $request     The request.
+	 * @param CallerContext         $caller      Who is asking: the session, the role matcher and the organisation guard.
+	 * @param AppDemoRecordsService $demoRecords Reads the app, then makes or deletes its demo records.
+	 * @param LoggerInterface       $logger      Records a fill or removal that failed.
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly AppDemoRecordsService $demoRecords,
 		private readonly CallerContext $caller,
+		private readonly AppDemoRecordsService $demoRecords,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
@@ -145,19 +152,19 @@ class AppDemoRecordsController extends Controller {
 			$permissions = [];
 		}
 
-		$resolver = $this->caller->permissionResolver;
-		$allowed = $resolver->matchesCaller(
+		$groups = $this->caller->permissionResolver->resolveUserGroups($user);
+		$isMaker = $this->caller->permissionResolver->matchesCaller(
 			permissions: $permissions,
 			caller: $user,
-			userGroups: $resolver->resolveUserGroups($user),
+			userGroups: $groups,
 			allowAdminBypass: true,
-			roles: ['owners', 'editors']
+			roles: self::MAKER_ROLES
 		);
-		if ($allowed === false) {
-			return new JSONResponse(data: ['error' => 'forbidden', 'code' => 'buildiq.rbac.no_role'], statusCode: Http::STATUS_FORBIDDEN);
+		if ($isMaker === true) {
+			return $application;
 		}
 
-		return $application;
+		return new JSONResponse(data: ['error' => 'forbidden', 'code' => 'buildiq.rbac.no_role'], statusCode: Http::STATUS_FORBIDDEN);
 	}//end admitted()
 
 	/**
