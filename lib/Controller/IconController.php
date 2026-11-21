@@ -113,6 +113,9 @@ class IconController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
+	 * @no-admin-idor-exempt The caller-supplied slug only picks an icon: the service gets the caller's
+	 *                        organisation check (`seesApplication`) and answers an app the caller may not
+	 *                        see with the built-in icon, as it answers an unknown slug (REQ-BQOS-002).
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -140,6 +143,9 @@ class IconController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
+	 * @no-admin-idor-exempt The caller-supplied slug only picks an icon: the service gets the caller's
+	 *                        organisation check (`seesApplication`) and answers an app the caller may not
+	 *                        see with the built-in icon, as it answers an unknown slug (REQ-BQOS-002).
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -164,6 +170,9 @@ class IconController extends Controller {
 	 * @return Response
 	 *
 	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+	 * @no-admin-idor-exempt The caller-supplied slug only picks an icon: the service gets the caller's
+	 *                        organisation check (`seesApplication`) and answers an app the caller may not
+	 *                        see with the built-in icon, as it answers an unknown slug (REQ-BQOS-002).
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
