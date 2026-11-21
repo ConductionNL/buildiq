@@ -1,0 +1,27 @@
+{
+	"_comment": "OpenSpec register fragment — logic-shared-flows-and-automations task T05 (REQ-BQSF-004). Adds the `run-automation` action kind and its one key, declared BEFORE anything writes them. The merge concatenates the `type` enum list with this one entry and adds the `automation` property to the action items. A run-automation step names a shared automation, or one of the same app, by uuid; the compiler runs that automation's compiled flow as an `openregister.sub-flow` step that waits for its result (design.md D4).",
+	"components": {
+		"schemas": {
+			"Automation": {
+				"properties": {
+					"actions": {
+						"items": {
+							"properties": {
+								"type": {
+									"enum": [
+										"run-automation"
+									]
+								},
+								"automation": {
+									"title": "Automation",
+									"type": "string",
+									"description": "run-automation (logic-shared-flows-and-automations): the uuid of the automation this step runs, a shared automation or one of the same app. Its compiled flow runs as a step and the later steps see its output items. An automation cannot run itself."
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

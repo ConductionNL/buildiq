@@ -86,8 +86,23 @@ A shared automation runs on data other apps hand it, so it may not write
 records of its own app. Sharing one with a step that creates or updates a
 record is refused, and the refusal names that step.
 
-Listing shared automations in other apps' flow picker, and the "Run another
-automation" step, follow once automations compile to flows.
+Other apps find a shared automation in their flow picker (App settings,
+Flows), under **Shared automations**, named with the app it comes from, for
+example "Stuur bevestiging (permits)". Only an automation that has been
+compiled is listed there, because the picker binds its flow. Bind it like any
+other flow and give it a "Run on" entry.
+
+### Running another automation as a step
+
+The step **Run another automation** names one automation of the same app, or a
+shared automation of another app. It runs that automation's flow and waits for
+it, so the steps after it see what it returned: a shared "Controleer adres"
+that sets `adresGeldig`, followed by a record step that reads `adresGeldig`.
+
+Saving is refused when the step names no automation, names the automation
+itself, names another app's automation that is not shared, or names one that
+has not been compiled yet. OpenRegister also stops a longer loop of
+automations calling each other when it runs.
 
 ## Triggering from the UI
 

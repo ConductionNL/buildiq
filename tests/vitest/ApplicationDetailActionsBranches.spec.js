@@ -191,9 +191,47 @@ describe('onSettingsOpen', () => {
 		const wrapper = mountActions()
 		axiosMock.get.mockResolvedValueOnce({ data })
 		await wrapper.vm.onSettingsOpen(true)
-		expect(axiosMock.get).toHaveBeenLastCalledWith('/apps/openregister/api/flows')
+		expect(axiosMock.get).toHaveBeenCalledWith('/apps/openregister/api/flows')
 		expect(wrapper.vm.availableFlows).toEqual([{ label: 'One', value: 'f1' }])
 		expect(wrapper.vm.loadingFlows).toBe(false)
+	})
+
+	// Logic-shared-flows-and-automations REQ-BQSF-003: the compiled flows of
+	// other apps' shared automations are listed under "Shared automations".
+	it('lists the shared automations of other apps after the flows, under a heading', async () => {
+		const wrapper = mountActions()
+		axiosMock.get.mockImplementation((url) => {
+			if (url === '/apps/openregister/api/flows') {
+				return Promise.resolve({ data: [{ uuid: 'f1', name: 'One' }, { uuid: 'flow-s', name: 'aut-stuur' }] })
+			}
+			if (url === '/apps/openregister/api/objects/buildiq/automation') {
+				return Promise.resolve({
+					data: {
+						results: [
+							{ id: 'a1', name: 'Stuur bevestiging', applicationSlug: 'permits', shared: true, provenance: { flowUuid: 'flow-s' } },
+							{ id: 'a2', name: 'Not shared', applicationSlug: 'permits', shared: false, provenance: { flowUuid: 'flow-x' } },
+						],
+					},
+				})
+			}
+			return Promise.resolve({ data: {} })
+		})
+		await wrapper.vm.onSettingsOpen(true)
+		expect(wrapper.vm.availableFlows).toEqual([
+			{ label: 'One', value: 'f1' },
+			{ label: 'Shared automations', value: '', heading: true },
+			{ label: 'Stuur bevestiging (permits)', value: 'flow-s', shared: true },
+		])
+	})
+
+	it('still loads the flows when the automations cannot be read', async () => {
+		const wrapper = mountActions()
+		axiosMock.get.mockImplementation((url) => (url === '/apps/openregister/api/flows'
+			? Promise.resolve({ data: [{ uuid: 'f1', name: 'One' }] })
+			: Promise.reject(new Error('forbidden'))))
+		await wrapper.vm.onSettingsOpen(true)
+		expect(wrapper.vm.availableFlows).toEqual([{ label: 'One', value: 'f1' }])
+		expect(wrapper.vm.error).toBe('')
 	})
 
 	it('labels by uuid, takes the @self id and drops flows without one', async () => {

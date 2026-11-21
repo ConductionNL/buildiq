@@ -110,6 +110,11 @@ const BUILDERS = Object.freeze({
 		output: listOrEmpty(action.output),
 	}),
 	'ai-step': toPersistedAiStep,
+	// logic-shared-flows-and-automations D4: the step names the automation it runs.
+	'run-automation': (action) => ({
+		type: 'run-automation',
+		automation: String(action.automation || '').trim(),
+	}),
 	'rule-decision': (action) => withOptionalObject(
 		{
 			type: 'rule-decision',

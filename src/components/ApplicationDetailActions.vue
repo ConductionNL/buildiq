@@ -148,6 +148,7 @@ import { buildVersionedRoute } from '../router/helpers.js'
 import { appI18n, withLanguages } from '../services/appLanguages.js'
 import { fetchProductionRegister } from '../services/appRegister.js'
 import { withOffline } from '../services/offlineManifest.js'
+import { fetchAutomations, sharedFlowOptions, withSharedGroup } from '../services/sharedAutomations.js'
 
 // Vue 3 requires `defineAsyncComponent()` around a lazy import. The bare
 // `() => import(…)` form is Vue 2 syntax: Vue 3 accepts a plain function as a
@@ -1226,6 +1227,7 @@ export default {
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/application-detail-ui/spec.md
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
 		 */
 		async onSettingsOpen(open) {
 			this.settingsOpen = open
@@ -1238,11 +1240,18 @@ export default {
 
 			this.loadingFlows = true
 			try {
-				const [flows, schemas] = await Promise.all([
+				const [flows, schemas, automations] = await Promise.all([
 					this.fetchFlowOptions(),
 					this.loadTemplateSchemas().catch(() => []),
+					// Shared automations of other apps join the picker
+					// (REQ-BQSF-003); without them the flows still load.
+					fetchAutomations().catch(() => []),
 				])
-				this.availableFlows = flows
+				this.availableFlows = withSharedGroup(
+					flows,
+					sharedFlowOptions(automations, (this.obApp && this.obApp.slug) || ''),
+					t('buildiq', 'Shared automations'),
+				)
 				this.flowSchemas = schemaOptions(schemas)
 			} catch (e) {
 				this.error = `${t('buildiq', 'Failed to load flows')}: ${e.message || e}`

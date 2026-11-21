@@ -31,6 +31,7 @@ use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
 use OCA\Buildiq\Service\Automation\AutomationFlowBackend;
 use OCA\Buildiq\Service\Automation\AutomationFlowBuilder;
 use OCA\Buildiq\Service\Automation\AutomationRuleSets;
+use OCA\Buildiq\Service\Automation\AutomationSubFlowTargets;
 use OCA\Buildiq\Service\Automation\FlowNodeAvailability;
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -1819,4 +1820,114 @@ final class AutomationCompilerServiceTest extends TestCase {
 		$this->assertSame(expected: [], actual: $plan['lifecycleActions']);
 		$this->assertArrayNotHasKey(key: 'flow', array: $plan, message: 'No flow runs the on-approve step on the trigger.');
 	}//end testAnApprovalStepHoldsTheRunUntilADecision()
+	/**
+	 * A compiler whose container answers the sub-flow targets with the given automations.
+	 *
+	 * @param array<string, array<string, mixed>> $targets The automations by uuid.
+	 *
+	 * @return AutomationCompilerService
+	 */
+	private function compilerWithSubFlowTargets(array $targets): AutomationCompilerService {
+		$resolver = $this->createMock(AutomationSubFlowTargets::class);
+		$resolver->method('targets')->willReturnCallback(
+			static fn (array $uuids): array => array_intersect_key($targets, array_flip($uuids))
+		);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			fn (string $id): object => match ($id) {
+				AutomationSubFlowTargets::class => $resolver,
+				default => $this->objectService,
+			}
+		);
+
+		return new AutomationCompilerService(
+			$container,
+			$this->objectService,
+			$this->schemaMapper,
+			$this->appManager,
+			new NullLogger(),
+			$this->flowBackend,
+		);
+	}//end compilerWithSubFlowTargets()
+
+	/**
+	 * REQ-BQSF-004: a step that reuses a shared check compiles to a sub-flow
+	 * that waits, followed by the record step that reads its result.
+	 *
+	 * @return void
+	 */
+	public function testARunAutomationStepCompilesToAWaitingSubFlowBeforeTheRecordStep(): void {
+		$compiler = $this->compilerWithSubFlowTargets(
+			['check-uuid' => ['slug' => 'check-address', 'name' => 'Controleer adres', 'applicationSlug' => 'subsidies', 'shared' => true, 'provenance' => ['flowUuid' => 'flow-check']]]
+		);
+		$automation = [
+			'id' => 'own-uuid',
+			'slug' => 'intake',
+			'applicationSlug' => 'claims',
+			'versionUuid' => 'version-3',
+			'trigger' => ['type' => 'object-created', 'schema' => 'claim'],
+			'actions' => [
+				['type' => 'run-automation', 'automation' => 'check-uuid'],
+				['type' => 'object-op', 'operation' => 'create', 'schema' => 'flag', 'fieldMapping' => ['reason' => '{{adresGeldig}}']],
+			],
+		];
+
+		$plan = $compiler->compile($automation);
+
+		$this->assertSame(
+			['openregister.trigger-object', 'openregister.sub-flow', 'openregister.object-write'],
+			array_column($plan['flow']['nodes'], 'type')
+		);
+		$this->assertSame(['flowId' => 'flow-check', 'wait' => true], $plan['flow']['nodes'][1]['config']);
+		$this->assertSame(['step-1'], $plan['flow']['edges'][1]['from']);
+		$this->assertSame(['step-2'], $plan['flow']['edges'][1]['to']);
+	}//end testARunAutomationStepCompilesToAWaitingSubFlowBeforeTheRecordStep()
+
+	/**
+	 * REQ-BQSF-004: a direct self reference is refused at compile, and nothing is applied.
+	 *
+	 * @return void
+	 */
+	public function testARunAutomationStepNamingItselfIsRefused(): void {
+		$compiler = $this->compilerWithSubFlowTargets(
+			['own-uuid' => ['slug' => 'intake', 'name' => 'Intake', 'applicationSlug' => 'claims', 'shared' => false, 'provenance' => ['flowUuid' => 'flow-own']]]
+		);
+		$this->flowBackend->expects($this->never())->method('apply');
+
+		$this->expectException(UnsupportedAutomationCombinationException::class);
+		$this->expectExceptionMessage('An automation cannot run itself.');
+
+		$compiler->compile([
+			'id' => 'own-uuid',
+			'slug' => 'intake',
+			'applicationSlug' => 'claims',
+			'versionUuid' => 'version-3',
+			'trigger' => ['type' => 'manual'],
+			'actions' => [['type' => 'run-automation', 'automation' => 'own-uuid']],
+		]);
+	}//end testARunAutomationStepNamingItselfIsRefused()
+
+	/**
+	 * REQ-BQSF-003: another app's automation that is not shared is refused.
+	 *
+	 * @return void
+	 */
+	public function testARunAutomationStepNamingAnUnsharedAutomationOfAnotherAppIsRefused(): void {
+		$compiler = $this->compilerWithSubFlowTargets(
+			['other-uuid' => ['slug' => 'archive', 'name' => 'Archiveer', 'applicationSlug' => 'subsidies', 'shared' => false, 'provenance' => ['flowUuid' => 'flow-other']]]
+		);
+
+		$this->expectException(UnsupportedAutomationCombinationException::class);
+		$this->expectExceptionMessage('Only a shared automation of another app can be run from this one.');
+
+		$compiler->compile([
+			'id' => 'own-uuid',
+			'slug' => 'intake',
+			'applicationSlug' => 'claims',
+			'versionUuid' => 'version-3',
+			'trigger' => ['type' => 'manual'],
+			'actions' => [['type' => 'run-automation', 'automation' => 'other-uuid']],
+		]);
+	}//end testARunAutomationStepNamingAnUnsharedAutomationOfAnotherAppIsRefused()
 }//end class
+

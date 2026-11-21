@@ -5,6 +5,10 @@
 OC.L10N.register(
     "buildiq",
     {
+        "Run another automation": "Een andere automatisering uitvoeren",
+        "Automation to run": "Uit te voeren automatisering",
+        "Pick the automation this step runs.": "Kies de automatisering die deze stap uitvoert.",
+        "Shared automations": "Gedeelde automatiseringen",
         "Relation fields": "Relatievelden",
         "Users can filter on this field": "Gebruikers kunnen op dit veld filteren",
         "Export to CSV or Excel": "Exporteren naar CSV of Excel",

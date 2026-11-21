@@ -46,7 +46,7 @@ final class AutomationFlowBuilder {
 	 *
 	 * @var array<int, string>
 	 */
-	public const FLOW_ACTIONS = ['object-op', 'webhook', 'rule-decision', AiStepNodes::ACTION];
+	public const FLOW_ACTIONS = ['object-op', 'webhook', 'rule-decision', AiStepNodes::ACTION, RunAutomationNodes::ACTION];
 
 	/**
 	 * Action kinds that keep their own backend and cannot share a flow (D1).
@@ -121,6 +121,8 @@ final class AutomationFlowBuilder {
 	 *                                                      `ruleType`, `tableRef`, `outputs` (D7).
 	 * @param array<string, mixed>|null           $schemaProperties The trigger schema's properties, which an AI
 	 *                                                              classify step checks its labels against.
+	 * @param array<string, array<string, mixed>> $subFlowTargets   The automations the run-automation steps
+	 *                                                              name, by uuid (logic-shared-flows D4).
 	 *
 	 * @return array{name: string, nodes: list<array<string, mixed>>, edges: list<array<string, mixed>>}
 	 *
@@ -128,8 +130,16 @@ final class AutomationFlowBuilder {
 	 *
 	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
+	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
 	 */
-	public function build(CompileInput $input, string $register, array $schemas, array $ruleSets = [], ?array $schemaProperties = null): array {
+	public function build(
+		CompileInput $input,
+		string $register,
+		array $schemas,
+		array $ruleSets = [],
+		?array $schemaProperties = null,
+		array $subFlowTargets = []
+	): array {
 		$this->assertNoOwnBackend(input: $input);
 		$schema = (string)($input->trigger['schema'] ?? '');
 		$aiSteps = new AiStepNodes(register: $register, schema: $schema, properties: $schemaProperties);
@@ -139,8 +149,14 @@ final class AutomationFlowBuilder {
 		array_push($nodes, ...$this->conditionNodes(condition: $input->condition, ruleSets: $ruleSets));
 
 		$decisions = new RuleDecisionNodes(register: $register, schema: $schema, ruleSets: $ruleSets);
+		$subFlows = new RunAutomationNodes(automation: $input->automation, targets: $subFlowTargets);
 		foreach ($input->actions as $index => $action) {
 			$action = (array)$action;
+			if ((string)($action['type'] ?? '') === RunAutomationNodes::ACTION) {
+				$nodes[] = $subFlows->build(action: $action, index: (int)$index);
+				continue;
+			}
+
 			if ((string)($action['type'] ?? '') === 'rule-decision') {
 				array_push($nodes, ...$decisions->build(action: $action, index: (int)$index));
 				continue;

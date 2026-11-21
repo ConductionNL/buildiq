@@ -32,9 +32,11 @@ describe('automationMatrix — MATRIX cell-for-cell', () => {
 		]
 		// Ai-llm-steps-and-computed-fields: an AI step runs on created and on
 		// updated (watching its source fields), never on a deletion.
-		expect(MATRIX['object-created']).toEqual([...row, 'ai-step'])
-		expect(MATRIX['object-updated']).toEqual([...row, 'ai-step'])
-		expect(MATRIX['object-deleted']).toEqual(row)
+		// Logic-shared-flows-and-automations D4: "Run another automation" is a
+		// flow step, offered wherever a flow runs.
+		expect(MATRIX['object-created']).toEqual([...row, 'ai-step', 'run-automation'])
+		expect(MATRIX['object-updated']).toEqual([...row, 'ai-step', 'run-automation'])
+		expect(MATRIX['object-deleted']).toEqual([...row, 'run-automation'])
 	})
 
 	it('lifecycle-transition allows send-notification, object-op, webhook, approval, generateDocument', () => {
@@ -52,7 +54,7 @@ describe('automationMatrix — MATRIX cell-for-cell', () => {
 	})
 
 	it('manual allows send-notification, object-op, webhook, rule-decision, ai-step — NOT run-synchronization (documented deviation)', () => {
-		expect(MATRIX.manual).toEqual(['send-notification', 'object-op', 'webhook', 'rule-decision', 'ai-step'])
+		expect(MATRIX.manual).toEqual(['send-notification', 'object-op', 'webhook', 'rule-decision', 'ai-step', 'run-automation'])
 		expect(MATRIX.manual).not.toContain('run-synchronization')
 	})
 

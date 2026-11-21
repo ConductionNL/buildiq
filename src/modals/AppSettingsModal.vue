@@ -179,6 +179,7 @@
 					<NcSelect
 						:modelValue="selectedFlows"
 						:options="flowOptions"
+						:selectable="isPickable"
 						:multiple="true"
 						:disabled="busy || loadingFlows"
 						:loading="loadingFlows"
@@ -444,6 +445,7 @@ import {
 	withRunOn,
 	WRAPPER_PREFIX,
 } from '../utils/flowBindings.js'
+import { isPickable } from '../services/sharedAutomations.js'
 
 export default {
 	name: 'AppSettingsModal',
@@ -901,6 +903,9 @@ export default {
 		},
 
 		runOnWhen,
+
+		// The "Shared automations" heading is listed but cannot be picked (REQ-BQSF-003).
+		isPickable,
 
 		/**
 		 * A bound flow's `runOn` entries.
