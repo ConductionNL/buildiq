@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+ * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use Throwable;
 /**
  * Collects an app version's companion schemas for publication.
  *
- * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+ * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
  */
 class CompanionSchemaCollector implements CompanionSchemaCollectorInterface {
 	/**
@@ -77,7 +77,7 @@ class CompanionSchemaCollector implements CompanionSchemaCollectorInterface {
 	 *
 	 * @return array<string,array<string,mixed>> Schema blobs keyed by slug.
 	 *
-	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+	 * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
 	 */
 	public function collect(string $slug, string $versionRegister = ''): array {
 		$register = $this->findRegister(slug: $slug, versionRegister: $versionRegister);
@@ -130,7 +130,7 @@ class CompanionSchemaCollector implements CompanionSchemaCollectorInterface {
 	 *
 	 * @return object|null The register entity, or null when no candidate resolves.
 	 *
-	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+	 * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
 	 */
 	private function findRegister(string $slug, string $versionRegister): ?object {
 		$derived = '';

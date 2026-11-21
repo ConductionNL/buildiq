@@ -45,4 +45,5 @@
 
 ## 7. Gates
 
-- [ ] 7.1 Run the hydra mechanical gates green for the changed PHP: spdx-headers (SPDX in each new service's docblock), forbidden-patterns (no `var_dump`/`error_log`/etc.), stub-scan (no stubbed bodies), spec-coverage (`@spec` tags on the new serializer/parser public methods), notification-dialect (no legacy dialect introduced), composer-audit. No new routes/controllers, so route-auth / no-admin-idor / route-reachability are N/A for this change.
+- [x] 7.1 Run the hydra mechanical gates green for the changed PHP: spdx-headers (SPDX in each new service's docblock), forbidden-patterns (no `var_dump`/`error_log`/etc.), stub-scan (no stubbed bodies), spec-coverage (`@spec` tags on the new serializer/parser public methods), notification-dialect (no legacy dialect introduced), composer-audit. No new routes/controllers, so route-auth / no-admin-idor / route-reachability are N/A for this change.
+  > Run 21 Nov on development (`composer check:strict` with the hydra-gates package): spdx-headers, forbidden-patterns, stub-scan, composer-audit and notification-dialect pass. spec-coverage lists no method of `AppRepoSerializer`, `AppRepoParser` or the change's other files; its findings are in files this change does not touch.
