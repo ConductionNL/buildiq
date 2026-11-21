@@ -85,6 +85,14 @@
 				:actions="writeActions"
 				:readOnly="databaseReadOnly"
 				@set="setWriteAction" />
+			<label class="index-page-editor__inline">
+				<input
+					type="checkbox"
+					data-testid="index-page-allow-export"
+					:checked="config.allowExport === true"
+					@change="onExportToggle($event.target.checked)" />
+				{{ t('buildiq', 'Export to CSV or Excel') }}
+			</label>
 			<ActionBuilder
 				:modelValue="config.actions || []"
 				:pages="pages"
@@ -421,6 +429,19 @@ export default {
 				delete next.inlineSearch
 			}
 			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Offer the list's Export menu (CSV or Excel through OpenRegister's
+		 * export), or not. Off stores `allowExport: false`, so the maker's
+		 * choice survives a later change of the default.
+		 *
+		 * @param {boolean} enabled - the checkbox's new state.
+		 * @return {void}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-exports-its-records-to-csv-or-excel-req-bqcv-004
+		 */
+		onExportToggle(enabled) {
+			this.$emit('update:config', { ...this.config, allowExport: enabled === true })
 		},
 
 		/**

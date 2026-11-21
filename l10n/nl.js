@@ -5,6 +5,10 @@
 OC.L10N.register(
     "buildiq",
     {
+        "Relation fields": "Relatievelden",
+        "Users can filter on this field": "Gebruikers kunnen op dit veld filteren",
+        "Export to CSV or Excel": "Exporteren naar CSV of Excel",
+        "Add count": "Telling toevoegen",
         "Could not export the rule set.": "Kon de regelset niet exporteren.",
         "Import undone": "Import ongedaan gemaakt",
         "The import was undone. The records it created have been removed.": "De import is ongedaan gemaakt. De records die deze aanmaakte zijn verwijderd.",

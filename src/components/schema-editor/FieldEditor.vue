@@ -89,6 +89,15 @@
 						{{ t('buildiq', 'Required') }}
 					</NcCheckboxRadioSwitch>
 
+					<!-- REQ-BQCV-006: a facetable property is a filter on every list page of this schema. -->
+					<NcCheckboxRadioSwitch
+						:modelValue="field.facetable === true"
+						type="switch"
+						data-testid="schema-field-facetable"
+						@update:modelValue="updateField(index, 'facetable', $event)">
+						{{ t('buildiq', 'Users can filter on this field') }}
+					</NcCheckboxRadioSwitch>
+
 					<NcTextField
 						:modelValue="field.description || ''"
 						:label="t('buildiq', 'Description')"
@@ -1470,10 +1479,13 @@ const USER_KEYS = ['referenceType', 'format']
 const ITEM_KEYS = ['type', 'format', 'referenceType', 'enum', 'x-enum-labels', 'conceptScheme']
 
 /**
+ * The editor row for one loaded property.
  *
- * @param name
- * @param prop
- * @param isRequired
+ * @param {string} name The property name.
+ * @param {object} prop The loaded property.
+ * @param {boolean} isRequired Whether the schema lists it as required.
+ * @return {object} The row.
+ * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-shows-records-in-a-table-with-sorting-filtering-and-paging-req-bqcv-006
  */
 function fieldFromProperty(name, prop, isRequired) {
 	prop = prop || {}
@@ -1488,6 +1500,8 @@ function fieldFromProperty(name, prop, isRequired) {
 		validation: validationFromProperty(prop, type),
 		// REQ-OBSD-009: the automatic-number setting, only on a field that has one.
 		...generatedRow(prop),
+		// REQ-BQCV-006: the filter switch, only on a field that is a filter.
+		...facetableRow(prop),
 		// REQ-BQRF-001: the registry source, or null for a typed-in field. A
 		// declaration that is not an object is left undefined, so a save
 		// carries it through for OpenRegister to judge instead of dropping it.
@@ -1510,6 +1524,18 @@ function fieldFromProperty(name, prop, isRequired) {
 function generatedRow(prop) {
 	const generated = generatedFromProperty(prop)
 	return generated ? { generated } : {}
+}
+
+/**
+ * The filter part of a row: `{ facetable: true }` when the property is a
+ * facet, else nothing, so other rows keep their shape.
+ *
+ * @param {object} prop The loaded property.
+ * @return {object} The part.
+ * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-shows-records-in-a-table-with-sorting-filtering-and-paging-req-bqcv-006
+ */
+function facetableRow(prop) {
+	return prop.facetable === true ? { facetable: true } : {}
 }
 
 /**
@@ -1695,6 +1721,8 @@ const EDITOR_OWNED_KEYS = new Set([
 	'minItems',
 	'maxItems',
 	'x-openregister-relation',
+	// REQ-BQCV-006: written from the row's filter switch; off removes it.
+	'facetable',
 	GENERATED_KEY,
 	// REQ-BQRF-001: written from the row's source; "Typed in" removes it.
 	PROPERTY_SOURCE_KEY,
@@ -1782,6 +1810,8 @@ export function fieldsToSchema(fields, schemaSlug = '') {
  * @param {string} schemaSlug The schema's slug.
  * @return {object} The JSON Schema property.
  * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
+ * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-schema-designer/spec.md#requirement-a-maker-links-one-object-type-to-another-req-bqcv-003
+ * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-shows-records-in-a-table-with-sorting-filtering-and-paging-req-bqcv-006
  */
 function propertyFromField(field, schemaSlug = '') {
 	const raw = loadedProperty(field)
@@ -1797,7 +1827,10 @@ function propertyFromField(field, schemaSlug = '') {
 		}
 	}
 	if (field.type === 'relation') {
-		prop['x-openregister-relation'] = relationFromField(raw, v)
+		writeRelation(prop, raw, v)
+	}
+	if (field.facetable === true) {
+		prop.facetable = true
 	}
 	const generated = generatedFromField(field, raw, schemaSlug)
 	if (generated) {
@@ -1968,6 +2001,27 @@ function baseProperty(field, raw) {
 		prop.default = field.default
 	}
 	return prop
+}
+
+/**
+ * Write a relation row onto its property: the relation block, and for a
+ * many relation a list of references (`type: array` with string items)
+ * instead of a single one.
+ *
+ * @param {object} prop The property being saved.
+ * @param {object} raw The property as it was loaded.
+ * @param {object} v The row's validation values.
+ * @return {void}
+ * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-schema-designer/spec.md#requirement-a-maker-links-one-object-type-to-another-req-bqcv-003
+ */
+function writeRelation(prop, raw, v) {
+	const relation = relationFromField(raw, v)
+	prop['x-openregister-relation'] = relation
+	if (relation.cardinality !== 'many') {
+		return
+	}
+	prop.type = 'array'
+	prop.items = { ...withoutKeys(raw.items, ['type']), type: 'string' }
 }
 
 /**

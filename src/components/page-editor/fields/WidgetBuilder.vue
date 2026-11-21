@@ -62,6 +62,13 @@
 				class="widget-builder__chart"
 				:editingWidget="chartFormInput(widget)"
 				@update:content="updateChart(index, $event)" />
+			<!-- A count tile is configured with the library's own stats-block form:
+			     what to count, in which register and schema, and with which filter (REQ-BQCV-007). -->
+			<CnStatsBlockWidgetForm
+				v-if="widget.type === 'stats-block'"
+				class="widget-builder__count"
+				:editingWidget="countFormInput(widget)"
+				@update:content="updateCount(index, $event)" />
 			<!-- A connector widget binds its own data source with the same origin
 			     toggle, source picker and field mapper as a page (REQ-BQCB-003). -->
 			<!-- A custom widget may be written by hand (REQ-BQCC-001). The server
@@ -104,11 +111,12 @@
 </template>
 
 <script>
-import { CnChartWidgetForm } from '@conduction/nextcloud-vue'
+import { CnChartWidgetForm, CnStatsBlockWidgetForm } from '@conduction/nextcloud-vue'
 import DataSourceOriginToggle from '../DataSourceOriginToggle.vue'
 import CodeComponentEditor from './CodeComponentEditor.vue'
 import { CONNECTOR_WIDGET_TYPE } from '../../../services/connectorPages.js'
 import { chartFormInput, widgetWithChartContent } from './chartWidget.js'
+import { countFormInput, widgetWithCountContent } from './countWidget.js'
 
 /**
  * Whether a value is a plain (non-array) object.
@@ -135,6 +143,7 @@ export default {
 	name: 'WidgetBuilder',
 	components: {
 		CnChartWidgetForm,
+		CnStatsBlockWidgetForm,
 		CodeComponentEditor,
 		DataSourceOriginToggle,
 	},
@@ -175,6 +184,23 @@ export default {
 
 	methods: {
 		chartFormInput,
+
+		countFormInput,
+
+		/**
+		 * Write the stats-block form's content onto a count widget: its title,
+		 * `props` and `dataSource`, never a `content` key.
+		 *
+		 * @param {number} index - position of the count widget in the `widgets` array.
+		 * @param {{ title: string, props: object, dataSource: object }} content - the form's `update:content` payload.
+		 * @return {void}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-maker-adds-a-dashboard-page-req-bqcv-007
+		 */
+		updateCount(index, content) {
+			const next = this.localWidgets.slice()
+			next[index] = widgetWithCountContent(next[index], content)
+			this.$emit('update:modelValue', next)
+		},
 
 		/**
 		 * Write the chart form's content onto the widget: the chart type as
