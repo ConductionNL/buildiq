@@ -79,4 +79,35 @@ final class FlowNodeAvailability {
 
 		return true;
 	}//end has()
+
+	/**
+	 * The node catalogue's entry for a type: what an editor is offered, so a
+	 * node the engine hides (its runner is down) has no entry.
+	 *
+	 * @param string $type The node type id, e.g. `openregister.code`.
+	 *
+	 * @return array<string, mixed>|null The entry (`id`, and `configKeys` when the node declares them), or null.
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 */
+	public function catalogueEntry(string $type): ?array {
+		try {
+			$registry = $this->container->get(self::REGISTRY);
+			if (is_object($registry) === false || method_exists($registry, 'palette') === false) {
+				return null;
+			}
+
+			$palette = $registry->palette();
+		} catch (Throwable) {
+			return null;
+		}
+
+		foreach ((array)$palette as $entry) {
+			if (is_array($entry) === true && (string)($entry['id'] ?? '') === $type) {
+				return $entry;
+			}
+		}
+
+		return null;
+	}//end catalogueEntry()
 }//end class

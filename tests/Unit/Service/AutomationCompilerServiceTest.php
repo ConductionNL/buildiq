@@ -33,6 +33,7 @@ use OCA\Buildiq\Service\Automation\AutomationFlowBuilder;
 use OCA\Buildiq\Service\Automation\AutomationRuleSets;
 use OCA\Buildiq\Service\Automation\AutomationSubFlowTargets;
 use OCA\Buildiq\Service\Automation\FlowNodeAvailability;
+use OCA\Buildiq\Service\Automation\ScriptStepNodes;
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -1721,36 +1722,207 @@ final class AutomationCompilerServiceTest extends TestCase {
 		$this->assertSame('created', $flow['nodes'][0]['config']['event']);
 	}//end testAiFieldAlsoFollowsEditsOfItsSources()
 	/**
-	 * A script step compiles to nothing until it compiles to OpenRegister's
-	 * code step: on a flow trigger the flow builder refuses it, on an object
-	 * trigger the matrix does (logic-script-step D2).
+	 * A compiler whose container serves OpenRegister's node registry with this palette.
 	 *
-	 * @return void
+	 * @param list<array<string, mixed>> $palette The node catalogue entries.
 	 *
-	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 * @return AutomationCompilerService
 	 */
-	public function testAScriptStepDoesNotCompileYet(): void {
-		$automation = [
+	private function compilerWithPalette(array $palette): AutomationCompilerService {
+		$registry = new class ($palette) {
+			/**
+			 * @param list<array<string, mixed>> $entries The catalogue.
+			 */
+			public function __construct(public array $entries) {
+			}
+
+			/**
+			 * @return list<array<string, mixed>>
+			 */
+			public function palette(): array {
+				return $this->entries;
+			}
+		};
+		$container = $this->createMock(originalClassName: ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			fn (string $id): object => match ($id) {
+				FlowNodeAvailability::REGISTRY => $registry,
+				default => $this->container->get($id),
+			}
+		);
+
+		return new AutomationCompilerService(
+			container: $container,
+			objectService: $this->objectService,
+			schemaMapper: $this->schemaMapper,
+			appManager: $this->appManager,
+			logger: new NullLogger(),
+			flowBackend: $this->flowBackend,
+		);
+	}//end compilerWithPalette()
+
+	/**
+	 * An automation with one script step on a trigger.
+	 *
+	 * @param string               $trigger The trigger type.
+	 * @param array<string, mixed> $step    Keys over the default script step.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function scriptAutomation(string $trigger = 'manual', array $step = []): array {
+		return [
 			'id' => 'auto-script',
 			'slug' => 'join-names',
 			'applicationSlug' => 'permit-tracker',
 			'versionUuid' => 'version-1',
 			'enabled' => true,
-			'trigger' => ['type' => 'manual'],
+			'trigger' => ['type' => $trigger, 'schema' => 'permit'],
 			'condition' => null,
-			'actions' => [['type' => 'script-step', 'code' => 'return items;', 'timeoutSeconds' => 10]],
+			'actions' => [
+				array_merge(
+					['type' => 'script-step', 'code' => 'return items.map((i) => i);', 'timeoutSeconds' => 10, 'note' => 'Joins the names'],
+					$step
+				),
+			],
 		];
+	}//end scriptAutomation()
 
-		foreach (['manual', 'webhook-called', 'object-created'] as $trigger) {
-			$automation['trigger'] = ['type' => $trigger, 'schema' => 'permit'];
+	/**
+	 * Without the code step in the node catalogue a script step is refused on
+	 * a flow trigger, naming the runner; on an object trigger the matrix
+	 * refuses it (logic-script-step D2).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 */
+	public function testAScriptStepIsRefusedWithoutTheCodeRunner(): void {
+		$compiler = $this->compilerWithPalette(palette: [['id' => 'openregister.filter']]);
+		foreach (['manual', 'webhook-called'] as $trigger) {
 			try {
-				$this->compiler->compile(automation: $automation);
-				$this->fail(message: 'A script step must not compile on ' . $trigger . '.');
+				$compiler->compile(automation: self::scriptAutomation(trigger: $trigger));
+				$this->fail(message: 'A script step must not compile without the code runner on ' . $trigger . '.');
 			} catch (UnsupportedAutomationCombinationException $e) {
-				$this->assertStringContainsString(needle: 'script-step', haystack: $e->getMessage());
+				$this->assertSame(expected: ScriptStepNodes::MISSING_NODE_REFUSAL, actual: $e->getMessage());
 			}
 		}
-	}//end testAScriptStepDoesNotCompileYet()
+
+		try {
+			$this->compilerWithPalette(palette: [['id' => 'openregister.code']])->compile(automation: self::scriptAutomation(trigger: 'object-created'));
+			$this->fail(message: 'A script step must not compile on an object trigger.');
+		} catch (UnsupportedAutomationCombinationException $e) {
+			$this->assertStringContainsString(needle: 'script-step', haystack: $e->getMessage());
+		}
+	}//end testAScriptStepIsRefusedWithoutTheCodeRunner()
+
+	/**
+	 * With the code step in the catalogue a script step compiles to that one
+	 * node: the code as text, all items at once, the timeout in milliseconds
+	 * and no egress (logic-script-step D2, D4).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 */
+	public function testAScriptStepCompilesToTheCodeStep(): void {
+		$compiler = $this->compilerWithPalette(palette: [['id' => 'openregister.code']]);
+
+		$nodes = $compiler->compile(automation: self::scriptAutomation(step: ['timeoutSeconds' => 7]))['flow']['nodes'];
+
+		$this->assertSame(expected: ['openregister.trigger-manual', 'openregister.code'], actual: array_column($nodes, 'type'));
+		$this->assertSame(
+			expected: [
+				'language' => 'javascript',
+				'mode' => 'allItems',
+				'source' => 'return items.map((i) => i);',
+				'timeoutMs' => 7000,
+				'egress' => [],
+			],
+			actual: $nodes[1]['config']
+		);
+	}//end testAScriptStepCompilesToTheCodeStep()
+
+	/**
+	 * The catalogue's config keys decide what the node carries; a code step
+	 * that takes no `source` refuses the script (logic-script-step D2).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 */
+	public function testTheCatalogueConfigKeysShapeTheNode(): void {
+		$compiler = $this->compilerWithPalette(palette: [['id' => 'openregister.code', 'configKeys' => ['source', 'mode', 'timeoutMs']]]);
+		$config = $compiler->compile(automation: self::scriptAutomation())['flow']['nodes'][1]['config'];
+		$this->assertSame(expected: ['mode' => 'allItems', 'source' => 'return items.map((i) => i);', 'timeoutMs' => 10000], actual: $config);
+
+		$this->expectException(exception: UnsupportedAutomationCombinationException::class);
+		$this->expectExceptionMessage(message: 'does not take "source"');
+		$this->compilerWithPalette(palette: [['id' => 'openregister.code', 'configKeys' => ['script']]])
+			->compile(automation: self::scriptAutomation());
+	}//end testTheCatalogueConfigKeysShapeTheNode()
+
+	/**
+	 * An empty script and a timeout outside 1 to 30 seconds are refused (D1).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 */
+	public function testAnEmptyScriptOrAWrongTimeoutIsRefused(): void {
+		$compiler = $this->compilerWithPalette(palette: [['id' => 'openregister.code']]);
+		$cases = [
+			'empty code' => [['code' => '  '], 'Write the script'],
+			'zero timeout' => [['timeoutSeconds' => 0], '1 to 30 seconds'],
+			'long timeout' => [['timeoutSeconds' => 31], '1 to 30 seconds'],
+		];
+		foreach ($cases as $name => [$step, $message]) {
+			try {
+				$compiler->compile(automation: self::scriptAutomation(step: $step));
+				$this->fail(message: $name . ' must be refused.');
+			} catch (UnsupportedAutomationCombinationException $e) {
+				$this->assertStringContainsString(needle: $message, haystack: $e->getMessage(), message: $name);
+			}
+		}
+	}//end testAnEmptyScriptOrAWrongTimeoutIsRefused()
+
+	/**
+	 * Apply checks the catalogue again: a runner gone since the compile
+	 * refuses before anything is written (logic-script-step D2).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 */
+	public function testApplyRefusesACodeStepWhenTheRunnerIsGone(): void {
+		$plan = $this->compilerWithPalette(palette: [['id' => 'openregister.code']])->compile(automation: self::scriptAutomation());
+
+		$this->flowBackend->expects(matcher: $this->never())->method(constraint: 'apply');
+		$this->expectException(exception: UnsupportedAutomationCombinationException::class);
+		$this->expectExceptionMessage(message: ScriptStepNodes::MISSING_NODE_REFUSAL);
+		$this->compilerWithPalette(palette: [])->apply(automation: self::scriptAutomation(), plan: $plan, priorProvenance: []);
+	}//end testApplyRefusesACodeStepWhenTheRunnerIsGone()
+
+	/**
+	 * The dry run lists a script step as running in the code runner and never
+	 * carries its code, so nothing can execute it (REQ-BQSS-003).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 */
+	public function testTheDryRunDoesNotCarryTheScript(): void {
+		$automation = self::scriptAutomation();
+		array_unshift($automation['actions'], ['type' => 'object-op', 'schema' => 'permit', 'operation' => 'create', 'fieldMapping' => []]);
+
+		$rule = $this->compiler->compileDryRunRule(automation: $automation);
+
+		$this->assertSame(expected: ['object-op', 'script-step'], actual: array_column($rule['actions'], 'type'));
+		$this->assertSame(
+			expected: ['runsIn' => 'code-runner', 'summary' => 'runs in the code runner', 'note' => 'Joins the names'],
+			actual: $rule['actions'][1]['parameters']
+		);
+		$this->assertStringNotContainsString(needle: 'items.map', haystack: (string)json_encode($rule));
+	}//end testTheDryRunDoesNotCarryTheScript()
 	/**
 	 * REQ-BQCV-028: a status-change automation compiles to ONE notification
 	 * bound to exactly the transition it listens for, addressed to the group;

@@ -123,6 +123,8 @@ use OCA\Buildiq\Service\Automation\CompileInput;
 use OCA\Buildiq\Service\Automation\FlowNodeAvailability;
 use OCA\Buildiq\Service\Automation\InboundTriggerDeclarations;
 use OCA\Buildiq\Service\Automation\RunAutomationNodes;
+use OCA\Buildiq\Service\Automation\ScriptStepNodes;
+use OCA\Buildiq\Service\Automation\ScriptSteps;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -415,7 +417,10 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 *
 	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) AiStepNodes::holdsAiStep() and RunAutomationNodes::targetUuids() are pure checks of the actions.
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AiStepNodes::holdsAiStep(), RunAutomationNodes::targetUuids() and
+	 * ScriptStepNodes::holdsScriptStep() are pure checks of the actions.
 	 */
 	private function compileFlowBackend(CompileInput $input): array {
 		// The register and schemas are read only when a node needs them, so a
@@ -456,7 +461,14 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 			$subFlowTargets = $this->container->get(AutomationSubFlowTargets::class)->targets(uuids: $targetUuids);
 		}
 
-		$plan['flow'] = $this->flowBuilder()->withSubFlowTargets(targets: $subFlowTargets)->build(
+		// Logic-script-step D2: a script step compiles to the code step the node
+		// catalogue serves, and is refused when it serves none.
+		$codeNodeEntry = null;
+		if (ScriptStepNodes::holdsScriptStep(actions: $input->actions) === true) {
+			$codeNodeEntry = (new FlowNodeAvailability(container: $this->container))->catalogueEntry(type: ScriptStepNodes::CODE_NODE);
+		}
+
+		$plan['flow'] = $this->flowBuilder()->withLookups(subFlowTargets: $subFlowTargets, codeNodeEntry: $codeNodeEntry)->build(
 			input: $input,
 			register: $scope['register'],
 			schemas: $scope['schemas'],
@@ -512,17 +524,11 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
 	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) AiStepNodes::flowRunsAgent() is a pure check of the compiled flow.
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 *
 	 */
 	public function apply(array $automation, array $plan, array $priorProvenance = []): array {
-		// Ai-llm-steps-and-computed-fields D6: an AI step needs Hermiq's node in
-		// the engine; checked again here, before anything is written.
-		$flowNodes = new FlowNodeAvailability(container: $this->container);
-		if (AiStepNodes::flowRunsAgent(flow: $this->orArray(value: $plan['flow'] ?? null)) === true
-			&& $flowNodes->has(type: AiStepNodes::AGENT_NODE) === false
-		) {
-			throw new UnsupportedAutomationCombinationException(message: AiStepNodes::MISSING_NODE_REFUSAL);
-		}
+		$this->assertFlowNodesPresent(plan: $plan);
 
 		$slug = (string)($automation['slug'] ?? '');
 		$versionUuid = (string)($automation['versionUuid'] ?? '');
@@ -589,6 +595,41 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 
 		return self::withNames(provenance: $provenance, ruleSetSlug: $ruleSetSlug, approvalChainName: $approvalChainName);
 	}//end apply()
+
+	/**
+	 * Refuse a plan whose flow runs a node the engine does not offer: Hermiq's
+	 * agent step, or OpenRegister's code step while its runner is away. Checked
+	 * before anything is written.
+	 *
+	 * @param array<string,mixed> $plan The CompiledPlan.
+	 *
+	 * @return void
+	 *
+	 * @throws UnsupportedAutomationCombinationException When a node is missing.
+	 *
+	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AiStepNodes::flowRunsAgent() and ScriptStepNodes::flowRunsCode() are pure checks of the compiled flow.
+	 */
+	private function assertFlowNodesPresent(array $plan): void {
+		// Ai-llm-steps-and-computed-fields D6: an AI step needs Hermiq's node in
+		// the engine; checked again here, before anything is written.
+		$flowNodes = new FlowNodeAvailability(container: $this->container);
+		if (AiStepNodes::flowRunsAgent(flow: $this->orArray(value: $plan['flow'] ?? null)) === true
+			&& $flowNodes->has(type: AiStepNodes::AGENT_NODE) === false
+		) {
+			throw new UnsupportedAutomationCombinationException(message: AiStepNodes::MISSING_NODE_REFUSAL);
+		}
+
+		// Logic-script-step D2: the code runner can go away between compile and
+		// apply; checked again here, before anything is written.
+		if (ScriptStepNodes::flowRunsCode(flow: $this->orArray(value: $plan['flow'] ?? null)) === true
+			&& $flowNodes->catalogueEntry(type: ScriptStepNodes::CODE_NODE) === null
+		) {
+			throw new UnsupportedAutomationCombinationException(message: ScriptStepNodes::MISSING_NODE_REFUSAL);
+		}
+	}//end assertFlowNodesPresent()
 
 	/**
 	 * The provenance with the rule set and approval chain names, each only when it is set.
@@ -1349,6 +1390,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @return array<string,mixed>
 	 *
 	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#2.1
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
 	 */
 	public function mapActionToRuleAction(array $action): array {
 		$type = (string)($action['type'] ?? '');
@@ -1388,6 +1430,16 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 				'parameters' => [
 					'templateId' => (string)($action['templateId'] ?? ''),
 					'output' => $this->normaliseGenerateDocumentOutput(raw: $action['output'] ?? null),
+				],
+			],
+			// Logic-script-step D5: the dry run names where the script runs and
+			// never carries, let alone runs, its code.
+			ScriptSteps::ACTION => [
+				'type' => ScriptSteps::ACTION,
+				'parameters' => [
+					'runsIn' => 'code-runner',
+					'summary' => 'runs in the code runner',
+					'note' => (string)($action['note'] ?? ''),
 				],
 			],
 			default => ['type' => $type, 'parameters' => []],

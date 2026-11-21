@@ -88,6 +88,14 @@ final class AutomationFlowBuilder {
 	private array $subFlowTargets = [];
 
 	/**
+	 * The node catalogue's entry for OpenRegister's code step, or null when it
+	 * has none (logic-script-step D2).
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	private ?array $codeNodeEntry = null;
+
+	/**
 	 * @param FeelToJsonLogic $feel Translates a FEEL condition for the filter node.
 	 *
 	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-condition-gates-the-actions-req-bqar-004
@@ -98,20 +106,24 @@ final class AutomationFlowBuilder {
 	}//end __construct()
 
 	/**
-	 * A builder that runs the given automations for the run-automation steps.
+	 * A builder with what the compiler looked up: the automations the
+	 * run-automation steps name, and the catalogue's code step.
 	 *
-	 * @param array<string, array<string, mixed>> $targets The named automations, by uuid.
+	 * @param array<string, array<string, mixed>> $subFlowTargets The named automations, by uuid.
+	 * @param array<string, mixed>|null           $codeNodeEntry  The catalogue's entry for the code step, or null when it has none.
 	 *
 	 * @return self A copy; this builder is unchanged.
 	 *
 	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
 	 */
-	public function withSubFlowTargets(array $targets): self {
+	public function withLookups(array $subFlowTargets, ?array $codeNodeEntry = null): self {
 		$copy = clone $this;
-		$copy->subFlowTargets = $targets;
+		$copy->subFlowTargets = $subFlowTargets;
+		$copy->codeNodeEntry = $codeNodeEntry;
 
 		return $copy;
-	}//end withSubFlowTargets()
+	}//end withLookups()
 
 	/**
 	 * Whether the automation compiles to a flow: a manual trigger, or any
@@ -152,6 +164,7 @@ final class AutomationFlowBuilder {
 	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
 	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
 	 */
 	public function build(CompileInput $input, string $register, array $schemas, array $ruleSets = [], ?array $schemaProperties = null): array {
 		$this->assertNoOwnBackend(input: $input);
@@ -164,6 +177,7 @@ final class AutomationFlowBuilder {
 
 		$decisions = new RuleDecisionNodes(register: $register, schema: $schema, ruleSets: $ruleSets);
 		$subFlows = new RunAutomationNodes(automation: $input->automation, targets: $this->subFlowTargets);
+		$scripts = new ScriptStepNodes(catalogueEntry: $this->codeNodeEntry);
 		// The steps that build more than one node, or need more than the action, by kind.
 		$stepBuilders = [
 			'rule-decision' => static fn (array $action, int $index): array => $decisions->build(action: $action, index: $index),
@@ -173,6 +187,7 @@ final class AutomationFlowBuilder {
 				triggerType: $input->triggerType
 			),
 			RunAutomationNodes::ACTION => static fn (array $action, int $index): array => [$subFlows->build(action: $action, index: $index)],
+			ScriptSteps::ACTION => static fn (array $action, int $index): array => [$scripts->build(action: $action, index: $index)],
 		];
 		foreach ($input->actions as $index => $action) {
 			$action = (array)$action;
