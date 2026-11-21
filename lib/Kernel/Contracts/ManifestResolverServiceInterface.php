@@ -131,6 +131,22 @@ interface ManifestResolverServiceInterface {
 	public function resolve(string $appSlug, ?string $versionSlug, ?IUser $caller): ?array;
 
 	/**
+	 * The manifest one ApplicationVersion serves: its stored blob, or its
+	 * `manifestDelta` merged over its `baseRef` (app-delta-override D1, D4).
+	 *
+	 * Runs no role check of its own: the caller has already authorised the
+	 * version. A base app the caller's organisation scope hides is not read.
+	 *
+	 * @param array<string, mixed> $version The ApplicationVersion.
+	 * @param IUser|null           $caller  The caller.
+	 *
+	 * @return mixed The manifest; null when the version has none.
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.2
+	 */
+	public function servedManifest(array $version, ?IUser $caller): mixed;
+
+	/**
 	 * Resolve the permission-string array the CLIENT should pass to
 	 * `CnAppRoot`'s `permissions` prop (forwarded to `CnAppNav` /
 	 * `CnPageRenderer`) so client-side rendering mirrors the server's own

@@ -196,4 +196,23 @@ final class ManifestResolverDeltaTest extends TestCase {
 
 		$this->assertSame(expected: ['pages' => [['id' => 'own']]], actual: $service->resolve('crm', null, $this->user(uid: 'bob')));
 	}//end testABaseAppTheCallerCannotSeeIsNotRead()
+
+	/**
+	 * servedManifest merges a version handed in by a caller that authorised it already.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.2
+	 */
+	public function testServedManifestMergesAVersionDirectly(): void {
+		$service = $this->service(application: [], baseRows: ['application-template' => [self::TEMPLATE]]);
+		$version = [
+			'manifest' => [],
+			'baseRef' => ['kind' => 'template', 'id' => 'permits'],
+			'manifestDelta' => ['pages' => [['id' => 'home', '$op' => 'remove']]],
+		];
+
+		$this->assertSame(expected: ['List'], actual: array_column($service->servedManifest(version: $version, caller: null)['pages'], 'title'));
+		$this->assertSame(expected: ['pages' => []], actual: $service->servedManifest(version: ['manifest' => ['pages' => []]], caller: null));
+	}//end testServedManifestMergesAVersionDirectly()
 }//end class

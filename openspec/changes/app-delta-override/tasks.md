@@ -30,7 +30,8 @@
 
 - [x] 4.1 In `ManifestResolverService::resolve()`, branch on `baseRef`: null/absent ⇒ return the legacy `manifest` blob unchanged; set ⇒ resolve base (3.x) + apply `ManifestDeltaMerger` (2.x) and return the merged manifest. Keep the RBAC gate ahead of any payload emission.
   > Built: `ManifestResolverService::resolve()` serves a named version, an inline production version and a production version by uuid through `ManifestBaseResolver::manifestOf()` after the RBAC and organisation gates; without a `baseRef` the blob is returned unchanged. PHPUnit `tests/Unit/Service/ManifestResolverDeltaTest.php`.
-- [ ] 4.2 Ensure `ApplicationsController::getManifest()` and `diffVersions()` return the resolved/merged manifest, strip `baseRef`/`manifestDelta` and orphaned-path diagnostics from the public response (mirror the existing `permissions`-stripping).
+- [x] 4.2 Ensure `ApplicationsController::getManifest()` and `diffVersions()` return the resolved/merged manifest, strip `baseRef`/`manifestDelta` and orphaned-path diagnostics from the public response (mirror the existing `permissions`-stripping).
+  > Built 21 Nov: `getManifest()` serves what `ManifestResolverService::resolve()` returns, which is the merged manifest. `diffVersions()` diffs each side as `ManifestResolverServiceInterface::servedManifest()` returns it. Neither response contains `baseRef`, `manifestDelta` or orphan diagnostics: the resolver returns only the manifest. PHPUnit `tests/Unit/Controller/ApplicationsControllerDiffDeltaTest.php` and `ManifestResolverDeltaTest::testServedManifestMergesAVersionDirectly`.
 - [ ] 4.3 Validate the merged manifest against the canonical app-manifest schema before responding; on validation failure emit the existing correlation-id error path, not a 500 stack.
 
 ## 5. Editor: diff-on-save + preview + orphan surface
