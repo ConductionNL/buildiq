@@ -21,12 +21,15 @@
 
 ## 3. Base resolution
 
-- [ ] 3.1 In `ManifestResolverService`, add `resolveBase(baseRef)` — template ref → `ApplicationTemplate.manifest`; buildiq-app ref → that app's resolved production manifest (recursive); fleet-app ref → named fleet app's bundled manifest; honour an optional version pin.
-- [ ] 3.2 Add a depth cap + cycle guard to recursive `buildiq-app` base resolution (reuse the `guardNoCycle` precedent); a cycle/over-deep chain resolves to the deepest safe base + a diagnostic.
+- [x] 3.1 In `ManifestResolverService`, add `resolveBase(baseRef)` — template ref → `ApplicationTemplate.manifest`; buildiq-app ref → that app's resolved production manifest (recursive); fleet-app ref → named fleet app's bundled manifest; honour an optional version pin.
+  > Built 21 Nov: `lib/Service/ManifestBaseResolver.php` `resolveBase()` reads a `template` base (by slug or uuid, `manifestVersion` must equal the template's `version`), a `buildiq-app` base (its live production version, or a pinned released version by slug or semver; a draft is never a base, and an app the caller's organisation scope hides is not read), a `fleet-app` base (`src/manifest.json` in the fleet app's folder, its `version` checked against a pin) and an `application-version` base by uuid. A base that cannot be read leaves the version on its stored blob, so a hybrid app whose bundle is not on disk serves exactly what it served before. PHPUnit `tests/Unit/Service/ManifestBaseResolverTest.php`.
+- [x] 3.2 Add a depth cap + cycle guard to recursive `buildiq-app` base resolution (reuse the `guardNoCycle` precedent); a cycle/over-deep chain resolves to the deepest safe base + a diagnostic.
+  > Built: a base chain stops at `ManifestBaseResolver::MAX_DEPTH` (5) hops or at the first reference already on the chain; the last version reached serves its own blob and the reason is logged and returned as a diagnostic. `ManifestBaseResolverTest::testALoopOfBasesStopsWithAReason`, `::testAChainDeeperThanTheCapStops`.
 
 ## 4. Endpoint resolution wiring
 
-- [ ] 4.1 In `ManifestResolverService::resolve()`, branch on `baseRef`: null/absent ⇒ return the legacy `manifest` blob unchanged; set ⇒ resolve base (3.x) + apply `ManifestDeltaMerger` (2.x) and return the merged manifest. Keep the RBAC gate ahead of any payload emission.
+- [x] 4.1 In `ManifestResolverService::resolve()`, branch on `baseRef`: null/absent ⇒ return the legacy `manifest` blob unchanged; set ⇒ resolve base (3.x) + apply `ManifestDeltaMerger` (2.x) and return the merged manifest. Keep the RBAC gate ahead of any payload emission.
+  > Built: `ManifestResolverService::resolve()` serves a named version, an inline production version and a production version by uuid through `ManifestBaseResolver::manifestOf()` after the RBAC and organisation gates; without a `baseRef` the blob is returned unchanged. PHPUnit `tests/Unit/Service/ManifestResolverDeltaTest.php`.
 - [ ] 4.2 Ensure `ApplicationsController::getManifest()` and `diffVersions()` return the resolved/merged manifest, strip `baseRef`/`manifestDelta` and orphaned-path diagnostics from the public response (mirror the existing `permissions`-stripping).
 - [ ] 4.3 Validate the merged manifest against the canonical app-manifest schema before responding; on validation failure emit the existing correlation-id error path, not a 500 stack.
 
@@ -38,13 +41,16 @@
 
 ## 6. Backwards-compatibility
 
-- [ ] 6.1 Verify a pre-existing blob app (blob present, no `baseRef`) resolves byte-for-byte unchanged — no base resolution, no merge attempted.
-- [ ] 6.2 Confirm no data migration is triggered for existing apps; new fields default to absent.
+- [x] 6.1 Verify a pre-existing blob app (blob present, no `baseRef`) resolves byte-for-byte unchanged — no base resolution, no merge attempted.
+  > Verified: a version with no `baseRef` returns its blob identically and makes no lookup (`ManifestBaseResolverTest::testALegacyBlobIsServedUnchanged`, `ManifestResolverDeltaTest::testANamedVersionIsMergedAndALegacyBlobIsNot`).
+- [x] 6.2 Confirm no data migration is triggered for existing apps; new fields default to absent.
+  > Confirmed: this change adds no repair step or migration; `baseRef` and `manifestDelta` stay optional and absent on existing versions.
 
 ## 7. Tests
 
 - [ ] 7.1 Newman: extend `manifest-endpoint.spec` — legacy-blob app serves verbatim; delta-mode app serves a merged manifest; raw `baseRef`/`manifestDelta`/diagnostics absent from the response.
-- [ ] 7.2 PHPUnit: `ManifestResolverService` base+delta resolution, legacy fallback, pinned-vs-live base, orphan skip + diagnostic collection, cycle/depth guard.
+- [x] 7.2 PHPUnit: `ManifestResolverService` base+delta resolution, legacy fallback, pinned-vs-live base, orphan skip + diagnostic collection, cycle/depth guard.
+  > Built: `ManifestBaseResolverTest` (base + delta, legacy fallback, pinned vs live, orphan skip and report, loop and depth) and `ManifestResolverDeltaTest`.
 - [ ] 7.3 Frontend unit test: editor diff-on-save persists a minimal delta and preview equals merged base+delta.
 
 ## 8. Verify

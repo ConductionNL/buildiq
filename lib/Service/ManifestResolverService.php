@@ -71,8 +71,11 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 * @param PermissionResolver $permissionResolver Shared principal-grammar resolver (H1/H2 fix)
 	 * @param ManifestWidgetRoleFilter $widgetRoleFilter Removes page widgets by `roles`
 	 * @param AppOrganisationGuard|null $organisationGuard Hides another organisation's scoped app; without it a scoped app is hidden from everyone.
+	 * @param ManifestBaseResolver|null $baseResolver Merges a version's `manifestDelta` over its `baseRef`; without it every version serves its stored blob.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.1
 	 */
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
@@ -82,6 +85,7 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 		private readonly PermissionResolver $permissionResolver,
 		private readonly ManifestWidgetRoleFilter $widgetRoleFilter,
 		private readonly ?AppOrganisationGuard $organisationGuard = null,
+		private readonly ?ManifestBaseResolver $baseResolver = null,
 	) {
 	}//end __construct()
 
@@ -161,6 +165,7 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.1
 	 */
 	public function resolve(string $appSlug, ?string $versionSlug, ?IUser $caller): ?array {
 		// Step 1 — resolve Application by slug, within the caller's organisation scope.
@@ -171,11 +176,11 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 
 		// Step 2a — no versionSlug: return production manifest (accessible to all).
 		if ($versionSlug === null) {
-			return $this->resolveProductionManifest(application: $application, appSlug: $appSlug);
+			return $this->resolveProductionManifest(application: $application, appSlug: $appSlug, caller: $caller);
 		}
 
 		if ($versionSlug === '') {
-			return $this->resolveProductionManifest(application: $application, appSlug: $appSlug);
+			return $this->resolveProductionManifest(application: $application, appSlug: $appSlug, caller: $caller);
 		}
 
 		// Step 2b — named versionSlug: look up the ApplicationVersion.
@@ -197,8 +202,12 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 			return null;
 		}
 
-		// Step 4 — return the resolved ApplicationVersion's manifest payload.
-		$manifest = ($version['manifest'] ?? null);
+		// Step 4 — return the resolved ApplicationVersion's manifest payload:
+		// its blob, or its manifestDelta merged over its baseRef (app-delta-override D4).
+		$manifest = ($this->baseResolver?->manifestOf(
+			version: $version,
+			visible: fn (array $base): bool => $this->visibleToCaller(application: $base, caller: $caller)
+		) ?? ($version['manifest'] ?? null));
 		if (is_array($manifest) === false) {
 			$this->logger->warning(
 				'ManifestResolverService: ApplicationVersion has no manifest for app={appSlug} version={versionSlug}',
@@ -396,27 +405,30 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 *
 	 * @param array<string, mixed> $application The normalised Application data.
 	 * @param string $appSlug The app slug (for logging).
+	 * @param IUser|null $caller The caller, whose organisation scope limits the apps a base may name.
 	 *
 	 * @return array<string, mixed>|null
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.1
 	 */
-	private function resolveProductionManifest(array $application, string $appSlug): ?array {
+	private function resolveProductionManifest(array $application, string $appSlug, ?IUser $caller = null): ?array {
 		$productionVersion = ($application['productionVersion'] ?? null);
+		$visible = fn (array $base): bool => $this->visibleToCaller(application: $base, caller: $caller);
 
 		// ProductionVersion is a UUID or embedded object.
 		if (is_string($productionVersion) === true && $productionVersion !== '') {
 			// UUID reference — fetch the ApplicationVersion.
 			$version = $this->findVersionByUuid(uuid: $productionVersion);
 			if ($version !== null) {
-				$manifest = ($version['manifest'] ?? null);
+				$manifest = ($this->baseResolver?->manifestOf(version: $version, visible: $visible) ?? ($version['manifest'] ?? null));
 				if (is_array($manifest) === true) {
 					return $manifest;
 				}
 			}
 		} elseif (is_array($productionVersion) === true) {
-			// Inline embedded object — use manifest directly.
-			$manifest = ($productionVersion['manifest'] ?? null);
+			// Inline embedded object — use its manifest, merged over its base when it has one.
+			$manifest = ($this->baseResolver?->manifestOf(version: $productionVersion, visible: $visible) ?? ($productionVersion['manifest'] ?? null));
 			if (is_array($manifest) === true) {
 				return $manifest;
 			}
