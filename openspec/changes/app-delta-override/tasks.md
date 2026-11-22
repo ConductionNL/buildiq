@@ -63,4 +63,5 @@
 
 - [ ] 8.1 Run `composer check:strict` and the relevant hydra mechanical gates (spec-coverage, route-auth, no-admin-idor) green on the diff.
 - [ ] 8.2 Manual: clone-from-template app stores `baseRef` + delta; edit one page; add a page to the base; confirm the derived app inherits it on next manifest fetch.
-- [ ] 8.3 `openspec validate "app-delta-override"` passes and `openspec status` shows 4/4 complete before archiving.
+- [x] 8.3 `openspec validate "app-delta-override"` passes and `openspec status` shows 4/4 complete before archiving.
+  > Run 22 Nov 2026: `openspec validate app-delta-override --strict` is valid after the long texts of four requirements moved into scenarios (the delta shape, every consumer getting a merged manifest, the route, the organisation scope, the permissions gate, the slug lookup, the name injection); `openspec status` shows 4/4.
