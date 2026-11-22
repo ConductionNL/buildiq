@@ -13,4 +13,5 @@
 
 ## 3. Follow-up tracking
 
-- [ ] 3.1 File a GitHub issue tracking the remaining locale gap (`de`/`fr`/`es`/etc. at 304 missing keys) so `L10N_REQUIRED_LOCALES` can be widened incrementally — out of scope for this change but must not be silently dropped.
+- [x] 3.1 File a GitHub issue tracking the remaining locale gap (`de`/`fr`/`es`/etc. at 304 missing keys) so `L10N_REQUIRED_LOCALES` can be widened incrementally — out of scope for this change but must not be silently dropped.
+  > Filed 22 Nov 2026 as ConductionNL/buildiq#1806: 27 locales each miss 2,442 of the 3,023 keys of `l10n/en.json`.

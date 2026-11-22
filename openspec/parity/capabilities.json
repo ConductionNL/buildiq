@@ -704,7 +704,7 @@
 			"overlay": null,
 			"specs": [
 				"experience-multilingual-apps",
-				"openbuild-nl-locale-parity"
+				"frontend-foundation"
 			]
 		},
 		{
@@ -8017,7 +8017,7 @@
 				"reachedOn": "buildiq builder UI, when the Nextcloud account language is set to Dutch",
 				"owner": "ConductionNL/buildiq",
 				"change": "openbuild-nl-locale-parity",
-				"requirement": "openspec/changes/openbuild-nl-locale-parity/specs/frontend-foundation :: Dutch locale has full translation key parity, enforced in CI"
+				"requirement": "openspec/specs/frontend-foundation :: Dutch locale has full translation key parity, enforced in CI"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
