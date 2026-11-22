@@ -46,19 +46,29 @@ SHALL delete samples older than the retention setting (30 days by default).
 ### Requirement: The app detail page shows the app's health (REQ-BQDM-006)
 
 The app detail page SHALL show a "Performance and errors" section (board
-BqAppWerking) for the selected version and window (7, 30 or 90 days): the average
-page load time, the share of page loads over 3 s, the failed requests with their
-share of all requests, the share of requests over 1 s, and the five slowest pages
-by average load time, each with its share of loads over 3 s, its loads and its
-failed requests. A percentile is not shown: the samples hold a histogram, not
-single durations. It SHALL be visible to exactly the users who may see that
-version's insights.
+BqAppWerking) for the selected version and window (7, 30 or 90 days), with the
+totals and the five slowest pages the scenarios name. It SHALL show no
+percentile, since the samples hold a histogram and not single durations, and it
+SHALL be visible to exactly the users who may see that version's insights.
 
 #### Scenario: A maker finds the slow page
 
 - **GIVEN** the production version of `vergunningen` with a week of samples, where page `permit-detail` averages 2.4 s to load
 - **WHEN** a maker with the viewer role opens the app detail page with the 7-day window
 - **THEN** the Health section lists `permit-detail` first among the slowest pages with 2.4 s
+- **AND** each of the five slowest pages, ordered by average load time, shows its share of loads over 3 s, its loads and its failed requests
+
+#### Scenario: The section shows the app's totals
+
+- **GIVEN** the production version of `vergunningen` with samples in the selected window
+- **WHEN** a maker who may see that version's insights opens the app detail page
+- **THEN** the section shows the average page load time, the share of page loads over 3 s, the failed requests with their share of all requests, and the share of requests over 1 s
+
+#### Scenario: A user without insight access does not see the section
+
+- **GIVEN** a user who may not see the insights of the production version of `vergunningen`
+- **WHEN** they open the app detail page
+- **THEN** no "Performance and errors" section is shown
 
 ### Requirement: Operators read the same numbers as metrics (REQ-BQDM-007)
 

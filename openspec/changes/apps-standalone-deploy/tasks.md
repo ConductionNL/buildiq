@@ -9,4 +9,4 @@
 - [x] **T06**: Point the exported `README.md` (`ExportAppContentBundler::writeReadme()`) at `deploy/README.md` when the bundle is included (REQ-BQSD-001). Verify: case in `tests/Unit/Service/ExportAppContentBundlerTest.php`.
 - [ ] **T07**: Manual check, recorded in the PR: export a two-page app as ZIP, run `docker compose up` in `deploy/` with the passwords set, log in, open the app, see its pages and seed records, and confirm `occ app:list` shows no buildiq; then run it without `POSTGRES_PASSWORD` and see it refuse (REQ-BQSD-002, REQ-BQSD-003).
 - [x] **T08**: English and Dutch strings for the dialog switch (`l10n/en.json`, `l10n/nl.json`), and a page in `docs/Features/` on running an exported app on its own server.
-- [ ] **T09**: Run `openspec validate apps-standalone-deploy --strict`.
+- [x] **T09**: Run `openspec validate apps-standalone-deploy --strict`. Valid on 22 Nov 2026, after the long text of REQ-BQSD-001 moved into its scenarios (the README pointer, where the server needs come from, and the exports without a `deploy/` folder).

@@ -12,18 +12,35 @@ per page, in the maker's own browser.
 
 The page designer SHALL show an "Error log" under the live preview (board
 BqPaginaOntwerperFouten). It SHALL list each request of the preview that failed
-(a 4xx or 5xx status, or no answer), with method, path, status and duration, and
-each render error and unknown component, each with its page, the time it last
-happened and how often. The same problem SHALL be one entry with a count. The
-log SHALL offer a filter (everything, failed requests, broken bindings, render
-errors), a "Reload preview" and a "Clear" button, and SHALL keep the last 200
-entries. Requests the designer makes to buildiq's own API SHALL be left out.
+(a 4xx or 5xx status, or no answer) and each render error and unknown
+component, each with its page, the time it last happened and how often; the
+same problem SHALL be one entry with a count. The log SHALL keep the last 200
+entries and leave out the designer's own requests to buildiq's API.
 
 #### Scenario: A maker sees a failed list request
 
 - **GIVEN** a maker in the page designer of `vergunningen`, previewing the index page `permits`
 - **WHEN** the preview's list request for `permits` answers 403
-- **THEN** the Debug panel shows an entry for page `permits` with the request path, status 403 and its duration, and the "Errors" filter keeps it
+- **THEN** the Debug panel shows an entry for page `permits` with the request method and path, status 403 and its duration, and the "Errors" filter keeps it
+
+#### Scenario: The log can be filtered, reloaded and cleared
+
+- **GIVEN** a maker in the page designer whose Error log holds a failed request, a broken binding and a render error
+- **WHEN** they open the log's filter
+- **THEN** it offers everything, failed requests, broken bindings and render errors, each keeping only its own entries
+- **AND** a "Reload preview" button reloads the preview and a "Clear" button empties the log
+
+#### Scenario: A repeated problem is one entry
+
+- **GIVEN** a preview whose list request for `permits` fails three times
+- **WHEN** the maker opens the Error log
+- **THEN** it shows one entry for that request with a count of 3 and the time of the last failure
+
+#### Scenario: The designer's own requests are left out
+
+- **GIVEN** a maker in the page designer whose save to buildiq's own API fails
+- **WHEN** they open the Error log
+- **THEN** the log has no entry for that request
 
 ### Requirement: The log names binding problems (REQ-BQDM-002)
 
