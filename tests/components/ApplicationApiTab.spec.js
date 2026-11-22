@@ -144,6 +144,13 @@ describe('ApplicationApiTab', () => {
 		expect(Object.keys(document.components.schemas)).toEqual(['Permit'])
 	})
 
+	it('scopes each field table header to its column', async () => {
+		const wrapper = await mountTab()
+		const headers = wrapper.findAll('table th')
+		expect(headers.length).toBeGreaterThan(0)
+		headers.forEach((th) => expect(th.attributes('scope')).toBe('col'))
+	})
+
 	it('makes no request outside the instance', async () => {
 		await mountTab()
 		const urls = axiosMock.get.mock.calls.map(([url]) => url)

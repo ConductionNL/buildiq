@@ -317,8 +317,11 @@ class DatabaseManifestBuilder {
 	 */
 	private function pageIdOf(string $slug): string {
 		$words = preg_split('/[^A-Za-z0-9]+/', $slug, -1, PREG_SPLIT_NO_EMPTY);
+		if ($words === false) {
+			$words = [];
+		}
 
-		return implode('', array_map(static fn (string $word): string => ucfirst($word), ($words === false ? [] : $words)));
+		return implode('', array_map(static fn (string $word): string => ucfirst($word), $words));
 	}//end pageIdOf()
 
 	/**

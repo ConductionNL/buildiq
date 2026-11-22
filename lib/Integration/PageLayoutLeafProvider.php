@@ -628,10 +628,6 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 			->setSchema(self::SCHEMA)
 			->findAll(['limit' => 500]);
 
-		if (is_array($rows) === false) {
-			return [];
-		}
-
 		$mine = [];
 		foreach ($rows as $row) {
 			$row = ObjectRecord::toArray(object: $row);

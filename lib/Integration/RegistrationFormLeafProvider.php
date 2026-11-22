@@ -389,10 +389,6 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 			->setSchema(self::SCHEMA_DRAFT)
 			->findAll(['filters' => ['userId' => $uid], 'limit' => 100]);
 
-		if (is_array($rows) === false) {
-			return [];
-		}
-
 		$mine = [];
 		foreach ($rows as $row) {
 			$row = ObjectRecord::toArray(object: $row);
@@ -433,10 +429,6 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 			->setRegister($this->registerSlug())
 			->setSchema(self::SCHEMA_FORM)
 			->findAll(['limit' => 500]);
-
-		if (is_array($rows) === false) {
-			return [];
-		}
 
 		$mine = [];
 		foreach ($rows as $row) {

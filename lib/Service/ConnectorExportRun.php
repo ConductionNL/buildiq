@@ -78,9 +78,9 @@ final class ConnectorExportRun {
 	/**
 	 * What the connectors channel answers.
 	 *
-	 * @return array{files
+	 * @return array{files:array<string,array<string,mixed>>,declaredCount:int,resolvedCount:int,strippedCount:int,missingCount:int}
 	 *
-	 * @spec openspec/specs/github-app-repo-format/spec.md#requirement-connectors-are-declared-explicitly-never-inferred:array<string,array<string,mixed>>,declaredCount:int,resolvedCount:int,strippedCount:int,missingCount:int}
+	 * @spec openspec/specs/github-app-repo-format/spec.md#requirement-connectors-are-declared-explicitly-never-inferred
 	 */
 	public function summary(): array {
 		return [
