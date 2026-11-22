@@ -6,7 +6,7 @@
  * the three legacy targets migrate as design D3 says, a type switch keeps only
  * the common keys, and an object-op on the lifecycle field is caught.
  *
- * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md
+ * @spec openspec/specs/page-action-authoring/spec.md
  */
 
 import { describe, expect, it } from 'vitest'

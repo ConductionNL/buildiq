@@ -288,7 +288,7 @@ export default {
 		/**
 		 * The stored actions with old `target` actions migrated (D3).
 		 *
-		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-old-actions-keep-working-req-bqab-004
+		 * @spec openspec/specs/page-action-authoring/spec.md#requirement-old-actions-keep-working-req-bqab-004
 		 */
 		migration() {
 			return migrateActions(this.modelValue, this.pageOptions.map((page) => page.value))
@@ -297,7 +297,7 @@ export default {
 		/**
 		 * The actions as edited.
 		 *
-		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
+		 * @spec openspec/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
 		 */
 		localActions() {
 			return this.migration.actions
@@ -306,7 +306,7 @@ export default {
 		/**
 		 * What a new button can do, in the maker's words.
 		 *
-		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
+		 * @spec openspec/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
 		 */
 		typeOptions() {
 			return [
@@ -322,7 +322,7 @@ export default {
 		/**
 		 * The app's pages as options.
 		 *
-		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
+		 * @spec openspec/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
 		 */
 		pageOptions() {
 			return (Array.isArray(this.pages) ? this.pages : [])
@@ -333,7 +333,7 @@ export default {
 		/**
 		 * The app's flows as options.
 		 *
-		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
+		 * @spec openspec/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
 		 */
 		flowOptions() {
 			return (Array.isArray(this.flows) ? this.flows : [])
@@ -382,7 +382,7 @@ export default {
 		 * @param {number} index - Position of the action.
 		 * @param {string} key - The key.
 		 * @param {*} value - The new value.
-		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
+		 * @spec openspec/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
 		 */
 		updateField(index, key, value) {
 			const next = this.localActions.slice()
@@ -401,7 +401,7 @@ export default {
 		 *
 		 * @param {number} index - Position of the action.
 		 * @param {string} type - The new type, '' for none.
-		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
+		 * @spec openspec/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
 		 */
 		setType(index, type) {
 			const next = this.localActions.slice()
@@ -430,7 +430,7 @@ export default {
 		 * @param {number} index - Position of the action.
 		 * @param {object} values - The next values.
 		 * @return {boolean} Whether the values were written.
-		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-status-buttons-follow-the-lifecycle-req-bqab-003
+		 * @spec openspec/specs/page-action-authoring/spec.md#requirement-status-buttons-follow-the-lifecycle-req-bqab-003
 		 */
 		writeValues(index, values) {
 			const candidate = { ...this.localActions[index], values }

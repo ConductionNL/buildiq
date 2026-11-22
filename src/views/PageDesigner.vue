@@ -536,7 +536,7 @@ export default {
 		/**
 		 * The app's pages as a typed action's "go to a page" options.
 		 *
-		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
+		 * @spec openspec/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
 		 */
 		actionPages() {
 			return this.pages

@@ -6,4 +6,4 @@
 - [x] **T04**: Add a "Status buttons" section writing `config.lifecycleActions`, live by default, with an optional transition list; refuse an `object-op` on the lifecycle field (REQ-BQAB-003). Verify: vitest for the refusal; Playwright case moving a record from `submitted` to `approved` with a confirm.
 - [x] **T05**: Author `visibleWhen` on an action with `VisibleWhenBuilder.vue` (REQ-BQAB-005). Verify: vitest; Playwright case where the button shows only for records in status `submitted`.
 - [x] **T06**: English and Dutch strings for the typed editor and both sections; update `docs/` on page buttons.
-- [ ] **T07**: Run `openspec validate pages-action-buttons --strict`.
+- [x] **T07**: Run `openspec validate pages-action-buttons --strict`. Run 22 Nov 2026 with `npx @fission-ai/openspec validate pages-action-buttons --strict`: "Change 'pages-action-buttons' is valid".

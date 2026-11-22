@@ -8,7 +8,7 @@
  * "change fields" action refused on the lifecycle field; a `visibleWhen`
  * condition written on the action. Every edit is emitted as a new array.
  *
- * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md
+ * @spec openspec/specs/page-action-authoring/spec.md
  */
 
 import schema from '@conduction/nextcloud-vue/src/schemas/app-manifest-v2.schema.json'

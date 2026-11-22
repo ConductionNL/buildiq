@@ -4,7 +4,7 @@
  * the migration of the old `target` actions (D3), and the lifecycle guard
  * (D2). Pure functions so the component and its tests share one truth.
  *
- * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md
+ * @spec openspec/specs/page-action-authoring/spec.md
  */
 
 /**
@@ -49,7 +49,7 @@ const LEGACY_TARGETS = ['navigate', 'emit', 'none']
  *
  * @param {string} type - The action type.
  * @return {boolean}
- * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
+ * @spec openspec/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
  */
 export function isEditableType(type) {
 	return EDITABLE_TYPES.some((entry) => entry.type === type)
@@ -60,7 +60,7 @@ export function isEditableType(type) {
  *
  * @param {object} action - The stored action.
  * @return {boolean}
- * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-old-actions-keep-working-req-bqab-004
+ * @spec openspec/specs/page-action-authoring/spec.md#requirement-old-actions-keep-working-req-bqab-004
  */
 export function isLegacyAction(action) {
 	return Boolean(action) && !action.type && LEGACY_TARGETS.includes(action.target)
@@ -76,7 +76,7 @@ export function isLegacyAction(action) {
  * @param {object} action - The stored action.
  * @param {string[]} pageIds - The ids of this app's pages.
  * @return {object|null}
- * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-old-actions-keep-working-req-bqab-004
+ * @spec openspec/specs/page-action-authoring/spec.md#requirement-old-actions-keep-working-req-bqab-004
  */
 export function migrateAction(action, pageIds = []) {
 	if (!isLegacyAction(action)) {
@@ -101,7 +101,7 @@ export function migrateAction(action, pageIds = []) {
  * @param {object[]} actions - The stored actions.
  * @param {string[]} pageIds - The ids of this app's pages.
  * @return {{actions: object[], migrated: number, dropped: number}}
- * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-old-actions-keep-working-req-bqab-004
+ * @spec openspec/specs/page-action-authoring/spec.md#requirement-old-actions-keep-working-req-bqab-004
  */
 export function migrateActions(actions, pageIds = []) {
 	const list = Array.isArray(actions) ? actions : []
@@ -131,7 +131,7 @@ export function migrateActions(actions, pageIds = []) {
  * @param {object} action - The current action.
  * @param {string} type - The new type.
  * @return {object}
- * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
+ * @spec openspec/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
  */
 export function withType(action, type) {
 	const next = {}
@@ -165,7 +165,7 @@ export function withType(action, type) {
  * @param {object} action - The action.
  * @param {string[]} lifecycleFields - The lifecycle fields of the page's schema.
  * @return {string|null}
- * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-status-buttons-follow-the-lifecycle-req-bqab-003
+ * @spec openspec/specs/page-action-authoring/spec.md#requirement-status-buttons-follow-the-lifecycle-req-bqab-003
  */
 export function lifecycleFieldPatched(action, lifecycleFields = ['status']) {
 	if (!action || action.type !== 'object-op' || !action.values || typeof action.values !== 'object') {
@@ -179,7 +179,7 @@ export function lifecycleFieldPatched(action, lifecycleFields = ['status']) {
  *
  * @param {object} action - The action.
  * @return {string}
- * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
+ * @spec openspec/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
  */
 export function missingFor(action) {
 	if (!action || !action.id || !action.label) {
