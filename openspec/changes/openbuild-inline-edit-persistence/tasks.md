@@ -72,4 +72,5 @@
 
 - [x] 7.1 Run `composer check:strict` and the hydra mechanical gates (route-auth, no-admin-idor, route-reachability, spec-coverage) green on the diff.
   > Run 21 Nov: route-auth, route-reachability and spec-coverage pass; no-admin-idor flags none of this change's endpoints (`get`, `save`, `clear`); its one `AppOverrideController` entry is `getUser()` of `application-delta-layers-ui`, which reads only the session user's own delta. `composer check:strict` reports nothing on the change's service, controller and capability; the other findings are in files this change does not touch.
-- [ ] 7.2 `openspec validate "buildiq-inline-edit-persistence" --strict` passes and `openspec status` shows the artifacts complete before archiving.
+- [x] 7.2 `openspec validate "buildiq-inline-edit-persistence" --strict` passes and `openspec status` shows the artifacts complete before archiving.
+  > Run 22 Nov 2026 under the change's current name: `openspec validate openbuild-inline-edit-persistence --strict` is valid after the long texts of five requirements moved into scenarios (the record's fields, the keyed-delta shape, a drifted base still reading, the loader's client-side merge, the anonymous read, the `#[NoAdminRequired]` routes, `enabled` always true); `openspec status` shows 4/4.

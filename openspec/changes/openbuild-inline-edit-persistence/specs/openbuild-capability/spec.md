@@ -2,13 +2,14 @@
 
 ### Requirement: Buildiq advertises an edit-availability capability
 
-The system SHALL implement an `OCP\Capabilities\ICapability` that contributes `{ "buildiq": { "enabled": true, "canEdit": <bool> } }` to the Nextcloud capabilities document, registered in the app bootstrap, so a fleet app can read a robust availability signal via `@nextcloud/capabilities` rather than inferring it from `OC.appswebroots`. `enabled` SHALL be `true` whenever the capability is contributed (the Buildiq app is enabled). `canEdit` SHALL reflect whether the **calling user** may use Buildiq's in-place edit feature, computed server-side from the real request user context.
+The system SHALL implement an `OCP\Capabilities\ICapability`, registered in the app bootstrap, that contributes `{ "buildiq": { "enabled": true, "canEdit": <bool> } }` to the Nextcloud capabilities document, so a fleet app reads availability via `@nextcloud/capabilities` rather than inferring it from `OC.appswebroots`. `canEdit` SHALL reflect whether the **calling user** may use Buildiq's in-place edit feature, computed server-side from the real request user context.
 
 #### Scenario: Capability is present when Buildiq is enabled
 
 - **WHEN** a client reads the Nextcloud capabilities document on an instance with Buildiq enabled
 - **THEN** the document SHALL contain `buildiq.enabled === true`
 - **AND** SHALL contain a boolean `buildiq.canEdit`
+- **AND** `buildiq.enabled` SHALL be `true` whenever the capability is contributed, since it is contributed only while the Buildiq app is enabled
 
 ### Requirement: canEdit reflects Buildiq access for the calling user
 
