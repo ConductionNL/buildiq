@@ -2692,7 +2692,7 @@
 				"evidence": "src/components/page-editor/DetailPageEditor.vue (504 lines) authors config.register/schema/sidebar(+tabs)/pageLayout for type:\"detail\"; renders via CnDetailPage (pageTypes.js). DetailPageEditor.vue has NO fields for headerActions, lifecycleActions or widgets (grep for those terms in the file returns nothing) -- buttons/related-item widgets on a detail page cannot be authored from this editor at all.",
 				"reachedOn": "any built app page authored as type detail",
 				"owner": "ConductionNL/buildiq",
-				"note": "The missing half is buildiq's designer, so the owner moved to ConductionNL/buildiq (nextcloud-vue lane) (nextcloud-vue lane, OpenSpec pass 2026-09-27; owner was ConductionNL/nextcloud-vue). Specified in openspec/changes/pages-detail-related-items (owner-moves pass 2026-09-28) for related lists, link buttons and the files tab; header and status buttons are specified in openspec/changes/pages-action-buttons.",
+				"note": "The missing half is buildiq's designer, so the owner moved to ConductionNL/buildiq (nextcloud-vue lane) (nextcloud-vue lane, OpenSpec pass 2026-09-27; owner was ConductionNL/nextcloud-vue). Specified in openspec/changes/pages-detail-related-items (owner-moves pass 2026-09-28) for related lists, link buttons and the files tab; header and status buttons are built (openspec/changes/archive/2026-11-22-pages-action-buttons).",
 				"change": "pages-detail-related-items",
 				"requirement": [
 					"openspec/changes/pages-detail-related-items/specs/page-detail-related-items :: A detail page lists related records (REQ-BQRI-001)",
@@ -3324,22 +3324,21 @@
 			"area": "pages",
 			"name": "Add buttons to a page that run an action, such as changing a status or starting a flow.",
 			"source": "own-code",
-			"buildiq": "partial",
+			"buildiq": "yes",
 			"nocobase": "yes",
 			"budibase": "yes",
 			"appsmith": "yes",
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "src/components/page-editor/IndexPageEditor.vue:77-79 authors config.actions via src/components/page-editor/fields/ActionBuilder.vue, which authors {id, label, icon, target} per action with target restricted to a 3-option <select>: navigate | emit | none (ActionBuilder.vue lines ~31-42). DetailPageEditor.vue has no actions/headerActions/lifecycleActions fields at all (grep for 'action'/'Actions' in that file returns nothing).",
-				"reachedOn": "Index (list) page editor, Actions list",
+				"state": "built",
+				"evidence": "src/components/page-editor/fields/ActionBuilder.vue authors typed actions (object-op, run-node, open-form, open-page, navigate, export) from src/components/page-editor/fields/actionTypes.js, migrating legacy target actions on load. src/components/page-editor/DetailPageEditor.vue has a Buttons section writing config.headerActions and a Status buttons section writing config.lifecycleActions, refusing an object-op on the lifecycle field; visibleWhen is authored per action. Tests: tests/components/page-editor/ActionBuilder.spec.js, tests/components/page-editor/actionTypes.spec.js, tests/components/page-editor/DetailPageEditor.actions.spec.js; e2e tests/e2e/page-actions.spec.ts.",
+				"reachedOn": "Page designer: index page Actions list, detail page Buttons and Status buttons sections",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/pages-action-buttons (OpenSpec pass 2026-09-27).",
 				"change": "pages-action-buttons",
 				"requirement": [
-					"openspec/changes/pages-action-buttons/specs/page-action-authoring :: The action editor authors typed actions (REQ-BQAB-001)",
-					"openspec/changes/pages-action-buttons/specs/page-action-authoring :: Status buttons follow the lifecycle (REQ-BQAB-003)"
+					"openspec/specs/page-action-authoring :: The action editor authors typed actions (REQ-BQAB-001)",
+					"openspec/specs/page-action-authoring :: Status buttons follow the lifecycle (REQ-BQAB-003)"
 				]
 			},
 			"provider": "buildiq",

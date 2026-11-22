@@ -8,7 +8,7 @@
  * optional list of transitions, and a header button refused when it patches
  * the status field.
  *
- * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md
+ * @spec openspec/specs/page-action-authoring/spec.md
  */
 
 import { mount } from '@vue/test-utils'

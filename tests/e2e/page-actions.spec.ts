@@ -48,7 +48,7 @@
  * NOTE: Playwright binaries are NOT installed by `npm install`. Run
  * `npm run test:e2e:install` once before invoking `npm run test:e2e`.
  *
- * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md
+ * @spec openspec/specs/page-action-authoring/spec.md
  */
 
 import type { Page } from '@playwright/test'

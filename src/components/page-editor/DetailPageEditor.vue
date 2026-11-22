@@ -443,7 +443,7 @@ export default {
 		/**
 		 * The field the status buttons move (`config.lifecycleActions.field`, `status` by default).
 		 *
-		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-status-buttons-follow-the-lifecycle-req-bqab-003
+		 * @spec openspec/specs/page-action-authoring/spec.md#requirement-status-buttons-follow-the-lifecycle-req-bqab-003
 		 */
 		statusField() {
 			const config = this.config.lifecycleActions
@@ -453,7 +453,7 @@ export default {
 		/**
 		 * The status buttons listed by hand; none means the live list.
 		 *
-		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-status-buttons-follow-the-lifecycle-req-bqab-003
+		 * @spec openspec/specs/page-action-authoring/spec.md#requirement-status-buttons-follow-the-lifecycle-req-bqab-003
 		 */
 		transitions() {
 			const config = this.config.lifecycleActions
@@ -463,7 +463,7 @@ export default {
 		/**
 		 * The bound schema's fields, for a button's "show only when".
 		 *
-		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-a-button-can-depend-on-the-record-req-bqab-005
+		 * @spec openspec/specs/page-action-authoring/spec.md#requirement-a-button-can-depend-on-the-record-req-bqab-005
 		 */
 		recordFields() {
 			const wanted = this.config.schema
@@ -762,7 +762,7 @@ export default {
 		 * or off.
 		 *
 		 * @param {boolean} on - Whether status buttons show.
-		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-status-buttons-follow-the-lifecycle-req-bqab-003
+		 * @spec openspec/specs/page-action-authoring/spec.md#requirement-status-buttons-follow-the-lifecycle-req-bqab-003
 		 */
 		setStatusButtons(on) {
 			this.update('lifecycleActions', on ? { field: 'status' } : '')
@@ -773,7 +773,7 @@ export default {
 		 *
 		 * @param {string} key - `field` or `transitions`.
 		 * @param {*} value - The value; an empty transitions list is removed.
-		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-status-buttons-follow-the-lifecycle-req-bqab-003
+		 * @spec openspec/specs/page-action-authoring/spec.md#requirement-status-buttons-follow-the-lifecycle-req-bqab-003
 		 */
 		updateLifecycle(key, value) {
 			const next = { ...(this.config.lifecycleActions || { field: 'status' }) }
