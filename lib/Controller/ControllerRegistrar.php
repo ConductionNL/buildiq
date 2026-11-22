@@ -31,7 +31,6 @@ use OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\TemplateInstallSeamInterface;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
-use Psr\Container\ContainerInterface;
 use RuntimeException;
 
 /**
@@ -170,7 +169,7 @@ final class ControllerRegistrar {
 		$context->registerService(
 			'OCA\\Buildiq\\Controller\\HealthController',
 			static function ($c) {
-				self::requireOpenRegister(container: $c);
+				self::requireOpenRegister(appManager: $c->get(IAppManager::class));
 				$class = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericHealthController';
 				return new $class(
 					appName: AppIdentity::APP_ID,
@@ -183,7 +182,7 @@ final class ControllerRegistrar {
 		$context->registerService(
 			'OCA\\Buildiq\\Controller\\MetricsController',
 			static function ($c) {
-				self::requireOpenRegister(container: $c);
+				self::requireOpenRegister(appManager: $c->get(IAppManager::class));
 				$class = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericMetricsController';
 				return new $class(
 					appName: AppIdentity::APP_ID,
@@ -203,7 +202,7 @@ final class ControllerRegistrar {
 	 * implementations, so they cannot be built without it. Asking first turns
 	 * a bare class-not-found error into a message that names the missing app.
 	 *
-	 * @param ContainerInterface $container The container resolving the controller
+	 * @param IAppManager $appManager The app manager of the resolving container
 	 *
 	 * @return void
 	 *
@@ -211,8 +210,7 @@ final class ControllerRegistrar {
 	 *
 	 * @spec openspec/specs/app-composition-bindings/spec.md
 	 */
-	private static function requireOpenRegister(ContainerInterface $container): void {
-		$appManager = $container->get(IAppManager::class);
+	private static function requireOpenRegister(IAppManager $appManager): void {
 		if ($appManager->isInstalled('openregister') === false) {
 			throw new RuntimeException('The health and metrics probes need OpenRegister, which is not installed.');
 		}
