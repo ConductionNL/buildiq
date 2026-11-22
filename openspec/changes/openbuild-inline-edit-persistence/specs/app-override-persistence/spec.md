@@ -2,7 +2,7 @@
 
 ### Requirement: Fleet-app override is stored as a keyed delta keyed by appId
 
-The system SHALL persist a fleet app's manifest customization as an `AppOverride` record in the `buildiq` register, carrying `appId` (the kebab-case Nextcloud app id, the natural unique key), an optional `baseRef` (a structured note of what the delta was diffed against), a `manifestDelta` (the keyed structural delta produced by `diffManifest`), `updatedBy` (the saving user's UID), and `updatedAt` (an ISO-8601 timestamp). The record SHALL be **per-instance shared** — exactly one `AppOverride` per `appId`, shared by all users of the instance — and `manifestDelta` SHALL be a keyed delta consumable by `mergeManifestDelta` (pages keyed by `page.id`, widgets by `widget.id`, the `{ "$op": "remove" }` deletion marker, the optional `__order` reorder key) as defined by the `@conduction/nextcloud-vue` `manifest-delta-merge-and-flex-columns` contract.
+The system SHALL persist a fleet app's manifest customization as an `AppOverride` record in the `buildiq` register, carrying `appId` (the kebab-case Nextcloud app id, the natural unique key), an optional `baseRef`, a `manifestDelta`, `updatedBy` and `updatedAt`. The record SHALL be **per-instance shared**: exactly one `AppOverride` per `appId`, shared by all users of the instance.
 
 #### Scenario: Saving an override persists a single record keyed by appId
 
@@ -14,6 +14,12 @@ The system SHALL persist a fleet app's manifest customization as an `AppOverride
 - **WHEN** a delta is saved for an `appId` that already has an `AppOverride`
 - **THEN** the system SHALL update the existing record in place (not create a second one)
 - **AND** SHALL refresh `updatedBy` and `updatedAt` to the new saver and time
+
+#### Scenario: The record's fields carry the delta contract
+
+- **WHEN** an `AppOverride` is stored
+- **THEN** `baseRef`, when present, SHALL be a structured note of what the delta was diffed against, `updatedBy` the saving user's UID and `updatedAt` an ISO-8601 timestamp
+- **AND** `manifestDelta` SHALL be the keyed structural delta produced by `diffManifest` and consumable by `mergeManifestDelta` (pages keyed by `page.id`, widgets by `widget.id`, the `{ "$op": "remove" }` deletion marker, the optional `__order` reorder key), as defined by the `@conduction/nextcloud-vue` `manifest-delta-merge-and-flex-columns` contract
 
 ### Requirement: Write endpoint upserts the delta and records who saved
 
@@ -32,21 +38,33 @@ The system SHALL expose `PUT /index.php/apps/buildiq/api/app-overrides/{appId}` 
 
 ### Requirement: Delta-shape validation rejects malformed or app-blanking deltas
 
-The system SHALL validate, before persisting, that the request body is a keyed delta (a plain object whose page/widget entries carry the ids the contract requires, whose `$op` values are the known deletion marker, and whose `__order` value, when present, is an array of ids). The system SHALL reject a delta that would resolve to a manifest with no renderable pages or menu (an app-blanking delta) with a `422` and SHALL NOT persist it. A stored delta SHALL NOT cause the read endpoint to error; orphaned patches against a drifted base are surfaced client-side by the loader's `orphanedDeltaPaths`, not by failing the read.
+The system SHALL validate, before persisting, that the request body is a keyed delta, and SHALL reject a malformed delta, or one that would resolve to a manifest with no renderable pages or menu (an app-blanking delta), with a `422` without persisting it. A stored delta SHALL NOT cause the read endpoint to error.
 
 #### Scenario: Malformed body is rejected with 422
 
 - **WHEN** a PUT body is not a keyed delta (e.g. a whole manifest, or `null`)
 - **THEN** the endpoint SHALL respond `422` and SHALL NOT persist an `AppOverride`
 
+#### Scenario: A keyed delta has the contract's ids and markers
+
+- **WHEN** a PUT body is a plain object whose page and widget entries carry the ids the contract requires, whose `$op` values are the known deletion marker, and whose `__order` value, when present, is an array of ids
+- **THEN** the shape check SHALL accept it
+- **AND** a body whose `$op` is an unknown value, or whose `__order` is not an array of ids, SHALL be answered `422`
+
 #### Scenario: App-blanking delta is rejected
 
 - **WHEN** a PUT body is a delta that removes every page and leaves no menu
 - **THEN** the endpoint SHALL respond `422` and SHALL NOT persist it
 
+#### Scenario: A stored delta against a drifted base still reads
+
+- **WHEN** a stored delta patches a page the fleet app's bundled manifest no longer has, and an authenticated user GETs its override
+- **THEN** the read endpoint SHALL return the stored delta without error
+- **AND** the orphaned patch SHALL be surfaced client-side by the loader's `orphanedDeltaPaths`, not by failing the read
+
 ### Requirement: Read endpoint returns the raw delta for client-side merge
 
-The system SHALL expose `GET /index.php/apps/buildiq/api/app-overrides/{appId}` returning the stored `manifestDelta` for that `appId` unchanged, so the fleet app's `@conduction/nextcloud-vue` loader configured with `mergeStrategy:'delta'` and `options.endpoint` pointed at this URL applies the delta over its own bundled manifest via `mergeManifestDelta(bundledManifest, delta)`. When no override exists for the `appId`, the endpoint SHALL return an empty delta so the merge is a no-op and the bundled manifest passes through unchanged. The endpoint SHALL require an authenticated session. The system SHALL NOT merge a fleet app's manifest server-side, because Buildiq does not hold the fleet app's bundled base manifest.
+The system SHALL expose `GET /index.php/apps/buildiq/api/app-overrides/{appId}` to an authenticated session, returning the stored `manifestDelta` for that `appId` unchanged, or an empty delta when none exists. The system SHALL NOT merge a fleet app's manifest server-side, because Buildiq does not hold the fleet app's bundled base manifest.
 
 #### Scenario: Existing override returns the stored delta
 
@@ -57,7 +75,18 @@ The system SHALL expose `GET /index.php/apps/buildiq/api/app-overrides/{appId}` 
 #### Scenario: No override returns an empty delta
 
 - **WHEN** an authenticated user GETs `/api/app-overrides/somefleetapp` and no override exists
-- **THEN** the response SHALL be `200` with an empty delta so the loader's merge is a no-op
+- **THEN** the response SHALL be `200` with an empty delta so the loader's merge is a no-op and the bundled manifest passes through unchanged
+
+#### Scenario: The fleet app's loader merges the delta itself
+
+- **WHEN** a fleet app's `@conduction/nextcloud-vue` loader is configured with `mergeStrategy:'delta'` and `options.endpoint` pointed at `/api/app-overrides/{appId}`
+- **THEN** it SHALL apply the returned delta over its own bundled manifest via `mergeManifestDelta(bundledManifest, delta)`
+- **AND** the response SHALL hold the delta only, never a merged manifest
+
+#### Scenario: Anonymous read is rejected
+
+- **WHEN** an unauthenticated request GETs `/api/app-overrides/opencatalogi`
+- **THEN** the endpoint SHALL reject the request and return no delta
 
 ### Requirement: Reset endpoint clears an override
 
@@ -76,7 +105,7 @@ The system SHALL expose `DELETE /index.php/apps/buildiq/api/app-overrides/{appId
 
 ### Requirement: Override writes require Buildiq access, not an admin role
 
-The system SHALL gate the write and delete endpoints on the caller having Buildiq access — i.e. the Buildiq app is enabled and the caller is within its Nextcloud app group-restriction — rather than on a per-object ownership model, because an `AppOverride` is a per-instance shared customization with no per-object owner. The write/delete routes SHALL be declared `#[NoAdminRequired]` (login required, not admin-only) and SHALL carry this Buildiq-access guard in the method body so a logged-in user outside Buildiq's scope is forbidden.
+The system SHALL gate the write and delete endpoints on the caller having Buildiq access (the Buildiq app is enabled and the caller is within its Nextcloud app group-restriction) rather than on per-object ownership, because an `AppOverride` is a per-instance shared customization with no per-object owner.
 
 #### Scenario: User with Buildiq access may write
 
@@ -87,3 +116,9 @@ The system SHALL gate the write and delete endpoints on the caller having Buildi
 
 - **WHEN** a logged-in user who is NOT within Buildiq's app group-restriction PUTs a delta
 - **THEN** the endpoint SHALL respond forbidden and SHALL NOT persist the override
+
+#### Scenario: The routes need a login, not an admin role
+
+- **WHEN** the write and delete methods of the override controller are read
+- **THEN** each SHALL be declared `#[NoAdminRequired]` (login required, not admin-only)
+- **AND** each SHALL carry the Buildiq-access guard in its method body, so a non-admin user with Buildiq access may write and a logged-in user outside Buildiq's scope is forbidden
