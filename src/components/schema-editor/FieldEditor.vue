@@ -1169,7 +1169,7 @@ export default {
 		 * @return {number|null} Parsed integer or null.
 		 */
 		toIntOrNull(value) {
-			if (value === '' || value == null) {
+			if (value === '' || value === null || value === undefined) {
 				return null
 			}
 			const parsed = parseInt(value, 10)
@@ -1184,7 +1184,7 @@ export default {
 		 * @return {number|null} Parsed number or null.
 		 */
 		toNumberOrNull(value) {
-			if (value === '' || value == null) {
+			if (value === '' || value === null || value === undefined) {
 				return null
 			}
 			const parsed = Number(value)
@@ -1293,7 +1293,7 @@ export default {
 			const next = this.fields.slice()
 			const current = { ...next[index] }
 			const validation = { ...(current.validation || {}) }
-			if (value === '' || value == null) {
+			if (value === '' || value === null || value === undefined) {
 				delete validation[key]
 			} else {
 				validation[key] = value
@@ -1495,7 +1495,7 @@ function fieldFromProperty(name, prop, isRequired) {
 		name,
 		type,
 		required: isRequired,
-		default: prop.default != null ? prop.default : null,
+		default: prop.default !== null && prop.default !== undefined ? prop.default : null,
 		description: prop.description || '',
 		validation: validationFromProperty(prop, type),
 		// REQ-OBSD-009: the automatic-number setting, only on a field that has one.
@@ -1666,7 +1666,7 @@ function choiceFromProperty(prop) {
 	return {
 		options: (Array.isArray(prop.enum) ? prop.enum : []).map((value) => ({
 			value: String(value),
-			label: labels[value] != null ? String(labels[value]) : '',
+			label: labels[value] !== null && labels[value] !== undefined ? String(labels[value]) : '',
 		})),
 	}
 }
@@ -1690,13 +1690,14 @@ function keysFor(type) {
  * @param {object} source The object to read.
  * @param {{truthy: Array<string>, present: Array<string>}} keys The keys.
  * @return {void}
+ * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
  */
 function copyKeys(target, source, keys) {
 	for (const key of keys.truthy) {
 		if (source[key]) target[key] = source[key]
 	}
 	for (const key of keys.present) {
-		if (source[key] != null) target[key] = source[key]
+		if (source[key] !== null && source[key] !== undefined) target[key] = source[key]
 	}
 }
 
@@ -1995,13 +1996,14 @@ function propertyTypeOf(type) {
  * @param {object} field Editor field row.
  * @param {object} raw The property as it was loaded.
  * @return {object} The start of the saved property.
+ * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
  */
 function baseProperty(field, raw) {
 	const prop = withoutKeys(raw, ownedKeys(field.type, fieldTypeOf(raw)))
 	if (field.description) {
 		prop.description = field.description
 	}
-	if (field.default != null && field.default !== '') {
+	if (field.default !== null && field.default !== undefined && field.default !== '') {
 		prop.default = field.default
 	}
 	return prop
