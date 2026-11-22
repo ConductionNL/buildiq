@@ -4,7 +4,7 @@
  *
  * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
  */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import FieldEditor, {
 	fieldsToSchema,
 	schemaToFields,
@@ -63,6 +63,18 @@ describe('FieldEditor null and undefined checks', () => {
 		expect(options).toContain('"value":"a","label":"Alpha"')
 		expect(options).toContain('"value":"b","label":""')
 		expect(options).toContain('"value":"c","label":""')
+	})
+
+	it('drops a validation rule set to empty, null or undefined, and keeps 0', () => {
+		const { updateValidation } = FieldEditor.methods
+		for (const value of ['', null, undefined]) {
+			const host = { fields: [{ validation: { minLength: 2, maxLength: 9 } }], emitFields: vi.fn() }
+			updateValidation.call(host, 0, 'minLength', value)
+			expect(host.emitFields.mock.calls[0][0][0].validation).toEqual({ maxLength: 9 })
+		}
+		const host = { fields: [{ validation: {} }], emitFields: vi.fn() }
+		updateValidation.call(host, 0, 'minLength', 0)
+		expect(host.emitFields.mock.calls[0][0][0].validation).toEqual({ minLength: 0 })
 	})
 
 	it('coerces an empty, null or undefined input to null', () => {

@@ -1289,6 +1289,16 @@ export default {
 			this.updateValidation(index, 'format', choice)
 		},
 
+		/**
+		 * Set one validation rule on a field row, or drop it when the value
+		 * is empty, null or undefined.
+		 *
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-schema-designer/spec.md#requirement-a-field-carries-required-length-range-and-pattern-rules-req-bqcv-021
+		 * @param {number} index The row index.
+		 * @param {string} key The validation key.
+		 * @param {string|number|null|undefined} value The new value.
+		 * @return {void}
+		 */
 		updateValidation(index, key, value) {
 			const next = this.fields.slice()
 			const current = { ...next[index] }
