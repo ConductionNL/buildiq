@@ -7,4 +7,4 @@
 - [x] **T05**: Assert no new public route: add a case to `tests/Unit/AppInfo/RoutesTest.php` that fails when an automations route targets a `#[PublicPage]` method (REQ-BQTR-004). Verify: that PHPUnit case.
 - [ ] **T06**: Playwright `tests/e2e/automation-inbound-triggers.spec.ts` against integriq mock mode: a seeded mail creates a record, and a signed webhook call updates one while an unsigned call does not (REQ-BQTR-002, REQ-BQTR-003).
 - [x] **T07**: Strings and docs: English and Dutch for the triggers, the pickers, the address block and the reasons (`l10n/en.json`, `l10n/nl.json`), and a section in `docs/` on starting an automation from mail or from another system.
-- [ ] **T08**: Run `openspec validate logic-email-and-webhook-triggers --strict`.
+- [x] **T08**: Run `openspec validate logic-email-and-webhook-triggers --strict`. Run 22 Nov 2026 with `npx @fission-ai/openspec validate logic-email-and-webhook-triggers --strict`: "Change 'logic-email-and-webhook-triggers' is valid".

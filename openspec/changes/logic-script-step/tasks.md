@@ -15,4 +15,4 @@
 - [ ] **T07**: Playwright `tests/e2e/automation-script-step.spec.ts`, once OpenRegister's runner exists: an owner adds and tests a script, an editor is refused a change (REQ-BQSS-001, REQ-BQSS-002, REQ-BQSS-004).
 - [x] **T08**: Strings and docs: English and Dutch for the step, the setting and the refusals (`l10n/en.json`, `l10n/nl.json`), and a page in `docs/` on script steps: where they run, what they can reach, and who may write them.
   > Built 21 Nov: English and Dutch strings for the step and its form, the refusals (`Only app owners can change a script step.`, `Script steps are turned off for this instance.`, the missing-runner refusal) in `l10n/en.json`, `l10n/nl.json` and the built catalogues; the setting's strings were already there (T01). `docs/script-steps.md` covers where scripts run, what they can reach and who may write them, linked from `docs/automation-designer.md`.
-- [ ] **T09**: Run `openspec validate logic-script-step --strict`.
+- [x] **T09**: Run `openspec validate logic-script-step --strict`. Run 22 Nov 2026 with `npx @fission-ai/openspec validate logic-script-step --strict`: "Change 'logic-script-step' is valid".

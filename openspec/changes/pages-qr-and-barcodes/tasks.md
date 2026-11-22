@@ -16,4 +16,4 @@
 - [x] **T08**: Strings and docs: English and Dutch for the scan section, the field type, the widget and the messages (`l10n/en.json`, `l10n/nl.json`), and a section in `docs/` on scanning and showing codes.
   - Done: the strings are in `l10n/en.json` and `l10n/nl.json` (with `Scanned code` for the shared field type list), and `docs/scanning-and-codes.md` covers scanning, the scan field, the code widget, the camera policy and the checks.
   - Partly: the editor strings of T01-T03 are in English and Dutch; the runtime messages and the docs section wait for the renderer (T06).
-- [ ] **T09**: Run `openspec validate pages-qr-and-barcodes --strict`.
+- [x] **T09**: Run `openspec validate pages-qr-and-barcodes --strict`. Run 22 Nov 2026 with `npx @fission-ai/openspec validate pages-qr-and-barcodes --strict`: "Change 'pages-qr-and-barcodes' is valid".
