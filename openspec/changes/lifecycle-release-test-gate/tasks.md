@@ -15,4 +15,4 @@
 - [ ] **T07**: Ask the openregister lane for a validate-only method on `Contract\ObjectServiceInterface` (sibling half) and record the change name here.
 - [x] **T08**: English and Dutch strings for the tab, the report and the override (`l10n/en.json`, `l10n/nl.json`), and a page in `docs/user-guide/` on testing an app before release.
   > 37 en/nl keys for the tab, the report and the override (the plural under its `_singular_::_plural_` key), `l10n/en.js` and `l10n/nl.js` regenerated; `docs/user-guide/testing-before-release.md`.
-- [ ] **T09**: Run `openspec validate lifecycle-release-test-gate --strict`.
+- [x] **T09**: Run `openspec validate lifecycle-release-test-gate --strict`. Run 22 Nov 2026 with `npx @fission-ai/openspec validate lifecycle-release-test-gate --strict`: "Change 'lifecycle-release-test-gate' is valid".

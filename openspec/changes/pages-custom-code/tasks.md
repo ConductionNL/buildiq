@@ -16,4 +16,4 @@
   - Spec written, not run: `tests/e2e/page-custom-code.spec.ts` (non-admin owner and editor, empty storage state, `PLAYWRIGHT_BASE_URL`; the admin context switches the setting on and restores it). Rendering inside a built app waits for T06, so the sandbox document is checked directly. Left unticked until it has run on an instance.
 - [x] **T09**: Strings and docs: English and Dutch for the editors, the toggle, the setting and the refusals (`l10n/en.json`, `l10n/nl.json`), and a page in `docs/` on writing code for a page: what it can see, what it can ask, and who may write it.
   - note: `docs/page-custom-code.md` and the en/nl strings for the setting are done. The strings for T04 (page and widget editors), T05 and T07 are done too, and the page now also covers writing code in the page designer and the code preview.
-- [ ] **T10**: Run `openspec validate pages-custom-code --strict`.
+- [x] **T10**: Run `openspec validate pages-custom-code --strict`. Run 22 Nov 2026 with `npx @fission-ai/openspec validate pages-custom-code --strict`: "Change 'pages-custom-code' is valid".

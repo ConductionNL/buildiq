@@ -16,5 +16,5 @@
   - Done: OpenRegister main ships `changedFields` on `openregister.trigger-object`. On `object-updated` an AI step's trigger watches its source fields only (event `object.updated`); an `origin: ai-field` automation gets a second trigger on edits of its sources. A step may not write into a field it reads.
 - [x] **T08**: Strings and docs: English and Dutch for the action kind, the presets, the AI field editor and the refusals (`l10n/en.json`, `l10n/nl.json`), and a page in `docs/` on AI steps and AI fields, including which fields are sent.
   - Done: 45 strings in `l10n/en.json` and `l10n/nl.json`, `.js` catalogues regenerated (`npm run test:l10n`, `test:l10n:parity` and `check:l10n-js` green); `docs/ai-steps-and-fields.md` (presets, which fields are sent, AI fields, when it runs) linked from `docs/automation-designer.md`.
-- [ ] **T09**: Run `openspec validate ai-llm-steps-and-computed-fields --strict`.
+- [x] **T09**: Run `openspec validate ai-llm-steps-and-computed-fields --strict`. Run 22 Nov 2026 with `npx @fission-ai/openspec validate ai-llm-steps-and-computed-fields --strict`: "Change 'ai-llm-steps-and-computed-fields' is valid".
   - Not run: the openspec CLI is not installed in the build environment.
