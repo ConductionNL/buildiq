@@ -2,18 +2,17 @@
 
 ### Requirement: Manifest-carrying schema declares optional baseRef and manifestDelta
 
-The system SHALL declare two optional top-level properties on the manifest-carrying
-schema (`ApplicationVersion` per ADR-002, where the `manifest` blob lives) in
-`lib/Settings/openbuild_register.json`: `baseRef` and `manifestDelta`. `baseRef` SHALL
-be a structured reference identifying what the design extends — an OpenBuilt template,
-another OpenBuilt app, or a fleet app's bundled manifest — with an optional pin to a
-specific base version. `manifestDelta` SHALL be an object carrying the keyed structural
-delta (page entries keyed by `page.id`, widget entries keyed by `widget.id`, the
-`{ "$op": "remove" }` deletion marker, and the optional `__order` reorder key) as
-defined by the `@conduction/nextcloud-vue` `manifest-delta-merge-and-flex-columns`
-contract. Both properties SHALL be optional and additive — an object that omits both is
-valid, and the existing `manifest` blob property SHALL remain on the schema for legacy
-and standalone apps.
+The system SHALL declare two optional, additive top-level properties, `baseRef` and
+`manifestDelta`, on the manifest-carrying schema (`ApplicationVersion` per ADR-002,
+where the `manifest` blob lives) in `lib/Settings/openbuild_register.json`. An object
+that omits both SHALL be valid, and the existing `manifest` blob property SHALL remain
+on the schema for legacy and standalone apps.
+
+#### Scenario: The two properties carry the delta contract's shape
+
+- **WHEN** the manifest-carrying schema in `lib/Settings/openbuild_register.json` is read
+- **THEN** `baseRef` SHALL be a structured reference identifying what the design extends (an OpenBuilt template, another OpenBuilt app, or a fleet app's bundled manifest), with an optional pin to a specific base version
+- **AND** `manifestDelta` SHALL be an object carrying the keyed structural delta (page entries keyed by `page.id`, widget entries keyed by `widget.id`, the `{ "$op": "remove" }` deletion marker and the optional `__order` reorder key) as defined by the `@conduction/nextcloud-vue` `manifest-delta-merge-and-flex-columns` contract
 
 #### Scenario: Object with baseRef and manifestDelta is accepted
 
