@@ -156,7 +156,7 @@ class PublishedApplicationProviderTest extends TestCase {
 	 * @return ICacheFactory The factory.
 	 */
 	private function cacheFactory(array &$store): ICacheFactory {
-		$cache = $this->createMock(ICache::class);
+		$cache = $this->createMock(originalClassName: ICache::class);
 		$cache->method('get')->willReturnCallback(static function (string $key) use (&$store) {
 			return ($store[$key] ?? null);
 		});
@@ -169,7 +169,7 @@ class PublishedApplicationProviderTest extends TestCase {
 			return true;
 		});
 
-		$factory = $this->createMock(ICacheFactory::class);
+		$factory = $this->createMock(originalClassName: ICacheFactory::class);
 		$factory->method('isAvailable')->willReturn(true);
 		$factory->method('createDistributed')
 			->with(PublishedApplicationProvider::CACHE_NAMESPACE)
@@ -190,8 +190,8 @@ class PublishedApplicationProviderTest extends TestCase {
 			->method('findAll')
 			->willReturn([['slug' => 'pet-store']]);
 
-		$first = new PublishedApplicationProvider(objectService: $this->objectService, cacheFactory: $this->cacheFactory($store));
-		$this->assertSame([['slug' => 'pet-store']], $first->getPublishedApplications());
+		$first = new PublishedApplicationProvider(objectService: $this->objectService, cacheFactory: $this->cacheFactory(store: $store));
+		$this->assertSame(expected: [['slug' => 'pet-store']], actual: $first->getPublishedApplications());
 
 		$built = 0;
 		$later = new PublishedApplicationProvider(
@@ -199,10 +199,10 @@ class PublishedApplicationProviderTest extends TestCase {
 				$built++;
 				return $this->objectService;
 			},
-			cacheFactory: $this->cacheFactory($store)
+			cacheFactory: $this->cacheFactory(store: $store)
 		);
-		$this->assertSame([['slug' => 'pet-store']], $later->getPublishedApplications());
-		$this->assertSame(0, $built);
+		$this->assertSame(expected: [['slug' => 'pet-store']], actual: $later->getPublishedApplications());
+		$this->assertSame(expected: 0, actual: $built);
 	}//end testALaterRequestIsServedFromTheDistributedCache()
 
 	/**
@@ -213,17 +213,17 @@ class PublishedApplicationProviderTest extends TestCase {
 	public function testInvalidateDropsTheCachedRead(): void {
 		$store = [];
 		$this->objectService
-			->expects($this->exactly(2))
+			->expects($this->exactly(count: 2))
 			->method('findAll')
 			->willReturnOnConsecutiveCalls([['slug' => 'pet-store']], []);
 
-		$provider = new PublishedApplicationProvider(objectService: $this->objectService, cacheFactory: $this->cacheFactory($store));
+		$provider = new PublishedApplicationProvider(objectService: $this->objectService, cacheFactory: $this->cacheFactory(store: $store));
 		$provider->getPublishedApplications();
 		$provider->invalidate();
-		$this->assertSame([], $provider->getPublishedApplications());
+		$this->assertSame(expected: [], actual: $provider->getPublishedApplications());
 
-		$later = new PublishedApplicationProvider(objectService: $this->objectService, cacheFactory: $this->cacheFactory($store));
-		$this->assertSame([], $later->getPublishedApplications());
+		$later = new PublishedApplicationProvider(objectService: $this->objectService, cacheFactory: $this->cacheFactory(store: $store));
+		$this->assertSame(expected: [], actual: $later->getPublishedApplications());
 	}//end testInvalidateDropsTheCachedRead()
 
 	/**
@@ -236,6 +236,6 @@ class PublishedApplicationProviderTest extends TestCase {
 
 		$provider = new PublishedApplicationProvider(objectService: fn (): ObjectServiceInterface => $this->objectService);
 
-		$this->assertSame([['slug' => 'pet-store']], $provider->getPublishedApplications());
+		$this->assertSame(expected: [['slug' => 'pet-store']], actual: $provider->getPublishedApplications());
 	}//end testAClosureObjectServiceIsResolvedOnAMiss()
 }//end class

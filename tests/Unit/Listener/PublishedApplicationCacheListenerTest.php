@@ -49,12 +49,12 @@ final class PublishedApplicationCacheListenerTest extends TestCase {
 	 * @return PublishedApplicationCacheListener The listener.
 	 */
 	private function listener(bool $isApplication, int $invalidations): PublishedApplicationCacheListener {
-		$applications = $this->createMock(PublishedApplicationProviderInterface::class);
-		$applications->expects($this->exactly($invalidations))->method('invalidate');
+		$applications = $this->createMock(originalClassName: PublishedApplicationProviderInterface::class);
+		$applications->expects($this->exactly(count: $invalidations))->method('invalidate');
 
-		$slugs = $this->createMock(ObjectSchemaSlugResolverInterface::class);
+		$slugs = $this->createMock(originalClassName: ObjectSchemaSlugResolverInterface::class);
 		$slugs->method('isBuildiqSchema')
-			->with($this->isInstanceOf(ObjectEntity::class), PublishedApplicationProvider::APPLICATION_SCHEMA)
+			->with($this->isInstanceOf(className: ObjectEntity::class), PublishedApplicationProvider::APPLICATION_SCHEMA)
 			->willReturn($isApplication);
 
 		return new PublishedApplicationCacheListener(applications: $applications, slugs: $slugs);
