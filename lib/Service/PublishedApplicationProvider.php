@@ -9,6 +9,11 @@
  * from this one cache, so registering widgets adds no second query to a
  * request that already reads the same records for the app menu.
  *
+ * Boot runs on every Nextcloud request, every XHR included, so the read is
+ * also kept in the distributed cache for a short while. A write to an
+ * Application drops it (PublishedApplicationCacheListener), so a publish or
+ * an unpublish shows on the next request.
+ *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -32,7 +37,10 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Kernel\Contracts\PublishedApplicationProviderInterface;
 use OCA\Buildiq\Support\ObjectRecord;
+use Closure;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCP\ICache;
+use OCP\ICacheFactory;
 
 /**
  * Single per-request source of the published Applications.
@@ -59,6 +67,26 @@ class PublishedApplicationProvider implements PublishedApplicationProviderInterf
 	public const STATUS_PUBLISHED = 'published';
 
 	/**
+	 * Distributed cache namespace and key of the published Applications.
+	 */
+	public const CACHE_NAMESPACE = 'buildiq_published_apps';
+	public const CACHE_KEY = 'published';
+
+	/**
+	 * Seconds the read stays in the distributed cache. A write to an
+	 * Application drops it earlier; the TTL bounds a write that bypasses the
+	 * object events.
+	 */
+	public const CACHE_TTL = 300;
+
+	/**
+	 * The distributed cache, or null when none is configured.
+	 *
+	 * @var ICache|null
+	 */
+	private ?ICache $cache = null;
+
+	/**
 	 * Cache of published applications fetched this request (per-request).
 	 *
 	 * @var array<array<string,mixed>>|null
@@ -68,13 +96,20 @@ class PublishedApplicationProvider implements PublishedApplicationProviderInterf
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectServiceInterface $objectService OpenRegister object service.
+	 * @param ObjectServiceInterface|Closure $objectService OpenRegister object service, or a
+	 *                                                     closure returning it, so a cache hit
+	 *                                                     builds no OpenRegister service tree.
+	 * @param ICacheFactory|null             $cacheFactory  Distributed cache across requests.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectServiceInterface $objectService,
+		private readonly ObjectServiceInterface|Closure $objectService,
+		?ICacheFactory $cacheFactory = null,
 	) {
+		if ($cacheFactory !== null && $cacheFactory->isAvailable() === true) {
+			$this->cache = $cacheFactory->createDistributed(self::CACHE_NAMESPACE);
+		}
 	}//end __construct()
 
 	/**
@@ -105,7 +140,18 @@ class PublishedApplicationProvider implements PublishedApplicationProviderInterf
 			return $this->cachedApplications;
 		}
 
-		$results = $this->objectService->findAll(
+		$cached = $this->cache?->get(self::CACHE_KEY);
+		if (is_array($cached) === true) {
+			$this->cachedApplications = $cached;
+			return $cached;
+		}
+
+		$objectService = $this->objectService;
+		if ($objectService instanceof Closure) {
+			$objectService = $objectService();
+		}
+
+		$results = $objectService->findAll(
 			config: [
 				'filters' => [
 					'register' => self::REGISTER_SLUG,
@@ -125,6 +171,19 @@ class PublishedApplicationProvider implements PublishedApplicationProviderInterf
 		}
 
 		$this->cachedApplications = $applications;
+		$this->cache?->set(self::CACHE_KEY, $applications, self::CACHE_TTL);
 		return $applications;
 	}//end getPublishedApplications()
+
+	/**
+	 * Drop the cached read, here and in the distributed cache.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-published-applications-are-read-once-per-request
+	 */
+	public function invalidate(): void {
+		$this->cachedApplications = null;
+		$this->cache?->remove(self::CACHE_KEY);
+	}//end invalidate()
 }//end class

@@ -61,4 +61,11 @@ interface PublishedApplicationProviderInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function getPublishedApplications(): array;
+
+	/**
+	 * Drop the cached read, so the next one asks OpenRegister again.
+	 *
+	 * @return void
+	 */
+	public function invalidate(): void;
 }//end interface

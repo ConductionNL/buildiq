@@ -27,6 +27,8 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\PublishedApplicationProvider;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -145,4 +147,95 @@ class PublishedApplicationProviderTest extends TestCase {
 			$applications
 		);
 	}//end testEntityResultsAreNormalisedToArrays()
+
+	/**
+	 * A cache factory over an in-memory distributed cache shared by every provider built with it.
+	 *
+	 * @param array<string,mixed> $store The shared store, by reference.
+	 *
+	 * @return ICacheFactory The factory.
+	 */
+	private function cacheFactory(array &$store): ICacheFactory {
+		$cache = $this->createMock(originalClassName: ICache::class);
+		$cache->method('get')->willReturnCallback(static function (string $key) use (&$store) {
+			return ($store[$key] ?? null);
+		});
+		$cache->method('set')->willReturnCallback(static function (string $key, $value) use (&$store): bool {
+			$store[$key] = $value;
+			return true;
+		});
+		$cache->method('remove')->willReturnCallback(static function (string $key) use (&$store): bool {
+			unset($store[$key]);
+			return true;
+		});
+
+		$factory = $this->createMock(originalClassName: ICacheFactory::class);
+		$factory->method('isAvailable')->willReturn(true);
+		$factory->method('createDistributed')
+			->with(PublishedApplicationProvider::CACHE_NAMESPACE)
+			->willReturn($cache);
+		return $factory;
+	}//end cacheFactory()
+
+	/**
+	 * Boot runs on every request: a later request reads the distributed cache, not OpenRegister,
+	 * and does not even build the object service.
+	 *
+	 * @return void
+	 */
+	public function testALaterRequestIsServedFromTheDistributedCache(): void {
+		$store = [];
+		$this->objectService
+			->expects($this->once())
+			->method('findAll')
+			->willReturn([['slug' => 'pet-store']]);
+
+		$first = new PublishedApplicationProvider(objectService: $this->objectService, cacheFactory: $this->cacheFactory(store: $store));
+		$this->assertSame(expected: [['slug' => 'pet-store']], actual: $first->getPublishedApplications());
+
+		$built = 0;
+		$later = new PublishedApplicationProvider(
+			objectService: function () use (&$built): ObjectServiceInterface {
+				$built++;
+				return $this->objectService;
+			},
+			cacheFactory: $this->cacheFactory(store: $store)
+		);
+		$this->assertSame(expected: [['slug' => 'pet-store']], actual: $later->getPublishedApplications());
+		$this->assertSame(expected: 0, actual: $built);
+	}//end testALaterRequestIsServedFromTheDistributedCache()
+
+	/**
+	 * After invalidate() the next read asks OpenRegister again, in this request and in a later one.
+	 *
+	 * @return void
+	 */
+	public function testInvalidateDropsTheCachedRead(): void {
+		$store = [];
+		$this->objectService
+			->expects($this->exactly(count: 2))
+			->method('findAll')
+			->willReturnOnConsecutiveCalls([['slug' => 'pet-store']], []);
+
+		$provider = new PublishedApplicationProvider(objectService: $this->objectService, cacheFactory: $this->cacheFactory(store: $store));
+		$provider->getPublishedApplications();
+		$provider->invalidate();
+		$this->assertSame(expected: [], actual: $provider->getPublishedApplications());
+
+		$later = new PublishedApplicationProvider(objectService: $this->objectService, cacheFactory: $this->cacheFactory(store: $store));
+		$this->assertSame(expected: [], actual: $later->getPublishedApplications());
+	}//end testInvalidateDropsTheCachedRead()
+
+	/**
+	 * A closure for the object service is called only on a cache miss.
+	 *
+	 * @return void
+	 */
+	public function testAClosureObjectServiceIsResolvedOnAMiss(): void {
+		$this->objectService->method('findAll')->willReturn([['slug' => 'pet-store']]);
+
+		$provider = new PublishedApplicationProvider(objectService: fn (): ObjectServiceInterface => $this->objectService);
+
+		$this->assertSame(expected: [['slug' => 'pet-store']], actual: $provider->getPublishedApplications());
+	}//end testAClosureObjectServiceIsResolvedOnAMiss()
 }//end class
