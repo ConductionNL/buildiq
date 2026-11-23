@@ -25,8 +25,12 @@ use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
 use OCA\Buildiq\Listener\AutomationCleanupListener;
 use OCA\Buildiq\Listener\ListenerRegistrar;
 use OCA\Buildiq\Listener\ProductionVersionGuardListener;
+use OCA\Buildiq\Listener\PublishedApplicationCacheListener;
+use OCA\Buildiq\Service\PublishedApplicationProvider;
+use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCP\EventDispatcher\IEventListener;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -41,24 +45,28 @@ use PHPUnit\Framework\TestCase;
 final class ListenerRegistrarFilteredListenersTest extends TestCase {
 
 	/**
-	 * Exactly the production-version guard and the automation cleanup, in that order.
+	 * The production-version guard, the automation cleanup and the published-Application
+	 * cache invalidation on create, update and delete, in that order.
 	 *
 	 * @return void
 	 */
-	public function testTheTwoNarrowedListenersAreDeclaredInOrder(): void {
+	public function testTheNarrowedListenersAreDeclaredInOrder(): void {
 		$subscriptions = (new ListenerRegistrar())->filteredObjectListeners();
 
 		self::assertSame(
 			expected: [
 				[ObjectCreatingEvent::class, ProductionVersionGuardListener::class],
 				[ObjectDeletedEvent::class, AutomationCleanupListener::class],
+				[ObjectCreatedEvent::class, PublishedApplicationCacheListener::class],
+				[ObjectUpdatedEvent::class, PublishedApplicationCacheListener::class],
+				[ObjectDeletedEvent::class, PublishedApplicationCacheListener::class],
 			],
 			actual: array_map(
 				static fn (array $subscription): array => [$subscription['event'], $subscription['listener']],
 				$subscriptions
 			)
 		);
-	}//end testTheTwoNarrowedListenersAreDeclaredInOrder()
+	}//end testTheNarrowedListenersAreDeclaredInOrder()
 
 	/**
 	 * Each subscription names the schema its handler guards on.
@@ -75,6 +83,10 @@ final class ListenerRegistrarFilteredListenersTest extends TestCase {
 		self::assertSame(
 			expected: [AutomationCompilerServiceInterface::AUTOMATION_SCHEMA],
 			actual: $byListener[AutomationCleanupListener::class]
+		);
+		self::assertSame(
+			expected: [PublishedApplicationProvider::APPLICATION_SCHEMA],
+			actual: $byListener[PublishedApplicationCacheListener::class]
 		);
 	}//end testEachSchemaInterestMatchesItsHandlersGuard()
 

@@ -28,6 +28,7 @@ use OCA\Buildiq\Event\RuleEvaluationRequestedEvent;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\PublishedApplicationProviderInterface;
+use OCA\Buildiq\Service\PublishedApplicationProvider;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -354,6 +355,26 @@ final class ListenerRegistrar {
 				'listener' => AutomationCleanupListener::class,
 				'registers' => null,
 				'schemas' => ['automation'],
+			],
+			// The published-Application read is cached across requests; a write
+			// to an Application drops it. Schema-only, like the guard above.
+			[
+				'event' => ObjectCreatedEvent::class,
+				'listener' => PublishedApplicationCacheListener::class,
+				'registers' => null,
+				'schemas' => [PublishedApplicationProvider::APPLICATION_SCHEMA],
+			],
+			[
+				'event' => ObjectUpdatedEvent::class,
+				'listener' => PublishedApplicationCacheListener::class,
+				'registers' => null,
+				'schemas' => [PublishedApplicationProvider::APPLICATION_SCHEMA],
+			],
+			[
+				'event' => ObjectDeletedEvent::class,
+				'listener' => PublishedApplicationCacheListener::class,
+				'registers' => null,
+				'schemas' => [PublishedApplicationProvider::APPLICATION_SCHEMA],
 			],
 		];
 	}//end filteredObjectListeners()

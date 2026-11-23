@@ -34,6 +34,7 @@ use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\Dashboard\IManager as IDashboardManager;
+use OCP\ICacheFactory;
 use OCP\INavigationManager;
 use OCP\IURLGenerator;
 use Psr\Container\ContainerInterface;
@@ -137,7 +138,8 @@ final class ServiceRegistrar {
 		$context->registerService(
 			PublishedApplicationProvider::class,
 			static fn ($c): PublishedApplicationProvider => new PublishedApplicationProvider(
-				objectService: $c->get(ObjectServiceInterface::class)
+				objectService: static fn (): ObjectServiceInterface => $c->get(ObjectServiceInterface::class),
+				cacheFactory: $c->get(ICacheFactory::class)
 			)
 		);
 
