@@ -9,9 +9,9 @@
  * `{ manifest }`), so the manifest comes back and the version link is kept;
  * cancelling writes nothing.
  *
- * Not asserted, because it is not built: the version history lists versions,
- * not the saves of one version, so it cannot offer "the save before it" or
- * list the rollback as the newest save. See the T15 note.
+ * The saves of one version ("the save before it", the rollback listed as the
+ * newest save) are on each row's Saves button, which opens VersionSavesModal;
+ * the modal itself is asserted in tests/modals/VersionSavesModal.spec.js.
  *
  * @spec openspec/changes/capability-requirements-backfill/specs/application-versions/spec.md#requirement-a-maker-rolls-a-version-back-to-an-earlier-manifest-req-bqcv-015
  */
@@ -29,6 +29,24 @@ vi.mock('@nextcloud/router', async (importOriginal) => ({
 }))
 vi.mock('@nextcloud/initial-state', () => ({ loadState }))
 vi.mock('@nextcloud/dialogs', () => ({ showError: vi.fn(), showSuccess: vi.fn() }))
+vi.mock('../../../src/modals/VersionSavesModal.vue', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'VersionSavesModal',
+			props: ['open', 'appSlug', 'version', 'canEdit'],
+			emits: ['update:open', 'restored'],
+			render() {
+				return h('div', {
+					class: 'saves-modal',
+					'data-open': this.open ? 'true' : 'false',
+					'data-version': this.version ? this.version.name : '',
+					'data-can-edit': this.canEdit ? 'true' : 'false',
+				})
+			},
+		},
+	}
+})
 vi.mock('../../../src/modals/RollbackConfirmModal.vue', async () => {
 	const { h } = await import('vue')
 	return {
@@ -133,5 +151,18 @@ describe('REQ-BQCV-015 a maker rolls a version back to an earlier manifest', () 
 
 		expect(axiosMock.put).not.toHaveBeenCalled()
 		expect(wrapper.find('.rollback-modal').attributes('data-open')).toBe('false')
+	})
+
+	it('Each version row opens its saves, for the app and that version', async () => {
+		const wrapper = await openVersionHistory()
+		expect(wrapper.find('.saves-modal').attributes('data-open')).toBe('false')
+
+		await rowOf(wrapper, '1.0.0').findAll('button').find((b) => b.text() === 'Saves').trigger('click')
+
+		const modal = wrapper.find('.saves-modal')
+		expect(modal.attributes('data-open')).toBe('true')
+		expect(modal.attributes('data-version')).toBe('Development')
+		expect(modal.attributes('data-can-edit')).toBe('true')
+		expect(axiosMock.put).not.toHaveBeenCalled()
 	})
 })

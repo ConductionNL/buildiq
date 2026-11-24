@@ -3060,7 +3060,20 @@ OC.L10N.register(
         "The file is empty.": "The file is empty.",
         "The file is larger than 10 MB.": "The file is larger than 10 MB.",
         "The first row holds the column names. Each column becomes a field, each row a record, and the app opens on a list of them.": "The first row holds the column names. Each column becomes a field, each row a record, and the app opens on a list of them.",
-        "Turn off \"Start from a database\" to start from a spreadsheet.": "Turn off \"Start from a database\" to start from a spreadsheet."
+        "Turn off \"Start from a database\" to start from a spreadsheet.": "Turn off \"Start from a database\" to start from a spreadsheet.",
+        "Each save of this version from now on is kept here, so you can roll back to it.": "Each save of this version from now on is kept here, so you can roll back to it.",
+        "Loading saves…": "Loading saves…",
+        "no pages": "no pages",
+        "No saves kept yet": "No saves kept yet",
+        "Pages: {pages}": "Pages: {pages}",
+        "Replace this version's pages with this save?": "Replace this version's pages with this save?",
+        "Roll back to this save": "Roll back to this save",
+        "Saves": "Saves",
+        "Saves of {version}": "Saves of {version}",
+        "The rollback failed. The version is unchanged.": "The rollback failed. The version is unchanged.",
+        "The saves could not be loaded.": "The saves could not be loaded.",
+        "You need a role on this app to see its saves.": "You need a role on this app to see its saves.",
+        "You need to be an owner or editor of this app to roll it back.": "You need to be an owner or editor of this app to roll it back."
     },
     "nplurals=2; plural=(n != 1);"
 )

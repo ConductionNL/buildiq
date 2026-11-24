@@ -97,6 +97,13 @@
 						{{ t('buildiq', 'Git branch: {branch}', { branch: row.githubBranch }) }}
 					</small>
 					<button
+						v-if="appSlug"
+						class="version-history__btn"
+						data-test="version-saves"
+						@click="savesVersion = row">
+						{{ t('buildiq', 'Saves') }}
+					</button>
+					<button
 						v-if="!isProduction(row)"
 						class="version-history__btn version-history__btn--danger"
 						@click="askRollback(row)">
@@ -126,6 +133,13 @@
 			@update:open="rollbackOpen = $event"
 			@confirm="onRollbackConfirmed"
 			@cancel="onRollbackCancelled" />
+		<VersionSavesModal
+			:open="savesVersion !== null"
+			:appSlug="appSlug || ''"
+			:version="savesVersion"
+			:canEdit="canEdit"
+			@update:open="savesVersion = null"
+			@restored="refresh" />
 		<ReleaseTestReportDialog
 			v-model:open="testReportOpen"
 			:run="testReport && testReport.run"
@@ -143,6 +157,7 @@ import MergeVersionDialog from '../dialogs/MergeVersionDialog.vue'
 import PromptTextDialog from '../dialogs/PromptTextDialog.vue'
 import ReleaseTestReportDialog from '../dialogs/ReleaseTestReportDialog.vue'
 import RollbackConfirmModal from '../modals/RollbackConfirmModal.vue'
+import VersionSavesModal from '../modals/VersionSavesModal.vue'
 import { openPromoteDialog, promoteDialog } from '../composables/usePromoteDialog.js'
 import { buildVersionedRoute } from '../router/helpers.js'
 
@@ -226,6 +241,7 @@ export default {
 		PromptTextDialog,
 		ReleaseTestReportDialog,
 		RollbackConfirmModal,
+		VersionSavesModal,
 	},
 
 	props: {
@@ -272,6 +288,8 @@ export default {
 			testReport: null,
 			branchSource: null,
 			mergeSource: null,
+			// The version row whose saves are open (REQ-BQCV-015), or null.
+			savesVersion: null,
 			promoteDialog,
 		}
 	},
