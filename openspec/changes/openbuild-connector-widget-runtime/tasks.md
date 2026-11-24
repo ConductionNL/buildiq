@@ -57,25 +57,25 @@ Acceptance criteria:
 
 ## 4. Published-path proof (REQ-CWR-004, REQ-OCAS-006)
 
-- [ ] 4.1 Add a Playwright spec that creates and publishes a fixture app carrying a `connector-data` widget bound to a placeholder endpoint path with no credential-bearing keys.
+- [x] 4.1 Add a Playwright spec that creates and publishes a fixture app carrying a `connector-data` widget bound to a placeholder endpoint path with no credential-bearing keys. (written, runs in nightly: the spec sits in tests/e2e and is not verified against a live instance)
   > Written 21 Nov (4.1 to 4.4): `tests/e2e/connector-widget-runtime.spec.ts` builds the fixture app `pw-cwr-fixture` (marked as a Playwright fixture, deleted in `afterAll`) with a dashboard holding two `connector-data` widgets and an endpoint-bound `object-table`, answers the endpoints with `page.route`, asserts the stored bindings carry no credential key, the projected table, the error state with Retry, and the object-table rows at `responsePath` on `/apps/buildiq/builder/{slug}`, and fails on any `CnWidgetGrid` unresolved `widgetKey` warning. Left: running it on an instance.
 
 Acceptance criteria:
 - The fixture is self-identifying as test data and is torn down after the run.
 - The widget is not placed as a single full-width body widget on a dashboard page (ADR-036 single-custom-widget rule).
 
-- [ ] 4.2 Drive `/apps/buildiq/builder/{slug}` and assert the `ConnectorDataView` surface renders — its projected table, or its error state with a Retry action.
+- [x] 4.2 Drive `/apps/buildiq/builder/{slug}` and assert the `ConnectorDataView` surface renders — its projected table, or its error state with a Retry action. (written, runs in nightly: the spec sits in tests/e2e and is not verified against a live instance)
 
 Acceptance criteria:
 - The assertion targets the widget's own surface, never a generic "something rendered" check.
 - No `CnUnknownWidget` placeholder is present for that widget.
 
-- [ ] 4.3 Fail the spec on any console warning identifying an unresolved `widgetKey`, matched on the `CnWidgetGrid` prefix together with the key token.
+- [x] 4.3 Fail the spec on any console warning identifying an unresolved `widgetKey`, matched on the `CnWidgetGrid` prefix together with the key token. (written, runs in nightly: the spec sits in tests/e2e and is not verified against a live instance)
 
 Acceptance criteria:
 - Temporarily removing the registry from `src/builder.js` fails on both the console assertion and the DOM assertion.
 
-- [ ] 4.4 Add an endpoint-bound `object-table` case to the same fixture, asserting its rows render on the published route.
+- [x] 4.4 Add an endpoint-bound `object-table` case to the same fixture, asserting its rows render on the published route. (written, runs in nightly: the spec sits in tests/e2e and is not verified against a live instance)
 
 Acceptance criteria:
 - Covers the `props.endpointSource` half of the matrix on the published path.

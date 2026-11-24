@@ -32,7 +32,7 @@
  * [data-col-key]`); the page is buildiq's `RecordGridPage`. The fixture app is
  * removed, data included, in afterAll.
  *
- * @spec openspec/changes/data-index-grid-and-saved-views/specs/index-page-grid-and-views/spec.md
+ * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/specs/index-page-grid-and-views/spec.md
  * @e2e index-page-grid-and-views/requirement-a-maker-can-build-a-grid-page-req-bqix-001/a-maker-adds-a-grid-of-stock-items
  * @e2e index-page-grid-and-views/requirement-a-cell-edit-is-saved-to-its-record-or-refused-visibly-req-bqix-002/an-app-user-corrects-a-quantity
  * @e2e index-page-grid-and-views/requirement-a-cell-edit-is-saved-to-its-record-or-refused-visibly-req-bqix-002/a-colleague-is-editing-the-same-record

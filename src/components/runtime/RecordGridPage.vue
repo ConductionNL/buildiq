@@ -133,7 +133,7 @@ export default {
 	 *
 	 * @param {object} props - the component props.
 	 * @return {object} the store, the lock handle and the locked row id.
-	 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t02
+	 * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t02
 	 */
 	setup(props) {
 		const store = useObjectStore()
@@ -188,7 +188,7 @@ export default {
 		 * lets the property be written.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t01
+		 * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t01
 		 */
 		matrixColumns() {
 			return this.columns
@@ -260,7 +260,7 @@ export default {
 		 *
 		 * @param {string} key - the property key.
 		 * @return {boolean}
-		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t01
+		 * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t01
 		 */
 		isEditableColumn(key) {
 			if (!this.editable.includes(key)) {
@@ -276,7 +276,7 @@ export default {
 		 *
 		 * @param {object} record - an OpenRegister object.
 		 * @return {string}
-		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t02
+		 * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t02
 		 */
 		holderOf(record) {
 			if (this.lockConflicts[record.id]) {
@@ -299,7 +299,7 @@ export default {
 		 * Load the schema's properties and one page of its records.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t01
+		 * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t01
 		 */
 		async load() {
 			const slug = this.typeSlug
@@ -363,7 +363,7 @@ export default {
 		 *
 		 * @param {string} id - the record id.
 		 * @return {Promise<string>} '' when the lock is held, else the holder's name.
-		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t02
+		 * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t02
 		 */
 		async lockRow(id) {
 			if (this.lockedRowId === id) {
@@ -400,7 +400,7 @@ export default {
 		 *
 		 * @param {{rowId: string, colKey: string, value: (string|number|null)}} edit - the matrix commit.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t01
+		 * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t01
 		 */
 		async onCellEdit({ rowId, colKey, value }) {
 			const index = this.records.findIndex((r) => r.id === rowId)

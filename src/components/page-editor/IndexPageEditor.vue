@@ -452,7 +452,7 @@ export default {
 		 *
 		 * @param {boolean} enabled - the switch's new state.
 		 * @return {void}
-		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t05
+		 * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t05
 		 */
 		onSavedViewsToggle(enabled) {
 			const next = { ...this.config }

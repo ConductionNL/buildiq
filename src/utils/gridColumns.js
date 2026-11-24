@@ -3,7 +3,7 @@
  * Column helpers shared by the "Grid" page editor and the runtime
  * `record-grid` page.
  *
- * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t04
+ * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t04
  */
 
 /**
@@ -12,7 +12,7 @@
  *
  * @param {string|{key?: string}} column - one entry of `columns`.
  * @return {string} the key, or '' for an unusable entry.
- * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t01
+ * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t01
  */
 export function columnKey(column) {
 	if (typeof column === 'string') {

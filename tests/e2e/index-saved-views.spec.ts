@@ -30,7 +30,7 @@
  * manifest API in beforeAll; the fixture app is removed, data included, in
  * afterAll.
  *
- * @spec openspec/changes/data-index-grid-and-saved-views/specs/index-page-grid-and-views/spec.md
+ * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/specs/index-page-grid-and-views/spec.md
  * @e2e index-page-grid-and-views/requirement-a-maker-switches-on-saved-views-and-defines-views-for-everyone-req-bqix-003/every-app-user-gets-the-view-open-requests
  *
  * NOTE: Playwright binaries are NOT installed by `npm install`. Run
