@@ -611,6 +611,20 @@
         "method": "registerEventListener",
         "args": {
             "event": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+            "listener": "OCA\\Buildiq\\Listener\\VersionSaveListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+            "listener": "OCA\\Buildiq\\Listener\\VersionSaveListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
             "listener": "OCA\\Buildiq\\Listener\\AutomationApprovalTriggerListener"
         }
     },
