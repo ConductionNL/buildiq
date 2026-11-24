@@ -14,7 +14,7 @@
  *
  * @param {object|null|undefined} property - the schema property definition.
  * @return {boolean}
- * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+ * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
  */
 export function isAskableProperty(property) {
 	if (!property || typeof property !== 'object' || Array.isArray(property)) {
@@ -31,7 +31,7 @@ export function isAskableProperty(property) {
  *
  * @param {object} property - the schema property definition.
  * @return {boolean}
- * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+ * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
  */
 function hasAskableShape(property) {
 	const types = Array.isArray(property.type) ? property.type : [property.type]
@@ -46,7 +46,7 @@ function hasAskableShape(property) {
  *
  * @param {object} properties - the trigger schema's `properties`.
  * @return {Array<{value: string, label: string}>}
- * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+ * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
  */
 export function askableFieldOptions(properties) {
 	if (!properties || typeof properties !== 'object') {
@@ -65,7 +65,7 @@ export function askableFieldOptions(properties) {
  *
  * @param {object} action - the stored approval action.
  * @return {Array<{field: string, required: boolean}>}
- * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+ * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
  */
 export function formFieldsOf(action) {
 	const fields = action && action.form && action.form.fields
@@ -83,7 +83,7 @@ export function formFieldsOf(action) {
  *
  * @param {Array<{field: string, required: boolean}>} fields - the field rows.
  * @return {?{fields: Array<{field: string, required: boolean}>}}
- * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+ * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
  */
 export function storedForm(fields) {
 	if (!Array.isArray(fields) || fields.length === 0) {
@@ -101,7 +101,7 @@ export function storedForm(fields) {
  * @param {number} index - the row to move.
  * @param {number} offset - -1 for up, 1 for down.
  * @return {Array}
- * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+ * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
  */
 export function moved(rows, index, offset) {
 	const target = index + offset

@@ -9,8 +9,8 @@
   - Controlled: `:field` is the whole field entry, `update` emits the next
   - entry. Unknown keys on the field survive every edit.
   -
-  - @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-file-field-with-its-limits-req-bqfk-001
-  - @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-file-field-can-open-the-camera-req-bqfk-002
+  - @spec openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-file-field-with-its-limits-req-bqfk-001
+  - @spec openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-file-field-can-open-the-camera-req-bqfk-002
   -->
 <template>
 	<div class="file-field-settings">
@@ -121,7 +121,7 @@ export default {
 		 * @param {'accept'|'maxSize'|'multiple'|'capture'} key - the key.
 		 * @param {unknown} value - the next value; null or '' removes the key.
 		 * @return {void}
-		 * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-file-field-can-open-the-camera-req-bqfk-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-file-field-can-open-the-camera-req-bqfk-002
 		 */
 		write(key, value) {
 			const next = { ...this.field }

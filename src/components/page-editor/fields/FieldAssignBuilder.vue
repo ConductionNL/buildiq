@@ -13,7 +13,7 @@
   - Controlled: `:model-value` is the field's `assign` (or null), emits
   - `update:modelValue` with the next array, or null when no rule is left.
   -
-  - @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-field-is-filled-in-from-another-answer-req-bqfk-004
+  - @spec openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-field-is-filled-in-from-another-answer-req-bqfk-004
   -->
 <template>
 	<div class="field-assign-builder">
@@ -276,7 +276,7 @@ export default {
 		 * @param {number} index - the rule index.
 		 * @param {string} key - the field the rule would read.
 		 * @return {boolean} true when refused.
-		 * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-field-is-filled-in-from-another-answer-req-bqfk-004
+		 * @spec openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-field-is-filled-in-from-another-answer-req-bqfk-004
 		 */
 		refuseSelf(index, key) {
 			if (this.fieldKey !== '' && key === this.fieldKey) {

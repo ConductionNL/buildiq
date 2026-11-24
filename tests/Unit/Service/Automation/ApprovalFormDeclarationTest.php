@@ -68,7 +68,7 @@ final class ApprovalFormDeclarationTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
 	 */
 	public function testAValidFormIsRefusedWhenOpenRegisterCannotCarryIt(): void {
 		$asked = 0;
@@ -88,7 +88,7 @@ final class ApprovalFormDeclarationTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
 	 */
 	public function testAValidFormPassesWhenOpenRegisterCarriesIt(): void {
 		$asked = 0;
@@ -103,7 +103,7 @@ final class ApprovalFormDeclarationTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+	 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
 	 */
 	public function testAnUnknownFieldIsRefusedBeforeTheCapabilityIsAsked(): void {
 		$asked = 0;
@@ -123,7 +123,7 @@ final class ApprovalFormDeclarationTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+	 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
 	 */
 	public function testNoFormAsksNothing(): void {
 		$asked = 0;
@@ -148,7 +148,7 @@ final class ApprovalFormDeclarationTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
 	 */
 	public function testTheChainFormKeepsTheDeclaredOrder(): void {
 		$this->assertSame(

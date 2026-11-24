@@ -763,7 +763,7 @@ export default {
 		 * only while the automation has an approval action.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+		 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
 		 */
 		formFieldSchema() {
 			const hasApproval = this.actions.some((action) => action && action.type === 'approval')
@@ -1266,7 +1266,7 @@ export default {
 		 *
 		 * @param {string} schema - the trigger schema while an approval action exists, else ''.
 		 * @return {void}
-		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+		 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
 		 */
 		formFieldSchema(schema) {
 			this.fetchFormFieldOptions(schema)
@@ -1516,7 +1516,7 @@ export default {
 		 *
 		 * @param {string} schema - the trigger schema slug or id.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+		 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
 		 */
 		async fetchFormFieldOptions(schema) {
 			if (!schema) {

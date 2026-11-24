@@ -389,7 +389,7 @@ export default {
 		 *
 		 * @param {object} step - the inbox row.
 		 * @return {boolean}
-		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
+		 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
 		 */
 		hasForm(step) {
 			const form = step && step.metadata && step.metadata.form
@@ -403,7 +403,7 @@ export default {
 		 *
 		 * @param {Array<object>} steps - the inbox rows.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
+		 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
 		 */
 		async readTaskForms(steps) {
 			const withForm = steps.filter((step) => this.hasForm(step))
@@ -427,7 +427,7 @@ export default {
 		 *
 		 * @param {object} step - the inbox row.
 		 * @return {string}
-		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
+		 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
 		 */
 		formState(step) {
 			if (!this.hasForm(step)) {
@@ -447,7 +447,7 @@ export default {
 		 *
 		 * @param {object} step - the inbox row.
 		 * @return {string}
-		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
+		 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
 		 */
 		formLine(step) {
 			const state = this.formState(step)
@@ -471,7 +471,7 @@ export default {
 		 *
 		 * @param {object} step - the inbox row.
 		 * @return {boolean}
-		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
+		 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
 		 */
 		approvable(step) {
 			const state = this.formState(step)
@@ -484,7 +484,7 @@ export default {
 		 *
 		 * @param {object} step - the inbox row.
 		 * @return {Promise<void>|void}
-		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
+		 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
 		 */
 		approve(step) {
 			if (!this.approvable(step)) {
@@ -502,7 +502,7 @@ export default {
 		 * The form dialog completed the task: close it and reload the inbox.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
+		 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
 		 */
 		async onFormCompleted() {
 			this.formTask = null
