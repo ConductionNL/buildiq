@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+ * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
  * chain position's form into the tasks it opens, so a maker never saves a
  * form that silently does nothing. An empty or absent list is no form.
  *
- * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+ * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
  */
 final class ApprovalFormDeclaration {
 
@@ -56,7 +56,7 @@ final class ApprovalFormDeclaration {
 	 *
 	 * @return list<array{field:string,required:bool}>
 	 *
-	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+	 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
 	 */
 	public static function fieldsOf(array $action): array {
 		$fields = ($action['form']['fields'] ?? []);
@@ -85,7 +85,7 @@ final class ApprovalFormDeclaration {
 	 *
 	 * @return array{kind:string,fields:list<array{field:string,required:bool}>}|null
 	 *
-	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
 	 */
 	public static function chainForm(array $action): ?array {
 		$fields = self::fieldsOf(action: $action);
@@ -119,7 +119,7 @@ final class ApprovalFormDeclaration {
 	 *
 	 * @throws UnsupportedAutomationCombinationException For the first field refused, or for a form OpenRegister cannot carry.
 	 *
-	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
 	 */
 	public function check(array $actions): void {
 		$forms = [];

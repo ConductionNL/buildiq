@@ -46,7 +46,7 @@
  * NOTE: Playwright binaries are NOT installed by `npm install`. Run
  * `npm run test:e2e:install` once before invoking `npm run test:e2e`.
  *
- * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md
+ * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md
  * @e2e automation-approval-action/requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001/a-maker-asks-the-approver-for-two-fields
  * @e2e automation-approval-action/requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003/a-missing-required-field-keeps-the-dialog-open
  * @e2e automation-approval-action/requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003/approving-with-a-form-writes-the-values

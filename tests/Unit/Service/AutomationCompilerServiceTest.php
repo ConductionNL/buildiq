@@ -498,7 +498,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+	 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
 	 */
 	public function testAnApprovalFormFieldTheFormCannotRenderIsRefusedByName(): void {
 		$this->klachtSchema();
@@ -526,7 +526,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+	 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
 	 */
 	public function testADuplicateOrNamelessFormFieldIsRefused(): void {
 		$this->klachtSchema();
@@ -546,7 +546,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
 	 */
 	public function testAValidApprovalFormCompilesOntoTheChainPosition(): void {
 		$this->assertTrue(class_exists('OCA\\OpenRegister\\Service\\Task\\ApprovalPositionForm'));
@@ -573,7 +573,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
 	 */
 	public function testTheAppliedChainCarriesTheFormAndAChangedFormShowsInTheLiveHash(): void {
 		$captured = [];
@@ -614,7 +614,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+	 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
 	 */
 	public function testAnEmptyApprovalFormLeavesTheApprovalAsItWas(): void {
 		$this->schemaMapper->expects($this->never())->method('find');
@@ -629,7 +629,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+	 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
 	 */
 	public function testAnUnreadableSchemaRefusesTheForm(): void {
 		$this->schemaMapper->method('find')->willThrowException(new \RuntimeException('gone'));

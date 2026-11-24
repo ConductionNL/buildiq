@@ -33,7 +33,7 @@
  * GridStack snaps them to the grid itself; keyboard moves use the arrow keys
  * CnDashboardGrid documents.
  *
- * @spec openspec/changes/pages-widget-grid-drag-and-resize/specs/openbuild-page-designer/spec.md
+ * @spec openspec/changes/archive/2026-11-24-pages-widget-grid-drag-and-resize/specs/openbuild-page-designer/spec.md
  * @e2e openbuild-page-designer/requirement-widget-grids-are-draggable-and-resizable-in-edit-mode-req-obpd-012/a-maker-moves-and-widens-a-widget
  * @e2e openbuild-page-designer/requirement-widget-grids-are-draggable-and-resizable-in-edit-mode-req-obpd-012/a-keyboard-user-moves-a-widget
  * @e2e openbuild-page-designer/requirement-widget-grids-are-draggable-and-resizable-in-edit-mode-req-obpd-012/a-detail-page-body
