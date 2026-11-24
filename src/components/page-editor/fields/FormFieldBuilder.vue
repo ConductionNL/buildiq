@@ -943,7 +943,7 @@ export default {
 		 *
 		 * @param {string} type - the type.
 		 * @return {void}
-		 * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-builds-a-form-by-dragging-field-types-from-a-palette-req-bqfk-005
+		 * @spec openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-builds-a-form-by-dragging-field-types-from-a-palette-req-bqfk-005
 		 */
 		addOfType(type) {
 			const next = this.localFields.slice()
@@ -1009,7 +1009,7 @@ export default {
 		 *
 		 * @param {number} slot - the drop slot.
 		 * @return {void}
-		 * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-builds-a-form-by-dragging-field-types-from-a-palette-req-bqfk-005
+		 * @spec openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-builds-a-form-by-dragging-field-types-from-a-palette-req-bqfk-005
 		 */
 		dropAt(slot) {
 			const dragged = this.dragging

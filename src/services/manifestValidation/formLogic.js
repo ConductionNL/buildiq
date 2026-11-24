@@ -334,7 +334,7 @@ function validateFieldLogic(field, ctx) {
  * @param {object} field - the field entry.
  * @param {string} fieldPath - the field pointer prefix.
  * @return {string[]}
- * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-table-of-child-records-req-bqfk-003
+ * @spec openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-table-of-child-records-req-bqfk-003
  */
 function childRecordsErrors(field, fieldPath) {
 	if (field.type !== 'child-records') {
@@ -362,7 +362,7 @@ const ANSWER_PREFIX = '@answer.'
  * @param {{fieldPath: string, declaredKeys: Set<string>}} ctx - the field
  *   pointer prefix and the declared field keys.
  * @return {string[]}
- * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-field-is-filled-in-from-another-answer-req-bqfk-004
+ * @spec openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-field-is-filled-in-from-another-answer-req-bqfk-004
  */
 function assignErrors(field, ctx) {
 	if (field.assign === undefined) {

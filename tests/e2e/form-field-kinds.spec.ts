@@ -146,7 +146,7 @@ test.describe('forms-designer-file-camera-children-and-assign: field kinds', () 
 	})
 
 	test('REQ-BQFK-001, REQ-BQFK-002, REQ-BQFK-005: a multi-file field with the back camera, added from the palette', async ({ page }) => {
-		// @e2e openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-file-field-with-its-limits-req-bqfk-001
+		// @e2e openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-file-field-with-its-limits-req-bqfk-001
 		await openFormPage(page, { mode: 'create', fields: [{ key: 'naam', label: 'Naam', type: 'string' }] })
 
 		await page.getByTestId('palette-file').focus()
@@ -171,7 +171,7 @@ test.describe('forms-designer-file-camera-children-and-assign: field kinds', () 
 	})
 
 	test('REQ-BQFK-004: the currency follows the country, and a field cannot fill itself', async ({ page }) => {
-		// @e2e openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-field-is-filled-in-from-another-answer-req-bqfk-004
+		// @e2e openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-field-is-filled-in-from-another-answer-req-bqfk-004
 		await openFormPage(page, {
 			mode: 'create',
 			fields: [
@@ -196,7 +196,7 @@ test.describe('forms-designer-file-camera-children-and-assign: field kinds', () 
 	})
 
 	test('REQ-BQFK-003: the built form saves an order with two lines and the currency', async ({ page }) => {
-		// @e2e openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-table-of-child-records-req-bqfk-003
+		// @e2e openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-table-of-child-records-req-bqfk-003
 		test.skip(
 			REGISTER === '' || ORDER_SCHEMA === '' || LINE_SCHEMA === '',
 			'set FORM_KINDS_REGISTER, FORM_KINDS_ORDER_SCHEMA and FORM_KINDS_LINE_SCHEMA once nextcloud-vue renders child-records and assign',

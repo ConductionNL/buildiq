@@ -79,7 +79,7 @@ export default {
 		 * The field rows, `[]` for a missing list.
 		 *
 		 * @return {Array<{field: string, required: boolean}>}
-		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+		 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
 		 */
 		rows() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
@@ -89,7 +89,7 @@ export default {
 		 * The picker's options: the askable fields not chosen yet.
 		 *
 		 * @return {Array<{value: string, label: string}>}
-		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+		 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
 		 */
 		availableOptions() {
 			const chosen = new Set(this.rows.map((row) => row.field))
@@ -103,7 +103,7 @@ export default {
 		 *
 		 * @param {string} field - the field name.
 		 * @return {string}
-		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+		 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
 		 */
 		labelOf(field) {
 			const option = this.options.find((o) => o.value === field)
@@ -115,7 +115,7 @@ export default {
 		 *
 		 * @param {?{value: string}} option - the picked option.
 		 * @return {void}
-		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+		 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
 		 */
 		addField(option) {
 			if (!option || !option.value || this.rows.some((row) => row.field === option.value)) {
@@ -130,7 +130,7 @@ export default {
 		 * @param {number} index - the row.
 		 * @param {boolean} required - the new flag.
 		 * @return {void}
-		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+		 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
 		 */
 		setRequired(index, required) {
 			const next = this.rows.slice()
@@ -144,7 +144,7 @@ export default {
 		 * @param {number} index - the row.
 		 * @param {number} offset - the direction.
 		 * @return {void}
-		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+		 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
 		 */
 		move(index, offset) {
 			this.$emit('update:modelValue', moved(this.rows, index, offset))
@@ -155,7 +155,7 @@ export default {
 		 *
 		 * @param {number} index - the row.
 		 * @return {void}
-		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+		 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
 		 */
 		remove(index) {
 			this.$emit('update:modelValue', this.rows.filter((row, i) => i !== index))

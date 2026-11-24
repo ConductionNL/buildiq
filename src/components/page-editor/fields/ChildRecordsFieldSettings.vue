@@ -10,7 +10,7 @@
   - saved into: it is named as unusable and NOT written as the field's
   - `schema`.
   -
-  - @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-table-of-child-records-req-bqfk-003
+  - @spec openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-table-of-child-records-req-bqfk-003
   -->
 <template>
 	<div class="child-records-settings">
@@ -213,7 +213,7 @@ export default {
 		 *
 		 * @param {string} key - the picked schema key, or ''.
 		 * @return {void}
-		 * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-table-of-child-records-req-bqfk-003
+		 * @spec openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-table-of-child-records-req-bqfk-003
 		 */
 		pickSchema(key) {
 			const schema = this.findSchema(key)
