@@ -108,7 +108,7 @@ export default {
 		 * duplicates.
 		 *
 		 * @return {string[]}
-		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t04
+		 * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t04
 		 */
 		columnKeys() {
 			const keys = (this.config.columns || []).map(columnKey).filter(Boolean)
@@ -126,7 +126,7 @@ export default {
 		 * @param {string} key - `register`, `schema`, `columns` or `editable`.
 		 * @param {string|Array} value - the new value. `''` and `null` delete the key; an empty array is kept, since the grid page reads both lists.
 		 * @return {void}
-		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t04
+		 * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t04
 		 */
 		update(key, value) {
 			const next = { ...this.config }
@@ -151,7 +151,7 @@ export default {
 		 *
 		 * @param {Array<string|object>} columns - from ColumnBuilder.
 		 * @return {void}
-		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t04
+		 * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t04
 		 */
 		onColumnsUpdate(columns) {
 			const keys = new Set(columns.map(columnKey))
@@ -192,7 +192,7 @@ export default {
 		 * @param {string} key - the column's property key.
 		 * @param {boolean} checked - the toggle's new state.
 		 * @return {void}
-		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t04
+		 * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t04
 		 */
 		onEditableToggle(key, checked) {
 			const current = (this.config.editable || []).filter((k) => k !== key)

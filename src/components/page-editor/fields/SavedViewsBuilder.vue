@@ -222,7 +222,7 @@ export default {
 		 * Add an unnamed view with a slug no other view of the page has.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t05
+		 * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t05
 		 */
 		addView() {
 			const taken = new Set(this.views.map((view) => view.slug))
@@ -335,7 +335,7 @@ export default {
 		 * @param {string} key - the key to sort on, or ''.
 		 * @param {string} order - `asc` or `desc`.
 		 * @return {void}
-		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t05
+		 * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t05
 		 */
 		setSort(index, key, order) {
 			const sort = key

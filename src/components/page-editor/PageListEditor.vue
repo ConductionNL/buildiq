@@ -194,7 +194,7 @@ export const GRID_CHOICE = 'grid'
  * The page a "Grid" choice adds, without its id, route and title.
  *
  * @return {{type: string, component: string, config: object}}
- * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t04
+ * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t04
  */
 export function gridPageShape() {
 	return {
@@ -420,7 +420,7 @@ export default {
 		 *
 		 * @param {Array<object>} pages - the pages it joins.
 		 * @return {{id: string, route: string, type: string, title: string, config: object}}
-		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t04
+		 * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t04
 		 */
 		newPage(pages) {
 			const type = this.addingType

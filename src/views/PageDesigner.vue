@@ -1029,7 +1029,7 @@ export default {
 		 *   `'StubPageEditor'` for a type this build ships no visual editor for.
 		 *
 		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
-		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t04
+		 * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t04
 		 */
 		subEditorFor(type, page = null) {
 			if (type === 'custom' && page && page.component === 'record-grid') {
