@@ -27,6 +27,7 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 use OCA\Buildiq\Controller\AppPageSettingsController;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Service\AppChangeHistory;
+use OCA\Buildiq\Service\AppPageSettingsAccess;
 use OCA\Buildiq\Service\AppPageSettingsStore;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
@@ -45,6 +46,7 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\Buildiq\Controller\AppPageSettingsController
  * @uses   \OCA\Buildiq\Service\AppChangeHistory
+ * @uses   \OCA\Buildiq\Service\AppPageSettingsAccess
  * @uses   \OCA\Buildiq\Service\AppPageSettingsStore
  */
 final class AppPageSettingsControllerTest extends TestCase {
@@ -175,28 +177,28 @@ final class AppPageSettingsControllerTest extends TestCase {
 	 */
 	private function controller(?string $uid, bool $sees=true, array $body=[]): AppPageSettingsController {
 		$application = ['id' => 'app-uuid', 'slug' => 'permits', 'permissions' => ['owners' => ['user:olaf']]];
-		$objects     = $this->createMock(ObjectServiceInterface::class);
+		$objects     = $this->createMock(originalClassName: ObjectServiceInterface::class);
 		$objects->method('searchObjects')->willReturn([$application]);
 
 		$register = new Register();
 		$register->setId(1);
-		$registers = $this->createMock(RegisterMapper::class);
+		$registers = $this->createMock(originalClassName: RegisterMapper::class);
 		$registers->method('find')->willReturn($register);
 		$schema = new Schema();
 		$schema->setId(2);
-		$schemas = $this->createMock(SchemaMapper::class);
+		$schemas = $this->createMock(originalClassName: SchemaMapper::class);
 		$schemas->method('find')->willReturn($schema);
 
-		$session = $this->createMock(IUserSession::class);
+		$session = $this->createMock(originalClassName: IUserSession::class);
 		$user    = null;
 		if ($uid !== null) {
-			$user = $this->createMock(IUser::class);
+			$user = $this->createMock(originalClassName: IUser::class);
 			$user->method('getUID')->willReturn($uid);
 		}
 
 		$session->method('getUser')->willReturn($user);
 
-		$resolver = $this->createMock(PermissionResolverInterface::class);
+		$resolver = $this->createMock(originalClassName: PermissionResolverInterface::class);
 		$resolver->method('seesApplication')->willReturn($sees);
 		$resolver->method('resolveUserGroups')->willReturn([]);
 		$resolver->method('matchesCaller')->willReturnCallback(
@@ -209,7 +211,7 @@ final class AppPageSettingsControllerTest extends TestCase {
 			}
 		);
 
-		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
 		$appConfig->method('getValueString')->willReturnCallback(
 			fn (string $app, string $key, string $default=''): string => ($this->config[$key] ?? $default)
 		);
@@ -220,16 +222,20 @@ final class AppPageSettingsControllerTest extends TestCase {
 			}
 		);
 
-		$request = $this->createMock(IRequest::class);
+		$request = $this->createMock(originalClassName: IRequest::class);
 		$request->method('getParams')->willReturn($body + ['appSlug' => 'permits', 'pageId' => 'settings', '_route' => 'buildiq.appPageSettings.update']);
 
-		return new AppPageSettingsController(
-			request: $request,
+		$access = new AppPageSettingsAccess(
 			userSession: $session,
 			permissionResolver: $resolver,
 			applications: new AppChangeHistory(objectService: $objects, registerMapper: $registers, schemaMapper: $schemas),
+		);
+
+		return new AppPageSettingsController(
+			request: $request,
+			access: $access,
 			store: new AppPageSettingsStore(appConfig: $appConfig),
-			logger: $this->createMock(LoggerInterface::class),
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
 		);
 	}//end controller()
 }//end class

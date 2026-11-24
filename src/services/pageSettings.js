@@ -43,7 +43,7 @@ export async function fetchPageSettings(slug, pageId) {
 			? data.values
 			: {}
 		return { values, canSave: Boolean(data && data.canSave) }
-	} catch (e) {
+	} catch {
 		return { values: {}, canSave: false }
 	}
 }

@@ -73,6 +73,7 @@ export default {
 		 * The running app's slug.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-maker-adds-a-settings-page-req-bqcv-011
 		 */
 		slug() {
 			return loadState('buildiq', 'builderSlug', '')
@@ -82,6 +83,7 @@ export default {
 		 * The settings page's id, from the route it is shown on.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-maker-adds-a-settings-page-req-bqcv-011
 		 */
 		pageId() {
 			const route = this.$route || {}
@@ -96,6 +98,7 @@ export default {
 		 * Whether buildiq keeps this page's values.
 		 *
 		 * @return {boolean}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-maker-adds-a-settings-page-req-bqcv-011
 		 */
 		kept() {
 			return this.saveEndpoint === '' && this.slug !== '' && this.pageId !== ''
@@ -105,6 +108,7 @@ export default {
 		 * Where CnSettingsPage PUTs a save.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-maker-adds-a-settings-page-req-bqcv-011
 		 */
 		endpoint() {
 			return this.kept ? pageSettingsUrl(this.slug, this.pageId) : this.saveEndpoint
@@ -114,6 +118,7 @@ export default {
 		 * The values CnSettingsPage starts from.
 		 *
 		 * @return {object}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-maker-adds-a-settings-page-req-bqcv-011
 		 */
 		values() {
 			return { ...(this.initialValues || {}), ...this.saved }
@@ -122,6 +127,12 @@ export default {
 
 	watch: {
 		endpoint: {
+			/**
+			 * Load the saved values again when the page's address changes.
+			 *
+			 * @return {void}
+			 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-maker-adds-a-settings-page-req-bqcv-011
+			 */
 			handler() {
 				this.load()
 			},

@@ -50,8 +50,8 @@ final class AppPageSettingsStoreTest extends TestCase {
 		$store = $this->store();
 		$store->save(appUuid: 'app-uuid', pageId: 'settings', values: ['replyPeriod' => 21]);
 
-		$this->assertSame(['replyPeriod' => 21], $store->values(appUuid: 'app-uuid', pageId: 'settings'));
-		$this->assertArrayHasKey(AppPageSettingsStore::KEY_PREFIX . 'app-uuid', $this->config);
+		self::assertSame(expected: ['replyPeriod' => 21], actual: $store->values(appUuid: 'app-uuid', pageId: 'settings'));
+		self::assertArrayHasKey(key: AppPageSettingsStore::KEY_PREFIX . 'app-uuid', array: $this->config);
 	}//end testASavedReplyPeriodIsReadBack()
 
 	/**
@@ -60,7 +60,7 @@ final class AppPageSettingsStoreTest extends TestCase {
 	 * @return void
 	 */
 	public function testAPageWithoutSavesHasNoValues(): void {
-		$this->assertSame([], $this->store()->values(appUuid: 'app-uuid', pageId: 'settings'));
+		self::assertSame(expected: [], actual: $this->store()->values(appUuid: 'app-uuid', pageId: 'settings'));
 	}//end testAPageWithoutSavesHasNoValues()
 
 	/**
@@ -75,9 +75,9 @@ final class AppPageSettingsStoreTest extends TestCase {
 		$store->save(appUuid: 'other-uuid', pageId: 'settings', values: ['replyPeriod' => 5]);
 		$store->save(appUuid: 'app-uuid', pageId: 'settings', values: ['replyPeriod' => 30]);
 
-		$this->assertSame(['replyPeriod' => 30], $store->values(appUuid: 'app-uuid', pageId: 'settings'));
-		$this->assertSame(['sender' => 'desk@example.org'], $store->values(appUuid: 'app-uuid', pageId: 'mail'));
-		$this->assertSame(['replyPeriod' => 5], $store->values(appUuid: 'other-uuid', pageId: 'settings'));
+		self::assertSame(expected: ['replyPeriod' => 30], actual: $store->values(appUuid: 'app-uuid', pageId: 'settings'));
+		self::assertSame(expected: ['sender' => 'desk@example.org'], actual: $store->values(appUuid: 'app-uuid', pageId: 'mail'));
+		self::assertSame(expected: ['replyPeriod' => 5], actual: $store->values(appUuid: 'other-uuid', pageId: 'settings'));
 	}//end testSavingOnePageKeepsTheOthers()
 
 	/**
@@ -88,7 +88,7 @@ final class AppPageSettingsStoreTest extends TestCase {
 	public function testUnreadableStoredValuesReadAsNone(): void {
 		$this->config[AppPageSettingsStore::KEY_PREFIX . 'app-uuid'] = '{not json';
 
-		$this->assertSame([], $this->store()->values(appUuid: 'app-uuid', pageId: 'settings'));
+		self::assertSame(expected: [], actual: $this->store()->values(appUuid: 'app-uuid', pageId: 'settings'));
 	}//end testUnreadableStoredValuesReadAsNone()
 
 	/**
@@ -105,12 +105,12 @@ final class AppPageSettingsStoreTest extends TestCase {
 	public function testARefusedSaveWritesNothing(string $pageId, array $values, string $code): void {
 		try {
 			$this->store()->save(appUuid: 'app-uuid', pageId: $pageId, values: $values);
-			$this->fail('The save was not refused');
+			self::fail(message: 'The save was not refused');
 		} catch (InvalidArgumentException $e) {
-			$this->assertSame($code, $e->getMessage());
+			self::assertSame(expected: $code, actual: $e->getMessage());
 		}
 
-		$this->assertSame([], $this->config);
+		self::assertSame(expected: [], actual: $this->config);
 	}//end testARefusedSaveWritesNothing()
 
 	/**
@@ -134,7 +134,7 @@ final class AppPageSettingsStoreTest extends TestCase {
 	 * @return AppPageSettingsStore The store.
 	 */
 	private function store(): AppPageSettingsStore {
-		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
 		$appConfig->method('getValueString')->willReturnCallback(
 			fn (string $app, string $key, string $default=''): string => ($this->config[$key] ?? $default)
 		);
