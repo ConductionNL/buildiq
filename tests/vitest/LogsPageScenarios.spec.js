@@ -8,11 +8,8 @@
  * `config.register` and `config.schema`, the keys nextcloud-vue's CnLogsPage
  * reads.
  *
- * Not asserted here, because it is not built: CnLogsPage bound to a register
- * and schema lists that schema's OBJECTS (a page bound to `permit` lists the
- * permits, not the changes to them), and it sends no sort unless `sortKey` is
- * set, which the editor never writes, so "newest first" is the server's
- * default order. That gap is reported on T10.
+ * The running app's half, the changes to the bound schema's records newest
+ * first, is BuildiqLogsPage's: see tests/components/runtime/BuildiqLogsPage.spec.js.
  */
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
