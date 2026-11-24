@@ -33,7 +33,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
+ * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
  */
 
 declare(strict_types=1);
@@ -66,7 +66,7 @@ class AppVisibilityResolver implements AppVisibilityResolverInterface {
 	 *
 	 * @return bool True when the surface should be visible.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
 	 */
 	public function isVisible(
 		array $permissions,
@@ -95,7 +95,7 @@ class AppVisibilityResolver implements AppVisibilityResolverInterface {
 	 *
 	 * @return bool True when the surface should be visible.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
 	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
 	 */
 	public function isVisibleToUser(
@@ -148,7 +148,7 @@ class AppVisibilityResolver implements AppVisibilityResolverInterface {
 	 *
 	 * @return bool True when the placement should be visible.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
 	 */
 	#[\Override]
 	public function isPlacementVisibleToUser(
@@ -179,7 +179,7 @@ class AppVisibilityResolver implements AppVisibilityResolverInterface {
 	 *
 	 * @return array<int,mixed>|null The roles, or null when malformed.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
 	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
 	 */
 	public function normaliseRoles(mixed $roles): ?array {
@@ -205,7 +205,7 @@ class AppVisibilityResolver implements AppVisibilityResolverInterface {
 	 *
 	 * @return array<mixed> All principals from owners + editors + viewers.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
 	 */
 	public function flattenPermissions(array $permissions): array {
 		$owners = ($permissions['owners'] ?? []);

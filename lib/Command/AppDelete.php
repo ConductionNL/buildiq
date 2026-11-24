@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-delete-an-app-from-the-command-line-req-bqic-007
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-delete-an-app-from-the-command-line-req-bqic-007
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use Symfony\Component\Console\Question\ConfirmationQuestion;
 /**
  * `occ buildiq:app:delete <slug>`.
  *
- * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-delete-an-app-from-the-command-line-req-bqic-007
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-delete-an-app-from-the-command-line-req-bqic-007
  */
 class AppDelete extends Command {
 	/**
@@ -65,7 +65,7 @@ class AppDelete extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-delete-an-app-from-the-command-line-req-bqic-007
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-delete-an-app-from-the-command-line-req-bqic-007
 	 */
 	#[\Override]
 	protected function configure(): void {
@@ -84,7 +84,7 @@ class AppDelete extends Command {
 	 *
 	 * @return int Command exit code: 0 deleted or declined, 1 when something was left, 2 for an unknown slug.
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-delete-an-app-from-the-command-line-req-bqic-007
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-delete-an-app-from-the-command-line-req-bqic-007
 	 */
 	#[\Override]
 	protected function execute(InputInterface $input, OutputInterface $output): int {

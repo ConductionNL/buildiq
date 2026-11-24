@@ -8,7 +8,7 @@
  * task 1.2). A lockfile on a library release without `ncDashboard` fails here,
  * instead of shipping a promote control whose saves the schema rejects.
  *
- * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/openbuild-page-designer/spec.md
+ * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/openbuild-page-designer/spec.md
  */
 
 import Ajv from 'ajv/dist/2020.js'

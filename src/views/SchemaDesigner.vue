@@ -494,7 +494,7 @@ export default {
 		/**
 		 * Whether the list mode shows the diagram (`?view=diagram`).
 		 *
-		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @spec openspec/changes/archive/2026-11-24-data-model-diagram/tasks.md#T05
 		 * @return {boolean}
 		 */
 		isDiagram() {
@@ -505,7 +505,7 @@ export default {
 		 * The registers the diagram can draw: the version's own register first,
 		 * then each of the app's `dataRegisters` bindings.
 		 *
-		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @spec openspec/changes/archive/2026-11-24-data-model-diagram/tasks.md#T05
 		 * @return {Array<{register: string, label: string}>}
 		 */
 		diagramRegisters() {
@@ -530,7 +530,7 @@ export default {
 		 * The register the diagram draws: the one picked, while it is still on
 		 * offer, else the version's own.
 		 *
-		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @spec openspec/changes/archive/2026-11-24-data-model-diagram/tasks.md#T05
 		 * @return {string} Register slug, or '' until the version resolves.
 		 */
 		activeDiagramRegister() {
@@ -629,7 +629,7 @@ export default {
 		 * The uuid of the resolved ApplicationVersion, '' while it loads.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
 		 */
 		applicationVersionUuid() {
 			const version = this.applicationVersion || {}
@@ -859,7 +859,7 @@ export default {
 		 * Load the model when the address switches to the diagram (back and
 		 * forward included).
 		 *
-		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @spec openspec/changes/archive/2026-11-24-data-model-diagram/tasks.md#T05
 		 * @param {boolean} shown Whether the diagram is shown.
 		 * @return {void}
 		 */
@@ -963,7 +963,7 @@ export default {
 		 * session. Without integriq the list is unavailable and existing
 		 * declarations are kept as they are (REQ-BQRF-002).
 		 *
-		 * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-an-existing-declaration-survives-a-session-without-integriq-req-bqrf-002
+		 * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-an-existing-declaration-survives-a-session-without-integriq-req-bqrf-002
 		 * @return {Promise<void>}
 		 */
 		async loadPropertySources() {
@@ -1108,7 +1108,7 @@ export default {
 		 * links as edges. OpenRegister resolves references and decides which
 		 * external schema the maker may see; the diagram only draws it.
 		 *
-		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @spec openspec/changes/archive/2026-11-24-data-model-diagram/tasks.md#T05
 		 * @param {{force?: boolean}} [options] `force` reloads a register already read.
 		 * @return {Promise<void>}
 		 */
@@ -1150,7 +1150,7 @@ export default {
 		 * Switch between the list and the diagram, keeping the choice in the
 		 * address (`?view=diagram`) next to `?_version=`.
 		 *
-		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @spec openspec/changes/archive/2026-11-24-data-model-diagram/tasks.md#T05
 		 * @param {string} view `list` or `diagram`.
 		 * @return {Promise<void>}
 		 */
@@ -1174,7 +1174,7 @@ export default {
 		/**
 		 * Draw another register picked in the register switch.
 		 *
-		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @spec openspec/changes/archive/2026-11-24-data-model-diagram/tasks.md#T05
 		 * @param {string} register The register slug.
 		 * @return {Promise<void>}
 		 */
@@ -1403,7 +1403,7 @@ export default {
 		 *
 		 * @param {{name: string, property: object}} declared The field and its property.
 		 * @return {void}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
 		 */
 		onAiFieldDeclare({ name, property }) {
 			const [field] = schemaToFields({ properties: { [name]: property } })
@@ -1415,7 +1415,7 @@ export default {
 		 *
 		 * @param {string} name The field name.
 		 * @return {void}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
 		 */
 		onAiFieldRemove(name) {
 			this.commitStaged({ ...this.staged, fields: this.staged.fields.filter((field) => field.name !== name) })

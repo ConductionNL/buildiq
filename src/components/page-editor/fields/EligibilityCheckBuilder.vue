@@ -6,7 +6,7 @@
   - do. Stored as the form page's
   - `eligibility: {ruleSet, passWhen: {output, equals}, explainWith, blockSubmit}`.
   -
-  - @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
+  - @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
   -->
 <template>
 	<div class="eligibility-check-builder">
@@ -112,7 +112,7 @@ export default {
 		 * The stored check, or an empty one.
 		 *
 		 * @return {object}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
 		 */
 		check() {
 			return this.modelValue || {}
@@ -122,7 +122,7 @@ export default {
 		 * The passing condition.
 		 *
 		 * @return {object}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
 		 */
 		passWhen() {
 			return this.check.passWhen || {}
@@ -133,7 +133,7 @@ export default {
 	 * Load the rule sets, and the outputs of the bound one.
 	 *
 	 * @return {Promise<void>}
-	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
+	 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
 	 */
 	async mounted() {
 		try {
@@ -152,7 +152,7 @@ export default {
 		 *
 		 * @param {string} slug The rule set slug.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
 		 */
 		async loadOutputs(slug) {
 			try {
@@ -167,7 +167,7 @@ export default {
 		 *
 		 * @param {string} slug The rule set slug, or '' for no check.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
 		 */
 		async chooseRuleSet(slug) {
 			if (slug === '') {
@@ -189,7 +189,7 @@ export default {
 		 *
 		 * @param {object} patch The changed keys.
 		 * @return {void}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
 		 */
 		emitPatch(patch) {
 			this.$emit('update:modelValue', { ...this.check, ...patch })

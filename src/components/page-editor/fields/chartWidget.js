@@ -10,7 +10,7 @@
  * lives in `props.chartKind`, the data binding in the widget's own
  * `dataSource`, which are exactly the keys the dashboard renderer reads.
  *
- * @spec openspec/changes/pages-chart-widget-authoring/specs/page-chart-authoring/spec.md#requirement-the-chart-is-saved-in-the-shape-the-manifest-schema-allows-req-bqcw-002
+ * @spec openspec/changes/archive/2026-11-24-pages-chart-widget-authoring/specs/page-chart-authoring/spec.md#requirement-the-chart-is-saved-in-the-shape-the-manifest-schema-allows-req-bqcw-002
  */
 
 /** Width of the layout item a new chart gets. */
@@ -25,7 +25,7 @@ export const CHART_GRID_HEIGHT = 4
  *
  * @param {object} widget - the saved widget definition.
  * @return {{ content: { chartKind: (string|undefined), dataSource: object } }} the form input.
- * @spec openspec/changes/pages-chart-widget-authoring/specs/page-chart-authoring/spec.md#requirement-the-chart-is-saved-in-the-shape-the-manifest-schema-allows-req-bqcw-002
+ * @spec openspec/changes/archive/2026-11-24-pages-chart-widget-authoring/specs/page-chart-authoring/spec.md#requirement-the-chart-is-saved-in-the-shape-the-manifest-schema-allows-req-bqcw-002
  */
 export function chartFormInput(widget) {
 	const props = (widget && widget.props) || {}
@@ -45,7 +45,7 @@ export function chartFormInput(widget) {
  * @param {object} widget - the widget being edited.
  * @param {{ chartKind: string, dataSource: object }} content - the form's `update:content` payload.
  * @return {object} the updated widget definition.
- * @spec openspec/changes/pages-chart-widget-authoring/specs/page-chart-authoring/spec.md#requirement-the-chart-is-saved-in-the-shape-the-manifest-schema-allows-req-bqcw-002
+ * @spec openspec/changes/archive/2026-11-24-pages-chart-widget-authoring/specs/page-chart-authoring/spec.md#requirement-the-chart-is-saved-in-the-shape-the-manifest-schema-allows-req-bqcw-002
  */
 export function widgetWithChartContent(widget, content) {
 	const rest = { ...(widget || {}) }
@@ -63,7 +63,7 @@ export function widgetWithChartContent(widget, content) {
  *
  * @param {Array<object>} widgets - the page's widgets.
  * @return {string} the id.
- * @spec openspec/changes/pages-chart-widget-authoring/specs/page-chart-authoring/spec.md#requirement-a-new-chart-is-placed-on-the-page-req-bqcw-003
+ * @spec openspec/changes/archive/2026-11-24-pages-chart-widget-authoring/specs/page-chart-authoring/spec.md#requirement-a-new-chart-is-placed-on-the-page-req-bqcw-003
  */
 export function nextChartId(widgets) {
 	const used = new Set((widgets || []).map((widget) => widget && widget.id))
@@ -79,7 +79,7 @@ export function nextChartId(widgets) {
  *
  * @param {string} id - the widget id.
  * @return {object} the widget definition.
- * @spec openspec/changes/pages-chart-widget-authoring/specs/page-chart-authoring/spec.md#requirement-a-new-chart-is-placed-on-the-page-req-bqcw-003
+ * @spec openspec/changes/archive/2026-11-24-pages-chart-widget-authoring/specs/page-chart-authoring/spec.md#requirement-a-new-chart-is-placed-on-the-page-req-bqcw-003
  */
 export function newChartWidget(id) {
 	return {
@@ -98,7 +98,7 @@ export function newChartWidget(id) {
  * @param {Array<object>} layout - the page's layout items.
  * @param {string} widgetId - the widget to place.
  * @return {Array<object>} the layout, a new array when an item was added.
- * @spec openspec/changes/pages-chart-widget-authoring/specs/page-chart-authoring/spec.md#requirement-a-new-chart-is-placed-on-the-page-req-bqcw-003
+ * @spec openspec/changes/archive/2026-11-24-pages-chart-widget-authoring/specs/page-chart-authoring/spec.md#requirement-a-new-chart-is-placed-on-the-page-req-bqcw-003
  */
 export function layoutWithItemFor(layout, widgetId) {
 	const items = Array.isArray(layout) ? layout : []

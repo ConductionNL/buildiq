@@ -29,7 +29,7 @@ namespace OCA\Buildiq\Service\Automation;
 /**
  * One Automation object as the compiler backends read it.
  *
- * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
+ * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
  */
 final class CompileInput {
 

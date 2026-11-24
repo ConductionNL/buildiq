@@ -236,7 +236,7 @@ function flowList(data) {
  *
  * @param {Array<object>} schemas The register's schemas.
  * @return {Array<{label: string, value: string}>}
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
  */
 function schemaOptions(schemas) {
 	return (Array.isArray(schemas) ? schemas : [])
@@ -376,7 +376,7 @@ export default {
 		 * The app's slug, '' before it is loaded.
 		 *
 		 * @return {string} The slug.
-		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+		 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
 		 */
 		obAppSlug() {
 			return (this.obApp && this.obApp.slug) || ''
@@ -1073,7 +1073,7 @@ export default {
 		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/apps-support-note-editor-saves/specs/support-note/spec.md#requirement-the-support-editor-saves-the-note-to-the-apps-manifest-req-bqsn-001
+		 * @spec openspec/changes/archive/2026-11-24-apps-support-note-editor-saves/specs/support-note/spec.md#requirement-the-support-editor-saves-the-note-to-the-apps-manifest-req-bqsn-001
 		 */
 		async openSupportEditor() {
 			if (!this.obApp || !this.obApp.slug) {
@@ -1101,7 +1101,7 @@ export default {
 		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/apps-support-note-editor-saves/specs/support-note/spec.md#requirement-the-support-editor-saves-the-note-to-the-apps-manifest-req-bqsn-001
+		 * @spec openspec/changes/archive/2026-11-24-apps-support-note-editor-saves/specs/support-note/spec.md#requirement-the-support-editor-saves-the-note-to-the-apps-manifest-req-bqsn-001
 		 */
 		onSupportClose() {
 			this.supportOpen = false
@@ -1114,7 +1114,7 @@ export default {
 		 * @param {Error} e The rejected save.
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/apps-support-note-editor-saves/specs/support-note/spec.md#requirement-a-failed-save-keeps-the-editor-open-req-bqsn-002
+		 * @spec openspec/changes/archive/2026-11-24-apps-support-note-editor-saves/specs/support-note/spec.md#requirement-a-failed-save-keeps-the-editor-open-req-bqsn-002
 		 */
 		onSupportFailed(e) {
 			this.error = t('buildiq', 'Could not save the support note: {reason}', { reason: String(failureDetail(e)) })
@@ -1183,7 +1183,7 @@ export default {
 		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-the-app-leads-to-its-business-rules-req-bqar-008
+		 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-the-app-leads-to-its-business-rules-req-bqar-008
 		 */
 		openBusinessRules() {
 			const slug = this.obApp && this.obApp.slug
@@ -1245,7 +1245,7 @@ export default {
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/application-detail-ui/spec.md
-		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+		 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
 		 */
 		async onSettingsOpen(open) {
 			this.settingsOpen = open
@@ -1439,7 +1439,7 @@ export default {
 		 * wrappers included, so the next save carries them (REQ-BQSF-002).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
+		 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
 		 */
 		async wireFlows() {
 			try {

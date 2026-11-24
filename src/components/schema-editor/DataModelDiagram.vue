@@ -186,7 +186,7 @@ export default {
 		/**
 		 * The canvas nodes and edges and the table rows.
 		 *
-		 * @spec openspec/changes/data-model-diagram/tasks.md#T03
+		 * @spec openspec/changes/archive/2026-11-24-data-model-diagram/tasks.md#T03
 		 * @return {object} The diagram.
 		 */
 		diagram() {
@@ -216,7 +216,7 @@ export default {
 		/**
 		 * Open a schema the maker may read; anything else does nothing.
 		 *
-		 * @spec openspec/changes/data-model-diagram/tasks.md#T03
+		 * @spec openspec/changes/archive/2026-11-24-data-model-diagram/tasks.md#T03
 		 * @param {object|null} box The node data.
 		 * @return {void}
 		 */
@@ -240,7 +240,7 @@ export default {
 		/**
 		 * A click on a box opens its schema.
 		 *
-		 * @spec openspec/changes/data-model-diagram/tasks.md#T03
+		 * @spec openspec/changes/archive/2026-11-24-data-model-diagram/tasks.md#T03
 		 * @param {{node: {id: string}}} event The canvas' node event.
 		 * @return {void}
 		 */
@@ -254,7 +254,7 @@ export default {
 		/**
 		 * Enter on a focused box opens its schema.
 		 *
-		 * @spec openspec/changes/data-model-diagram/tasks.md#T03
+		 * @spec openspec/changes/archive/2026-11-24-data-model-diagram/tasks.md#T03
 		 * @param {KeyboardEvent} event The key event.
 		 * @return {void}
 		 */

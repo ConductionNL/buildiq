@@ -450,7 +450,7 @@ class ExportsController extends Controller {
 	 *
 	 * @return string The UUID, or '' when the slug does not resolve.
 	 *
-	 * @spec openspec/changes/export-github-broker/tasks.md#task-9-fix-the-unpersistable-export-job
+	 * @spec openspec/changes/archive/2026-11-24-export-github-broker/tasks.md#task-9-fix-the-unpersistable-export-job
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveApplicationUuid(string $applicationSlug): string {

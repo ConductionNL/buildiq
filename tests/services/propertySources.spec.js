@@ -5,7 +5,7 @@
  * The registry providers a field can take its value from, and the helpers the
  * field editor and the designer share (data-registry-backed-field-option).
  *
- * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md
+ * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md
  */
 
 import { describe, expect, it, vi } from 'vitest'

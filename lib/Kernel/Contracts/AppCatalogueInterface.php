@@ -44,7 +44,7 @@ interface AppCatalogueInterface {
 	 *
 	 * @return array<string,mixed>|null The app.
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-delete-an-app-from-the-command-line-req-bqic-007
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-delete-an-app-from-the-command-line-req-bqic-007
 	 */
 	public function app(string $slug): ?array;
 
@@ -55,7 +55,7 @@ interface AppCatalogueInterface {
 	 *
 	 * @return array<int,array<string,mixed>> The apps.
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-list-apps-from-the-command-line-req-bqic-004
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-list-apps-from-the-command-line-req-bqic-004
 	 */
 	public function apps(?string $slug = null): array;
 
@@ -66,7 +66,7 @@ interface AppCatalogueInterface {
 	 *
 	 * @return array<int,array{slug:string,semver:string,status:string}> The versions, sorted by slug.
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-list-apps-from-the-command-line-req-bqic-004
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-list-apps-from-the-command-line-req-bqic-004
 	 */
 	public function versions(string $appUuid): array;
 }//end interface

@@ -122,7 +122,7 @@ export default {
 		 * The loaded rows, filtered on the mapped fields by `search`.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-the-list-page-shows-every-state-of-the-fetch-req-bqcb-002
+		 * @spec openspec/changes/archive/2026-11-24-integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-the-list-page-shows-every-state-of-the-fetch-req-bqcb-002
 		 */
 		rows() {
 			const term = String(this.search || '').trim().toLowerCase()

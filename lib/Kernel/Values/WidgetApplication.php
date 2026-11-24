@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-widget-identity-is-frozen-to-the-application-uuid
+ * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-widget-identity-is-frozen-to-the-application-uuid
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ namespace OCA\Buildiq\Kernel\Values;
 /**
  * Uuid, slug and name of the Application a widget is promoted from.
  *
- * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-widget-identity-is-frozen-to-the-application-uuid
+ * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-widget-identity-is-frozen-to-the-application-uuid
  */
 final class WidgetApplication {
 

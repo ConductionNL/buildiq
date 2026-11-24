@@ -17,7 +17,7 @@
  * schema closed to the colleague. The colleague defaults to the globalSetup
  * fixture user `rbac-editor` (NC_RBAC_EDITOR_USER / NC_RBAC_EDITOR_PASS).
  *
- * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md
+ * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md
  * @e2e form-dutch-field-formats/requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001/a-maker-adds-an-iban-check
  * @e2e form-dutch-field-formats/requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001/a-format-and-a-pattern-on-one-field
  * @e2e form-dutch-field-formats/requirement-buildiqs-own-forms-check-the-dutch-formats-on-save-req-bqdf-002/a-wrong-iban-is-refused

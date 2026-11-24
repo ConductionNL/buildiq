@@ -15,7 +15,7 @@
  * stores what the page designer expects to open.
  *
  * @module services/connectorPages
- * @spec openspec/changes/integrations-connector-bound-pages/tasks.md#task-1
+ * @spec openspec/changes/archive/2026-11-24-integrations-connector-bound-pages/tasks.md#task-1
  */
 
 /** Registry name of the runtime list page (`src/runtimeRegistry.js`). */
@@ -59,7 +59,7 @@ function clone(value) {
  *
  * @param {object} page A manifest page.
  * @return {?object}
- * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-a-connector-bound-index-page-renders-its-records-req-bqcb-001
+ * @spec openspec/changes/archive/2026-11-24-integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-a-connector-bound-index-page-renders-its-records-req-bqcb-001
  */
 export function connectorDataSourceOf(page) {
 	if (!isPlainObject(page) || !isPlainObject(page.config)) {
@@ -160,7 +160,7 @@ function dashboardWithWidget(page, dataSource) {
  *
  * @param {object} manifest The manifest as stored.
  * @return {object} The manifest the renderer draws.
- * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-a-connector-bound-index-page-renders-its-records-req-bqcb-001
+ * @spec openspec/changes/archive/2026-11-24-integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-a-connector-bound-index-page-renders-its-records-req-bqcb-001
  */
 export function normalizeConnectorPages(manifest) {
 	if (!isPlainObject(manifest) || !Array.isArray(manifest.pages)) {
@@ -251,7 +251,7 @@ function dashboardWithoutWidget(page, widgetId) {
  *
  * @param {object} manifest The rendered manifest (possibly edited in place).
  * @return {object} The manifest to persist.
- * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-a-connector-bound-index-page-renders-its-records-req-bqcb-001
+ * @spec openspec/changes/archive/2026-11-24-integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-a-connector-bound-index-page-renders-its-records-req-bqcb-001
  */
 export function restoreConnectorPages(manifest) {
 	const done = hasConnectorRewrites(manifest) ? rewrites.get(manifest) : null

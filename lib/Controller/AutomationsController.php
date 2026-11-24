@@ -528,7 +528,7 @@ class AutomationsController extends Controller {
 	 *
 	 * @return JSONResponse {results: [{uuid, name}]}
 	 *
-	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
+	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
 	 */
 	#[NoAdminRequired]
 	public function manual(): JSONResponse {
@@ -575,7 +575,7 @@ class AutomationsController extends Controller {
 	 *
 	 * @return JSONResponse 202 {started, flowUuid, run}, or an error envelope
 	 *
-	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
+	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 30, period: 60)]

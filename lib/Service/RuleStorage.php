@@ -63,7 +63,7 @@ final class RuleStorage {
 	 *
 	 * @return array{inputs:list<array{name:string,path:string,type:string}>,outputs:list<array{name:string,type:string}>}
 	 *
-	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+	 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 	 */
 	public function decisionColumns(array $ruleSet): array {
 		$tables = $this->tables->forRuleSet(ruleSet: $ruleSet);

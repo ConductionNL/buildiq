@@ -11,7 +11,7 @@ manifest to that app with PUT /api/applications/{slug}/manifest. The library
 dialog closes after Done whatever the save did; after a failed save this
 wrapper keeps it open, so the maker keeps their edits and can try again.
 
-@spec openspec/changes/apps-support-note-editor-saves/specs/support-note/spec.md
+@spec openspec/changes/archive/2026-11-24-apps-support-note-editor-saves/specs/support-note/spec.md
 -->
 
 <template>
@@ -67,7 +67,7 @@ export default {
 		 * Write the working manifest, with its support block, to the app.
 		 *
 		 * @return {Promise<void>} Resolves once saved; rejects with the request's error.
-		 * @spec openspec/changes/apps-support-note-editor-saves/specs/support-note/spec.md#requirement-the-support-editor-saves-the-note-to-the-apps-manifest-req-bqsn-001
+		 * @spec openspec/changes/archive/2026-11-24-apps-support-note-editor-saves/specs/support-note/spec.md#requirement-the-support-editor-saves-the-note-to-the-apps-manifest-req-bqsn-001
 		 */
 		async save() {
 			this.failedSave = false
@@ -88,7 +88,7 @@ export default {
 		 * Pass the dialog's close on, except the one that follows a failed save.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/apps-support-note-editor-saves/specs/support-note/spec.md#requirement-a-failed-save-keeps-the-editor-open-req-bqsn-002
+		 * @spec openspec/changes/archive/2026-11-24-apps-support-note-editor-saves/specs/support-note/spec.md#requirement-a-failed-save-keeps-the-editor-open-req-bqsn-002
 		 */
 		onClose() {
 			if (this.failedSave) {

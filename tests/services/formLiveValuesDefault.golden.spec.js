@@ -6,7 +6,7 @@
  * every context in a pool, with the clock fixed. The value (or the error) of
  * every pair is pinned.
  *
- * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
+ * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
  */
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { resolveDefault } from '../../src/services/formLiveValues.js'

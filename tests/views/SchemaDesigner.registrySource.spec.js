@@ -6,7 +6,7 @@
  * them to the field editor, and a save OpenRegister refuses over a field's
  * registry source lands on that field (data-registry-backed-field-option).
  *
- * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-the-fields-table-shows-the-registry-source-and-a-refusal-lands-on-its-field-req-bqrf-003
+ * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-the-fields-table-shows-the-registry-source-and-a-refusal-lands-on-its-field-req-bqrf-003
  */
 
 import { mount } from '@vue/test-utils'

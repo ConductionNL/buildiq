@@ -5,7 +5,7 @@
  * outside, why one is unavailable, the address integriq serves a webhook at,
  * the input fields a run receives, and the persisted trigger settings.
  *
- * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
+ * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
  */
 
 import { translate as t } from '@nextcloud/l10n'

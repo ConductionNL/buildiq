@@ -558,7 +558,7 @@ export default {
 		 * The icons a dashboard panel may take: the shared icon set.
 		 *
 		 * @return {string[]} the icon names.
-		 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/openbuild-page-designer/spec.md#requirement-promote-a-widget-to-the-nextcloud-dashboard-from-the-page-designer
+		 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/openbuild-page-designer/spec.md#requirement-promote-a-widget-to-the-nextcloud-dashboard-from-the-page-designer
 		 */
 		panelIcons() {
 			return Object.keys(DASHBOARD_ICONS)
@@ -871,7 +871,7 @@ export default {
 		 *
 		 * @param {object} entry - the placement.
 		 * @return {boolean} true when it carries an `ncDashboard` object.
-		 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/openbuild-page-designer/spec.md#requirement-promote-a-widget-to-the-nextcloud-dashboard-from-the-page-designer
+		 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/openbuild-page-designer/spec.md#requirement-promote-a-widget-to-the-nextcloud-dashboard-from-the-page-designer
 		 */
 		isPromoted(entry) {
 			return Boolean(entry && entry.ncDashboard && typeof entry.ncDashboard === 'object' && !Array.isArray(entry.ncDashboard))
@@ -886,7 +886,7 @@ export default {
 		 * @param {number} index - the placement's position in `widgets[]`.
 		 * @param {boolean} on - whether it is now promoted.
 		 * @return {void}
-		 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/openbuild-page-designer/spec.md#requirement-promote-a-widget-to-the-nextcloud-dashboard-from-the-page-designer
+		 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/openbuild-page-designer/spec.md#requirement-promote-a-widget-to-the-nextcloud-dashboard-from-the-page-designer
 		 */
 		setPromoted(index, on) {
 			const current = this.placements[index]
@@ -916,7 +916,7 @@ export default {
 		 * @param {'title'|'icon'} key - the panel field.
 		 * @param {string} value - the new value; empty clears it.
 		 * @return {void}
-		 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/openbuild-page-designer/spec.md#requirement-promote-a-widget-to-the-nextcloud-dashboard-from-the-page-designer
+		 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/openbuild-page-designer/spec.md#requirement-promote-a-widget-to-the-nextcloud-dashboard-from-the-page-designer
 		 */
 		updatePanel(index, key, value) {
 			const current = this.placements[index]

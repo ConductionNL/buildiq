@@ -6,7 +6,7 @@
  * navigations, diagnostics reports and flushes, with a fake clock. Every
  * posted batch and the pending samples at the end are pinned.
  *
- * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-a-running-app-reports-counts-not-content-req-bqdm-004
+ * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-a-running-app-reports-counts-not-content-req-bqdm-004
  */
 import { describe, expect, it } from 'vitest'
 import { createHealthReporter } from '../../src/services/healthReporter.js'

@@ -23,7 +23,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
+ * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
 /**
  * Builds and refuses the nodes of an AI step.
  *
- * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
+ * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
  */
 final class AiStepNodes {
 
@@ -111,7 +111,7 @@ final class AiStepNodes {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
+	 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
 	 */
 	public static function holdsAiStep(array $actions): bool {
 		foreach ($actions as $action) {
@@ -130,7 +130,7 @@ final class AiStepNodes {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
+	 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
 	 */
 	public static function flowRunsAgent(array $flow): bool {
 		foreach ((array)($flow['nodes'] ?? []) as $node) {
@@ -149,7 +149,7 @@ final class AiStepNodes {
 	 *
 	 * @return list<string>
 	 *
-	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+	 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
 	 */
 	public static function sourceFieldsOf(array $actions): array {
 		$fields = [];
@@ -174,7 +174,7 @@ final class AiStepNodes {
 	 *
 	 * @throws UnsupportedAutomationCombinationException For a deletion, a schedule or a lifecycle transition.
 	 *
-	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
+	 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
 	 */
 	public static function assertTrigger(string $triggerType): void {
 		if (in_array($triggerType, self::TRIGGERS, true) === false) {
@@ -195,7 +195,7 @@ final class AiStepNodes {
 	 *
 	 * @throws UnsupportedAutomationCombinationException For a step that is incomplete or would write outside its labels.
 	 *
-	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
+	 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
 	 */
 	public function build(array $action, int $index): array {
 		if ($this->schema === '') {
@@ -255,7 +255,7 @@ final class AiStepNodes {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
+	 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
 	 */
 	public function updateTrigger(array $actions): array {
 		return [
@@ -355,7 +355,7 @@ final class AiStepNodes {
 	 *
 	 * @throws UnsupportedAutomationCombinationException When there are no labels or the field is not that choice list.
 	 *
-	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-classification-only-lands-on-a-declared-label-req-bqls-003
+	 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-classification-only-lands-on-a-declared-label-req-bqls-003
 	 */
 	private function assertLabelsTarget(string $target, array $labels): void {
 		if ($labels === []) {
@@ -380,7 +380,7 @@ final class AiStepNodes {
 	 *
 	 * @return array<string, mixed>|null Null when the usual trigger applies.
 	 *
-	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
+	 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
 	 */
 	public function updateTriggerNode(string $triggerType, array $actions): ?array {
 		if ($triggerType !== 'object-updated' || self::holdsAiStep(actions: $actions) === false) {
@@ -401,7 +401,7 @@ final class AiStepNodes {
 	 *
 	 * @return array<string, mixed>|null Null for anything but an AI field with steps.
 	 *
-	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+	 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
 	 */
 	public function editTriggerNode(array $automation, string $triggerType, array $actions, int $nodeCount): ?array {
 		if (($automation['origin'] ?? '') !== 'ai-field' || $triggerType !== 'object-created' || $nodeCount < 2) {
@@ -422,7 +422,7 @@ final class AiStepNodes {
 	 *
 	 * @throws UnsupportedAutomationCombinationException When the step cannot run.
 	 *
-	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
+	 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
 	 */
 	public function stepNodes(array $action, int $index, string $triggerType): array {
 		self::assertTrigger(triggerType: $triggerType);

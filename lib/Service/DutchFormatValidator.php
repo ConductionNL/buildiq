@@ -26,7 +26,7 @@
  *
  * @link https://buildiq.nl
  *
- * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiqs-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
+ * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiqs-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use RuntimeException;
 /**
  * The Dutch field formats: check, normalise, and the message for a value that fails.
  *
- * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiqs-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
+ * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiqs-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
  */
 class DutchFormatValidator implements DutchFormatValidatorInterface {
 
@@ -73,7 +73,7 @@ class DutchFormatValidator implements DutchFormatValidatorInterface {
 	 *
 	 * @return list<string> The names.
 	 *
-	 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+	 * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
 	 */
 	public function formats(): array {
 		return array_values(array_map('strval', (array)($this->rules()['formats'] ?? [])));
@@ -86,7 +86,7 @@ class DutchFormatValidator implements DutchFormatValidatorInterface {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiqs-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
+	 * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiqs-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
 	 */
 	#[\Override]
 	public function knows(string $format): bool {
@@ -101,7 +101,7 @@ class DutchFormatValidator implements DutchFormatValidatorInterface {
 	 *
 	 * @return string|null The normalised value; null when it fails or the format is unknown.
 	 *
-	 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiqs-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
+	 * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiqs-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
 	 */
 	#[\Override]
 	public function normalise(string $format, string $value): ?string {
@@ -127,7 +127,7 @@ class DutchFormatValidator implements DutchFormatValidatorInterface {
 	 *
 	 * @return string The message.
 	 *
-	 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiqs-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
+	 * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiqs-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
 	 */
 	#[\Override]
 	public function message(string $format): string {

@@ -26,7 +26,7 @@
  * The colleague is the globalSetup fixture user `rbac-outsider`
  * (NC_RBAC_OUTSIDER_USER / NC_RBAC_OUTSIDER_PASS), from an empty storage state.
  *
- * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md
+ * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md
  * @e2e automation-designer/requirement-a-record-step-runs-outside-an-approval-req-bqar-002/a-new-permit-creates-an-inspection-record
  * @e2e automation-designer/requirement-a-step-decides-with-a-rule-set-req-bqar-005/the-fee-category-is-decided-on-creation
  * @e2e automation-designer/requirement-app-users-run-manual-automations-from-a-record-req-bqar-006/a-clerk-runs-an-automation-on-one-record

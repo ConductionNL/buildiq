@@ -37,7 +37,7 @@
  * NOTE: Playwright binaries are NOT installed by `npm install`. Run
  * `npm run test:e2e:install` once before invoking `npm run test:e2e`.
  *
- * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md
+ * @spec openspec/changes/archive/2026-11-24-integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md
  * @e2e connector-bound-page-runtime/requirement-a-connector-bound-index-page-renders-its-records-req-bqcb-001/an-app-user-opens-a-page-bound-to-an-external-api
  * @e2e connector-bound-page-runtime/requirement-a-connector-bound-index-page-renders-its-records-req-bqcb-001/the-page-designer-still-shows-what-the-maker-authored
  * @e2e connector-bound-page-runtime/requirement-the-list-page-shows-every-state-of-the-fetch-req-bqcb-002/the-endpoint-is-down

@@ -72,7 +72,7 @@ interface RuleEngineServiceInterface {
 	 *
 	 * @throws RuntimeException When the RuleSet is not found / not owned, or on timeout.
 	 *
-	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-live-evaluation-leaves-no-log-trail-req-bqlv-004
+	 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-live-evaluation-leaves-no-log-trail-req-bqlv-004
 	 */
 	public function evaluate(
 		string $ruleSetSlug,

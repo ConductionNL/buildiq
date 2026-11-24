@@ -175,7 +175,7 @@ export default {
 		 * @param {string} key The field to calculate.
 		 * @param {object} answers All answers of the form.
 		 * @return {Promise<unknown>} The rule set output; rejects when it cannot be evaluated.
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 		 */
 		async calculateField(key, answers) {
 			const calc = calculationOf(this.fields.find((field) => field && field.key === key))
@@ -191,7 +191,7 @@ export default {
 		 *
 		 * @param {{key: string, value: unknown}} change The changed answer.
 		 * @return {void}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
 		 */
 		onInput(change) {
 			if (!change || typeof change.key !== 'string') {
@@ -207,7 +207,7 @@ export default {
 		 * (Re)start the live values bridge for the current eligibility check.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
 		 */
 		startBridge() {
 			this.stopBridge()

@@ -114,7 +114,7 @@ export default {
 		 *
 		 * @param {object} entry - one related list.
 		 * @return {string} the field, or '' when there is none.
-		 * @spec openspec/changes/pages-detail-related-items/tasks.md#task-T01
+		 * @spec openspec/changes/archive/2026-11-24-pages-detail-related-items/tasks.md#task-T01
 		 */
 		linkFieldOf(entry) {
 			const filter = (entry && entry.filter) || {}
@@ -126,7 +126,7 @@ export default {
 		 *
 		 * @param {object} entry - one related list.
 		 * @return {{hasError: boolean, message: string}|null}
-		 * @spec openspec/changes/pages-detail-related-items/design.md
+		 * @spec openspec/changes/archive/2026-11-24-pages-detail-related-items/design.md
 		 */
 		rowError(entry) {
 			if (entry && entry.register && entry.schema) {
@@ -166,7 +166,7 @@ export default {
 		 *
 		 * @param {number} index - position of the entry.
 		 * @param {string} field - the field on the related schema; '' clears the link.
-		 * @spec openspec/changes/pages-detail-related-items/tasks.md#task-T01
+		 * @spec openspec/changes/archive/2026-11-24-pages-detail-related-items/tasks.md#task-T01
 		 */
 		updateLinkField(index, field) {
 			const entry = this.localEntries[index] || {}
@@ -200,7 +200,7 @@ export default {
 		 *
 		 * @param {number} index - position of the entry.
 		 * @param {string} value - the input's text.
-		 * @spec openspec/changes/pages-detail-related-items/design.md
+		 * @spec openspec/changes/archive/2026-11-24-pages-detail-related-items/design.md
 		 */
 		updateLimit(index, value) {
 			const { limit: _l, ...rest } = this.localEntries[index] || {}

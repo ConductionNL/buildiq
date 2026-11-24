@@ -23,7 +23,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
+ * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
  * one placeholder per source field, and refuses an instruction that would send
  * any other field (D2, D3).
  *
- * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
+ * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
  */
 final class AiStepPrompt {
 
@@ -53,7 +53,7 @@ final class AiStepPrompt {
 	 *
 	 * @throws UnsupportedAutomationCombinationException For an empty instruction or one that reads another field.
 	 *
-	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
+	 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
 	 */
 	public function prompt(array $action, string $preset, array $sources): string {
 		$instruction = match ($preset) {
@@ -90,7 +90,7 @@ final class AiStepPrompt {
 	 *
 	 * @throws UnsupportedAutomationCombinationException For a placeholder outside the sources.
 	 *
-	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
+	 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
 	 */
 	private static function assertOnlySources(string $text, array $sources): void {
 		preg_match_all('/\{\{\s*([^}]*?)\s*\}\}/', $text, $matches);
@@ -146,7 +146,7 @@ final class AiStepPrompt {
 	 *
 	 * @return list<string>
 	 *
-	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
+	 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
 	 */
 	public function names(array $values): array {
 		$names = [];

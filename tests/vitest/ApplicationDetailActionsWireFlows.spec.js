@@ -7,7 +7,7 @@
  * when an entry could not be wired (REQ-BQSF-002). The settings modal gets
  * the app version's schemas as "Run on" options (REQ-BQSF-001).
  *
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
  */
 
 import { flushPromises, shallowMount } from '@vue/test-utils'

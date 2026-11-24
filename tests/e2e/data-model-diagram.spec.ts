@@ -2,8 +2,8 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/data-model-diagram/specs/data-model-diagram/spec.md
- * Task: openspec/changes/data-model-diagram/tasks.md#T06
+ * Spec coverage: openspec/changes/archive/2026-11-24-data-model-diagram/specs/data-model-diagram/spec.md
+ * Task: openspec/changes/archive/2026-11-24-data-model-diagram/tasks.md#T06
  *
  * An app version's data model as a diagram, against a live instance:
  *

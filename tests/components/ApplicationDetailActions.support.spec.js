@@ -13,7 +13,7 @@ import manifestModalDoneMixin from '@conduction/nextcloud-vue/src/mixins/manifes
  * mixin, so the save goes through the same `cnManifestEditor` contract the
  * real dialog uses.
  *
- * @spec openspec/changes/apps-support-note-editor-saves/specs/support-note/spec.md
+ * @spec openspec/changes/archive/2026-11-24-apps-support-note-editor-saves/specs/support-note/spec.md
  */
 import { mount, shallowMount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

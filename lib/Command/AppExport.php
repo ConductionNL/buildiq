@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-export-an-app-to-a-file-req-bqic-005
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-export-an-app-to-a-file-req-bqic-005
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use Throwable;
 /**
  * `occ buildiq:app:export <slug> --output=<file>`.
  *
- * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-export-an-app-to-a-file-req-bqic-005
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-export-an-app-to-a-file-req-bqic-005
  */
 class AppExport extends Command {
 	/**
@@ -65,7 +65,7 @@ class AppExport extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-export-an-app-to-a-file-req-bqic-005
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-export-an-app-to-a-file-req-bqic-005
 	 */
 	#[\Override]
 	protected function configure(): void {
@@ -86,7 +86,7 @@ class AppExport extends Command {
 	 *
 	 * @return int Command exit code: 0 written, 1 when the export failed, 2 for bad input.
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-export-an-app-to-a-file-req-bqic-005
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-export-an-app-to-a-file-req-bqic-005
 	 */
 	#[\Override]
 	protected function execute(InputInterface $input, OutputInterface $output): int {

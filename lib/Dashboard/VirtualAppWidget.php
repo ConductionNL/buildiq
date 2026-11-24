@@ -35,7 +35,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-promoted-widgets-are-registered-with-the-nextcloud-dashboard
+ * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-promoted-widgets-are-registered-with-the-nextcloud-dashboard
  */
 
 declare(strict_types=1);
@@ -87,7 +87,7 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 *
 	 * @return string The widget identifier.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-widget-identity-is-frozen-to-the-application-uuid
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-widget-identity-is-frozen-to-the-application-uuid
 	 */
 	#[\Override]
 	public function getId(): string {
@@ -99,7 +99,7 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 *
 	 * @return string The widget title.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
 	 */
 	#[\Override]
 	public function getTitle(): string {
@@ -114,7 +114,7 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 *
 	 * @return int The widget order.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
 	 */
 	#[\Override]
 	public function getOrder(): int {
@@ -126,7 +126,7 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 *
 	 * @return string The icon CSS class.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
 	 */
 	#[\Override]
 	public function getIconClass(): string {
@@ -138,7 +138,7 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 *
 	 * @return string The icon URL.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
 	 */
 	#[\Override]
 	public function getIconUrl(): string {
@@ -153,7 +153,7 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 *
 	 * @return string|null The widget URL.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
 	 */
 	#[\Override]
 	public function getUrl(): ?string {
@@ -177,7 +177,7 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 *
 	 * @return bool True when the widget should be offered and rendered.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
 	 */
 	#[\Override]
 	public function isEnabled(): bool {
@@ -191,7 +191,7 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Nextcloud's Util API is static by design.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
 	 */
 	#[\Override]
 	public function load(): void {
@@ -214,7 +214,7 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) IAPIWidgetV2 mandates the signature.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-clients-that-cannot-run-the-widget-receive-projected-items
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-clients-that-cannot-run-the-widget-receive-projected-items
 	 */
 	#[\Override]
 	public function getItemsV2(string $userId, ?string $since = null, int $limit = 7): WidgetItems {

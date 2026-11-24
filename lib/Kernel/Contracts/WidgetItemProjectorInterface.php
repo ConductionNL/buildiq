@@ -48,7 +48,7 @@ interface WidgetItemProjectorInterface {
 	 *
 	 * @return WidgetItems The items, or an honest empty state.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-clients-that-cannot-run-the-widget-receive-projected-items
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-clients-that-cannot-run-the-widget-receive-projected-items
 	 */
 	public function project(WidgetDescriptor $descriptor, int $limit = 7): WidgetItems;
 }//end interface

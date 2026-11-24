@@ -41,7 +41,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-promoted-widgets-are-registered-with-the-nextcloud-dashboard
+ * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-promoted-widgets-are-registered-with-the-nextcloud-dashboard
  */
 
 declare(strict_types=1);
@@ -112,7 +112,7 @@ class DashboardWidgetRegistrar {
 	 *
 	 * @return int The number of widgets registered.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-promoted-widgets-are-registered-with-the-nextcloud-dashboard
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-promoted-widgets-are-registered-with-the-nextcloud-dashboard
 	 */
 	public function registerWidgets(
 		IContainer $container,
@@ -154,7 +154,7 @@ class DashboardWidgetRegistrar {
 	 *
 	 * @return string A service name that is never autoloaded.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-promoted-widgets-are-registered-with-the-nextcloud-dashboard
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-promoted-widgets-are-registered-with-the-nextcloud-dashboard
 	 */
 	public static function serviceNameFor(string $widgetId): string {
 		return self::SERVICE_PREFIX . $widgetId;
@@ -171,7 +171,7 @@ class DashboardWidgetRegistrar {
 	 *
 	 * @return array<int,WidgetDescriptor> One descriptor per promoted placement.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-manifest-declares-which-widgets-reach-the-nextcloud-dashboard
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-manifest-declares-which-widgets-reach-the-nextcloud-dashboard
 	 */
 	public function collectDescriptors(array $applications): array {
 		$descriptors = [];
@@ -191,7 +191,7 @@ class DashboardWidgetRegistrar {
 	 *
 	 * @return array<int,WidgetDescriptor> Its promoted placements.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-manifest-declares-which-widgets-reach-the-nextcloud-dashboard
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-manifest-declares-which-widgets-reach-the-nextcloud-dashboard
 	 */
 	private function descriptorsForApplication(array $application): array {
 		$owner = $this->widgetApplication(application: $application);
@@ -313,7 +313,7 @@ class DashboardWidgetRegistrar {
 	 *
 	 * @return array<int,WidgetDescriptor> The page's promoted placements.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-manifest-declares-which-widgets-reach-the-nextcloud-dashboard
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-manifest-declares-which-widgets-reach-the-nextcloud-dashboard
 	 */
 	private function descriptorsForPage(mixed $page, WidgetSource $source): array {
 		if (is_array($page) === false) {
@@ -360,7 +360,7 @@ class DashboardWidgetRegistrar {
 	 *
 	 * @return WidgetDescriptor|null The descriptor, or null when the entry is not promoted.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-manifest-declares-which-widgets-reach-the-nextcloud-dashboard
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-manifest-declares-which-widgets-reach-the-nextcloud-dashboard
 	 */
 	private function descriptorForEntry(array $entry, WidgetHostPage $host): ?WidgetDescriptor {
 		if (is_array($entry[self::PROMOTION_KEY] ?? null) === false) {

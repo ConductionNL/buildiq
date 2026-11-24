@@ -392,7 +392,7 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 * @return array{applicationUuid: string, versionUuid: string}|null Null for an unknown app or version, or a caller
 	 *                                                                  who may not open it.
 	 *
-	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
+	 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
 	 */
 	#[\Override]
 	public function resolveVersionForCaller(string $appSlug, ?string $versionSlug, ?IUser $caller): ?array {

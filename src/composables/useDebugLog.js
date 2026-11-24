@@ -156,7 +156,7 @@ const ENTRY_BUILDERS = Object.freeze({
  *
  * @param {object} report A nextcloud-vue diagnostics report.
  * @return {object|null} `{key, kind, pageId, what, request, status, ...}` or null.
- * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
+ * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
  */
 export function entryOf(report) {
 	if (!report || typeof report !== 'object') {
@@ -187,7 +187,7 @@ function isLoggedKind(kind) {
  * @param {object} [options] Options.
  * @param {() => number} [options.now] The clock.
  * @return {{entries: Array<object>, record: (report: object) => void, clear: () => void}} The log.
- * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-log-stays-in-the-maker-s-browser-req-bqdm-003
+ * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-log-stays-in-the-maker-s-browser-req-bqdm-003
  */
 export function useDebugLog({ now = () => Date.now() } = {}) {
 	const entries = reactive([])
@@ -197,7 +197,7 @@ export function useDebugLog({ now = () => Date.now() } = {}) {
 	 *
 	 * @param {object} report A nextcloud-vue diagnostics report.
 	 * @return {void}
-	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
+	 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
 	 */
 	function record(report) {
 		const entry = entryOf(report)
@@ -221,7 +221,7 @@ export function useDebugLog({ now = () => Date.now() } = {}) {
 	 * Empty the log.
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-log-stays-in-the-maker-s-browser-req-bqdm-003
+	 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-log-stays-in-the-maker-s-browser-req-bqdm-003
 	 */
 	function clear() {
 		entries.splice(0)

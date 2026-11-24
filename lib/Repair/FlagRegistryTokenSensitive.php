@@ -84,7 +84,7 @@ class FlagRegistryTokenSensitive implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/export-github-broker/tasks.md#task-6-registry-token-stored-sensitive
+	 * @spec openspec/changes/archive/2026-11-24-export-github-broker/tasks.md#task-6-registry-token-stored-sensitive
 	 */
 	#[\Override]
 	public function run(IOutput $output): void {

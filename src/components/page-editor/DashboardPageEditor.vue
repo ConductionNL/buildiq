@@ -109,7 +109,7 @@ export default {
 		 * update so neither write overwrites the other (REQ-BQCB-003).
 		 *
 		 * @param {object} widget - the `connector-data` widget definition.
-		 * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-a-maker-can-place-a-connector-widget-on-a-dashboard-req-bqcb-003
+		 * @spec openspec/changes/archive/2026-11-24-integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-a-maker-can-place-a-connector-widget-on-a-dashboard-req-bqcb-003
 		 */
 		placeConnectorWidget(widget) {
 			const widgets = Array.isArray(this.config.widgets)
@@ -149,7 +149,7 @@ export default {
 		 * layout item for it at the first free row, unless one already
 		 * references that id: a widget without a layout item is not drawn.
 		 *
-		 * @spec openspec/changes/pages-chart-widget-authoring/specs/page-chart-authoring/spec.md#requirement-a-new-chart-is-placed-on-the-page-req-bqcw-003
+		 * @spec openspec/changes/archive/2026-11-24-pages-chart-widget-authoring/specs/page-chart-authoring/spec.md#requirement-a-new-chart-is-placed-on-the-page-req-bqcw-003
 		 */
 		addChart() {
 			const widgets = Array.isArray(this.config.widgets) ? this.config.widgets : []

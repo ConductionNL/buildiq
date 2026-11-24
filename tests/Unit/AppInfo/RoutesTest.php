@@ -285,7 +285,7 @@ class RoutesTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-buildiq-opens-no-route-of-its-own-req-bqtr-004
+	 * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-buildiq-opens-no-route-of-its-own-req-bqtr-004
 	 */
 	public function testNoAutomationsRouteTargetsAPublicPage(): void {
 		$checked = 0;

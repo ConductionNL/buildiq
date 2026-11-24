@@ -179,7 +179,7 @@ export default {
 		 * The Dutch formats, labelled.
 		 *
 		 * @return {Array<{id: string, label: string, hint: string}>}
-		 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
 		 */
 		formatOptions() {
 			return dutchFormatOptions()
@@ -189,7 +189,7 @@ export default {
 		 * The format in force: the schema's, else the field's own Dutch format.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
 		 */
 		formatDisplay() {
 			if (isDutchFormat(this.inheritedFormat)) {
@@ -203,7 +203,7 @@ export default {
 		 *
 		 * @return {string}
 		 *
-		 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
 		 */
 		formatHint() {
 			if (isDutchFormat(this.inheritedFormat)) {
@@ -369,7 +369,7 @@ export default {
 		 *
 		 * @param {string} value The format, or '' for none.
 		 * @return {void}
-		 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
 		 */
 		onFormatChange(value) {
 			if (this.inheritedFormat) {
@@ -388,7 +388,7 @@ export default {
 		 *
 		 * @param {string} value The pattern as typed.
 		 *
-		 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
 		 */
 		onPatternInput(value) {
 			if (this.formatDisplay) {

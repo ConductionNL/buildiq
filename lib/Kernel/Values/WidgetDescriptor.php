@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-widget-identity-is-frozen-to-the-application-uuid
+ * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-widget-identity-is-frozen-to-the-application-uuid
  */
 
 declare(strict_types=1);
@@ -218,7 +218,7 @@ final class WidgetDescriptor implements \JsonSerializable {
 	 *
 	 * @return string A widget id matching self::ID_PATTERN.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-widget-identity-is-frozen-to-the-application-uuid
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-widget-identity-is-frozen-to-the-application-uuid
 	 */
 	public static function deriveId(string $applicationUuid, string $entryId): string {
 		return self::ID_PREFIX
@@ -234,7 +234,7 @@ final class WidgetDescriptor implements \JsonSerializable {
 	 *
 	 * @return string The normalised segment.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-widget-identity-is-frozen-to-the-application-uuid
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-widget-identity-is-frozen-to-the-application-uuid
 	 */
 	public static function normaliseSegment(string $raw): string {
 		$folded = strtolower($raw);
@@ -265,7 +265,7 @@ final class WidgetDescriptor implements \JsonSerializable {
 	 *
 	 * @return array<string,mixed>
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
 	 */
 	#[\Override]
 	public function jsonSerialize(): array {

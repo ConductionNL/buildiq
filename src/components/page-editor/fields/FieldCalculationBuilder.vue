@@ -5,7 +5,7 @@
   - the answers it reads changes. Stored as the field's
   - `calculate: {ruleSet, output, inputs[]}`; no formula language.
   -
-  - @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+  - @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
   -->
 <template>
 	<div class="field-calculation-builder">
@@ -94,7 +94,7 @@ export default {
 		 * The stored binding, or an empty one.
 		 *
 		 * @return {object}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 		 */
 		binding() {
 			return this.modelValue || {}
@@ -104,7 +104,7 @@ export default {
 		 * The answers the calculation reads.
 		 *
 		 * @return {Array<string>}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 		 */
 		inputs() {
 			return Array.isArray(this.binding.inputs) ? this.binding.inputs : []
@@ -114,7 +114,7 @@ export default {
 		 * Whether the bound rule set exists but is not active.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 		 */
 		inactive() {
 			const set = this.ruleSets.find(
@@ -128,7 +128,7 @@ export default {
 	 * Load the rule sets, and the outputs of the bound one.
 	 *
 	 * @return {Promise<void>}
-	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+	 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 	 */
 	async mounted() {
 		try {
@@ -147,7 +147,7 @@ export default {
 		 *
 		 * @param {string} slug The rule set slug.
 		 * @return {Promise<object>} The columns.
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 		 */
 		async loadOutputs(slug) {
 			let columns = { inputs: [], outputs: [] }
@@ -168,7 +168,7 @@ export default {
 		 *
 		 * @param {string} slug The rule set slug, or '' to unbind.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 		 */
 		async chooseRuleSet(slug) {
 			if (slug === '') {
@@ -192,7 +192,7 @@ export default {
 		 *
 		 * @param {object} patch The changed keys.
 		 * @return {void}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 		 */
 		emitPatch(patch) {
 			this.$emit('update:modelValue', {
@@ -208,7 +208,7 @@ export default {
 		 * @param {string} key The form field key.
 		 * @param {boolean} on Whether it is read.
 		 * @return {void}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 		 */
 		toggleInput(key, on) {
 			const next = this.inputs.filter((item) => item !== key)

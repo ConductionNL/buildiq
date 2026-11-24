@@ -177,7 +177,7 @@ export default {
 		 *
 		 * @return {string}
 		 *
-		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-the-app-leads-to-its-business-rules-req-bqar-008
+		 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-the-app-leads-to-its-business-rules-req-bqar-008
 		 */
 		appFilter() {
 			const app = this.$route && this.$route.query ? this.$route.query.app : ''
@@ -190,7 +190,7 @@ export default {
 		 *
 		 * @return {Array<object>}
 		 *
-		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-the-app-leads-to-its-business-rules-req-bqar-008
+		 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-the-app-leads-to-its-business-rules-req-bqar-008
 		 */
 		shownRuleSets() {
 			if (this.appFilter === '') {

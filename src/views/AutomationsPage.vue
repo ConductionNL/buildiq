@@ -694,7 +694,7 @@ export default {
 		 * @param {object} automation - the automation row.
 		 * @return {string} The reason, or ''.
 		 *
-		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-stuck-automations-are-moved-or-disabled-with-a-reason-req-bqar-007
+		 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-stuck-automations-are-moved-or-disabled-with-a-reason-req-bqar-007
 		 */
 		disabledReasonFor(automation) {
 			if (!automation || automation.enabled !== false) {

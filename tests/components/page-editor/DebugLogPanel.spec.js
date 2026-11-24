@@ -4,7 +4,7 @@
  *
  * REQ-BQDM-001, REQ-BQDM-002: the page designer's error log (board BqPaginaOntwerperFouten).
  *
- * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md
+ * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md
  */
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'

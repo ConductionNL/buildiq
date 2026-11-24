@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-condition-gates-the-actions-req-bqar-004
+ * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-condition-gates-the-actions-req-bqar-004
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ use InvalidArgumentException;
  * not know has no JSONLogic form: both are refused with the part named,
  * rather than guessed.
  *
- * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-condition-gates-the-actions-req-bqar-004
+ * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-condition-gates-the-actions-req-bqar-004
  */
 class FeelToJsonLogic {
 
@@ -105,7 +105,7 @@ class FeelToJsonLogic {
 	 *
 	 * @throws InvalidArgumentException When the expression does not parse or has no JSONLogic form.
 	 *
-	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-condition-gates-the-actions-req-bqar-004
+	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-condition-gates-the-actions-req-bqar-004
 	 */
 	public function translate(string $expression): mixed {
 		return $this->translateNode(node: $this->parser->parse($expression));
@@ -120,7 +120,7 @@ class FeelToJsonLogic {
 	 *
 	 * @throws InvalidArgumentException When the node has no JSONLogic form.
 	 *
-	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-condition-gates-the-actions-req-bqar-004
+	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-condition-gates-the-actions-req-bqar-004
 	 */
 	public function translateNode(array $node): mixed {
 		$type = (string) ($node['type'] ?? '');

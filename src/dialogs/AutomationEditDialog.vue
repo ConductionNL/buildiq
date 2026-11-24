@@ -813,7 +813,7 @@ export default {
 		 * Why the chosen email or webhook trigger cannot be used, or ''.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
+		 * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
 		 */
 		inboundReason() {
 			return inboundTriggerReason({
@@ -859,7 +859,7 @@ export default {
 		 * The address integriq serves this webhook automation at (D3).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-a-webhook-starts-the-automations-flow-req-bqtr-003
+		 * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-a-webhook-starts-the-automations-flow-req-bqtr-003
 		 */
 		webhookUrl() {
 			return webhookAddress({
@@ -1016,7 +1016,7 @@ export default {
 		 * own, then shared ones of other apps, never this one (REQ-BQSF-004).
 		 *
 		 * @return {Array<{id: string, label: string, shared: boolean}>}
-		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+		 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
 		 */
 		runAutomationChoices() {
 			return runAutomationOptions(this.runAutomations.records, {
@@ -1029,7 +1029,7 @@ export default {
 		 * The "Ask AI" kind: disabled, with its reason, without Hermiq's node (REQ-BQLS-005).
 		 *
 		 * @return {{value: string, label: string, disabled: boolean}}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
 		 */
 		aiStepTypeOption() {
 			if (this.agentNodeAvailable) {
@@ -1047,7 +1047,7 @@ export default {
 		 * while the automation has an AI step.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
 		 */
 		aiFieldSchema() {
 			const hasAiStep = this.actions.some((action) => action && action.type === 'ai-step')
@@ -1059,7 +1059,7 @@ export default {
 		 * otherwise, as `docudeskAvailable` does.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
+		 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
 		 */
 		integriqAvailable() {
 			return (
@@ -1072,7 +1072,7 @@ export default {
 		 * Whether the source list loaded; otherwise the source is typed.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
+		 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
 		 */
 		sourcePickerAvailable() {
 			return !this.sourcesFetchFailed && this.sourceOptions.length > 0
@@ -1082,7 +1082,7 @@ export default {
 		 * Whether the decision table list loaded; otherwise the slug is typed.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
+		 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
 		 */
 		ruleSetPickerAvailable() {
 			return !this.ruleSetsFetchFailed && this.ruleSetOptions.length > 0
@@ -1094,7 +1094,7 @@ export default {
 		 * field (REQ-BQAR-003, REQ-BQAR-005).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
+		 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
 		 */
 		incompleteStepMessage() {
 			for (const action of this.actions) {
@@ -1278,7 +1278,7 @@ export default {
 		 *
 		 * @param {string} schema - the trigger schema while an AI step exists, else ''.
 		 * @return {void}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
 		 */
 		aiFieldSchema(schema) {
 			this.fetchAiFieldOptions(schema)
@@ -1578,14 +1578,14 @@ export default {
 		 * (logic-automation-actions-that-run D5, D7).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
+		 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
 		 */
 		/**
 		 * Load the automations a "Run another automation" step may name; a
 		 * failed read offers none (the compiler still checks the name).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+		 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
 		 */
 		async fetchRunAutomationTargets() {
 			// The automations a "Run another automation" step may name (REQ-BQSF-004).
@@ -1605,7 +1605,7 @@ export default {
 		 *
 		 * @param {string} uuid - the named automation.
 		 * @return {object|null}
-		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+		 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
 		 */
 		runAutomationOption(uuid) {
 			if (!uuid) {
@@ -1630,7 +1630,7 @@ export default {
 		 * load the agents an AI step can name (REQ-BQLS-001, REQ-BQLS-005).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
 		 */
 		async fetchAiStepSupport() {
 			this.agentNodeAvailable = await fetchAgentNodeAvailable()
@@ -1654,7 +1654,7 @@ export default {
 		 *
 		 * @param {string} schema - the trigger schema slug or id.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
 		 */
 		async fetchAiFieldOptions(schema) {
 			if (!schema) {
@@ -1696,7 +1696,7 @@ export default {
 		 *
 		 * @param {string} reference The stored source reference.
 		 * @return {?object}
-		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
+		 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
 		 */
 		sourceOption(reference) {
 			if (!reference) {
@@ -1710,7 +1710,7 @@ export default {
 		 *
 		 * @param {string} slug The stored rule set slug.
 		 * @return {?object}
-		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
+		 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
 		 */
 		ruleSetOption(slug) {
 			if (!slug) {
@@ -1892,7 +1892,7 @@ export default {
 		 * Load the integriq mailboxes the maker can read (D2).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
+		 * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
 		 */
 		async fetchMailboxes() {
 			this.mailboxesLoading = true

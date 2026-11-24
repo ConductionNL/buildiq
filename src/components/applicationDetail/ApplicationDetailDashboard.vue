@@ -449,7 +449,7 @@ export default {
 		/**
 		 * The application UUID the health section reads.
 		 *
-		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
+		 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
 		 * @return {string} The UUID.
 		 */
 		healthAppUuid() {
@@ -463,7 +463,7 @@ export default {
 		/**
 		 * Page titles by id, so the health section names pages as the app does.
 		 *
-		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
+		 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
 		 * @return {Record<string, string>} Titles.
 		 */
 		pageTitles() {

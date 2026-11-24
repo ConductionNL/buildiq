@@ -19,7 +19,7 @@
  *
  * @link      https://github.com/ConductionNL/buildiq
  *
- * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -53,7 +53,7 @@ use Throwable;
  *
  * @link https://github.com/ConductionNL/buildiq
  *
- * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
  */
 class AppRecordsImporter {
 
@@ -96,7 +96,7 @@ class AppRecordsImporter {
 	 *
 	 * @return array<string,string> The JSON Lines contents, by schema slug.
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
 	 */
 	public static function recordFiles(array $files): array {
 		$records = [];
@@ -127,7 +127,7 @@ class AppRecordsImporter {
 	 * @return array{imported:int,failed:int,schemas:list<array{schema:string,imported:int,failed:int,error?:string}>} Per schema,
 	 *                                                                                                              what arrived and what not.
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
 	 */
 	public function import(array $files, array $installed): array {
 		$target = $this->target(installed: $installed);
@@ -226,7 +226,7 @@ class AppRecordsImporter {
 	 *
 	 * @return mixed The import's result.
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
 	 */
 	private function callImport(object $importer, string $path, array $target, SchemaInterface $schema): mixed {
 		if (self::takesImportRequest(importer: $importer) === true) {
@@ -253,7 +253,7 @@ class AppRecordsImporter {
 	 *
 	 * @return bool True for the ImportRequest form, false for the named-parameter form.
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
 	 */
 	private static function takesImportRequest(object $importer): bool {
 		$first = ((new ReflectionMethod($importer, 'importFromJson'))->getParameters()[0] ?? null);

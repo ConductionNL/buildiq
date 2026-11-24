@@ -15,7 +15,7 @@
  * @version   GIT: <git_id>
  * @link      https://github.com/ConductionNL/buildiq
  *
- * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-list-apps-from-the-command-line-req-bqic-004
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-list-apps-from-the-command-line-req-bqic-004
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -38,7 +38,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/buildiq
  *
- * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-list-apps-from-the-command-line-req-bqic-004
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-list-apps-from-the-command-line-req-bqic-004
  */
 class AppCatalogue implements AppCatalogueInterface {
 
@@ -82,7 +82,7 @@ class AppCatalogue implements AppCatalogueInterface {
 	 *
 	 * @return array<int,array<string,mixed>> The apps.
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-list-apps-from-the-command-line-req-bqic-004
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-list-apps-from-the-command-line-req-bqic-004
 	 */
 	#[\Override]
 	public function apps(?string $slug = null): array {
@@ -110,7 +110,7 @@ class AppCatalogue implements AppCatalogueInterface {
 	 *
 	 * @return array<string,mixed>|null The app.
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-delete-an-app-from-the-command-line-req-bqic-007
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-delete-an-app-from-the-command-line-req-bqic-007
 	 */
 	#[\Override]
 	public function app(string $slug): ?array {
@@ -124,7 +124,7 @@ class AppCatalogue implements AppCatalogueInterface {
 	 *
 	 * @return array<int,array{slug:string,semver:string,status:string}> The versions, sorted by slug.
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-list-apps-from-the-command-line-req-bqic-004
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-list-apps-from-the-command-line-req-bqic-004
 	 */
 	#[\Override]
 	public function versions(string $appUuid): array {

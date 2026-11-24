@@ -78,7 +78,7 @@ export default {
 			/**
 			 * Reload the last runs whenever the bound flows change.
 			 *
-			 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-the-app-shows-where-its-flows-run-req-bqsf-005
+			 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-the-app-shows-where-its-flows-run-req-bqsf-005
 			 */
 			handler() {
 				this.loadLastRuns()
@@ -95,7 +95,7 @@ export default {
 		 *
 		 * @return {string} The uuid, '' when there is none.
 		 *
-		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md
+		 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md
 		 */
 		flowUuid(flow) {
 			if (!flow) {
@@ -112,7 +112,7 @@ export default {
 		 *
 		 * @return {string[]} The lines.
 		 *
-		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md
+		 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md
 		 */
 		runOnLines(flow) {
 			const entries = flow && Array.isArray(flow.runOn) ? flow.runOn : []
@@ -139,7 +139,7 @@ export default {
 		 *
 		 * @return {string}
 		 *
-		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md
+		 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md
 		 */
 		lastRunText(flow) {
 			const uuid = this.flowUuid(flow)
@@ -164,7 +164,7 @@ export default {
 		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md
+		 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md
 		 */
 		async loadLastRuns() {
 			const uuids = [...new Set((this.flows || []).map((flow) => this.flowUuid(flow)).filter(Boolean))]

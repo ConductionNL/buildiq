@@ -12,8 +12,8 @@
  * The server refuses the same cases at compile; these lists only keep the
  * pickers from offering them.
  *
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
  */
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -30,7 +30,7 @@ const LIMIT = 500
  *
  * @param {object} automation The automation record.
  * @return {string} Its uuid, or ''.
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
  */
 export function automationId(automation) {
 	if (!automation || typeof automation !== 'object') {
@@ -45,7 +45,7 @@ export function automationId(automation) {
  *
  * @param {object} automation The automation record.
  * @return {string} The flow uuid.
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
  */
 export function compiledFlowOf(automation) {
 	const provenance = automation && automation.provenance
@@ -59,7 +59,7 @@ export function compiledFlowOf(automation) {
  * @param {Array<object>} automations Every automation record read.
  * @param {{applicationSlug: string, ownId: string}} scope The app and the automation being edited.
  * @return {Array<{id: string, label: string, shared: boolean}>} Options.
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
  */
 export function runAutomationOptions(automations, { applicationSlug = '', ownId = '' } = {}) {
 	const own = []
@@ -133,7 +133,7 @@ function byLabel(a, b) {
  * @param {Array<object>} automations Every automation record read.
  * @param {string} applicationSlug The app whose picker this is.
  * @return {Array<{label: string, value: string, shared: boolean}>} Options.
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
  */
 export function sharedFlowOptions(automations, applicationSlug) {
 	const options = []
@@ -155,7 +155,7 @@ export function sharedFlowOptions(automations, applicationSlug) {
  * @param {Array<{label: string, value: string}>} sharedOptions The shared automations' flows.
  * @param {string} heading The group heading, translated.
  * @return {Array<object>} Options.
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
  */
 export function withSharedGroup(flowOptions, sharedOptions, heading) {
 	const plain = listOf(flowOptions)
@@ -176,7 +176,7 @@ export function withSharedGroup(flowOptions, sharedOptions, heading) {
  *
  * @param {object} option The option.
  * @return {boolean}
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
  */
 export function isPickable(option) {
 	return !(option && option.heading === true)
@@ -186,8 +186,8 @@ export function isPickable(option) {
  * Read the automations the pickers choose from.
  *
  * @return {Promise<Array<object>>} The automation records.
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
  */
 export async function fetchAutomations() {
 	const { data } = await axios.get(
@@ -203,7 +203,7 @@ export async function fetchAutomations() {
  *
  * @param {string} applicationSlug The app whose picker this is.
  * @return {Promise<Array<{label: string, value: string, shared: boolean}>>} Options.
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
  */
 export async function loadSharedFlowOptions(applicationSlug) {
 	try {

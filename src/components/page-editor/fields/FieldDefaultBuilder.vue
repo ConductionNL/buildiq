@@ -5,7 +5,7 @@
   - today, or a field of the record the form was opened from. Stored as the
   - field's `default`: a literal or a token, never code.
   -
-  - @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
+  - @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
   -->
 <template>
 	<div class="field-default-builder">
@@ -88,7 +88,7 @@ export default {
 		 * The choices of the picker.
 		 *
 		 * @return {Array<{value: string, label: string}>}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
 		 */
 		kinds() {
 			return [
@@ -112,7 +112,7 @@ export default {
 		 * Which kind of default the stored value is.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
 		 */
 		kind() {
 			if (isUnset(this.modelValue)) {
@@ -125,7 +125,7 @@ export default {
 		 * The literal value, or '' for a token.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
 		 */
 		literalValue() {
 			return this.kind === 'literal' && this.modelValue !== null
@@ -137,7 +137,7 @@ export default {
 		 * The record field an `@object.` default reads.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
 		 */
 		objectField() {
 			return typeof this.modelValue === 'string'
@@ -153,7 +153,7 @@ export default {
 		 *
 		 * @param {string} kind The chosen kind.
 		 * @return {void}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
 		 */
 		chooseKind(kind) {
 			this.pickedKind = kind
@@ -169,7 +169,7 @@ export default {
 		 *
 		 * @param {string} value The value.
 		 * @return {void}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
 		 */
 		emitValue(value) {
 			this.$emit('update:modelValue', value === '' ? null : value)
@@ -180,7 +180,7 @@ export default {
 		 *
 		 * @param {string} field The record field.
 		 * @return {void}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
 		 */
 		emitObjectField(field) {
 			const trimmed = field.trim()

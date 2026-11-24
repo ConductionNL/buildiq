@@ -106,7 +106,7 @@ export default {
 		 *
 		 * @param {object} entry - one link button.
 		 * @return {{hasError: boolean, message: string}|null}
-		 * @spec openspec/changes/pages-detail-related-items/tasks.md#task-T02
+		 * @spec openspec/changes/archive/2026-11-24-pages-detail-related-items/tasks.md#task-T02
 		 */
 		rowError(entry) {
 			if (!entry || !entry.register || !entry.schema) {

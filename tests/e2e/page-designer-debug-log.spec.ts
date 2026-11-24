@@ -31,7 +31,7 @@
  * still travels the real diagnostics channel; only the server's answer is
  * stood in for.
  *
- * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md
+ * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md
  * @e2e builder-debug-log/requirement-the-designer-logs-the-previews-requests-and-errors-req-bqdm-001/a-maker-sees-a-failed-list-request
  * @e2e builder-debug-log/requirement-the-log-names-binding-problems-req-bqdm-002/a-column-points-at-a-property-that-is-gone
  * @e2e builder-debug-log/requirement-the-log-stays-in-the-makers-browser-req-bqdm-003/a-reload-starts-a-clean-log

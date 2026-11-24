@@ -271,7 +271,7 @@ final class ServiceRegistrar {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-promoted-widgets-are-registered-with-the-nextcloud-dashboard
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-promoted-widgets-are-registered-with-the-nextcloud-dashboard
 	 */
 	public function registerDashboardWidgets(ContainerInterface $container): void {
 		$widgetContext = new VirtualAppWidgetContext(

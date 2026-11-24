@@ -9,7 +9,7 @@
  * no message, no user. A page load is the time from navigating to a page until
  * the last request it made within its first ten seconds came back.
  *
- * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-a-running-app-reports-counts-not-content-req-bqdm-004
+ * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-a-running-app-reports-counts-not-content-req-bqdm-004
  */
 
 /** Requests later than this after navigating do not count towards the page load. */
@@ -134,7 +134,7 @@ function isClientError(report) {
  * @param {(pages: Array<object>) => Promise<unknown>|unknown} options.post Sends one batch of page samples.
  * @param {() => number} [options.now] The clock.
  * @return {{listener: (report: object) => void, navigate: (pageId: string) => void, flush: () => (Promise<unknown>|undefined), pending: () => Array<object>}} The reporter.
- * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-a-running-app-reports-counts-not-content-req-bqdm-004
+ * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-a-running-app-reports-counts-not-content-req-bqdm-004
  */
 export function createHealthReporter({ post, now = () => Date.now() }) {
 	let pages = new Map()
@@ -174,7 +174,7 @@ export function createHealthReporter({ post, now = () => Date.now() }) {
 		/**
 		 * The diagnostics listener for CnAppRoot.
 		 *
-		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-a-running-app-reports-counts-not-content-req-bqdm-004
+		 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-a-running-app-reports-counts-not-content-req-bqdm-004
 		 * @param {object} report A diagnostics report.
 		 * @return {void}
 		 */
@@ -195,7 +195,7 @@ export function createHealthReporter({ post, now = () => Date.now() }) {
 		/**
 		 * Start a page view: the previous one's load is counted.
 		 *
-		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-a-running-app-reports-counts-not-content-req-bqdm-004
+		 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-a-running-app-reports-counts-not-content-req-bqdm-004
 		 * @param {string} pageId The page navigated to.
 		 * @return {void}
 		 */
@@ -213,7 +213,7 @@ export function createHealthReporter({ post, now = () => Date.now() }) {
 		/**
 		 * Send what was counted since the last flush, if anything, and start over.
 		 *
-		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-a-running-app-reports-counts-not-content-req-bqdm-004
+		 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-a-running-app-reports-counts-not-content-req-bqdm-004
 		 * @return {Promise<unknown>|undefined} The post, or undefined when there was nothing.
 		 */
 		flush() {
@@ -233,7 +233,7 @@ export function createHealthReporter({ post, now = () => Date.now() }) {
 		/**
 		 * What would be sent now, for tests and debugging.
 		 *
-		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-a-running-app-reports-counts-not-content-req-bqdm-004
+		 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-a-running-app-reports-counts-not-content-req-bqdm-004
 		 * @return {Array<object>} The samples.
 		 */
 		pending() {
