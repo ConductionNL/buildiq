@@ -68,6 +68,7 @@ use OCA\Buildiq\Service\HelperFactory;
 use OCA\Buildiq\Kernel\Values\LocalApplicationRef;
 use OCA\Buildiq\Service\PageCodeGuard;
 use OCA\Buildiq\Service\RegisterStore;
+use OCA\Buildiq\Service\SchemaExportFlag;
 use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCA\Buildiq\Service\TemplateInstall;
 use OCA\Buildiq\Support\ObjectRecord;
@@ -3060,6 +3061,8 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 * @return array<int,int> List of created schema IDs
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+	 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-exports-its-records-to-csv-or-excel-req-bqcv-004
+	 * @SuppressWarnings(PHPMD.StaticAccess) SchemaExportFlag is a pure coercion with no collaborators.
 	 */
 	private function cloneCompanionSchemas(
 		array $companions,
@@ -3081,7 +3084,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 				$schemaPayload['version'] = '0.1.0';
 			}
 
-			$schema = $this->schemaMapper->createFromArray(object: $schemaPayload);
+			$schema = $this->schemaMapper->createFromArray(object: SchemaExportFlag::mark(blob: $schemaPayload));
 			$createdIds[] = $schema->getId();
 		}
 

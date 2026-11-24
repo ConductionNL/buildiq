@@ -86,6 +86,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -242,6 +245,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -301,6 +307,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -474,6 +483,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -533,6 +545,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -592,6 +607,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -782,6 +800,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -841,6 +862,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -1014,6 +1038,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -1785,6 +1812,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -2093,6 +2123,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -2298,6 +2331,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -2357,6 +2393,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -2416,6 +2455,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -2628,6 +2670,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -2687,6 +2732,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -2746,6 +2794,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -2975,6 +3026,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -3034,6 +3088,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -3250,6 +3307,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -3309,6 +3369,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -3525,6 +3588,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -3694,6 +3760,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -3753,6 +3822,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -3991,6 +4063,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
