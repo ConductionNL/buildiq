@@ -98,8 +98,12 @@ async function flush(wrapper) {
 }
 
 // Default happy-path router for GET across the several endpoints.
-function installGet({ app, userDelta, overrides, versions } = {}) {
+function installGet({ app, userDelta, overrides, versions, manifestBase } = {}) {
 	axiosGetMock.mockImplementation((url) => {
+		if (url.includes('/manifest-base')) {
+			if (manifestBase === 'forbidden') return Promise.reject(new Error('403'))
+			return Promise.resolve({ data: manifestBase ?? { base: null, orphanedDeltaPaths: [] } })
+		}
 		if (url.includes('/user-deltas')) {
 			if (overrides === 'forbidden') return Promise.reject(new Error('403'))
 			return Promise.resolve({ data: { overrides: overrides ?? [] } })
@@ -187,6 +191,35 @@ describe('ManifestLayersDetail', () => {
 		// Title + overrides list render.
 		expect(wrapper.find('.ob-manifest-detail__title').text()).toContain('{name}')
 		expect(wrapper.findAll('.ob-manifest-detail__override')).toHaveLength(1)
+	})
+
+	it('warns the maintainers about delta paths that no longer match the base (app-delta-override 5.3)', async () => {
+		installGet({
+			app: APP,
+			manifestBase: { base: { pages: [] }, orphanedDeltaPaths: ['pages[id=gone].title', 'menu[id=old]'] },
+		})
+		const wrapper = mountDetail()
+		await flush(wrapper)
+		const asked = axiosGetMock.mock.calls.find(([url]) => url.includes('/manifest-base'))
+		expect(asked[0]).toContain('/apps/buildiq/api/applications/petstore/manifest-base')
+		expect(asked[1]).toEqual({ params: {} })
+		const note = wrapper.find('[data-testid="orphaned-delta-paths"]')
+		expect(note.exists()).toBe(true)
+		expect(note.text()).toContain('pages[id=gone].title, menu[id=old]')
+	})
+
+	it('shows no orphan warning without orphans or for a caller the endpoint refuses', async () => {
+		installGet({ app: APP })
+		const clean = mountDetail()
+		await flush(clean)
+		expect(clean.vm.orphanedDeltaPaths).toEqual([])
+		expect(clean.find('[data-testid="orphaned-delta-paths"]').exists()).toBe(false)
+
+		installGet({ app: APP, manifestBase: 'forbidden' })
+		const refused = mountDetail()
+		await flush(refused)
+		expect(refused.vm.orphanedDeltaPaths).toEqual([])
+		expect(refused.find('[data-testid="orphaned-delta-paths"]').exists()).toBe(false)
 	})
 
 	it('sets an error when the app fails to load', async () => {

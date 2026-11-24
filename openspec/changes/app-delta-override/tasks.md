@@ -41,8 +41,9 @@
   > Built 21 Nov: `PageDesignerHost` asks `GET /api/applications/{slug}/manifest-base?_version=` (`ManifestBaseController` → `EditorBaseService::authorizeBase()`: owners and editors only, without admin bypass, for a version they may open, and a base app only when the caller's organisation scope admits it) and edits the stored delta merged over that base. On save it PATCHes `{manifestDelta: diffManifest(base, edited)}` instead of a blob (`src/services/deltaEditing.js`). A base that cannot be loaded turns saving off, and a version without a base saves its `manifest` as before. The version keeps the `baseRef` it already has: this change does not set a base on a version that has none. PHPUnit `EditorBaseServiceTest`, `ManifestBaseControllerTest`. Vitest `tests/services/deltaEditing.spec.js` and the delta cases in `tests/views/PageDesignerHost.spec.js`.
 - [x] 5.2 Wire live preview through the JS `mergeManifestDelta(base, editedDelta)` so preview equals the server-resolved result.
   > Built: the live preview renders the designer's `manifest`, which is `mergeManifestDelta(base, storedDelta)` on load. After an edit, `mergeManifestDelta(base, diffManifest(base, edited))` reproduces it, asserted in `PageDesignerHost.spec.js` and `deltaEditing.spec.js`, so the preview equals what the server resolves.
-- [ ] 5.3 Surface orphaned-delta paths in the editor (and reuse the `settings-and-observability` admin surface) as a non-blocking warning; add the one new l10n string via the standard flow.
+- [x] 5.3 Surface orphaned-delta paths in the editor (and reuse the `settings-and-observability` admin surface) as a non-blocking warning; add the one new l10n string via the standard flow.
   > Partly built 21 Nov: the designer shows the orphaned delta paths `ManifestBaseResolver::baseOf()` reports as a non-blocking warning (`data-testid="orphaned-delta-paths"`), with its string in English and Dutch. Open: the admin surface. Which `settings-and-observability` screen should list them, and for which apps, is a design question.
+  > Built 24 Nov (decision recorded in the PR): the admin-facing surface is the app's "Manifest layers" page (`ManifestLayersDetail.vue`, reached from the app detail page), where the Base card lists the production version's orphaned paths with the same warning and string as the designer. It reads the same owners-and-editors endpoint (`manifest-base`), so a caller it refuses, or a version without a base, sees nothing. A cross-app list on the admin settings page was not built: the paths are per version and only the app's maintainers can act on them. Vitest: two cases in `tests/views/ManifestLayersDetail.spec.js`.
 
 ## 6. Backwards-compatibility
 
@@ -61,7 +62,8 @@
 
 ## 8. Verify
 
-- [ ] 8.1 Run `composer check:strict` and the relevant hydra mechanical gates (spec-coverage, route-auth, no-admin-idor) green on the diff.
+- [x] 8.1 Run `composer check:strict` and the relevant hydra mechanical gates (spec-coverage, route-auth, no-admin-idor) green on the diff.
+  > Run 24 Nov on the 5.3 PR: no new gate findings against development (route-auth, no-admin-idor and the rest report the same set), the same PHPUnit failures as development, lint 0 errors, vitest green.
 - [ ] 8.2 Manual: clone-from-template app stores `baseRef` + delta; edit one page; add a page to the base; confirm the derived app inherits it on next manifest fetch.
 - [x] 8.3 `openspec validate "app-delta-override"` passes and `openspec status` shows 4/4 complete before archiving.
   > Run 22 Nov 2026: `openspec validate app-delta-override --strict` is valid after the long texts of four requirements moved into scenarios (the delta shape, every consumer getting a merged manifest, the route, the organisation scope, the permissions gate, the slug lookup, the name injection); `openspec status` shows 4/4.
