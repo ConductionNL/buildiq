@@ -55,6 +55,7 @@ final class PageLayoutPresenter implements PageLayoutPresenterInterface {
 	 *
 	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-006, REQ-OBPL-007, REQ-OBPL-008, REQ-OBPL-009)
 	 */
+	#[\Override]
 	public function serve(array $layout, ?array $schemaWide, array $object): array {
 		return [
 			'id' => (string)($layout['id'] ?? ''),

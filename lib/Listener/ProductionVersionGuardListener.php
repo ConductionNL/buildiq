@@ -91,6 +91,7 @@ class ProductionVersionGuardListener implements IEventListener {
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-32
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	public function handle(Event $event): void {
 		$entity = $this->writtenEntity(event: $event);
 		if ($entity === null) {

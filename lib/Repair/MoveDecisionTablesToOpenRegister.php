@@ -106,6 +106,7 @@ class MoveDecisionTablesToOpenRegister implements IRepairStep {
 	 *
 	 * @spec openspec/changes/decision-tables-live-in-openregister/specs/business-rules-engine/spec.md
 	 */
+	#[\Override]
 	public function getName(): string {
 		return 'Move buildiq decision tables into OpenRegister\'s decision-tables register';
 
@@ -120,6 +121,7 @@ class MoveDecisionTablesToOpenRegister implements IRepairStep {
 	 *
 	 * @spec openspec/changes/decision-tables-live-in-openregister/specs/business-rules-engine/spec.md
 	 */
+	#[\Override]
 	public function run(IOutput $output): void {
 		$current = $this->schemaIds(slug: self::OLD_SLUG);
 		$retired = $this->schemaIds(slug: self::RETIRED_SLUG);

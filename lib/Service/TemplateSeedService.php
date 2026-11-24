@@ -112,6 +112,7 @@ class TemplateSeedService implements TemplateSeedServiceInterface {
 	 *
 	 * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-11
 	 */
+	#[\Override]
 	public function seed(): array {
 		$counts = ['seeded' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => []];
 
@@ -132,7 +133,10 @@ class TemplateSeedService implements TemplateSeedServiceInterface {
 				continue;
 			}
 
-			++$counts[$outcome['result']];
+			$result = $outcome['result'];
+			if (in_array($result, ['seeded', 'updated', 'skipped'], true) === true) {
+				++$counts[$result];
+			}
 		}
 
 		return $counts;

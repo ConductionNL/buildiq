@@ -80,6 +80,7 @@ final class BuildiqLeafRegistrationListener implements IEventListener {
 	 *
 	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-006)
 	 */
+	#[\Override]
 	public function handle(Event $event): void {
 		if ($event instanceof RegisterLeafProvidersEvent === false) {
 			return;

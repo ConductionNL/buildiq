@@ -62,6 +62,7 @@ class AppImport extends Command {
 	 *
 	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-import-an-app-from-a-file-req-bqic-006
 	 */
+	#[\Override]
 	protected function configure(): void {
 		$this->setName(name: 'buildiq:app:import')
 			->setDescription(description: 'Import an exported app archive as a new app owned by the given user.')
@@ -82,6 +83,7 @@ class AppImport extends Command {
 	 *
 	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-import-an-app-from-a-file-req-bqic-006
 	 */
+	#[\Override]
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$owner = trim((string)$input->getOption('owner'));
 		if ($owner === '') {

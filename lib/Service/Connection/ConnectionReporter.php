@@ -153,6 +153,7 @@ class ConnectionReporter implements ConnectionReporterInterface {
 	 *
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
+	#[\Override]
 	public function reportStoreSearch(string $outcome): bool {
 		return $this->reportObserved(
 			key: 'store',
@@ -189,6 +190,7 @@ class ConnectionReporter implements ConnectionReporterInterface {
 	 *
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
+	#[\Override]
 	public function reportGitHubSync(string $outcome): bool {
 		return $this->reportObserved(
 			key: 'github',

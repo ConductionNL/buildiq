@@ -88,6 +88,7 @@ class DutchFormatValidator implements DutchFormatValidatorInterface {
 	 *
 	 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiqs-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
 	 */
+	#[\Override]
 	public function knows(string $format): bool {
 		return in_array($format, $this->formats(), true);
 	}//end knows()
@@ -102,6 +103,7 @@ class DutchFormatValidator implements DutchFormatValidatorInterface {
 	 *
 	 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiqs-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
 	 */
+	#[\Override]
 	public function normalise(string $format, string $value): ?string {
 		$value = trim($value);
 
@@ -127,6 +129,7 @@ class DutchFormatValidator implements DutchFormatValidatorInterface {
 	 *
 	 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiqs-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
 	 */
+	#[\Override]
 	public function message(string $format): string {
 		return match ($format) {
 			'bsn' => $this->l10n->t('This BSN is not valid. Check the nine digits.'),

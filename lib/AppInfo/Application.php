@@ -72,6 +72,7 @@ class Application extends App implements IBootstrap {
 	 *
 	 * @spec openspec/specs/openbuild-rbac/spec.md
 	 */
+	#[\Override]
 	public function register(IRegistrationContext $context): void {
 		(new MiddlewareRegistrar())->registerApiContractMiddleware(context: $context);
 		(new ServiceRegistrar())->registerOpenRegisterContracts(context: $context);
@@ -317,6 +318,7 @@ class Application extends App implements IBootstrap {
 	 *
 	 * @spec openspec/changes/archive/2026-05-17-openbuild-nextcloud-nav/tasks.md
 	 */
+	#[\Override]
 	public function boot(IBootContext $context): void {
 		$dispatcher = $context->getServerContainer()->get(IEventDispatcher::class);
 

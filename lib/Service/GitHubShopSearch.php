@@ -68,6 +68,7 @@ class GitHubShopSearch implements GitHubShopSearchInterface {
 	 *
 	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
+	#[\Override]
 	public function failed(Throwable $error): array {
 		$this->logger->error('Buildiq shop: GitHub search failed: ' . TokenScrubber::scrub(message: $error->getMessage()));
 		$this->connectionReporter?->reportGitHubSearch(
@@ -93,6 +94,7 @@ class GitHubShopSearch implements GitHubShopSearchInterface {
 	 *
 	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
+	#[\Override]
 	public function answered(array $result): array {
 		$this->connectionReporter?->reportGitHubSearch(
 			outcome: (string)$result['outcome'],

@@ -70,6 +70,7 @@ class AutomationRunPruneJob extends TimedJob {
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-old-runs-are-pruned-and-the-last-run-stays-req-bqrl-005
 	 */
+	#[\Override]
 	protected function run($argument): void {
 		unset($argument);
 		$this->runs->prune(now: $this->time->getTime());

@@ -230,6 +230,7 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
+	#[\Override]
 	public function search(?string $query, ?string $actingUserId, ?string $credentialId = null): array {
 		$term = trim((string)$query);
 		$normalise = strtolower($term);
@@ -560,6 +561,7 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
+	#[\Override]
 	public function fetchRepoFiles(RepoSource $source, ?string $actingUserId): array {
 		if ($this->validRepo(owner: $source->owner, repo: $source->repo, ref: $source->ref) === false) {
 			return [];

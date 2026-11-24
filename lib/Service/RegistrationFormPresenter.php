@@ -58,6 +58,7 @@ final class RegistrationFormPresenter implements RegistrationFormPresenterInterf
 	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-008)
 	 * @spec openspec/changes/forms-fee-on-submit/specs/registration-form-builder/spec.md (REQ-OBRF-010)
 	 */
+	#[\Override]
 	public function serve(array $form): array {
 		$presets = $this->presetsOf(form: $form);
 		$fields = $this->fieldsWithPresets(
@@ -257,6 +258,7 @@ final class RegistrationFormPresenter implements RegistrationFormPresenterInterf
 	 *
 	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 	 */
+	#[\Override]
 	public function defaultsFirst(array $forms): array {
 		$defaults = [];
 		$rest = [];

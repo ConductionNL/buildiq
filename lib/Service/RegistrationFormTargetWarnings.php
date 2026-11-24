@@ -133,6 +133,7 @@ final class RegistrationFormTargetWarnings implements RegistrationFormTargetWarn
 	 *
 	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-a-registration-forms-presets-are-checked-against-its-destination
 	 */
+	#[\Override]
 	public function mappingOf(array $form): array {
 		$fields = [];
 		foreach ($this->fieldsByName(form: $form) as $name => $field) {

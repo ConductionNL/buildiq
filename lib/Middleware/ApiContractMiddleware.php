@@ -127,6 +127,7 @@ class ApiContractMiddleware extends Middleware {
 	 *
 	 * @spec openspec/specs/api-contract/spec.md
 	 */
+	#[\Override]
 	public function afterController($controller, $methodName, Response $response): Response {
 		return $this->decorate(response: $response);
 	}//end afterController()

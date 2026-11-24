@@ -98,6 +98,7 @@ class WidgetItemProjector implements WidgetItemProjectorInterface {
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-clients-that-cannot-run-the-widget-receive-projected-items
 	 */
+	#[\Override]
 	public function project(WidgetDescriptor $descriptor, int $limit = 7): WidgetItems {
 		if ($this->isProjectable(descriptor: $descriptor) === false) {
 			return $this->emptyState(descriptor: $descriptor);

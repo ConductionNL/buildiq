@@ -155,6 +155,7 @@ class IconService implements IconServiceInterface {
 	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	public function getIconStream(string $slug, bool $dark, ?\Closure $mayServe = null): array {
 		// Keep the entity, not just its serialized form. fetchAttachedFileStream()
 		// hands it straight back to OpenRegister, which saves OR from having to work

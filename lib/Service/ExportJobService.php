@@ -123,6 +123,7 @@ class ExportJobService implements ExportJobServiceInterface {
 	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.3
 	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
 	 */
+	#[\Override]
 	public function queue(
 		string $applicationSlug,
 		array $payload,
@@ -222,6 +223,7 @@ class ExportJobService implements ExportJobServiceInterface {
 	 *
 	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-is-asynchronous-via-nextcloud-s-ijob
 	 */
+	#[\Override]
 	public function runNow(string $jobUuid): bool {
 		$argument = ['jobUuid' => $jobUuid];
 		if ($this->jobList->has(\OCA\Buildiq\BackgroundJob\RunExportJob::class, $argument) === false) {
@@ -350,6 +352,7 @@ class ExportJobService implements ExportJobServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
 	 */
+	#[\Override]
 	public function transitionJob(
 		string $jobUuid,
 		string $action,
@@ -478,6 +481,7 @@ class ExportJobService implements ExportJobServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
 	 */
+	#[\Override]
 	public function resolveDownload(string $uuid): ?array {
 		// Look for the ZIP in the deterministic location.
 		$candidate = sys_get_temp_dir() . '/buildiq-exports/' . $uuid . '.zip';
@@ -509,6 +513,7 @@ class ExportJobService implements ExportJobServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
 	 */
+	#[\Override]
 	public function loadJob(string $jobUuid): ?array {
 		try {
 			if ($this->container->has('OCA\\OpenRegister\\Service\\ObjectService') === false) {

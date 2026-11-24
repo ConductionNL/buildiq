@@ -105,6 +105,7 @@ class MigrateSchemaApplicationId implements IRepairStep {
 	 *  application-id migration. Pointing this at an existing spec would report
 	 *  conformance to a requirement that says nothing about it.
 	 */
+	#[\Override]
 	public function getName(): string {
 		return 'Move Buildiq schemas onto the buildiq application id';
 	}//end getName()
@@ -120,6 +121,7 @@ class MigrateSchemaApplicationId implements IRepairStep {
 	 *  application-id migration. Pointing this at an existing spec would report
 	 *  conformance to a requirement that says nothing about it.
 	 */
+	#[\Override]
 	public function run(IOutput $output): void {
 		$taken = $this->slugsUnderNewAppId();
 		if ($taken === null) {

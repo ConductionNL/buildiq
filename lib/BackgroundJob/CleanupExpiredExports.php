@@ -69,6 +69,7 @@ class CleanupExpiredExports extends TimedJob {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-36
 	 */
+	#[\Override]
 	protected function run($argument): void {
 		unset($argument);
 

@@ -207,6 +207,7 @@ class AppChannelApplier implements AppChannelApplierInterface {
 	 * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-every-install-path-applies-the-v2-channels
 	 * @spec openspec/specs/app-channel-application/spec.md#requirement-published-flows-are-created-and-rebound-onto-the-local-application
 	 */
+	#[\Override]
 	public function apply(
 		array $template,
 		?RepoSource $source = null,

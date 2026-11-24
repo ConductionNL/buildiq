@@ -166,6 +166,7 @@ class SeedHelloWorldFixture extends Command {
 	 *
 	 * @spec openspec/specs/github-app-repo-format/spec.md
 	 */
+	#[\Override]
 	protected function configure(): void {
 		$this->setName(name: 'buildiq:seed-hello-world-fixture')
 			->setDescription(description: 'Seed the hello-world virtual app fixture for the e2e suite (idempotent; test/dev only).');
@@ -181,6 +182,7 @@ class SeedHelloWorldFixture extends Command {
 	 *
 	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
+	#[\Override]
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$register = ApplicationVersionServiceInterface::REGISTER_SLUG;
 

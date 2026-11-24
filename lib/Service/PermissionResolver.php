@@ -99,6 +99,7 @@ class PermissionResolver implements PermissionResolverInterface {
 	 *
 	 * @return bool True when the caller matches any entry in any of the given roles.
 	 */
+	#[\Override]
 	public function matchesCaller(
 		array $permissions,
 		IUser $caller,
@@ -162,6 +163,7 @@ class PermissionResolver implements PermissionResolverInterface {
 	 *
 	 * @return array<int, string> Group GID list.
 	 */
+	#[\Override]
 	public function resolveUserGroups(IUser $user): array {
 		$groups = $this->groupManager->getUserGroups($user);
 		$ids = [];
@@ -190,6 +192,7 @@ class PermissionResolver implements PermissionResolverInterface {
 	 *
 	 * @return bool True when the caller owns the user-scoped row (or is an admin under bypass).
 	 */
+	#[\Override]
 	public function matchesUserScopeOwner(array $version, IUser $caller, bool $allowAdminBypass = true): bool {
 		$owner = ($version['owner'] ?? null);
 		if (is_string($owner) === false || $owner === '') {
@@ -222,6 +225,7 @@ class PermissionResolver implements PermissionResolverInterface {
 	 *
 	 * @return bool True when the caller belongs to the NC `admin` group.
 	 */
+	#[\Override]
 	public function isAdmin(IUser $caller): bool {
 		return $this->groupManager->isAdmin($caller->getUID());
 	}//end isAdmin()
@@ -243,6 +247,7 @@ class PermissionResolver implements PermissionResolverInterface {
 	 *
 	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
 	 */
+	#[\Override]
 	public function seesApplication(array $application, ?IUser $caller): bool {
 		if (AppOrganisationGuard::isShared(application: $application) === true) {
 			return true;

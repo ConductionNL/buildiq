@@ -85,6 +85,7 @@ class AutomationCleanupListener implements IEventListener {
 	 * @spec openspec/specs/automation-designer/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectDeletedEvent) === false) {
 			return;

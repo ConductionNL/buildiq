@@ -81,6 +81,7 @@ final class PageLayoutLayerStack implements PageLayoutLayerStackInterface {
 	 *
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-004, REQ-OBSO-005)
 	 */
+	#[\Override]
 	public function orderLayers(array $published, array $object): array {
 		$reach = $this->byReach(published: $published);
 
@@ -266,6 +267,7 @@ final class PageLayoutLayerStack implements PageLayoutLayerStackInterface {
 	 *
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-004)
 	 */
+	#[\Override]
 	public function audienceOf(array $layout): array {
 		$audience = ($layout['audience'] ?? null);
 		if (is_array($audience) === false || (string)($audience['kind'] ?? '') === '') {
@@ -367,6 +369,7 @@ final class PageLayoutLayerStack implements PageLayoutLayerStackInterface {
 	 *
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-006)
 	 */
+	#[\Override]
 	public function describeLayer(array $layer): array {
 		return [
 			'id' => (string)($layer['id'] ?? ''),
@@ -386,6 +389,7 @@ final class PageLayoutLayerStack implements PageLayoutLayerStackInterface {
 	 *
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-001)
 	 */
+	#[\Override]
 	public function patchableOf(array $layout): array {
 		$out = [];
 		foreach (['id', 'name', 'typeProperty', 'typeValue', 'header', 'tabs', 'widgets', 'taskList', 'uploadFields'] as $key) {
@@ -407,6 +411,7 @@ final class PageLayoutLayerStack implements PageLayoutLayerStackInterface {
 	 *
 	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-007)
 	 */
+	#[\Override]
 	public function schemaWideOf(array $layers): ?array {
 		foreach ($layers as $layer) {
 			if ((string)($layer['typeValue'] ?? '') === '' && (is_array($layer['layoutDelta'] ?? null) === false)) {

@@ -58,6 +58,7 @@ final class SyncRequestParams implements SyncRequestParamsInterface {
 	 *
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
 	 */
+	#[\Override]
 	public function credential(): ?string {
 		$credentialId = $this->request->getParam('credentialId');
 		if (is_string($credentialId) === true && $credentialId !== '') {
@@ -77,6 +78,7 @@ final class SyncRequestParams implements SyncRequestParamsInterface {
 	 *
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
 	 */
+	#[\Override]
 	public function pushRequest(string $credentialId, ?string $actingUserId): AppPushRequest {
 		$versionSlugRaw = $this->request->getParam('versionSlug');
 		$versionSlug = null;
@@ -101,6 +103,7 @@ final class SyncRequestParams implements SyncRequestParamsInterface {
 	 *
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
 	 */
+	#[\Override]
 	public function linkRepo(?string $actingUserId): BrokeredRepo {
 		return new BrokeredRepo(
 			target: new PushTarget(

@@ -100,6 +100,7 @@ final class LayoutDeltaService implements LayoutDeltaServiceInterface {
 	 *
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-001)
 	 */
+	#[\Override]
 	public function merge(array $base, array $delta): array {
 		$result = $base;
 
@@ -187,6 +188,7 @@ final class LayoutDeltaService implements LayoutDeltaServiceInterface {
 	 *
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-003)
 	 */
+	#[\Override]
 	public function orphanedPaths(array $base, array $delta): array {
 		$orphans = [];
 
@@ -315,6 +317,7 @@ final class LayoutDeltaService implements LayoutDeltaServiceInterface {
 	 *
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002)
 	 */
+	#[\Override]
 	public function isCurrent(array $base, string $storedFingerprint): bool {
 		if ($storedFingerprint === '') {
 			return false;

@@ -124,6 +124,7 @@ class GitHubFormCatalogService implements GitHubFormCatalogServiceInterface {
 	 *
 	 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-forms-travel-between-organisations-req-bqgl-005
 	 */
+	#[\Override]
 	public function searchForms(?string $query, ?string $actingUserId, ?string $credentialId = null): array {
 		$term = trim((string)$query);
 		$cacheKey = 'forms:' . md5(strtolower($term) . '|' . ((string)$credentialId));

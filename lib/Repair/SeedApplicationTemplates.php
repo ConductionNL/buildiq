@@ -70,6 +70,7 @@ class SeedApplicationTemplates implements IRepairStep {
 	 *
 	 * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-12
 	 */
+	#[\Override]
 	public function getName(): string {
 		return 'Seed Conduction-curated Buildiq ApplicationTemplate records';
 	}//end getName()
@@ -86,6 +87,7 @@ class SeedApplicationTemplates implements IRepairStep {
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-54
 	 * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-12
 	 */
+	#[\Override]
 	public function run(IOutput $output): void {
 		$output->info('Seeding ApplicationTemplate records...');
 

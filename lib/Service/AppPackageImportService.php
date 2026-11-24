@@ -128,6 +128,7 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 	 *
 	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
 	 */
+	#[\Override]
 	public function import(string $archivePath, string $name, string $slug, string $ownerUid): array {
 		return $this->importWithRecords(
 			archivePath: $archivePath,
@@ -148,6 +149,7 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 	 *
 	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
 	 */
+	#[\Override]
 	public function importWithRecords(string $archivePath, array $target): array {
 		$ownerUid = (string)($target['owner'] ?? '');
 		try {
@@ -242,6 +244,7 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 	 *
 	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
 	 */
+	#[\Override]
 	public function preview(string $archivePath): array {
 		try {
 			$files = $this->readPackage(archivePath: $archivePath);

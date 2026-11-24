@@ -156,6 +156,7 @@ class AppRepoParser implements AppRepoParserInterface {
 	 *
 	 * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
 	 */
+	#[\Override]
 	public function parse(array $files, ?array $repo = null): array {
 		$descriptor = $this->parseDescriptor(files: $files);
 		$manifest = $this->parseManifest(files: $files);

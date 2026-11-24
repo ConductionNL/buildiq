@@ -120,6 +120,7 @@ class JourneyWritesCheck implements JourneyWritesCheckInterface {
 	 *
 	 * @spec openspec/changes/journey-designer/specs/journey-designer/spec.md#requirement-write-mappings-must-be-validated-against-the-target-schema-at-author-time
 	 */
+	#[\Override]
 	public function findings(array $journey): array {
 		$context = ['options' => $this->optionsOf(journey: $journey), 'made' => []];
 		$out     = [];

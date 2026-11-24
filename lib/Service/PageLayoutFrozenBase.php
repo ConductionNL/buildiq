@@ -75,6 +75,7 @@ final class PageLayoutFrozenBase implements PageLayoutFrozenBaseInterface {
 	 *
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002)
 	 */
+	#[\Override]
 	public function layersFor(array $published, array $override): array {
 		$whole = $this->wholeLayoutsForEveryone(published: $published);
 		$layers = $this->layoutNamedBy(layouts: $whole, baseRef: (string)($override['baseRef'] ?? ''));

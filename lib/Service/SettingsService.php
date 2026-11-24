@@ -151,6 +151,7 @@ class SettingsService implements SettingsServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-1
 	 */
+	#[\Override]
 	public function isOpenRegisterAvailable(): bool {
 		return $this->appManager->isInstalled('openregister');
 	}//end isOpenRegisterAvailable()
@@ -162,6 +163,7 @@ class SettingsService implements SettingsServiceInterface {
 	 *
 	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
 	 */
+	#[\Override]
 	public function offlineAppsAllowed(): bool {
 		return $this->appConfig->getValueBool(AppIdentity::APP_ID, 'allow_offline_apps', self::BOOL_KEYS['allow_offline_apps']);
 	}//end offlineAppsAllowed()
@@ -173,6 +175,7 @@ class SettingsService implements SettingsServiceInterface {
 	 *
 	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
 	 */
+	#[\Override]
 	public function scriptStepsAllowed(): bool {
 		return $this->appConfig->getValueBool(AppIdentity::APP_ID, ScriptStepSweep::SETTING, false);
 	}//end scriptStepsAllowed()
@@ -187,6 +190,7 @@ class SettingsService implements SettingsServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-1
 	 */
+	#[\Override]
 	public function getSettings(): array {
 		$settings = [];
 		foreach (self::CONFIG_KEYS as $key) {
@@ -242,6 +246,7 @@ class SettingsService implements SettingsServiceInterface {
 	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-2
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-002-a-store-settings-save-asks-integriq-to-look-again
 	 */
+	#[\Override]
 	public function updateSettings(array $data): array {
 		$written = [];
 		foreach (self::CONFIG_KEYS as $key) {
@@ -380,6 +385,7 @@ class SettingsService implements SettingsServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-3
 	 */
+	#[\Override]
 	public function reloadConfiguration(): array {
 		return $this->doLoadConfiguration(force: true);
 	}//end reloadConfiguration()

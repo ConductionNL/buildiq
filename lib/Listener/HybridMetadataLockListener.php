@@ -122,6 +122,7 @@ class HybridMetadataLockListener implements IEventListener {
 	 * @spec openspec/specs/unified-app-model/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectUpdatingEvent) === false) {
 			return;

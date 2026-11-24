@@ -115,6 +115,7 @@ class RegistrationFormAuthoringService implements RegistrationFormAuthoringServi
 	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
 	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-a-draft-form-saves-with-its-findings
 	 */
+	#[\Override]
 	public function save(array $form): array {
 		$register = (string)($form['register'] ?? '');
 		$schema = (string)($form['schema'] ?? '');
@@ -168,6 +169,7 @@ class RegistrationFormAuthoringService implements RegistrationFormAuthoringServi
 	 *
 	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 	 */
+	#[\Override]
 	public function listFor(string $register, string $schema): array {
 		return $this->storedFor(register: $register, schema: $schema);
 	}//end listFor()
@@ -187,6 +189,7 @@ class RegistrationFormAuthoringService implements RegistrationFormAuthoringServi
 	 *
 	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-007)
 	 */
+	#[\Override]
 	public function targetFor(string $register, string $schema, string $channelProperty = ''): array {
 		return $this->targetSchema->read(
 			registerSlug: $register,

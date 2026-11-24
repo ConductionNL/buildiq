@@ -40,6 +40,7 @@ class GetAppManifestHandler extends AbstractToolHandler {
 	 *
 	 * @return array<string, mixed>
 	 */
+	#[\Override]
 	public function handle(array $args): array {
 		$slug = $args['slug'] ?? null;
 		$invalid = $this->invalidSlugResult(slug: $slug);

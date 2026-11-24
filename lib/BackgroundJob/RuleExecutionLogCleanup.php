@@ -85,6 +85,7 @@ class RuleExecutionLogCleanup extends TimedJob {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	protected function run($argument): void {
 		unset($argument);
 

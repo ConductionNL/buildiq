@@ -334,11 +334,24 @@ class ExpressionEvaluator {
 			throw new InvalidArgumentException('Division by zero in expression.');
 		}
 
+		if (is_int($left) === true && is_int($right) === true) {
+			return match ($op) {
+				'+' => ($left + $right),
+				'-' => ($left - $right),
+				'*' => ($left * $right),
+				'/' => ($left / $right),
+				default => throw new InvalidArgumentException('Unknown binary operator: ' . $op),
+			};
+		}
+
+		// Mixed int and float: PHP widens to float, done here explicitly.
+		$wideLeft  = (float)$left;
+		$wideRight = (float)$right;
 		return match ($op) {
-			'+' => ($left + $right),
-			'-' => ($left - $right),
-			'*' => ($left * $right),
-			'/' => ($left / $right),
+			'+' => $wideLeft + $wideRight,
+			'-' => $wideLeft - $wideRight,
+			'*' => $wideLeft * $wideRight,
+			'/' => $wideLeft / $wideRight,
 			default => throw new InvalidArgumentException('Unknown binary operator: ' . $op),
 		};
 
@@ -415,7 +428,7 @@ class ExpressionEvaluator {
 		}
 
 		if (is_numeric($value) === true) {
-			return ($value + 0);
+			return (+$value);
 		}
 
 		return 0;

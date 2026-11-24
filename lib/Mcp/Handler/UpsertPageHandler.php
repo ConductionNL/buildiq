@@ -47,6 +47,7 @@ class UpsertPageHandler extends AbstractToolHandler {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestPageShape is a pure shape
 	 * builder with no collaborators and no state.
 	 */
+	#[\Override]
 	public function handle(array $args): array {
 		$validation = $this->validateArgs(args: $args);
 		if (isset($validation['error']) === true) {

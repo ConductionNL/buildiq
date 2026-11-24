@@ -90,6 +90,7 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
+	#[\Override]
 	public function start(array $automation, string $trigger, ?array $subject, string $actor): array {
 		$provenance = $automation['provenance'] ?? [];
 		if (is_array($provenance) === false) {
@@ -124,6 +125,7 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
+	#[\Override]
 	public function step(array $run, string $action, string $outcome, string $message = ''): array {
 		$run['steps'][] = ['action' => $action, 'outcome' => $outcome, 'message' => $message];
 		return $run;
@@ -140,6 +142,7 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
+	#[\Override]
 	public function finish(array $run, string $outcome, ?string $reason = null): ?string {
 		$record = $run + ['steps' => []];
 		$record['outcome']    = $outcome;
@@ -163,6 +166,7 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
+	#[\Override]
 	public function complete(string $runUuid, string $outcome, array $steps, ?string $reason = null): bool {
 		$run = $this->read(uuid: $runUuid);
 		if ($run === null || ($run['outcome'] ?? null) !== 'waiting') {
@@ -204,6 +208,7 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
 	 */
+	#[\Override]
 	public function runsOf(string $automationUuid, array $filters = [], int $limit = 25, int $offset = 0): array {
 		$runs     = $this->allRunsOf(automationUuid: $automationUuid);
 		$summary  = $this->page->summary(runs: $runs);
@@ -225,6 +230,7 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
 	 */
+	#[\Override]
 	public function summaryOf(string $automationUuid): array {
 		return $this->page->summary(runs: $this->allRunsOf(automationUuid: $automationUuid));
 	}//end summaryOf()
@@ -238,6 +244,7 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-old-runs-are-pruned-and-the-last-run-stays-req-bqrl-005
 	 */
+	#[\Override]
 	public function prune(int $now): int {
 		$cutoff  = gmdate('Y-m-d\TH:i:s', $now - (self::RETENTION_DAYS * 86400));
 		$deleted = 0;

@@ -126,6 +126,7 @@ class ApplicationDeletionService implements ApplicationDeletionServiceInterface 
 	 *
 	 * @spec openspec/specs/application-detail-ui/spec.md
 	 */
+	#[\Override]
 	public function deleteApplication(string $appUuid, string $appSlug, bool $deleteData = false): array {
 		$run = new ApplicationDeletionRun(appSlug: $appSlug, deleteData: $deleteData);
 

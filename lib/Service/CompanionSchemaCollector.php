@@ -79,6 +79,7 @@ class CompanionSchemaCollector implements CompanionSchemaCollectorInterface {
 	 *
 	 * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
 	 */
+	#[\Override]
 	public function collect(string $slug, string $versionRegister = ''): array {
 		$register = $this->findRegister(slug: $slug, versionRegister: $versionRegister);
 		if ($register === null) {

@@ -79,6 +79,7 @@ class ExportAppContentBundler implements ExportAppContentBundlerInterface {
 	 *
 	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-targets-a-specific-application-version
 	 */
+	#[\Override]
 	public function resolveSource(string $applicationUuid, string $semver, string $versionSlug = ''): ?array {
 		return $this->sourceResolver->resolveSource(
 			applicationUuid: $applicationUuid,

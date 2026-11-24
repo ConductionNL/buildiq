@@ -52,6 +52,7 @@ class InitializeSettings implements IRepairStep {
 	 *
 	 * @return string
 	 */
+	#[\Override]
 	public function getName(): string {
 		return 'Initialize Buildiq register and schemas via ConfigurationService';
 	}//end getName()
@@ -65,6 +66,7 @@ class InitializeSettings implements IRepairStep {
 	 *
 	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-4
 	 */
+	#[\Override]
 	public function run(IOutput $output): void {
 		$output->info('Initializing Buildiq configuration...');
 

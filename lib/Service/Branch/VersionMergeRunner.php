@@ -77,6 +77,7 @@ class VersionMergeRunner implements VersionMergeRunnerInterface {
 	 *
 	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
 	 */
+	#[\Override]
 	public function startBranch(array $application, array $source, string $name): array {
 		return $this->branches->start(application: $application, source: $source, name: $name);
 	}//end startBranch()
@@ -94,6 +95,7 @@ class VersionMergeRunner implements VersionMergeRunnerInterface {
 	 *
 	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
 	 */
+	#[\Override]
 	public function previewMerge(array $application, array $source, array $target): array {
 		return $this->preview(application: $application, request: new VersionMergeRequest(source: $source, target: $target));
 	}//end previewMerge()
@@ -112,6 +114,7 @@ class VersionMergeRunner implements VersionMergeRunnerInterface {
 	 *
 	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-merge-only-writes-a-draft-that-has-not-moved-req-bqgb-004
 	 */
+	#[\Override]
 	public function applyMerge(array $application, array $source, array $target, array $resolution): array {
 		return $this->apply(
 			application: $application,

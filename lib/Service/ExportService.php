@@ -161,6 +161,7 @@ class ExportService implements ExportServiceInterface {
 	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.2
 	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
 	 */
+	#[\Override]
 	public function generateAppZip(
 		ExportTarget $target,
 		ExportContents $contents,
@@ -266,6 +267,7 @@ class ExportService implements ExportServiceInterface {
 	 *
 	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-is-asynchronous-via-nextcloud-s-ijob
 	 */
+	#[\Override]
 	public function lastContent(): ?array {
 		return $this->lastContent;
 	}//end lastContent()
@@ -293,6 +295,7 @@ class ExportService implements ExportServiceInterface {
 	 * @spec openspec/specs/app-export-completeness/spec.md#requirement-an-unresolvable-binding-must-be-reported-not-silently-dropped
 	 * @spec openspec/specs/app-composition-bindings/spec.md#requirement-a-dangling-binding-must-reach-the-operator
 	 */
+	#[\Override]
 	public function lastSkipped(): array {
 		return $this->lastSkipped;
 	}//end lastSkipped()
@@ -609,6 +612,7 @@ class ExportService implements ExportServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
 	 */
+	#[\Override]
 	public function scratchTreeDir(string $jobUuid): string {
 		return $this->getOrCreateAppDataDir(name: 'work') . '/' . $jobUuid;
 	}//end scratchTreeDir()
