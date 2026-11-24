@@ -82,6 +82,19 @@
 					{{ t('buildiq', 'Built-in templates') }}
 				</h2>
 
+				<!-- REQ-BQRS-005: an admin without a shared catalogue is pointed
+				     to the setup step that connects one. -->
+				<NcNoteCard
+					v-if="showCatalogueSetupNote"
+					type="info"
+					class="template-gallery__github-hint"
+					data-testid="catalogue-setup-note">
+					<p>{{ t('buildiq', 'Connect a shared template catalogue in the Buildiq setup.') }}</p>
+					<NcButton variant="secondary" data-testid="catalogue-setup-open" @click="openCatalogueSetup">
+						{{ t('buildiq', 'Open the setup') }}
+					</NcButton>
+				</NcNoteCard>
+
 				<NcNoteCard
 					v-if="templatesError"
 					type="warning"
@@ -173,6 +186,7 @@
 				ref="sharedCatalogue"
 				:category="templateCategory || ''"
 				:categoryLabel="categoryLabel"
+				@configured="catalogueConfigured = $event"
 				@install="openStoreInstall" />
 
 			<h2 class="template-gallery__section-title">
@@ -466,10 +480,27 @@ export default {
 			blockCategoryFilter: null,
 			// REQ-BQGL-001: the picked template category id, or null for all.
 			templateCategory: null,
+			// REQ-BQRS-005: whether the shared catalogue is configured; null until it answers.
+			catalogueConfigured: null,
 		}
 	},
 
 	computed: {
+		/**
+		 * Whether to point an admin to the setup step that connects a shared
+		 * catalogue: the catalogue answered `not_configured` and the user is a
+		 * Nextcloud admin. The setup itself is admin-only on the server.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/archive/2026-11-24-reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-admins-without-a-catalogue-are-pointed-to-the-setup-req-bqrs-005
+		 */
+		showCatalogueSetupNote() {
+			if (this.catalogueConfigured !== false) {
+				return false
+			}
+			return typeof window.OC?.isUserAdmin === 'function' && window.OC.isUserAdmin() === true
+		},
+
 		/**
 		 * The template categories the filter offers: the closed enum of
 		 * ApplicationTemplate.category, in its own order.
@@ -624,6 +655,18 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Open the setup wizard at its `store` step: the app root opens it for
+		 * `?setup=<stepId>` (nextcloud-vue setup-wizard-opens-at-a-step).
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/archive/2026-11-24-reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-admins-without-a-catalogue-are-pointed-to-the-setup-req-bqrs-005
+		 */
+		openCatalogueSetup() {
+			const query = { ...(this.$route?.query || {}), setup: 'store' }
+			this.$router?.push({ query }).catch?.(() => {})
+		},
+
 		/**
 		 * Apply a category picked in the filter and keep it in ?category=,
 		 * leaving the rest of the query as it was.
@@ -848,7 +891,7 @@ export default {
 		 *
 		 * @param {object} card The catalogue card.
 		 * @return {void}
-		 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-a-maker-installs-a-catalogue-template-req-bqrs-004
+		 * @spec openspec/changes/archive/2026-11-24-reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-a-maker-installs-a-catalogue-template-req-bqrs-004
 		 */
 		openStoreInstall(card) {
 			this.cloneMode = 'store'
@@ -865,7 +908,7 @@ export default {
 		 * A template that left the catalogue: read the section again.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-a-maker-installs-a-catalogue-template-req-bqrs-004
+		 * @spec openspec/changes/archive/2026-11-24-reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-a-maker-installs-a-catalogue-template-req-bqrs-004
 		 */
 		onStaleStoreTemplate() {
 			this.$refs.sharedCatalogue?.reload()
