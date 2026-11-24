@@ -131,6 +131,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	 * @param ConnectedDatabaseReader|null $databases Reads a connected database register for "Start from a database".
 	 * @param DatabaseManifestBuilder|null $databaseManifests Builds the pages of an app made from a connected database.
 	 * @param AppOrganisationGuard|null $organisationGuard Gives a new app its default organisation scope; null leaves it absent.
+	 * @param SpreadsheetAppSource|null $spreadsheets Reads and imports the file for "Start from a spreadsheet".
 	 *
 	 * @return void
 	 */
@@ -143,6 +144,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 		private readonly ?ConnectedDatabaseReader $databases = null,
 		private readonly ?DatabaseManifestBuilder $databaseManifests = null,
 		private readonly ?AppOrganisationGuard $organisationGuard = null,
+		private readonly ?SpreadsheetAppSource $spreadsheets = null,
 	) {
 	}//end __construct()
 
@@ -242,6 +244,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 		$plan = [
 			'slug' => (string)($payload['slug'] ?? ''),
 			'database' => $database,
+			'file' => $this->validateFile(payload: $payload, database: $database),
 			'name' => (string)($payload['name'] ?? ''),
 			'description' => (string)($payload['description'] ?? ''),
 			'versions' => $this->resolveVersionChain(payload: $payload),
@@ -256,6 +259,8 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			'registerSlugs' => [],
 			'versionPayloads' => [],
 			'routeUuids' => [],
+			'fileSchemas' => [],
+			'importJobId' => null,
 		];
 
 		// ---- Step 2: Create Application -------------------------------------
@@ -269,6 +274,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 		}
 
 		$this->createVersions(plan: $plan, state: $state);
+		$this->importFile(plan: $plan, state: $state);
 		$this->wirePromotionChain(plan: $plan, state: $state);
 		$this->setProductionVersion(plan: $plan, state: $state);
 		$this->publishRoute(plan: $plan, state: $state);
@@ -412,6 +418,10 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			$dataRegisters[] = $plan['database']['register'];
 		}
 
+		if (($plan['file'] ?? null) !== null) {
+			$defaultSchemas[] = $plan['file']['schema'];
+		}
+
 		foreach ($plan['versions'] as $versionDef) {
 			$versionSlug = (string)($versionDef['slug'] ?? '');
 			$version = [
@@ -427,6 +437,10 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			];
 
 			$this->createVersionRecord(version: $version, state: $state);
+			if (($plan['file'] ?? null) !== null) {
+				$state['fileSchemas'][] = $plan['slug'] . '-' . $versionSlug . '-' . $plan['file']['schema']['slug'];
+			}
+
 			$this->provisionVersionRegister(version: $version, state: $state);
 		}
 	}//end createVersions()
@@ -443,8 +457,13 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	 * @throws WizardCreationException When the database's pages cannot be built (with rollback)
 	 *
 	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
 	 */
 	private function versionManifest(array $plan, array $state): array {
+		if (($plan['file'] ?? null) !== null) {
+			return $this->fileManifest(plan: $plan, state: $state);
+		}
+
 		if ($plan['database'] === null) {
 			return $this->loadWizardFixture(fixture: ['name' => 'manifest', 'shape' => 'object']);
 		}
@@ -460,6 +479,86 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			$this->rollbackAndThrow(state: $state, failedAtStep: 'build-database-manifest', cause: $e);
 		}
 	}//end versionManifest()
+
+	/**
+	 * The manifest of an app started from a spreadsheet: a list page (first, so the
+	 * app opens on it) and a detail page bound to the schema the header row made.
+	 *
+	 * @param array<string,mixed> $plan  The validated plan (`file` is the read spreadsheet).
+	 * @param array<string,mixed> $state Creation state tracker, for the rollback when the build fails
+	 *
+	 * @return array<string,mixed> The manifest; `{registerSlug}` and the schema prefix are filled in per version.
+	 *
+	 * @throws WizardCreationException When the pages cannot be built (with rollback)
+	 *
+	 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
+	 */
+	private function fileManifest(array $plan, array $state): array {
+		$builder = ($this->databaseManifests ?? new DatabaseManifestBuilder());
+		try {
+			return $builder->build(register: '{registerSlug}', schemas: [$plan['file']['schema']], writable: true);
+		} catch (Throwable $e) {
+			$this->rollbackAndThrow(state: $state, failedAtStep: 'build-file-manifest', cause: $e);
+		}
+	}//end fileManifest()
+
+	/**
+	 * Load the spreadsheet's rows into the first version's register, as records of
+	 * the schema its header row made. Any import error rolls the whole app back.
+	 *
+	 * @param array<string,mixed> $plan  The validated plan.
+	 * @param array<string,mixed> $state Creation state tracker (by ref; keeps the import job for the rollback)
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException With failedAtStep=import-file when the import fails (with rollback)
+	 *
+	 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
+	 */
+	private function importFile(array $plan, array &$state): void {
+		if (($plan['file'] ?? null) === null || $this->spreadsheets === null) {
+			return;
+		}
+
+		$firstSlug = (string)($plan['versions'][0]['slug'] ?? '');
+		try {
+			$register = $this->store->registerMapper->find($state['registerSlugs'][$firstSlug], _multitenancy: false);
+			$schema = $this->store->schemaMapper->find($state['fileSchemas'][0], _multitenancy: false);
+			$summary = $this->spreadsheets->import(
+				file: $plan['file'],
+				register: $register,
+				schema: $schema,
+				user: $this->userSession->getUser()
+			);
+		} catch (Throwable $e) {
+			$this->rollbackAndThrow(state: $state, failedAtStep: 'import-file', cause: 'The file could not be imported: ' . $e->getMessage());
+		}
+
+		$state['importJobId'] = $summary['importJobId'];
+		if ($summary['errors'] !== []) {
+			$this->rollbackAndThrow(
+				state: $state,
+				failedAtStep: 'import-file',
+				cause: sprintf('The file could not be imported: %d row(s) were refused. %s', count($summary['errors']), self::firstError(errors: $summary['errors']))
+			);
+		}
+	}//end importFile()
+
+	/**
+	 * The first import error as one line for the wizard.
+	 *
+	 * @param list<mixed> $errors The import's errors.
+	 *
+	 * @return string
+	 */
+	private static function firstError(array $errors): string {
+		$first = $errors[0] ?? '';
+		if (is_array($first) === true) {
+			$first = ($first['error'] ?? $first['message'] ?? json_encode($first));
+		}
+
+		return trim((string)$first);
+	}//end firstError()
 
 	/**
 	 * 3a: create one ApplicationVersion and track it for rollback and chain wiring.
@@ -762,6 +861,51 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 
 		return $this->validateDatabase(payload: $payload);
 	}//end validatePayload()
+
+	/**
+	 * Check a `fromFile` block (`{name, mime?, content}`) before anything is created.
+	 *
+	 * @param array<string,mixed>       $payload  The wizard POST payload
+	 * @param array<string,mixed>|null  $database The checked `fromDatabase` choice, if any
+	 *
+	 * @return array<string,mixed>|null The read spreadsheet (see SpreadsheetAppSource::read()), or null without one
+	 *
+	 * @throws WizardCreationException With failedAtStep=validate when the file cannot be used
+	 *
+	 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
+	 */
+	private function validateFile(array $payload, ?array $database): ?array {
+		if (($payload['fromFile'] ?? null) === null) {
+			return null;
+		}
+
+		$refusal = null;
+		if ($database !== null) {
+			$refusal = 'Start from a database or from a spreadsheet, not both.';
+		} else if ($this->spreadsheets === null) {
+			$refusal = 'Spreadsheets cannot be imported on this instance.';
+		}
+
+		try {
+			if ($refusal !== null) {
+				throw new InvalidArgumentException($refusal);
+			}
+
+			$reserved = array_values(array_filter(array_map(
+				static fn ($schema): string => (string)($schema['slug'] ?? ''),
+				$this->loadWizardFixture(fixture: ['name' => 'schemas', 'shape' => 'array'])
+			)));
+			return $this->spreadsheets->read(block: $payload['fromFile'], reservedSlugs: $reserved);
+		} catch (InvalidArgumentException $e) {
+			throw new WizardCreationException(
+				errorCode: 'validation_error',
+				failedAtStep: 'validate',
+				message: $e->getMessage(),
+				rollbackStatus: 'none',
+				previous: $e
+			);
+		}
+	}//end validateFile()
 
 	/**
 	 * Check a `fromDatabase` block (`{register, schemas[]}`) against the live register.
@@ -1159,6 +1303,9 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			orphaned: $orphaned
 		);
 
+		// 0b. Records an import wrote, then the schemas a spreadsheet made.
+		$this->rollbackFile(state: $state, orphaned: $orphaned);
+
 		// 1. Delete registers (reverse order of creation).
 		$registerSlugs = array_reverse(array_values((array)($state['registerSlugs'] ?? [])));
 		foreach ($registerSlugs as $registerSlug) {
@@ -1183,6 +1330,42 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			orphaned: $orphaned
 		);
 	}//end rollback()
+
+	/**
+	 * Undo a spreadsheet import and delete the schemas its header row made.
+	 *
+	 * A schema that was never created is skipped; one that cannot be deleted is orphaned.
+	 *
+	 * @param array<string,mixed> $state    Creation state tracker
+	 * @param array<int,string>   $orphaned Accumulates resources that could not be cleaned (by ref)
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
+	 */
+	private function rollbackFile(array $state, array &$orphaned): void {
+		$jobId = ($state['importJobId'] ?? null);
+		if (is_string($jobId) === true && $jobId !== '' && $this->spreadsheets !== null
+			&& $this->spreadsheets->undo(importJobId: $jobId) === false
+		) {
+			$orphaned[] = 'import:' . $jobId;
+		}
+
+		foreach (array_reverse((array)($state['fileSchemas'] ?? [])) as $slug) {
+			try {
+				$schema = $this->store->schemaMapper->find((string)$slug, _multitenancy: false);
+			} catch (Throwable $e) {
+				continue;
+			}
+
+			try {
+				$this->store->schemaMapper->delete($schema);
+			} catch (Throwable $e) {
+				$this->logger->error('Buildiq: wizard rollback failed to delete schema ' . $slug . ': ' . $e->getMessage());
+				$orphaned[] = 'schema:' . $slug;
+			}
+		}
+	}//end rollbackFile()
 
 	/**
 	 * Roll back all created state, then throw a wizard_rollback exception.
