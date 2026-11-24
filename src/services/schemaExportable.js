@@ -16,7 +16,7 @@
 /**
  * Whether a value is a plain object (not null, not an array).
  *
- * @param {*} value The value to test.
+ * @param {unknown} value The value to test.
  * @return {boolean} True for a plain object.
  */
 function isPlainObject(value) {

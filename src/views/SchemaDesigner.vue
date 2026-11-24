@@ -1864,7 +1864,7 @@ export default {
 		 * to match the change instead of keeping the old number.
 		 *
 		 * @spec openspec/specs/schema-designer-ui/spec.md
-		* @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-exports-its-records-to-csv-or-excel-req-bqcv-004
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-exports-its-records-to-csv-or-excel-req-bqcv-004
 		 * @param {object} staged Staged editor model.
 		 * @param {boolean} acknowledgeBreaking Whether the author confirmed a breaking change.
 		 * @return {object} Request body.
