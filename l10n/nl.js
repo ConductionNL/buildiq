@@ -2347,6 +2347,8 @@ OC.L10N.register(
         "Select xlsx, xls, csv or json": "Selecteer xlsx, xls, csv of json",
         "Setup steps": "Installatiestappen",
         "Setup wizard": "Installatiewizard",
+        "Connect a shared template catalogue in the Buildiq setup.": "Koppel een gedeelde sjablonencatalogus in de installatie van Buildiq.",
+        "Open the setup": "Installatie openen",
         "Shared · {label}": "Gedeeld · {label}",
         "Shared, non-versioned OpenRegister registers this app binds to alongside its own per-version register (e.g. a dataset fed by OpenConnector). Not owned by this app — promotion and export treat them as reference-only.": "Gedeelde, niet-geversioneerde OpenRegister-registers waaraan deze app zich koppelt naast zijn eigen register per versie (bijv. een dataset die door OpenConnector wordt gevuld). Niet van deze app — promotie en export behandelen ze alleen als verwijzing.",
         "Since version": "Sinds versie",
