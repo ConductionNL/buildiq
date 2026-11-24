@@ -15,7 +15,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lifecycle-git-branches/tasks.md
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/tasks.md
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\Buildiq\Service\RegisterStore
  * @uses   \OCA\Buildiq\Support\ObjectRecord
  *
- * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
  */
 final class VersionBranchServiceTest extends TestCase {
 

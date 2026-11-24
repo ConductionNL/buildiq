@@ -27,7 +27,7 @@
  *
  * @link https://buildiq.nl
  *
- * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+ * @spec openspec/changes/archive/2026-11-24-apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
  */
 
 declare(strict_types=1);
@@ -54,7 +54,7 @@ class AppTemplateCapture implements AppTemplateCaptureInterface {
 	 *
 	 * @throws InvalidArgumentException When two schemas de-namespace to one slug.
 	 *
-	 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+	 * @spec openspec/changes/archive/2026-11-24-apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
 	 */
 	#[\Override]
 	public function capture(array $application, array $schemas, array $manifest): array {
@@ -95,7 +95,7 @@ class AppTemplateCapture implements AppTemplateCaptureInterface {
 	 *
 	 * @return array{slug:string,shared:bool} `shared` when the slug carried no prefix
 	 *
-	 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+	 * @spec openspec/changes/archive/2026-11-24-apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
 	 */
 	public function deNamespaceSlug(string $schemaSlug, string $appSlug): array {
 		$prefix = $appSlug . '-';
@@ -114,7 +114,7 @@ class AppTemplateCapture implements AppTemplateCaptureInterface {
 	 *
 	 * @return mixed The rewritten node (a copy; PHP arrays are values)
 	 *
-	 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+	 * @spec openspec/changes/archive/2026-11-24-apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
 	 */
 	public function rewriteSchemaRefs(mixed $node, array $map): mixed {
 		if (is_array($node) === false) {

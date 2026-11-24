@@ -10,7 +10,7 @@
   of the plan's app (AgentPlanService); this component only shows the
   answer.
 
-  @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+  @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
 -->
 <template>
 	<section data-testid="agent-plan-review" class="agent-plan-review" :aria-label="t('buildiq', 'Plans from outside agents')">
@@ -131,7 +131,7 @@ export default {
 		 * Open the plan named by the typed id.
 		 *
 		 * @return {Promise<boolean>} Whether it was opened.
-		 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+		 * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
 		 */
 		async open() {
 			const id = this.planId.trim()
@@ -158,7 +158,7 @@ export default {
 		 *
 		 * @param {boolean} approve True to approve.
 		 * @return {Promise<boolean>} Whether the decision was stored.
-		 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+		 * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
 		 */
 		async decide(approve) {
 			if (!this.plan || !this.plan.planId) {

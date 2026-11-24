@@ -17,7 +17,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/lifecycle-git-branches/tasks.md
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/tasks.md
  */
 
 declare(strict_types=1);
@@ -60,7 +60,7 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\Buildiq\Kernel\Values\PushTarget
  * @uses   \OCA\Buildiq\Service\GitHub\TokenScrubber
  *
- * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-each-version-pushes-to-its-own-branch-req-bqgb-002
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-each-version-pushes-to-its-own-branch-req-bqgb-002
  */
 final class GitHubAppSyncServiceBranchTest extends TestCase {
 

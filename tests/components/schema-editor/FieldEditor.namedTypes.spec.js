@@ -5,9 +5,9 @@
  * Named field types and the choice editor of `FieldEditor.vue`
  * (data-field-types-and-choice-lists, REQ-BQFT-001..004).
  *
- * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-the-designer-offers-named-field-types-req-bqft-001
- * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
- * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-user-field-points-at-a-nextcloud-user-req-bqft-003
+ * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-the-designer-offers-named-field-types-req-bqft-001
+ * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
+ * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-user-field-points-at-a-nextcloud-user-req-bqft-003
  */
 
 import { flushPromises, mount } from '@vue/test-utils'

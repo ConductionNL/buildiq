@@ -10,7 +10,7 @@
  * the page list and the form list and are covered by Vitest
  * (tests/services/pageCopy.spec.js, tests/services/formCopy.spec.js).
  *
- * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md
+ * @spec openspec/changes/archive/2026-11-24-apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md
  * @e2e copy-app-page-and-form/requirement-a-maker-copies-an-app-req-bqcp-001/a-maker-starts-a-variant-of-the-permit-tracker
  */
 import { expect, test } from '@playwright/test'

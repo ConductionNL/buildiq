@@ -5,7 +5,7 @@
  * The shared lists the schema designer's choice field offers
  * (data-field-types-and-choice-lists design D2).
  *
- * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
+ * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'

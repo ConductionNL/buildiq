@@ -166,7 +166,7 @@ export default {
 		 * manifest endpoint once embedding is on. Without them the
 		 * whole-app snippet still works.
 		 *
-		 * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-embeds-one-page-req-bqem-004
+		 * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-embeds-one-page-req-bqem-004
 		 */
 		async loadPages() {
 			if (!this.slug || this.pages.length) {
@@ -208,7 +208,7 @@ export default {
 		 * Emit the listed sites once every one of them can be saved; an empty
 		 * row is skipped, a refused one keeps the setting as it was.
 		 *
-		 * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-switches-embedding-on-and-lists-the-allowed-sites-req-bqem-001
+		 * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-switches-embedding-on-and-lists-the-allowed-sites-req-bqem-001
 		 */
 		emitOrigins() {
 			if (this.problems.some((problem) => problem !== '')) {

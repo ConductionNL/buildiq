@@ -7,7 +7,7 @@ import { flushPromises, mount } from '@vue/test-utils'
  * submitted, reads its steps and approves or rejects it
  * (openbuild-mcp-adoption, task 2).
  *
- * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+ * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 

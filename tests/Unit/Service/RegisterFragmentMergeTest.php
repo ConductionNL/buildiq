@@ -153,7 +153,7 @@ final class RegisterFragmentMergeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
 	 */
 	public function testTheShippedFragmentsGiveAVersionItsBranchProperties(): void {
 		$settings = __DIR__ . '/../../../lib/Settings';

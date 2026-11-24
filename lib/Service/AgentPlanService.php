@@ -43,7 +43,7 @@ use Throwable;
  * approver and the steps, so a plan cannot be marked approved, or have its
  * steps changed after approval, through OpenRegister's generic object API.
  *
- * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+ * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
  *
  * @SuppressWarnings(PHPMD.StaticAccess) AgentPlanSteps is pure step logic, AgentPlanStore::asArray() a pure coercion.
  */
@@ -102,7 +102,7 @@ class AgentPlanService {
 	 *
 	 * @return array<string,mixed> `{planId, status, appSlug, steps}` or `{isError, error, message}`.
 	 *
-	 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+	 * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
 	 */
 	public function submit(string $appSlug, array $steps, string $userId): array {
 		if ($userId === '') {
@@ -142,7 +142,7 @@ class AgentPlanService {
 	 *
 	 * @return array<string,mixed> `{planId, status}` or `{isError, error, message}`.
 	 *
-	 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+	 * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
 	 */
 	public function decide(string $planId, bool $approve, IUser $caller): array {
 		$plan = $this->store->load(planId: $planId);
@@ -212,7 +212,7 @@ class AgentPlanService {
 	 *
 	 * @return array<string,mixed> The plan's fields or `{isError, error, message}`.
 	 *
-	 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+	 * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
 	 */
 	public function show(string $planId, IUser $caller): array {
 		$plan = $this->store->load(planId: $planId);
@@ -239,7 +239,7 @@ class AgentPlanService {
 	 *
 	 * @return array<string,mixed>|null Null when the call may run; else `{isError, error, message}`.
 	 *
-	 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+	 * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
 	 */
 	public function authorizeStep(string $planId, string $toolId, array $arguments, string $userId): ?array {
 		$plan = $this->store->load(planId: $planId);

@@ -67,7 +67,7 @@ interface BuildiqToolProviderInterface {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/openbuild-mcp-adoption/specs/ai-copilot/spec.md#requirement-an-approved-plan-executes-atomically-through-the-mcp-handler-layer
+	 * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/ai-copilot/spec.md#requirement-an-approved-plan-executes-atomically-through-the-mcp-handler-layer
 	 */
 	public function invokeApprovedTool(string $toolId, array $arguments): array;
 }//end interface

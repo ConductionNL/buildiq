@@ -12,7 +12,7 @@
  * `search` and `get` only, read scope, and the declared filters, including the
  * two (`Application`, `exportJob`) that register.d overlays re-declare.
  *
- * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-curated-read-only-dialect-on-five-schemas
+ * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-curated-read-only-dialect-on-five-schemas
  * @e2e openbuild-mcp-surface/requirement-a-curated-read-only-dialect-on-five-schemas/declared-filters-survive-the-register-d-union-merge
  */
 

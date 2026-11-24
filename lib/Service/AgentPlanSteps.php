@@ -27,7 +27,7 @@ namespace OCA\Buildiq\Service;
  * step list is a valid plan for one app, and how a write call is compared
  * with a stored step (tool and canonical arguments, key order ignored).
  *
- * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+ * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
  */
 final class AgentPlanSteps {
 
@@ -57,7 +57,7 @@ final class AgentPlanSteps {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+	 * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
 	 */
 	public static function isWriteTool(string $toolId): bool {
 		return in_array(needle: $toolId, haystack: self::WRITE_TOOLS, strict: true);
@@ -70,7 +70,7 @@ final class AgentPlanSteps {
 	 *
 	 * @return array<int, array{tool: string, arguments: array<string, mixed>}>
 	 *
-	 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+	 * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
 	 */
 	public static function normalisedSteps(array $steps): array {
 		$normalised = [];
@@ -89,7 +89,7 @@ final class AgentPlanSteps {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+	 * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
 	 */
 	public static function callKey(string $toolId, array $arguments): string {
 		return $toolId . "\0" . self::canonical(value: $arguments);
@@ -102,7 +102,7 @@ final class AgentPlanSteps {
 	 *
 	 * @return array<string,mixed>
 	 *
-	 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+	 * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
 	 */
 	public static function withoutPlanId(array $arguments): array {
 		unset($arguments['planId']);
@@ -117,7 +117,7 @@ final class AgentPlanSteps {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+	 * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
 	 */
 	public static function stepsError(string $appSlug, array $steps): ?string {
 		$shape = self::shapeError(appSlug: $appSlug, steps: $steps);
@@ -204,7 +204,7 @@ final class AgentPlanSteps {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+	 * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
 	 */
 	public static function targetApp(string $toolId, array $arguments): string {
 		$key = 'appSlug';
@@ -223,7 +223,7 @@ final class AgentPlanSteps {
 	 *
 	 * @return int|null
 	 *
-	 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+	 * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
 	 */
 	public static function matchingStep(array $data, string $wanted): ?int {
 		$used = array_map('intval', (array)($data['usedSteps'] ?? []));
@@ -261,7 +261,7 @@ final class AgentPlanSteps {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+	 * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
 	 */
 	public static function canonical(mixed $value): string {
 		return (string)json_encode(self::sorted(value: $value), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);

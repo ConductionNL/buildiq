@@ -506,7 +506,7 @@ export default {
 		 *
 		 * @param {number} index - position of the page to copy.
 		 * @return {void}
-		 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-a-page-req-bqcp-003
+		 * @spec openspec/changes/archive/2026-11-24-apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-a-page-req-bqcp-003
 		 */
 		copyPageAt(index) {
 			this.$emit(

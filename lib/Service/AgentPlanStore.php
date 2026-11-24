@@ -34,7 +34,7 @@ use Throwable;
  * Stores agent plans as `agent-plan` objects in the buildiq register, outside
  * RBAC: who may read, decide or use a plan is AgentPlanService's decision.
  *
- * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+ * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
  */
 class AgentPlanStore {
 
@@ -64,7 +64,7 @@ class AgentPlanStore {
 	 *
 	 * @return string|null The plan uuid, or null when it could not be stored.
 	 *
-	 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+	 * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
 	 */
 	public function put(array $object, ?string $uuid=null): ?string {
 		try {
@@ -89,7 +89,7 @@ class AgentPlanStore {
 	 *
 	 * @return array{uuid:string,data:array<string,mixed>}|null
 	 *
-	 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+	 * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
 	 */
 	public function load(string $planId): ?array {
 		if ($planId === '') {
@@ -123,7 +123,7 @@ class AgentPlanStore {
 	 *
 	 * @return array<string,mixed>
 	 *
-	 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+	 * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
 	 */
 	public static function asArray(mixed $item): array {
 		if ($item instanceof ObjectEntityInterface) {

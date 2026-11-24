@@ -24,7 +24,7 @@ export const ORIGIN_PATTERN = /^https:\/\/[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-
  * @param {string} origin The site as the maker typed it.
  * @return {string} The reason, translated.
  *
- * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-switches-embedding-on-and-lists-the-allowed-sites-req-bqem-001
+ * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-switches-embedding-on-and-lists-the-allowed-sites-req-bqem-001
  */
 export function originProblem(origin) {
 	const value = String(origin ?? '').trim()
@@ -49,7 +49,7 @@ export function originProblem(origin) {
  * @param {object|null|undefined} embed The stored setting.
  * @return {{enabled: boolean, origins: string[]}}
  *
- * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-switches-embedding-on-and-lists-the-allowed-sites-req-bqem-001
+ * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-switches-embedding-on-and-lists-the-allowed-sites-req-bqem-001
  */
 export function normaliseEmbed(embed) {
 	const origins = Array.isArray(embed?.origins) ? embed.origins.filter((origin) => typeof origin === 'string') : []
@@ -79,7 +79,7 @@ function attribute(value) {
  * @param {string} [options.pageRoute] The page's route inside the app, e.g. `/book`.
  * @return {string}
  *
- * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-embeds-one-page-req-bqem-004
+ * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-embeds-one-page-req-bqem-004
  */
 export function embedUrl({ origin, slug, pageRoute = '' }) {
 	const page = String(pageRoute || '').replace(/^\/+/, '')
@@ -97,7 +97,7 @@ export function embedUrl({ origin, slug, pageRoute = '' }) {
  * @param {string} [options.pageRoute] The page's route inside the app.
  * @return {string}
  *
- * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-embeds-one-page-req-bqem-004
+ * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-embeds-one-page-req-bqem-004
  */
 export function embedSnippet({ origin, slug, title, pageRoute = '' }) {
 	const src = embedUrl({ origin, slug, pageRoute })
@@ -113,7 +113,7 @@ export function embedSnippet({ origin, slug, title, pageRoute = '' }) {
  * @param {object} slots The shell's slots outside embed mode.
  * @return {object}
  *
- * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-embeds-one-page-req-bqem-004
+ * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-embeds-one-page-req-bqem-004
  */
 export function embedSlots(embedded, slots) {
 	if (!embedded) {
@@ -130,7 +130,7 @@ export function embedSlots(embedded, slots) {
  * @param {unknown} error What the manifest request threw.
  * @return {boolean}
  *
- * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-the-frame-never-asks-for-a-password-req-bqem-003
+ * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-the-frame-never-asks-for-a-password-req-bqem-003
  */
 export function needsSignIn(embedded, error) {
 	const status = error?.response?.status
@@ -144,7 +144,7 @@ export function needsSignIn(embedded, error) {
  * @param {string} appUrl The app's own address, to come back to after signing in.
  * @return {{text: string, link: string, href: string, target: string, rel: string}}
  *
- * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-the-frame-never-asks-for-a-password-req-bqem-003
+ * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-the-frame-never-asks-for-a-password-req-bqem-003
  */
 export function signInNotice(appUrl) {
 	return {

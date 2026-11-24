@@ -15,7 +15,7 @@
  * is answered as written; everything else (buildiq's strings) still goes to
  * buildiq's catalogue. An app without an `i18n` block keeps the old lookup.
  *
- * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-an-app-user-sees-the-app-in-their-language-req-bqml-003
+ * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-an-app-user-sees-the-app-in-their-language-req-bqml-003
  */
 import { translatableTexts } from './manifestLabels.js'
 
@@ -48,7 +48,7 @@ function fill(text, vars) {
  * @param {number} [options.maxAgeMs] - how long a label set is reused.
  * @param {() => number} [options.now] - the clock.
  * @return {(key: string, vars?: object) => string} The host translate.
- * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-an-app-user-sees-the-app-in-their-language-req-bqml-003
+ * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-an-app-user-sees-the-app-in-their-language-req-bqml-003
  */
 export function createAppTranslate(getManifest, translate, { maxAgeMs = 500, now = Date.now } = {}) {
 	let cache = { menu: null, pages: null, at: -Infinity, texts: new Set() }

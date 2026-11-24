@@ -46,7 +46,7 @@ interface VersionMergeRunnerInterface {
 	 *
 	 * @return array<string,mixed> The new version.
 	 *
-	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
 	 */
 	public function startBranch(array $application, array $source, string $name): array;
 
@@ -59,7 +59,7 @@ interface VersionMergeRunnerInterface {
 	 *
 	 * @return array<string,mixed> `manifest`, `schemas`, `conflicts`, `breaking` and the target's `targetHash`.
 	 *
-	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
 	 */
 	public function previewMerge(array $application, array $source, array $target): array;
 
@@ -73,7 +73,7 @@ interface VersionMergeRunnerInterface {
 	 *
 	 * @return array<string,mixed> The saved target version.
 	 *
-	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-merge-only-writes-a-draft-that-has-not-moved-req-bqgb-004
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-merge-only-writes-a-draft-that-has-not-moved-req-bqgb-004
 	 */
 	public function applyMerge(array $application, array $source, array $target, array $resolution): array;
 }//end interface

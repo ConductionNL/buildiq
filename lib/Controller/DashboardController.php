@@ -204,7 +204,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return array<int,string> The origins.
 	 *
-	 * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-only-listed-sites-can-frame-the-app-req-bqem-002
+	 * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-only-listed-sites-can-frame-the-app-req-bqem-002
 	 */
 	private function embedOriginsFor(string $slug): array {
 		if ((string)$this->request->getParam('embed', '') !== '1'

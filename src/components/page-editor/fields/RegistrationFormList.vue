@@ -396,7 +396,7 @@ export default {
 		 *
 		 * @param {object} form The form to copy.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-a-registration-form-as-a-draft-req-bqcp-004
+		 * @spec openspec/changes/archive/2026-11-24-apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-a-registration-form-as-a-draft-req-bqcp-004
 		 */
 		async copyForm(form) {
 			this.copying = true
