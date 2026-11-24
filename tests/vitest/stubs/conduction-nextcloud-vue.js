@@ -89,6 +89,7 @@ export function useObjectLock() {
 export const CnAppRoot = stub('CnAppRoot')
 export const CnAppNav = stub('CnAppNav')
 export const CnOfflineQueue = stub('CnOfflineQueue')
+export const CnSettingsPage = stub('CnSettingsPage')
 // Renders `#nav-end` as well as the default slot: the real strip carries page
 // controls there, and a stub that dropped it made every assertion about them
 // read as absent.

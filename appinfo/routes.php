@@ -112,6 +112,20 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         ['name' => 'applicationVersions#index',   'url' => '/api/applications/{appSlug}/versions',                'verb' => 'GET',    'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         // Change history (capability-requirements-backfill REQ-BQCV-014): the saves of the app and its versions from the audit trail, read roles only.
         ['name' => 'applicationHistory#index',   'url' => '/api/applications/{appSlug}/history',                 'verb' => 'GET',    'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        // Settings page values (capability-requirements-backfill REQ-BQCV-011): what users saved on an app's settings page;
+        // any role reads, owners and editors save.
+        [
+            'name' => 'appPageSettings#show',
+            'url' => '/api/applications/{appSlug}/page-settings/{pageId}',
+            'verb' => 'GET',
+            'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'pageId' => '[A-Za-z0-9][A-Za-z0-9_-]{0,63}'],
+        ],
+        [
+            'name' => 'appPageSettings#update',
+            'url' => '/api/applications/{appSlug}/page-settings/{pageId}',
+            'verb' => 'PUT',
+            'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'pageId' => '[A-Za-z0-9][A-Za-z0-9_-]{0,63}'],
+        ],
         ['name' => 'applicationVersions#create',  'url' => '/api/applications/{appSlug}/versions',                'verb' => 'POST',   'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'applicationVersions#show',    'url' => '/api/applications/{appSlug}/versions/{versionSlug}',  'verb' => 'GET',    'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'applicationVersions#update',  'url' => '/api/applications/{appSlug}/versions/{versionSlug}',  'verb' => 'PUT',    'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
