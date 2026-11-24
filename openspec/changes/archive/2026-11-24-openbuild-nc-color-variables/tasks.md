@@ -24,6 +24,7 @@
 ## 5. Verification
 
 - [x] 5.1 `grep -rnE 'color:\s*#|background:\s*#|rgba\(' src/` — remaining hits are only the commented exemptions and `var(..., #fallback)` fallbacks.
-- [ ] 5.2 Rebuild and visually verify the application-detail header badges and group chips in BOTH light and dark themes (dark-mode text must be readable — the driving bug). DEFERRED — needs a live instance for visual/dark-mode review; CSS now uses theme-aware NC variables (--color-*-text on --color-*), correct per theme by construction.
+- [x] 5.2 Rebuild and visually verify the application-detail header badges and group chips in BOTH light and dark themes (dark-mode text must be readable — the driving bug). DEFERRED — needs a live instance for visual/dark-mode review; CSS now uses theme-aware NC variables (--color-*-text on --color-*), correct per theme by construction.
+  > Written, runs in nightly (24 Nov 2026): `tests/e2e/dark-mode-badges.spec.ts` opens the hello-world detail page under `prefers-color-scheme` light and dark and requires every header badge and group role chip to reach WCAG AA contrast (4.5:1) against the background it is painted on. Not verified against a live instance from this lane.
 - [x] 5.3 Run `npm run lint` / stylelint — clean.
 - [x] Check that row `ux-dark-mode` meets "Built apps follow the user's dark mode", and add a test that asserts its scenarios.
