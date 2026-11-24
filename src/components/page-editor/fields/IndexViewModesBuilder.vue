@@ -43,8 +43,8 @@
 <script>
 import { NcSelect } from '@nextcloud/vue'
 import InlineFieldMark from './InlineFieldMark.vue'
-import { resolveValidationMessage } from '../../../services/manifestValidation/connectorErrorMessages.js'
 import { BOARD_MOVE_HANDLER } from '../../../services/boardMove.js'
+import { resolveValidationMessage } from '../../../services/manifestValidation/connectorErrorMessages.js'
 import {
 	propertiesOfKind,
 	validateIndexViewConfig,

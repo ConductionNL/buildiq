@@ -51,7 +51,7 @@ export function recordAddressOf(card) {
  * @param {object} move.card - The card dropped.
  * @param {string} move.toKey - The column it was dropped on.
  * @param {string} move.field - The field the columns come from.
- * @param {*} [move.value] - The value to write, when the column differs from its key.
+ * @param {string|number|boolean|null} [move.value] - The value to write, when the column differs from its key.
  * @param {object} [client] - axios-compatible client (tests inject one).
  * @return {Promise<object>} The record as OpenRegister saved it.
  * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-board-or-a-date-axis-view-req-pec-010

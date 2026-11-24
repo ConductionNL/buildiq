@@ -9,8 +9,8 @@
  * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-board-or-a-date-axis-view-req-pec-010
  */
 import { describe, expect, it, vi } from 'vitest'
-import { BOARD_MOVE_HANDLER, moveCardOnBoard, recordAddressOf } from '../../src/services/boardMove.js'
 import { getRuntimeRegistry } from '../../src/runtimeRegistry.js'
+import { BOARD_MOVE_HANDLER, moveCardOnBoard, recordAddressOf } from '../../src/services/boardMove.js'
 
 const card = { id: 'c-1', status: 'new', '@self': { id: 'c-1', register: 7, schema: 'incident' } }
 
