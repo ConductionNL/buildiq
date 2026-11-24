@@ -3159,7 +3159,19 @@
         "The app this version extends could not be loaded, so it cannot be saved now: {error}": "De app waarop deze versie voortbouwt kon niet worden geladen, dus opslaan kan nu niet: {error}",
         "Journeys": "Reizen",
         "New journey": "Nieuwe reis",
-        "Journey designer": "Reisontwerper"
+        "Journey designer": "Reisontwerper",
+        "Change history": "Wijzigingsgeschiedenis",
+        "Loading change history…": "Wijzigingsgeschiedenis laden…",
+        "No changes recorded": "Geen wijzigingen vastgelegd",
+        "Saves of the app and its versions will appear here.": "Opslagen van de app en zijn versies verschijnen hier.",
+        "What changed": "Wat is gewijzigd",
+        "deleted": "verwijderd",
+        "rolled back": "teruggezet",
+        "saved": "opgeslagen",
+        "Version {version} {verb}": "Versie {version} {verb}",
+        "App settings {verb}": "App-instellingen {verb}",
+        "You need a role on this app to see its change history.": "Je hebt een rol op deze app nodig om de wijzigingsgeschiedenis te zien.",
+        "The change history could not be loaded.": "De wijzigingsgeschiedenis kon niet worden geladen."
     },
     "plurals": null,
     "pluralForm": "nplurals=2; plural=(n != 1);"

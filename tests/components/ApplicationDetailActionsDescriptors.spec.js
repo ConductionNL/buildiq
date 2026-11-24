@@ -36,6 +36,7 @@ const FLAGS = [
 	'copyOpen',
 	'githubOpen',
 	'historyOpen',
+	'changeHistoryOpen',
 	'exportOpen',
 	'deleteOpen',
 ]

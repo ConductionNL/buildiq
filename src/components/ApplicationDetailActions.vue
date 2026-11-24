@@ -105,6 +105,11 @@
 			:open="historyOpen"
 			:applicationUuid="obAppUuid"
 			@update:open="historyOpen = $event" />
+		<ChangeHistoryModal
+			v-if="changeHistoryOpen && obApp && obApp.slug"
+			:open="changeHistoryOpen"
+			:slug="obApp.slug"
+			@update:open="changeHistoryOpen = $event" />
 		<CopyAppDialog
 			v-if="copyOpen && obApp"
 			:open="copyOpen"
@@ -135,6 +140,7 @@ import { defineAsyncComponent } from 'vue'
 import DeleteAppDialog from '../dialogs/DeleteAppDialog.vue'
 import SaveAsTemplateDialog from '../dialogs/SaveAsTemplateDialog.vue'
 import AppSettingsModal from '../modals/AppSettingsModal.vue'
+import ChangeHistoryModal from '../modals/ChangeHistoryModal.vue'
 import CopyAppDialog from '../modals/CopyAppDialog.vue'
 import GitHubSyncModal from '../modals/GitHubSyncModal.vue'
 import PermissionHistoryModal from '../modals/PermissionHistoryModal.vue'
@@ -299,6 +305,7 @@ export default {
 	components: {
 		CnActionButtons,
 		PermissionsModal,
+		ChangeHistoryModal,
 		PermissionHistoryModal,
 		AppSettingsModal,
 		SupportEditorModal,
@@ -358,6 +365,7 @@ export default {
 			deleteOpen: false,
 			permissionsOpen: false,
 			historyOpen: false,
+			changeHistoryOpen: false,
 			exportOpen: false,
 			saveTemplateOpen: false,
 			copyOpen: false,
@@ -477,6 +485,18 @@ export default {
 						icon: 'Github',
 						onSelect: () => {
 							this.githubOpen = true
+						},
+					}),
+				],
+				// REQ-BQCV-014: anyone with a role on the app reads who changed it.
+				[
+					Boolean(this.obApp && this.obApp.slug) && ['owner', 'editor', 'viewer'].includes(this.obAppRole),
+					() => ({
+						id: 'app-change-history',
+						label: t('buildiq', 'Change history'),
+						icon: 'History',
+						onSelect: () => {
+							this.changeHistoryOpen = true
 						},
 					}),
 				],
