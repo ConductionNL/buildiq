@@ -40,6 +40,7 @@ import BackToVirtualApps, {
 	declaresPrimaryAction,
 	showBackToVirtualApps,
 } from './components/runtime/BackToVirtualApps.vue'
+import BuildiqChatPage from './components/runtime/BuildiqChatPage.vue'
 import BuildiqFormPage from './components/runtime/BuildiqFormPage.vue'
 import BuildiqLogsPage from './components/runtime/BuildiqLogsPage.vue'
 import BuildiqSettingsPage from './components/runtime/BuildiqSettingsPage.vue'
@@ -565,8 +566,9 @@ async function boot() {
 		// A form page gets buildiq's live values: calculated fields and the
 		// eligibility check (forms-live-values-and-checks). A settings page
 		// keeps what its users save (REQ-BQCV-011); a logs page bound to a
-		// schema lists the changes to its records (REQ-BQCV-010).
-		pageTypes: { ...defaultPageTypes, form: BuildiqFormPage, settings: BuildiqSettingsPage, logs: BuildiqLogsPage },
+		// schema lists the changes to its records (REQ-BQCV-010); a chat page
+		// bound to a messages schema keeps its conversation there (REQ-BQCV-009).
+		pageTypes: { ...defaultPageTypes, form: BuildiqFormPage, settings: BuildiqSettingsPage, logs: BuildiqLogsPage, chat: BuildiqChatPage },
 		// App registers/schemas so the Edit-pages modal offers Register /
 		// Schema / Columns dropdowns for index/detail pages. Re-run on every
 		// modal open, so schemas created after boot appear without a reload.

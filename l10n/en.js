@@ -3036,6 +3036,7 @@ OC.L10N.register(
         "No changes recorded": "No changes recorded",
         "Saves of the app and its versions will appear here.": "Saves of the app and its versions will appear here.",
         "Who": "Who",
+        "What": "What",
         "What changed": "What changed",
         "deleted": "deleted",
         "rolled back": "rolled back",
@@ -3043,7 +3044,13 @@ OC.L10N.register(
         "Version {version} {verb}": "Version {version} {verb}",
         "App settings {verb}": "App settings {verb}",
         "You need a role on this app to see its change history.": "You need a role on this app to see its change history.",
-        "The change history could not be loaded.": "The change history could not be loaded."
+        "The change history could not be loaded.": "The change history could not be loaded.",
+        "Messages kept as records of a schema": "Messages kept as records of a schema",
+        "Message field": "Message field",
+        "e.g. permits": "e.g. permits",
+        "message": "message",
+        "Write a message": "Write a message",
+        "The conversation could not be loaded.": "The conversation could not be loaded."
     },
     "nplurals=2; plural=(n != 1);"
 )

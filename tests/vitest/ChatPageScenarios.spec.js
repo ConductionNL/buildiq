@@ -8,12 +8,11 @@
  * `config.conversationSource`, the key nextcloud-vue's CnChatPage reads
  * (CnPageRenderer passes `config` to it as props).
  *
- * Not asserted here, because buildiq does not build it: CnChatPage v1 shows
- * `conversationSource` in an iframe (an embeddable Nextcloud Talk
- * conversation, where posting is Talk's own), and passes `postUrl` and
- * `schema` through to a `#conversation` slot only. A conversation kept as
- * OpenRegister message records is not rendered and cannot be posted to. That
- * gap is reported on T09.
+ * A conversation kept as OpenRegister message records is the third
+ * transport: the editor writes `register`, `schema`, `messageField` and the
+ * schema's records address as `postUrl` (below); the running app's
+ * BuildiqChatPage shows and posts the messages
+ * (tests/components/runtime/BuildiqChatPage.spec.js).
  */
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
@@ -59,5 +58,32 @@ describe('a maker adds a chat page (REQ-BQCV-009)', () => {
 		await inputs[inputs.length - 1].setValue('message')
 
 		expect(wrapper.emitted('update:config').at(-1)[0]).toEqual({ conversationSource: '/x', schema: 'message' })
+	})
+
+	it('keeps the conversation as the records of a messages schema', async () => {
+		const wrapper = mount(ChatPageEditor, { props: { config: {} } })
+		await wrapper.findAll('input[type="radio"]')[2].trigger('change')
+		await wrapper.setProps({ config: wrapper.emitted('update:config').at(-1)[0] })
+		await wrapper.find('.chat-page-editor__register').setValue('permits')
+		await wrapper.setProps({ config: wrapper.emitted('update:config').at(-1)[0] })
+		await wrapper.find('.chat-page-editor__schema').setValue('permit-message')
+		await wrapper.setProps({ config: wrapper.emitted('update:config').at(-1)[0] })
+		await wrapper.find('.chat-page-editor__message-field').setValue('body')
+
+		expect(wrapper.emitted('update:config').at(-1)[0]).toEqual({
+			register: 'permits',
+			schema: 'permit-message',
+			messageField: 'body',
+			postUrl: '/apps/openregister/api/objects/permits/permit-message',
+		})
+		expect(wrapper.vm.transportShape).toBe('records')
+	})
+
+	it('leaving the records transport drops the register and message field', async () => {
+		const config = { register: 'permits', schema: 'm', messageField: 'body', postUrl: '/apps/openregister/api/objects/permits/m' }
+		const wrapper = mount(ChatPageEditor, { props: { config } })
+		await wrapper.findAll('input[type="radio"]')[0].trigger('change')
+
+		expect(wrapper.emitted('update:config').at(-1)[0]).toEqual({ schema: 'm' })
 	})
 })
