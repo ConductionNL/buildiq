@@ -1248,7 +1248,7 @@ export default {
 		 *
 		 * @param {boolean} on - whether users may order rows by dragging.
 		 * @return {void}
-		 * @spec openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-let-users-order-rows-by-dragging-req-pec-009
+		 * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-let-users-order-rows-by-dragging-req-pec-009
 		 */
 		onManualOrderUpdate(on) {
 			if (this.selectedIndex < 0) {

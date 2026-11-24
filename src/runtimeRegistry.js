@@ -18,6 +18,7 @@
  * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-004
  * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-4.3
  * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-004
+ * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-board-or-a-date-axis-view-req-pec-010
  * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t03
  */
 
@@ -54,6 +55,9 @@ import RunAutomationAction from './components/runtime/RunAutomationAction.vue'
 // injection CnAppRoot provides, rendering nothing when not enabled for the
 // object's schema.
 import TrackLinkAction from './components/runtime/TrackLinkAction.vue'
+// Board move handler — saves a dropped card's column into its record, so the
+// board of a built index page is not read-only (REQ-PEC-010).
+import { BOARD_MOVE_HANDLER, moveCardOnBoard } from './services/boardMove.js'
 
 /**
  * Build a slot-override registry entry (CnPageRenderer resolves any `kind`
@@ -158,6 +162,10 @@ export const runtimeRegistry = {
 		CnOfflineQueue,
 		'No built-in page type reads the device-side offline queue; CnOfflineQueue is the library surface for it (REQ-BQOM-005).',
 	),
+	// `config.board.moveHandler: "board-move"` — a built app has no host
+	// code to hand the board a transition, so this one saves the field
+	// through OpenRegister, which runs the schema's guards (REQ-PEC-010).
+	[BOARD_MOVE_HANDLER]: { kind: 'handler', handler: moveCardOnBoard },
 	'record-grid': page(
 		RecordGridPage,
 		'No built-in page type edits records in a grid: index pages edit one record at a time in a form, so a spreadsheet-like page over CnDataMatrix is a custom page (ADR-049).',

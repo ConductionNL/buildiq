@@ -26,13 +26,13 @@
  *
  * WHAT IS GUARDED
  * ---------------
- * The board of REQ-PEC-010 waits on task T07 (the board fields of the view
- * builder, and their findings, are not signed off) and on nextcloud-vue drawing
- * the board on a built index page. Its test is written out below and marked
- * `test.fixme` until the board builder exists. The date axis scenario is not in
+ * The board of REQ-PEC-010: the view builder of task T07 writes the status
+ * field and names buildiq's `board-move` handler (src/services/boardMove.js),
+ * nextcloud-vue draws the board on the built index page, and a dropped card is
+ * saved into its record through OpenRegister. The date axis scenario is not in
  * this file: T07 names only the board for Playwright.
  *
- * @spec openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md
+ * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md
  * @e2e page-editor-coverage/requirement-an-index-page-can-offer-a-calendar-view-req-pec-008/calendar-without-a-date-field
  * @e2e page-editor-coverage/requirement-an-index-page-can-offer-a-calendar-view-req-pec-008/inspections-on-a-calendar
  * @e2e page-editor-coverage/requirement-an-index-page-can-let-users-order-rows-by-dragging-req-pec-009/a-personal-order
@@ -317,8 +317,6 @@ test.describe('index page views and drag order', () => {
 	})
 
 	test('REQ-PEC-010: a user switches the list to Board and moves a card', async ({ page }) => {
-		test.fixme(true, 'the board builder of task T07 does not exist yet, and nextcloud-vue does not draw the board on a built index page')
-
 		await resetIndexPage(page)
 		const views = await openIndexEditor(page)
 		await views.locator('input[data-mode="board"]').check()
@@ -328,9 +326,13 @@ test.describe('index page views and drag order', () => {
 		await expect
 			.poll(async () => {
 				const stored = await storedIndexPage(page)
-				return { viewModes: stored.config?.viewModes ?? [], statusField: stored.config?.board?.statusField ?? null }
+				return {
+					viewModes: stored.config?.viewModes ?? [],
+					statusField: stored.config?.board?.statusField ?? null,
+					moveHandler: stored.config?.board?.moveHandler ?? null,
+				}
 			}, { timeout: 30_000 })
-			.toEqual({ viewModes: ['table', 'board'], statusField: 'status' })
+			.toEqual({ viewModes: ['table', 'board'], statusField: 'status', moveHandler: 'board-move' })
 
 		await openBuiltIndex(page)
 		await viewToggle(page, /board/i).click()
