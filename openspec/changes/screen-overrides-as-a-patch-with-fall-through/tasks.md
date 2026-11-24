@@ -27,7 +27,7 @@
 
 - [x] 4.1 PHPUnit for the layer order, the tie refusal, the draft skip and the no-account rule
 - [x] 4.2 PHPUnit for drift: an orphaned patch, a changed base with every key intact, and the withheld answer
-- [ ] 4.3 Playwright `tests/e2e/screen-override-editor.spec.ts` for three audiences on one case type
+- [x] 4.3 Playwright `tests/e2e/screen-override-editor.spec.ts` for three audiences on one case type (written, runs in nightly: the spec sits in tests/e2e and is not verified against a live instance)
 - [x] 4.4 Playwright `tests/e2e/screen-override-drift.spec.ts` for the re-cut of a drifted override — the spec ships and asserts that the answer carries appliedLayers and withheld over the wire, and that a caller with no account never gets an internal screen; the re-cut itself waits on the editor in section 3
 - [x] 4.5 Register-import test that the lifecycle and notification dialects import, per the notification-dialect gate
 - [ ] 4.6 Dutch and English strings for the panel, the state and the notification; docs with screenshots
