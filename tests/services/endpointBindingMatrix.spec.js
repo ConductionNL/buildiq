@@ -11,7 +11,7 @@
  *   | object-table, workspace-filter* | props.endpointSource                     |
  *   | stat, delta                     | props.content.endpointSource             |
  *   | chart                           | props.endpointSource ($defs/chartEndpointSource) |
- *   | stats-block                     | none — entries[] are register-bound      |
+ *   | stats-block                     | per entry: entries[].endpointSource      |
  *
  *   * workspace-filter nests it at props.content.endpointSource.
  *
@@ -21,7 +21,7 @@
  * runtimeRegistryParity.spec.js instead.
  *
  * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-002-normative-endpoint-binding-matrix-for-the-published-path
- * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-003-stats-block-remains-register-bound-with-a-stated-rationale
+ * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-003-stats-block-entries-take-an-endpoint-only-through-the-librarys-entry-mapping
  */
 import Ajv from 'ajv/dist/2020.js'
 import { readFileSync } from 'node:fs'
@@ -188,42 +188,43 @@ describe('endpoint-binding matrix (REQ-CWR-002)', () => {
 	)
 })
 
-describe('stats-block stays register-bound (REQ-CWR-003)', () => {
-	it('declares no endpoint binding anywhere', () => {
+describe('stats-block entries take an endpoint only through the library mapping (REQ-CWR-003)', () => {
+	it('declares no widget-level endpoint binding', () => {
 		expect(schemaMatrix().has('stats-block')).toBe(false)
 	})
 
-	it('requires register + schema and forbids extra keys on each entry', () => {
+	it('keeps each entry closed and offers endpointSource with valueField', () => {
 		const entry = schema.$defs.statsBlockEntry
 		expect(entry.additionalProperties).toBe(false)
-		expect(entry.required).toEqual(
-			expect.arrayContaining(['register', 'schema']),
-		)
-		expect(entry.properties).not.toHaveProperty('endpointSource')
+		expect(entry.properties).toHaveProperty('endpointSource')
+		expect(entry.properties).toHaveProperty('valueField')
 	})
 
-	it('rejects an endpointSource inside props.entries[], naming the offending entry', () => {
+	it('accepts an entry that reads an endpoint, without register and schema', () => {
 		const widget = widgetWith('stats-block', ['props', 'entries'], [
-			{ register: 'r', schema: 's', title: 'Fine' },
-			{
-				register: 'r',
-				schema: 's',
-				endpointSource: { url: '/apps/example/api/kpi' },
-			},
-		])
-		expect(validateWidget(widget)).toBe(false)
-		const offending = validateWidget.errors.filter(
-			(e) => e.keyword === 'additionalProperties',
-		)
-		expect(offending).toHaveLength(1)
-		expect(offending[0].instancePath).toBe('/props/entries/1')
-		expect(offending[0].params.additionalProperty).toBe('endpointSource')
-	})
-
-	it('accepts the same entries without the endpoint binding', () => {
-		const widget = widgetWith('stats-block', ['props', 'entries'], [
-			{ register: 'r', schema: 's', title: 'Fine' },
+			{ register: 'r', schema: 's', title: 'Stored' },
+			{ title: 'Open', endpointSource: { url: '/apps/example/api/kpi' }, valueField: 'open' },
 		])
 		expect(errorsAt(widget, ['props', 'entries'])).toEqual([])
+	})
+
+	it('rejects an unknown key on an entry, naming the offending entry', () => {
+		const widget = widgetWith('stats-block', ['props', 'entries'], [
+			{ register: 'r', schema: 's', title: 'Fine' },
+			{ register: 'r', schema: 's', endpoint: '/apps/example/api/kpi' },
+		])
+		expect(validateWidget(widget)).toBe(false)
+		const offending = validateWidget.errors.filter((e) => e.keyword === 'additionalProperties')
+		expect(offending).toHaveLength(1)
+		expect(offending[0].instancePath).toBe('/props/entries/1')
+		expect(offending[0].params.additionalProperty).toBe('endpoint')
+	})
+
+	it('rejects an entry with no source at all', () => {
+		const widget = widgetWith('stats-block', ['props', 'entries'], [
+			{ title: 'Nothing to count' },
+		])
+		expect(validateWidget(widget)).toBe(false)
+		expect(validateWidget.errors.some((e) => e.instancePath === '/props/entries/0')).toBe(true)
 	})
 })
