@@ -33,11 +33,9 @@ namespace OCA\Buildiq\Controller;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\VersionSaveReader;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -62,26 +60,23 @@ class VersionSavesController extends Controller {
 	 * @var array<int,string>
 	 */
 	private const CODES = [
-		Http::STATUS_UNAUTHORIZED => 'unauthenticated',
-		Http::STATUS_FORBIDDEN => 'buildiq.rbac.no_role',
-		Http::STATUS_NOT_FOUND => 'not_found',
-		Http::STATUS_SERVICE_UNAVAILABLE => 'versions_unavailable',
-		Http::STATUS_INTERNAL_SERVER_ERROR => 'internal_error',
+		401 => 'unauthenticated',
+		403 => 'buildiq.rbac.no_role',
+		404 => 'not_found',
+		503 => 'versions_unavailable',
 	];
 
 	/**
 	 * Constructor.
 	 *
-	 * @param IRequest          $request     The request.
-	 * @param IUserSession      $userSession The signed-in user.
-	 * @param VersionSaveReader $reader      Reads a version's saves for the caller.
-	 * @param LoggerInterface   $logger      Where a failed read is noted.
+	 * @param IRequest          $request The request.
+	 * @param VersionSaveReader $reader  Reads a version's saves for the signed-in caller.
+	 * @param LoggerInterface   $logger  Where a failed read is noted.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly IUserSession $userSession,
 		private readonly VersionSaveReader $reader,
 		private readonly LoggerInterface $logger,
 	) {
@@ -100,26 +95,11 @@ class VersionSavesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function index(string $appSlug, string $versionSlug): JSONResponse {
-		$caller = $this->userSession->getUser();
-		if ($caller === null) {
-			return $this->error(status: Http::STATUS_UNAUTHORIZED);
-		}
-
-		try {
-			$saves = $this->reader->saves(appSlug: $appSlug, versionSlug: $versionSlug, caller: $caller);
-		} catch (Throwable $e) {
-			$this->logger->error(
-				'Buildiq: the saves of {slug}/{version} could not be read: {message}',
-				['slug' => $appSlug, 'version' => $versionSlug, 'message' => $e->getMessage(), 'exception' => $e]
-			);
-			return $this->error(status: Http::STATUS_INTERNAL_SERVER_ERROR);
-		}
-
-		if (is_int($saves) === true) {
-			return $this->error(status: $saves);
-		}
-
-		return new JSONResponse(data: ['saves' => $saves], statusCode: Http::STATUS_OK);
+		return $this->answer(
+			key: 'saves',
+			read: fn (): array|int => $this->reader->saves(appSlug: $appSlug, versionSlug: $versionSlug),
+			what: $appSlug . '/' . $versionSlug
+		);
 	}//end index()
 
 	/**
@@ -135,36 +115,37 @@ class VersionSavesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function show(string $appSlug, string $versionSlug, string $saveId): JSONResponse {
-		$caller = $this->userSession->getUser();
-		if ($caller === null) {
-			return $this->error(status: Http::STATUS_UNAUTHORIZED);
-		}
-
-		try {
-			$manifest = $this->reader->manifest(appSlug: $appSlug, versionSlug: $versionSlug, saveId: $saveId, caller: $caller);
-		} catch (Throwable $e) {
-			$this->logger->error(
-				'Buildiq: save {save} of {slug}/{version} could not be read: {message}',
-				['save' => $saveId, 'slug' => $appSlug, 'version' => $versionSlug, 'message' => $e->getMessage(), 'exception' => $e]
-			);
-			return $this->error(status: Http::STATUS_INTERNAL_SERVER_ERROR);
-		}
-
-		if (is_int($manifest) === true) {
-			return $this->error(status: $manifest);
-		}
-
-		return new JSONResponse(data: ['manifest' => $manifest], statusCode: Http::STATUS_OK);
+		return $this->answer(
+			key: 'manifest',
+			read: fn (): array|int => $this->reader->manifest(appSlug: $appSlug, versionSlug: $versionSlug, saveId: $saveId),
+			what: $appSlug . '/' . $versionSlug . '#' . $saveId
+		);
 	}//end show()
 
 	/**
-	 * A refusal with its error code.
+	 * The read's answer under its key, its refusal with the error code, or a 500 without detail.
 	 *
-	 * @param int $status The HTTP status.
+	 * @param string   $key  The key the answer goes under.
+	 * @param callable $read The read: the answer, or the refusal's HTTP status.
+	 * @param string   $what What was read, for the log.
 	 *
 	 * @return JSONResponse
 	 */
-	private function error(int $status): JSONResponse {
-		return new JSONResponse(data: ['error' => (self::CODES[$status] ?? 'internal_error')], statusCode: $status);
-	}//end error()
+	private function answer(string $key, callable $read, string $what): JSONResponse {
+		try {
+			$result = $read();
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'Buildiq: the saves of {what} could not be read: {message}',
+				['what' => $what, 'message' => $e->getMessage(), 'exception' => $e]
+			);
+			$result = 500;
+		}
+
+		if (is_int($result) === true) {
+			return new JSONResponse(data: ['error' => (self::CODES[$result] ?? 'internal_error')], statusCode: $result);
+		}
+
+		return new JSONResponse(data: [$key => $result], statusCode: 200);
+	}//end answer()
 }//end class

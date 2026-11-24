@@ -16,24 +16,20 @@
 		size="normal"
 		@update:open="onClose">
 		<div class="buildiq-version-saves">
-			<NcEmptyContent
-				v-if="loading"
-				:name="t('buildiq', 'Loading saves…')">
-				<template #icon>
-					<NcLoadingIcon />
-				</template>
-			</NcEmptyContent>
-
-			<NcNoteCard v-else-if="error" type="error">
+			<NcNoteCard v-if="error" type="error">
 				{{ error }}
 			</NcNoteCard>
 
+			<p v-if="loading" class="buildiq-version-saves__loading" role="status">
+				<NcLoadingIcon :size="20" />
+				{{ t('buildiq', 'Loading saves…') }}
+			</p>
 			<NcEmptyContent
-				v-else-if="saves.length === 0"
+				v-else-if="saves.length === 0 && !error"
 				:name="t('buildiq', 'No saves kept yet')"
 				:description="t('buildiq', 'Each save of this version from now on is kept here, so you can roll back to it.')">
 				<template #icon>
-					<HistoryIcon :size="48" />
+					<RestoreIcon :size="48" />
 				</template>
 			</NcEmptyContent>
 
@@ -78,27 +74,15 @@
 					</template>
 				</li>
 			</ol>
-
-			<div class="buildiq-version-saves__actions">
-				<NcButton variant="primary" @click="onClose">
-					{{ t('buildiq', 'Close') }}
-				</NcButton>
-			</div>
 		</div>
 	</NcDialog>
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@conduction/nextcloud-vue'
+import { NcButton, NcDialog, NcEmptyContent, NcLoadingIcon, NcNoteCard } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import HistoryIcon from 'vue-material-design-icons/History.vue'
+import RestoreIcon from 'vue-material-design-icons/Restore.vue'
 
 /**
  * The address of a version's saves, or of one save.
@@ -128,7 +112,7 @@ export default {
 		NcEmptyContent,
 		NcLoadingIcon,
 		NcNoteCard,
-		HistoryIcon,
+		RestoreIcon,
 	},
 
 	props: {
@@ -303,11 +287,8 @@ export default {
 		 * @spec openspec/changes/capability-requirements-backfill/specs/application-versions/spec.md#requirement-a-maker-rolls-a-version-back-to-an-earlier-manifest-req-bqcv-015
 		 */
 		formatStamp(stamp) {
-			if (!stamp) {
-				return ''
-			}
-			const date = new Date(stamp)
-			return Number.isNaN(date.getTime()) ? String(stamp) : date.toLocaleString()
+			const date = new Date(stamp || '')
+			return Number.isNaN(date.getTime()) ? String(stamp || '') : date.toLocaleString()
 		},
 	},
 }
@@ -357,9 +338,11 @@ export default {
 	gap: var(--default-grid-baseline);
 }
 
-.buildiq-version-saves__actions {
+.buildiq-version-saves__loading {
 	display: flex;
-	justify-content: flex-end;
-	margin-top: calc(var(--default-grid-baseline) * 4);
+	align-items: center;
+	gap: var(--default-grid-baseline);
+	margin: 0;
+	color: var(--color-text-maxcontrast);
 }
 </style>

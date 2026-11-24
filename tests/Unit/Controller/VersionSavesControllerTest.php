@@ -297,11 +297,11 @@ class VersionSavesControllerTest extends TestCase {
 
 		return new VersionSavesController(
 			request: $this->createMock(originalClassName: IRequest::class),
-			userSession: $this->session(uid: $uid),
 			reader: new VersionSaveReader(
 				permissionResolver: $resolver,
 				apps: new AppChangeHistory(objectService: $objects, registerMapper: $registers, schemaMapper: $schemas),
-				saves: $this->saves
+				saves: $this->saves,
+				userSession: $this->session(uid: $uid)
 			),
 			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
