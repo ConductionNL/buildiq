@@ -53,7 +53,7 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.3
- * @spec openspec/specs/automation-designer/spec.md#req-autd-004
+ * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
  */
 
 declare(strict_types=1);
@@ -207,7 +207,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	 * @return void
 	 *
 	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.3
-	 * @spec openspec/specs/automation-designer/spec.md#req-autd-004
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 * @SuppressWarnings(PHPMD.StaticAccess) FiredAutomationTrigger is a pure value read off the event.
 	 */
 	#[\Override]
@@ -272,7 +272,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	 * @return bool True when a sequence was opened, so the approval now waits.
 	 *
 	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.3
-	 * @spec openspec/specs/automation-designer/spec.md#req-autd-004
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 */
 	private function initializeFor(array $automation, string $objectUuid): bool {
 		$provenance = $automation['provenance'] ?? [];

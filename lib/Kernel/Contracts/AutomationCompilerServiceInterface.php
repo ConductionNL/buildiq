@@ -93,7 +93,7 @@ interface AutomationCompilerServiceInterface {
 	 * @throws UnsupportedAutomationCombinationException When the matrix (or condition placement) rejects the shape.
 	 *
 	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.1
-	 * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 */
 	public function compile(array $automation): array;
 

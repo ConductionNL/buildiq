@@ -24,7 +24,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/specs/automation-designer/spec.md#req-autd-004
+ * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use OCP\EventDispatcher\Event;
 /**
  * The fired trigger type, schema slug, object uuid and transition action of one event.
  *
- * @spec openspec/specs/automation-designer/spec.md#req-autd-004
+ * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
  */
 final class FiredAutomationTrigger {
 
@@ -75,7 +75,7 @@ final class FiredAutomationTrigger {
 	 *
 	 * @return self|null
 	 *
-	 * @spec openspec/specs/automation-designer/spec.md#req-autd-004
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 */
 	public static function fromEvent(Event $event): ?self {
 		if ($event instanceof ObjectCreatedEvent) {
@@ -121,7 +121,7 @@ final class FiredAutomationTrigger {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/specs/automation-designer/spec.md#req-autd-004
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 */
 	public function isAddressable(): bool {
 		return $this->fired[1] !== '' && $this->fired[2] !== '';
@@ -143,7 +143,7 @@ final class FiredAutomationTrigger {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/specs/automation-designer/spec.md#req-autd-004
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 */
 	public function schemaSlug(): string {
 		return $this->fired[1];
@@ -154,7 +154,7 @@ final class FiredAutomationTrigger {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/specs/automation-designer/spec.md#req-autd-004
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 */
 	public function objectUuid(): string {
 		return $this->fired[2];
@@ -170,7 +170,7 @@ final class FiredAutomationTrigger {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 *
-	 * @spec openspec/specs/automation-designer/spec.md#req-autd-004
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 */
 	public function select(array $rows, string $actionType): array {
 		$matches = [];

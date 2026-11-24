@@ -96,15 +96,15 @@
  *
  * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.1
  * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
- * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
+ * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
  * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
  * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.1
  * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.2
- * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
+ * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
  * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.1
  * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.2
  * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.3
- * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
+ * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
  */
 
 declare(strict_types=1);
@@ -355,7 +355,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @throws UnsupportedAutomationCombinationException When the matrix (or condition placement) rejects the shape.
 	 *
 	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.1
-	 * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 */
 	#[\Override]
 	public function compile(array $automation): array {

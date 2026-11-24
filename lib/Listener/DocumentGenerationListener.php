@@ -37,7 +37,7 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#3.1
- * @spec openspec/specs/automation-designer/spec.md#req-autd-004
+ * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
  */
 
 declare(strict_types=1);
@@ -100,7 +100,7 @@ class DocumentGenerationListener implements IEventListener {
 	 * @return void
 	 *
 	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#3.1
-	 * @spec openspec/specs/automation-designer/spec.md#req-autd-004
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 * @SuppressWarnings(PHPMD.StaticAccess) FiredAutomationTrigger is a pure value read off the event.
 	 */
 	#[\Override]
