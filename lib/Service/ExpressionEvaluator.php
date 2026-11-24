@@ -345,13 +345,13 @@ class ExpressionEvaluator {
 		}
 
 		// Mixed int and float: PHP widens to float, done here explicitly.
-		$left  = (float)$left;
-		$right = (float)$right;
+		$wideLeft  = (float)$left;
+		$wideRight = (float)$right;
 		return match ($op) {
-			'+' => ($left + $right),
-			'-' => ($left - $right),
-			'*' => ($left * $right),
-			'/' => ($left / $right),
+			'+' => $wideLeft + $wideRight,
+			'-' => $wideLeft - $wideRight,
+			'*' => $wideLeft * $wideRight,
+			'/' => $wideLeft / $wideRight,
 			default => throw new InvalidArgumentException('Unknown binary operator: ' . $op),
 		};
 
