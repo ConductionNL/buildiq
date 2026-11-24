@@ -25,8 +25,8 @@ describe('ChatPageEditor', () => {
 		expect(mountEditor().text()).toContain('Chat page')
 	})
 
-	it('renders both transport-shape radios', () => {
-		expect(mountEditor().findAll('input[type="radio"]')).toHaveLength(2)
+	it('renders the three transport-shape radios', () => {
+		expect(mountEditor().findAll('input[type="radio"]')).toHaveLength(3)
 	})
 
 	it('defaults to the conversationSource shape', () => {
