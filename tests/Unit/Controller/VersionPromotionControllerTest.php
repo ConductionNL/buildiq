@@ -377,6 +377,67 @@ class VersionPromotionControllerTest extends TestCase {
 	}//end testReturns200ForEditor()
 
 	/**
+	 * An editor who promotes a draft onto the production version is refused
+	 * and nothing is promoted: releasing is an owner's (REQ-BQCV-027).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/capability-requirements-backfill/specs/version-lifecycle-ui/spec.md#requirement-a-change-goes-live-only-when-an-owner-releases-it-req-bqcv-027
+	 */
+	public function testAnEditorPromotingOntoProductionIsRefused(): void {
+		$this->wireUser(uid: 'editor-eve');
+		$this->objectService
+			->method('find')
+			->willReturnOnConsecutiveCalls(...$this->productionPromotion());
+		$this->promotionService->expects($this->never())->method('promote');
+
+		$response = $this->controller->promote(appUuid: 'u-app', versionUuid: 'u-draft');
+
+		self::assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		self::assertSame('buildiq.rbac.owner_required', $response->getData()['error']);
+	}//end testAnEditorPromotingOntoProductionIsRefused()
+
+	/**
+	 * The owner releases the same draft onto production.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/capability-requirements-backfill/specs/version-lifecycle-ui/spec.md#requirement-a-change-goes-live-only-when-an-owner-releases-it-req-bqcv-027
+	 */
+	public function testTheOwnerPromotesOntoProduction(): void {
+		$this->wireUser(uid: 'alice');
+		$this->objectService
+			->method('find')
+			->willReturnOnConsecutiveCalls(...$this->productionPromotion());
+		$this->request->method('getParam')->willReturn('migrate-existing-data');
+		$this->promotionService->expects($this->once())->method('promote')->willReturn(['id' => 'u-prod', 'semver' => '1.3.0']);
+
+		$response = $this->controller->promote(appUuid: 'u-app', versionUuid: 'u-draft');
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+	}//end testTheOwnerPromotesOntoProduction()
+
+	/**
+	 * An app whose production version is u-prod, and a draft that promotes onto it.
+	 *
+	 * @return array<int,mixed> The Application and the draft, as `find` answers them.
+	 */
+	private function productionPromotion(): array {
+		return [
+			$this->buildEntity(payload: [
+				'id' => 'u-app',
+				'slug' => 'hello',
+				'productionVersion' => 'u-prod',
+				'permissions' => [
+					'owners' => ['user:alice'],
+					'editors' => ['user:editor-eve'],
+				],
+			]),
+			$this->buildEntity(payload: ['id' => 'u-draft', 'application' => 'u-app', 'promotesTo' => 'u-prod']),
+		];
+	}//end productionPromotion()
+
+	/**
 	 * A promotion onto production whose tests fail answers 422 with the run
 	 * (lifecycle-release-test-gate REQ-BQRT-004).
 	 *
