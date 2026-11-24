@@ -16,5 +16,6 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Manual keyboard + screen-reader spot check (or axe-core/Playwright a11y assertion if available) on the Lifecycle editor, Widget editor, Relation editor, and Walkthrough Designer: each of the six buttons now exposes a non-empty accessible name. DEFERRED — needs a live instance/AT; verified statically that all six NcButtons now carry a non-empty :aria-label bound to a translated string.
+- [x] 4.1 Manual keyboard + screen-reader spot check (or axe-core/Playwright a11y assertion if available) on the Lifecycle editor, Widget editor, Relation editor, and Walkthrough Designer: each of the six buttons now exposes a non-empty accessible name. DEFERRED — needs a live instance/AT; verified statically that all six NcButtons now carry a non-empty :aria-label bound to a translated string.
+  > Asserted 24 Nov 2026 by `tests/components/iconButtonAccessibleNames.spec.js`: it reads the template AST of the four editors and requires every icon-only `NcButton` to bind a non-empty `t('buildiq', ...)` aria-label, and names the six buttons of this change (fails when one label is removed). A screen-reader pass is not needed for the assertion.
 - [x] 4.2 Visual regression check — `aria-label` is not rendered, so no screenshot diff is expected; confirm build/lint pass (`npm run lint`, `npm run build`).
