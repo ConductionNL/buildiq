@@ -2288,8 +2288,8 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 *
 	 * @return JSONResponse 201 with the new app; 400, 401, 403, 404 or 409 otherwise
 	 *
-	 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
-	 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-copying-an-app-has-the-gates-of-cloning-a-template-req-bqcp-002
+	 * @spec openspec/changes/archive/2026-11-24-apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+	 * @spec openspec/changes/archive/2026-11-24-apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-copying-an-app-has-the-gates-of-cloning-a-template-req-bqcp-002
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 3600)]
@@ -2346,7 +2346,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 *
 	 * @throws InvalidArgumentException When two schemas de-namespace to one slug.
 	 *
-	 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+	 * @spec openspec/changes/archive/2026-11-24-apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function captureForCopy(array $application): array {
