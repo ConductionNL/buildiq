@@ -146,6 +146,14 @@
 	},
 	{
 		"icon": "History",
+		"id": "app-change-history",
+		"label": "buildiq:Change history",
+		"onSelect": [
+			"changeHistoryOpen=true"
+		]
+	},
+	{
+		"icon": "History",
 		"id": "app-permission-history",
 		"label": "buildiq:Permission history",
 		"onSelect": [

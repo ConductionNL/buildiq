@@ -1803,6 +1803,40 @@ namespace OCA\OpenRegister\Db {
 		 * Stub AuditTrail entity — returned by AuditTrailMapper::createAuditTrailEntry.
 		 */
 		class AuditTrail extends \OCP\AppFramework\Db\Entity {
+			/**
+			 * The uuid of the object the row is about.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $objectUuid = null;
+
+			/**
+			 * The action (create, update, delete, read, or a named event).
+			 *
+			 * @var string|null
+			 */
+			protected ?string $action = null;
+
+			/**
+			 * The user id.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $user = null;
+
+			/**
+			 * The user's display name.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $userName = null;
+
+			/**
+			 * When the row was written.
+			 *
+			 * @var \DateTime|null
+			 */
+			protected ?\DateTime $created = null;
 		}//end class
 	}
 
@@ -1824,6 +1858,27 @@ namespace OCA\OpenRegister\Db {
 			public function recordObjectEvent(\OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent $event): AuditTrail {
 				return new AuditTrail();
 			}//end recordObjectEvent()
+
+			/**
+			 * Audit rows matching the filters, in the given order (the real signature).
+			 *
+			 * @param int|null                  $limit   The most rows.
+			 * @param int|null                  $offset  Rows to skip.
+			 * @param array<string,mixed>|null  $filters Filters keyed by column (e.g. `object_uuid`).
+			 * @param array<string,string>|null $sort    Sort keyed by column.
+			 * @param string|null               $search  A search on the changed field.
+			 *
+			 * @return array<int,AuditTrail>
+			 */
+			public function findAll(
+				int|null $limit=null,
+				int|null $offset=null,
+				array|null $filters=[],
+				array|null $sort=['created' => 'DESC'],
+				string|null $search=null,
+			): array {
+				return [];
+			}//end findAll()
 
 			/**
 			 * @param array<int> $schemaIds Schema IDs to aggregate over.

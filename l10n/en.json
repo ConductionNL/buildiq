@@ -3043,7 +3043,20 @@
         "The app this version extends could not be loaded, so it cannot be saved now: {error}": "The app this version extends could not be loaded, so it cannot be saved now: {error}",
         "Journeys": "Journeys",
         "New journey": "New journey",
-        "Journey designer": "Journey designer"
+        "Journey designer": "Journey designer",
+        "Change history": "Change history",
+        "Loading change history…": "Loading change history…",
+        "No changes recorded": "No changes recorded",
+        "Saves of the app and its versions will appear here.": "Saves of the app and its versions will appear here.",
+        "Who": "Who",
+        "What changed": "What changed",
+        "deleted": "deleted",
+        "rolled back": "rolled back",
+        "saved": "saved",
+        "Version {version} {verb}": "Version {version} {verb}",
+        "App settings {verb}": "App settings {verb}",
+        "You need a role on this app to see its change history.": "You need a role on this app to see its change history.",
+        "The change history could not be loaded.": "The change history could not be loaded."
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"
