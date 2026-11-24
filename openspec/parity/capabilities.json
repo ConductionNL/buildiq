@@ -692,7 +692,7 @@
 			"overlay": "nldesign-theme-selection",
 			"specs": [
 				"nldesign-theme-selection",
-				"openbuild-nc-color-variables"
+				"frontend-foundation"
 			]
 		},
 		{
@@ -7943,7 +7943,7 @@
 				"reachedOn": "any built app or builder screen, following the Nextcloud account's dark mode setting",
 				"owner": "nextcloud/server",
 				"change": "openbuild-nc-color-variables",
-				"requirement": "openspec/changes/openbuild-nc-color-variables/specs/frontend-foundation :: Built apps follow the user's dark mode"
+				"requirement": "openspec/changes/archive/2026-11-24-openbuild-nc-color-variables/specs/frontend-foundation :: Built apps follow the user's dark mode"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",

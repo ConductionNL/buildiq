@@ -11,7 +11,7 @@
  * colour outside a `var()` fallback, which is exactly what would keep a page area
  * light (or its text dark) under the dark theme.
  *
- * @spec openspec/changes/openbuild-nc-color-variables/specs/frontend-foundation/spec.md
+ * @spec openspec/changes/archive/2026-11-24-openbuild-nc-color-variables/specs/frontend-foundation/spec.md
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
