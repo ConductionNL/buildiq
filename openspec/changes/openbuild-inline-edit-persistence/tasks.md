@@ -63,10 +63,12 @@
 
 ## 6. Tests
 
-- [ ] 6.1 Newman: `app-overrides` collection — PUT valid delta (`2xx` + `updatedBy` recorded); GET returns the stored delta; GET with no override returns an empty delta; DELETE clears (subsequent GET empty); anonymous PUT rejected; malformed body `422`; app-blanking delta `422`.
+- [x] 6.1 Newman: `app-overrides` collection — PUT valid delta (`2xx` + `updatedBy` recorded); GET returns the stored delta; GET with no override returns an empty delta; DELETE clears (subsequent GET empty); anonymous PUT rejected; malformed body `422`; app-blanking delta `422`.
+  > Written 24 Nov, runs in nightly (not yet verified on a live instance): `tests/integration/buildiq-app-overrides.postman_collection.json` requests 2 to 11 on a fresh fleet app id: empty delta before, PUT records `updatedBy`, GET and `?scope=admin` return it, a malformed (`$op` marker) and an app-blanking (`pages: []`) delta are 422, an anonymous PUT (via `noAuthBase`) is 401 and leaves the delta, DELETE clears and the next GET is empty.
 - [x] 6.2 PHPUnit: `AppOverrideController` auth posture (anonymous → reject; out-of-scope → `403`; in-scope → allow) and the `Capabilities` `canEdit` matrix.
   > Audited 21 Nov: PHPUnit `AppOverrideControllerTest` and `AppOverrideControllerOutcomesTest` (auth posture per endpoint) and `CapabilitiesTest` (the `canEdit` matrix).
-- [ ] 6.3 Capability/availability: integration check that the capabilities document carries `buildiq.enabled` + boolean `buildiq.canEdit`.
+- [x] 6.3 Capability/availability: integration check that the capabilities document carries `buildiq.enabled` + boolean `buildiq.canEdit`.
+  > Written 24 Nov, runs in nightly (not yet verified on a live instance): request 1 of the same collection reads `/ocs/v2.php/cloud/capabilities` and asserts `buildiq.enabled === true` and a boolean `buildiq.canEdit`.
 
 ## 7. Verify
 
