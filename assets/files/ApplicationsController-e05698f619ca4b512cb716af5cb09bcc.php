@@ -718,7 +718,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 *
 	 * @return array<mixed>|null The stored manifest, or null when there is none.
 	 *
-	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+	 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
 	 */
 	private function storedManifest(string $slug, array $applicationArray): ?array {
 		$stored = $this->manifestResolver->resolve(appSlug: $slug, versionSlug: null, caller: $this->userSession->getUser());
@@ -739,7 +739,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 *
 	 * @return JSONResponse|null The 403, or null when the save may proceed.
 	 *
-	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+	 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
 	 */
 	private function refuseCodeSave(string $slug, array $applicationArray, array $manifest): JSONResponse|null {
 		$storedManifest = $this->storedManifest(slug: $slug, applicationArray: $applicationArray);
@@ -762,7 +762,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 *
 	 * @return JSONResponse|null The 403, or null when the save may proceed.
 	 *
-	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+	 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
 	 */
 	private function refuseCodeChange(array $applicationArray): JSONResponse|null {
 		if ($this->appConfig?->getValueBool(AppIdentity::APP_ID, PageCodeGuard::SETTING, false) !== true) {
