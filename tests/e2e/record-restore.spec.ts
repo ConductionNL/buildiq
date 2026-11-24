@@ -37,7 +37,7 @@
  *
  * The fixture app is removed, data included, in afterAll.
  *
- * @spec openspec/changes/data-restore-record-version/specs/record-history-restore/spec.md
+ * @spec openspec/changes/archive/2026-11-24-data-restore-record-version/specs/record-history-restore/spec.md
  * @e2e record-history-restore/requirement-a-maker-shows-the-record-history-on-a-detail-page-req-bqrr-001/a-maker-adds-the-history-tab-to-the-permit-page
  * @e2e record-history-restore/requirement-restore-is-the-maker-s-choice-and-off-by-default-req-bqrr-002/a-maker-lets-users-restore-permits
  * @e2e record-history-restore/requirement-an-app-user-restores-a-record-to-an-earlier-state-req-bqrr-003/a-case-handler-undoes-a-wrong-status-change

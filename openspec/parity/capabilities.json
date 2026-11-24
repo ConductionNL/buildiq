@@ -465,7 +465,7 @@
 			"specs": [
 				"data-index-grid-and-saved-views",
 				"page-editor-coverage",
-				"data-restore-record-version"
+				"record-history-restore"
 			]
 		},
 		{
@@ -2254,7 +2254,7 @@
 				"owner": "ConductionNL/nextcloud-vue",
 				"spec": "openspec/specs/openbuild-page-designer",
 				"requirement": [
-					"openspec/changes/data-restore-record-version/specs/record-history-restore :: A maker shows the record history on a detail page (REQ-BQRR-001)",
+					"openspec/changes/archive/2026-11-24-data-restore-record-version/specs/record-history-restore :: A maker shows the record history on a detail page (REQ-BQRR-001)",
 					"nextcloud-vue:openspec/specs/version-diff-viewer :: CnVersionHistory lists version/audit history newest-first with OpenRegister pagination"
 				]
 			},
@@ -2283,19 +2283,19 @@
 			"area": "data",
 			"name": "Restore a record to an earlier state.",
 			"source": "competitor",
-			"buildiq": "no",
+			"buildiq": "yes",
 			"nocobase": "no",
 			"budibase": "no",
 			"appsmith": "no",
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "specified",
-				"evidence": "searched: grep -rni 'restore|revert|rollback' src/ lib/ -> every hit is about ApplicationVersion rollback (ApplicationVersionsTab.vue), theme preview revert (ThemePickerDialog.vue), or Copilot manifest-snapshot rollback (CopilotService.php), none about restoring a data RECORD's earlier state. nextcloud-vue's CnAuditTrailTab.vue (the record history viewer) has no restore/revert action in its template (grep -i 'restore|revert' on that file returned nothing)",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-24-data-restore-record-version: DetailPageEditor's \"Record history\" section adds the history tab with an audit widget and its \"Let users restore an earlier version\" switch writes allowRestore (Vitest tests/components/page-editor/DetailPageEditor.spec.js); nextcloud-vue's CnAuditTrailTab (change audit-trail-restore-version, in the pinned ^2.203.0) shows \"Restore this version\" on an expanded entry, confirms, calls OpenRegister's revert route with auditTrailId and reloads; OpenRegister's RevertHandler validates the restored state against the current schema. Playwright tests/e2e/record-restore.spec.ts is written and runs in the nightly. Before: searched: grep -rni 'restore|revert|rollback' src/ lib/ -> every hit is about ApplicationVersion rollback (ApplicationVersionsTab.vue), theme preview revert (ThemePickerDialog.vue), or Copilot manifest-snapshot rollback (CopilotService.php), none about restoring a data RECORD's earlier state. nextcloud-vue's CnAuditTrailTab.vue (the record history viewer) has no restore/revert action in its template (grep -i 'restore|revert' on that file returned nothing)",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/data-restore-record-version (OpenSpec pass 2026-09-27).",
+				"note": "Specified in openspec/changes/archive/2026-11-24-data-restore-record-version (OpenSpec pass 2026-09-27).",
 				"change": "data-restore-record-version",
-				"requirement": "openspec/changes/data-restore-record-version/specs/record-history-restore :: An app user restores a record to an earlier state (REQ-BQRR-003)"
+				"requirement": "openspec/changes/archive/2026-11-24-data-restore-record-version/specs/record-history-restore :: An app user restores a record to an earlier state (REQ-BQRR-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
