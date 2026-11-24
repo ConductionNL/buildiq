@@ -1098,6 +1098,8 @@ OC.L10N.register(
         "Settings saved successfully": "Settings saved successfully",
         "Setup steps": "Setup steps",
         "Setup wizard": "Setup wizard",
+        "Connect a shared template catalogue in the Buildiq setup.": "Connect a shared template catalogue in the Buildiq setup.",
+        "Open the setup": "Open the setup",
         "Shared · {label}": "Shared · {label}",
         "Shared, non-versioned OpenRegister registers this app binds to alongside its own per-version register (e.g. a dataset fed by OpenConnector). Not owned by this app — promotion and export treat them as reference-only.": "Shared, non-versioned OpenRegister registers this app binds to alongside its own per-version register (e.g. a dataset fed by OpenConnector). Not owned by this app — promotion and export treat them as reference-only.",
         "Show": "Show",

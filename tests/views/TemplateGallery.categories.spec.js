@@ -456,4 +456,36 @@ describe('TemplateGallery: the shared catalogue section (REQ-BQRS-001, REQ-BQRS-
 
 		expect(wrapper.find('[data-testid="shared-catalogue"]').exists()).toBe(false)
 	})
+
+	describe('REQ-BQRS-005: an admin without a catalogue is pointed to the setup', () => {
+		const asAdmin = (admin) => {
+			window.OC = { ...(window.OC || {}), isUserAdmin: () => admin }
+		}
+
+		it('shows an admin the note, and its button opens the setup at the store step', async () => {
+			asAdmin(true)
+			storeResponse = { outcome: 'not_configured', cards: [] }
+			const { wrapper, $router } = await mountGallery({ tab: 'x' })
+			const note = wrapper.find('[data-testid="catalogue-setup-note"]')
+			expect(note.exists()).toBe(true)
+			expect(note.text()).toContain('Connect a shared template catalogue in the Buildiq setup.')
+			await wrapper.find('[data-testid="catalogue-setup-open"]').trigger('click')
+			expect($router.push).toHaveBeenCalledWith({ query: { tab: 'x', setup: 'store' } })
+		})
+
+		it('shows a non-admin no note', async () => {
+			asAdmin(false)
+			storeResponse = { outcome: 'not_configured', cards: [] }
+			const { wrapper } = await mountGallery()
+			expect(wrapper.find('[data-testid="catalogue-setup-note"]').exists()).toBe(false)
+		})
+
+		it('shows no note once a catalogue is configured', async () => {
+			asAdmin(true)
+			storeResponse = { outcome: 'ok', source: 'store.example.nl', cards: [] }
+			const { wrapper } = await mountGallery()
+			expect(wrapper.find('[data-testid="catalogue-setup-note"]').exists()).toBe(false)
+			storeResponse = { outcome: 'not_configured', cards: [] }
+		})
+	})
 })
