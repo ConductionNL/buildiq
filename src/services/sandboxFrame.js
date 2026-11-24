@@ -8,7 +8,7 @@
  * the evaluator (`GET /apps/buildiq/sandbox/evaluator`). Both are framed with
  * `sandbox="allow-scripts"` and served under a policy with no network.
  *
- * @spec openspec/changes/pages-custom-code/tasks.md#t07
+ * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
  */
 
 import { generateUrl } from '@nextcloud/router'
@@ -31,7 +31,7 @@ function isPlainObject(value) {
  *
  * @param {'preview'|'evaluator'} name - which document.
  * @return {string}
- * @spec openspec/changes/pages-custom-code/tasks.md#t07
+ * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
  */
 export function sandboxDocumentUrl(name) {
 	return generateUrl(`/apps/buildiq/sandbox/${name}`)
@@ -43,7 +43,7 @@ export function sandboxDocumentUrl(name) {
  *
  * @param {object} manifest - the manifest under edit.
  * @return {Array<{key: string, pageId: string, id: string, label: string, code: object}>}
- * @spec openspec/changes/pages-custom-code/tasks.md#t07
+ * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
  */
 export function codeComponentsOf(manifest) {
 	return pageConfigsOf(manifest).flatMap(({ page, config, pIndex }) => {
@@ -112,7 +112,7 @@ function hasCodeConfig(widget) {
  *
  * @param {object} manifest - the manifest under edit.
  * @return {Array<{key: string, expression: string}>}
- * @spec openspec/changes/pages-custom-code/tasks.md#t07
+ * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
  */
 export function expressionsOf(manifest) {
 	const found = pageConfigsOf(manifest).flatMap(({ config, pIndex }) => {
@@ -147,7 +147,7 @@ function fieldExpressionsOf(field, path) {
  * @param {object} code - the code block.
  * @param {{id: string, name: string}} user - the signed-in user.
  * @return {object}
- * @spec openspec/changes/pages-custom-code/tasks.md#t07
+ * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
  */
 export function previewInputs(code, user) {
 	const samples = { object: {}, rows: [], route: {}, user }
@@ -186,7 +186,7 @@ function isEvaluatedFrom(event, source) {
  * @param {number} [options.timeout] - milliseconds before a batch times out.
  * @param {Window} [options.host] - the window that receives the answers.
  * @return {{evaluate: (items: Array<object>, scope: object) => Promise<object>, dispose: () => void}}
- * @spec openspec/changes/pages-custom-code/tasks.md#t07
+ * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
  */
 export function createEvaluatorClient(frameWindow, { timeout = EVALUATE_TIMEOUT_MS, host = window } = {}) {
 	const pending = new Map()
@@ -211,7 +211,7 @@ export function createEvaluatorClient(frameWindow, { timeout = EVALUATE_TIMEOUT_
 		 * @param {Array<{key: string, expression: string}>} items - the expressions.
 		 * @param {object} scope - `{row, values, user, route}`.
 		 * @return {Promise<object>} the results by key.
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
 		 */
 		evaluate(items, scope) {
 			const target = frameWindow()
@@ -236,7 +236,7 @@ export function createEvaluatorClient(frameWindow, { timeout = EVALUATE_TIMEOUT_
 
 		/** Stop listening and drop unanswered batches. */
 		/**
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
 		 */
 		dispose() {
 			host.removeEventListener('message', onMessage)

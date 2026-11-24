@@ -6,7 +6,7 @@
   - submission may hold (at most 25). The field is stored as the sub-objects
   - widget; a repeating journey write names its key.
   -
-  - @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
+  - @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
   -->
 <template>
 	<div class="product-list-settings">
@@ -58,7 +58,7 @@ export default {
 		/**
 		 * @return {object} The field with its settings filled in.
 		 *
-		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
+		 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
 		 */
 		current() {
 			return productListField(this.field)
@@ -67,7 +67,7 @@ export default {
 		/**
 		 * @return {Array<string>} The products of the first column.
 		 *
-		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
+		 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
 		 */
 		products() {
 			return this.current.columns[0].options
@@ -76,7 +76,7 @@ export default {
 		/**
 		 * @return {Array<string>} The detail column keys.
 		 *
-		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
+		 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
 		 */
 		details() {
 			return this.current.columns.slice(1).map((col) => col.key)
@@ -85,7 +85,7 @@ export default {
 		/**
 		 * @return {number} The most rows a product list may hold.
 		 *
-		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
+		 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
 		 */
 		maxAllowed() {
 			return PRODUCT_LIST_MAX_ITEMS
@@ -98,7 +98,7 @@ export default {
 		 *
 		 * @param {string} text - the input.
 		 * @return {Array<string>}
-		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
+		 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
 		 */
 		split(text) {
 			return String(text).split(',').map((part) => part.trim()).filter((part) => part !== '')
@@ -108,7 +108,7 @@ export default {
 		 * Emit the field with changed settings.
 		 *
 		 * @param {object} patch - `products`, `details` or `maxItems`.
-		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
+		 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
 		 */
 		emitWith(patch) {
 			this.$emit('update', productListField(this.field, patch))

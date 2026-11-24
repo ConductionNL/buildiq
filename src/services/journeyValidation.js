@@ -137,7 +137,7 @@ export function fieldsAskedBy(journey, forms, index) {
  * @param {{[id: string]: object}} forms - the form objects by id.
  * @param {number} index - the position of the write's step.
  * @return {Array<{key: string, columns: Array<string>}>} The list answers, each once.
- * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
+ * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
  */
 export function listFieldsAskedBy(journey, forms, index) {
 	const lists = []
@@ -363,8 +363,8 @@ function itemValuesOf(field, itemField) {
  * @param {{steps?: Array<object>}} journey - the journey.
  * @param {{[id: string]: object}} forms - the form objects by id.
  * @return {Array<object>} The findings.
- * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
- * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
+ * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
+ * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
  */
 export function repeatFindings(journey, forms) {
 	const steps = journeySteps(journey)

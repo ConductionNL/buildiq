@@ -9,7 +9,7 @@
  * warns when a product starts none. A warning, never a refusal: a target may
  * start its process another way.
  *
- * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
+ * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
  */
 
 import axios from '@nextcloud/axios'
@@ -54,7 +54,7 @@ function names(value, wanted) {
  * @param {Array<object>} flows - the flows from OpenRegister.
  * @param {{register?: string, schema?: string}} target - the product's target.
  * @return {Array<object>} The matching flows.
- * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
+ * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
  */
 export function creationFlowsFor(flows, target) {
 	const schema = String((target && target.schema) || '')
@@ -75,7 +75,7 @@ export function creationFlowsFor(flows, target) {
  *
  * @param {object} [client] - axios-compatible client (tests inject one).
  * @return {Promise<Array<object>>} The flows.
- * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
+ * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
  */
 export async function loadFlows(client = axios) {
 	const { data } = await client.get(generateUrl('/apps/openregister/api/flows'))

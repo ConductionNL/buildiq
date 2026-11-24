@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-maker-code-runs-only-in-the-sandbox-req-bqcc-003
+ * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-maker-code-runs-only-in-the-sandbox-req-bqcc-003
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use OCP\IUserSession;
 /**
  * The sandbox documents for code components and expressions (design D2).
  *
- * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-maker-code-runs-only-in-the-sandbox-req-bqcc-003
+ * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-maker-code-runs-only-in-the-sandbox-req-bqcc-003
  */
 class SandboxController extends Controller {
 	/**
@@ -196,7 +196,7 @@ JS;
 	 *
 	 * @return DataDisplayResponse The document.
 	 *
-	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-maker-code-runs-only-in-the-sandbox-req-bqcc-003
+	 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-maker-code-runs-only-in-the-sandbox-req-bqcc-003
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -231,7 +231,7 @@ JS;
 	 *
 	 * @return DataDisplayResponse The document.
 	 *
-	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-maker-code-runs-only-in-the-sandbox-req-bqcc-003
+	 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-maker-code-runs-only-in-the-sandbox-req-bqcc-003
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -258,7 +258,7 @@ JS;
 	 *
 	 * @return DataDisplayResponse The document.
 	 *
-	 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+	 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -473,7 +473,7 @@ JS;
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-maker-code-runs-only-in-the-sandbox-req-bqcc-003
+	 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-maker-code-runs-only-in-the-sandbox-req-bqcc-003
 	 */
 	public static function sandboxedPolicy(string $policy): string {
 		$policy = rtrim(trim($policy), ';');

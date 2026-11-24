@@ -43,7 +43,7 @@
  * NOTE: Playwright binaries are NOT installed by `npm install`. Run
  * `npm run test:e2e:install` once before invoking `npm run test:e2e`.
  *
- * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md
+ * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md
  * @e2e form-device-fields/requirement-forms-offer-signature-audio-and-location-fields-req-bqsa-001/a-maker-adds-a-signature-to-an-inspection-form
  * @e2e form-device-fields/requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004/an-app-without-audio-does-not-get-the-microphone
  * @e2e form-device-fields/requirement-forms-offer-signature-audio-and-location-fields-req-bqsa-001/a-user-records-a-spoken-note-in-a-form

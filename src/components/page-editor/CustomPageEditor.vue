@@ -158,7 +158,7 @@ export default {
 		 * maker's own code (`config.code`).
 		 *
 		 * @return {string} `component` or `code`.
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t04
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t04
 		 */
 		mode() {
 			return this.config && this.config.code !== undefined ? 'code' : 'component'
@@ -238,7 +238,7 @@ export default {
 		 * `stash`, and the keys of the mode chosen come back from it.
 		 *
 		 * @param {string} mode - `component` or `code`.
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t04
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t04
 		 */
 		setMode(mode) {
 			if (mode === this.mode) {

@@ -5,7 +5,7 @@
  * The properties a device field writes, and which of them a target schema
  * still lacks (forms-signature-audio-and-location, REQ-BQSA-002).
  *
- * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+ * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
  */
 import { describe, expect, it } from 'vitest'
 import { deviceFieldTargets, missingDeviceTargets } from '../../src/services/deviceFields.js'

@@ -169,7 +169,7 @@ export default {
 		 * Whether the current `visibleWhen` is an fx expression (REQ-BQCC-002).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t05
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t05
 		 */
 		isExpression() {
 			return !!(
@@ -183,7 +183,7 @@ export default {
 		 * The currently-picked sibling field key, or '' (no condition).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t05
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t05
 		 */
 		currentField() {
 			if (
@@ -260,7 +260,7 @@ export default {
 		 * Switch to an fx expression, starting empty (REQ-BQCC-002).
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t05
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t05
 		 */
 		startExpression() {
 			this.$emit('update:modelValue', { expression: '' })
@@ -271,7 +271,7 @@ export default {
 		 *
 		 * @param {string} value - the typed expression.
 		 * @return {void}
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t05
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t05
 		 */
 		onExpressionInput(value) {
 			this.$emit('update:modelValue', { expression: value })

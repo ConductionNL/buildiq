@@ -260,7 +260,7 @@ export default {
 		 * The parts of one target, besides its product value.
 		 *
 		 * @return {Array<{key: string, label: string}>}
-		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
 		 */
 		targetParts() {
 			return [
@@ -277,7 +277,7 @@ export default {
 		 *
 		 * @param {object} write - the write.
 		 * @return {Array<string>}
-		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
 		 */
 		itemFieldsOf(write) {
 			const list = this.listFields.find((l) => l.key === (write && write.forEach))
@@ -290,7 +290,7 @@ export default {
 		 *
 		 * @param {number} index - the write's position.
 		 * @param {string} key - the list answer, or '' to write once.
-		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
 		 */
 		setForEach(index, key) {
 			if (key === '') {
@@ -309,7 +309,7 @@ export default {
 		 *
 		 * @param {number} index - the write's position.
 		 * @param {boolean} on - whether it is the bundle.
-		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
+		 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
 		 */
 		setBundle(index, on) {
 			this.$emit('update:modelValue', this.localWrites.map((write, i) => {
@@ -325,7 +325,7 @@ export default {
 		 *
 		 * @param {object} write - the write.
 		 * @return {Array<object>}
-		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
 		 */
 		targetRows(write) {
 			const targets = write && write.targets && typeof write.targets === 'object' ? write.targets : {}
@@ -353,7 +353,7 @@ export default {
 		 * @param {number} index - the write's position.
 		 * @param {string} value - the product value.
 		 * @param {object} patch - `register`, `schema` or `typeValue`.
-		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
 		 */
 		setTarget(index, value, patch) {
 			const targets = { ...(this.localWrites[index].targets || {}) }
@@ -367,7 +367,7 @@ export default {
 		 * @param {number} index - the write's position.
 		 * @param {string} from - the old value.
 		 * @param {string} to - the new value.
-		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
 		 */
 		renameTarget(index, from, to) {
 			const targets = {}
@@ -381,7 +381,7 @@ export default {
 		 * Add an empty target.
 		 *
 		 * @param {number} index - the write's position.
-		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
 		 */
 		addTarget(index) {
 			const targets = this.localWrites[index].targets || {}
@@ -397,7 +397,7 @@ export default {
 		 *
 		 * @param {number} index - the write's position.
 		 * @param {string} value - the product value.
-		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
 		 */
 		removeTarget(index, value) {
 			const { [value]: removed, ...targets } = this.localWrites[index].targets || {}
@@ -409,7 +409,7 @@ export default {
 		 *
 		 * @param {object} target - the target row.
 		 * @return {Array<object>}
-		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
+		 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
 		 */
 		creationFlowsOf(target) {
 			return creationFlowsFor(this.flows, target)
@@ -420,7 +420,7 @@ export default {
 		 *
 		 * @param {object} flow - the flow.
 		 * @return {string}
-		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
+		 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
 		 */
 		flowName(flow) {
 			return String(flow.name || flow.title || flow.id || '')

@@ -164,7 +164,7 @@ export default {
 		 * The list answers a write on the selected step may repeat over.
 		 *
 		 * @return {Array<{key: string, columns: Array<string>}>}
-		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
 		 */
 		listFieldsHere() {
 			return this.selectedIndex >= 0 ? listFieldsAskedBy(this.journey, this.forms, this.selectedIndex) : []
@@ -206,7 +206,7 @@ export default {
 	/**
 	 * Load the journey, then read the flows its targets start.
 	 *
-	 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
+	 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
 	 */
 	async created() {
 		await this.load()
@@ -219,7 +219,7 @@ export default {
 		 * whether it starts a process. Unreadable flows leave no warning at
 		 * all rather than a wrong one.
 		 *
-		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
+		 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
 		 */
 		async loadCreationFlows() {
 			try {

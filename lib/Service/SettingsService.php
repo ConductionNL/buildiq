@@ -298,7 +298,7 @@ class SettingsService implements SettingsServiceInterface {
 	 *
 	 * @return list<string> The key written, or none.
 	 *
-	 * @spec openspec/changes/pages-custom-code/tasks.md#t01
+	 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t01
 	 */
 	private function writePageCodeSetting(array $data): array {
 		if (array_key_exists(PageCodeGuard::SETTING, $data) === false) {
@@ -346,7 +346,7 @@ class SettingsService implements SettingsServiceInterface {
 	 *
 	 * @return bool True when the value means on.
 	 *
-	 * @spec openspec/changes/pages-custom-code/tasks.md#t01
+	 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t01
 	 */
 	private function isOn(mixed $value): bool {
 		if (is_bool($value) === true) {

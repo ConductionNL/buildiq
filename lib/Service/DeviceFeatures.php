@@ -24,7 +24,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+ * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use OCP\AppFramework\Http\FeaturePolicy;
 /**
  * Derives a manifest's device features and the feature policy they need.
  *
- * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+ * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
  */
 class DeviceFeatures implements DeviceFeaturesInterface {
 
@@ -88,7 +88,7 @@ class DeviceFeatures implements DeviceFeaturesInterface {
 	 *
 	 * @return array<int,string>
 	 *
-	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
 	#[\Override]
 	public function fromManifest(mixed $manifest): array {
@@ -107,7 +107,7 @@ class DeviceFeatures implements DeviceFeaturesInterface {
 	 *
 	 * @return array<int,string>
 	 *
-	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
 	#[\Override]
 	public function normalise(mixed $features): array {
@@ -125,7 +125,7 @@ class DeviceFeatures implements DeviceFeaturesInterface {
 	 *
 	 * @return FeaturePolicy|null Null leaves Nextcloud's default policy unchanged.
 	 *
-	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
 	#[\Override]
 	public function policyFor(array $features): ?FeaturePolicy {
@@ -149,7 +149,7 @@ class DeviceFeatures implements DeviceFeaturesInterface {
 	 *
 	 * @return array<int,string> Unsorted, possibly repeated.
 	 *
-	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
 	private function featuresOfPage(array $page): array {
 		$config = ($page['config'] ?? null);
@@ -181,7 +181,7 @@ class DeviceFeatures implements DeviceFeaturesInterface {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/pages-qr-and-barcodes/tasks.md#task-T05
+	 * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/tasks.md#task-T05
 	 */
 	private function scans(array $page, array $config): bool {
 		if (($page['type'] ?? '') === 'index' && is_array($config['scan'] ?? null) === true && $config['scan'] !== []) {
@@ -198,7 +198,7 @@ class DeviceFeatures implements DeviceFeaturesInterface {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/pages-qr-and-barcodes/tasks.md#task-T05
+	 * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/tasks.md#task-T05
 	 */
 	private function hasScanField(array $node): bool {
 		if (($node['type'] ?? null) === 'scan' && (array_key_exists('key', $node) === true || array_key_exists('name', $node) === true)) {
@@ -221,7 +221,7 @@ class DeviceFeatures implements DeviceFeaturesInterface {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
 	private function featureOfField(mixed $field): ?string {
 		if (is_array($field) === false || is_string($field['type'] ?? null) === false) {

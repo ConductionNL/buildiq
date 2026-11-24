@@ -732,7 +732,7 @@ export default {
 		 * @param {{schema: object, additions: object}} request - from the field builder.
 		 * @param {object} [client] - axios-compatible client (tests inject one).
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
 		 */
 		async addTargetProperties(request, client) {
 			const schema = request && request.schema

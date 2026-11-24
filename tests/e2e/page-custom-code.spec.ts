@@ -179,8 +179,8 @@ test.describe('pages-custom-code: code on pages', () => {
 	})
 
 	test('REQ-BQCC-001, REQ-BQCC-002: an owner adds a code widget and a computed column', async ({ page }) => {
-		// @e2e openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
-		// @e2e openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
+		// @e2e openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
+		// @e2e openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
 		await loginAs(page, OWNER_USER, OWNER_PASS)
 
 		const saved = await saveCode(page, CODE)
@@ -193,7 +193,7 @@ test.describe('pages-custom-code: code on pages', () => {
 	})
 
 	test('REQ-BQCC-003: the code runs in its sandbox document, and a request to the API is blocked', async ({ page }) => {
-		// @e2e openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-maker-code-runs-only-in-the-sandbox-req-bqcc-003
+		// @e2e openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-maker-code-runs-only-in-the-sandbox-req-bqcc-003
 		await loginAs(page, OWNER_USER, OWNER_PASS)
 		const saved = await saveCode(page, CODE)
 		expect(saved.status).toBeLessThan(300)
@@ -210,7 +210,7 @@ test.describe('pages-custom-code: code on pages', () => {
 	})
 
 	test('REQ-BQCC-005: an editor who is not an owner is refused', async ({ page }) => {
-		// @e2e openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+		// @e2e openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
 		await loginAs(page, EDITOR_USER, EDITOR_PASS)
 
 		const saved = await saveCode(page, { ...CODE, js: "document.body.textContent = 'editor';" })
@@ -220,7 +220,7 @@ test.describe('pages-custom-code: code on pages', () => {
 	})
 
 	test('REQ-BQCC-005: with the instance setting off, even an owner is refused', async ({ browser, page }) => {
-		// @e2e openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+		// @e2e openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
 		await setPageCode(browser, false)
 		try {
 			await loginAs(page, OWNER_USER, OWNER_PASS)

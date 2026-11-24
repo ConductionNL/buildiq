@@ -46,7 +46,7 @@ interface DeviceFeaturesInterface {
 	 *
 	 * @return array<int,string>
 	 *
-	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
 	public function fromManifest(mixed $manifest): array;
 
@@ -57,7 +57,7 @@ interface DeviceFeaturesInterface {
 	 *
 	 * @return array<int,string>
 	 *
-	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
 	public function normalise(mixed $features): array;
 
@@ -68,7 +68,7 @@ interface DeviceFeaturesInterface {
 	 *
 	 * @return FeaturePolicy|null Null leaves Nextcloud's default policy unchanged.
 	 *
-	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
 	public function policyFor(array $features): ?FeaturePolicy;
 }//end interface

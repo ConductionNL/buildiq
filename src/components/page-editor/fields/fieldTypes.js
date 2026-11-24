@@ -225,7 +225,7 @@ export const PRODUCT_LIST_MAX_ITEMS = 25
  * @param {object} field - the field as stored, possibly without settings yet.
  * @param {{products?: Array<string>, details?: Array<string>, maxItems?: number|string}} [patch] - changed settings.
  * @return {object} The field.
- * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
+ * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
  */
 export function productListField(field, patch = {}) {
 	const columns = Array.isArray(field.columns) ? field.columns : []

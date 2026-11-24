@@ -212,7 +212,7 @@ class ManifestFormDestinations implements ManifestFormDestinationsInterface {
 	 *
 	 * @return array<int, array<string, mixed>> The mapping entries.
 	 *
-	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+	 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
 	 */
 	private function locationEntries(array $field): array {
 		$key = trim((string)($field['key'] ?? ''));

@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+ * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ namespace OCA\Buildiq\Service;
  *
  * Pure: it reads arrays and returns arrays.
  *
- * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+ * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
  */
 final class PageCodeGuard {
 
@@ -59,7 +59,7 @@ final class PageCodeGuard {
 	 *
 	 * @return array<string, string> Path to value.
 	 *
-	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+	 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
 	 */
 	public function codeKeys(array $manifest): array {
 		$found = $this->collect(value: $manifest, place: ['path' => '', 'parent' => '']);
@@ -75,7 +75,7 @@ final class PageCodeGuard {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+	 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
 	 */
 	public function changesCode(?array $before, array $after): bool {
 		return $this->codeKeys(manifest: ($before ?? [])) !== $this->codeKeys(manifest: $after);
@@ -88,7 +88,7 @@ final class PageCodeGuard {
 	 *
 	 * @return array{0: array<mixed>, 1: list<string>}
 	 *
-	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+	 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
 	 */
 	public function stripConfig(array $config): array {
 		return $this->strip(value: $config, place: ['path' => 'config', 'parent' => 'config']);

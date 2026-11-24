@@ -228,7 +228,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return FeaturePolicy|null
 	 *
-	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
 	private function deviceFeaturePolicy(string $slug): ?FeaturePolicy {
 		if ($this->publishedApps === null || $this->deviceFeatures === null) {
@@ -258,7 +258,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return array<string,mixed>|null
 	 *
-	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
 	private function productionVersionOf(array $applications, string $slug): ?array {
 		foreach ($applications as $application) {
@@ -277,7 +277,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return array<int,string>
 	 *
-	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
 	private function deviceFeaturesOf(array $version): array {
 		if (array_key_exists('deviceFeatures', $version) === true) {

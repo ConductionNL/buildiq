@@ -16,9 +16,9 @@
  * manifest that references external schemas cannot be disproved and passes.
  * Errors are `<pointer>: <code>` strings for the inline marks.
  *
- * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001
- * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-forms-can-fill-a-field-from-a-scan-req-bqqr-002
- * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-detail-pages-can-show-a-code-req-bqqr-003
+ * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001
+ * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-forms-can-fill-a-field-from-a-scan-req-bqqr-002
+ * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-detail-pages-can-show-a-code-req-bqqr-003
  */
 import { schemaName } from './manifestSchemas.js'
 
@@ -280,7 +280,7 @@ function detailCodeErrors(widgets, pointer, properties) {
  * @param {object} manifest - the manifest.
  * @return {string[]} `<pointer>: <code>` errors; empty when there is nothing to say.
  *
- * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001
+ * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001
  */
 export function validatePageCodes(manifest) {
 	const pages = manifest && Array.isArray(manifest.pages) ? manifest.pages : []

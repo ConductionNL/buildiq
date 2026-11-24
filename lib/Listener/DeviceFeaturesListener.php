@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+ * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @template-implements IEventListener<Event>
  *
- * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+ * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
  */
 class DeviceFeaturesListener implements IEventListener {
 
@@ -52,7 +52,7 @@ class DeviceFeaturesListener implements IEventListener {
 	 * @param ObjectSchemaSlugResolverInterface $slugs    Tells an ApplicationVersion apart.
 	 * @param DeviceFeaturesInterface           $features Derives the features.
 	 *
-	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
 	public function __construct(
 		private readonly ObjectSchemaSlugResolverInterface $slugs,
@@ -67,7 +67,7 @@ class DeviceFeaturesListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
 	#[\Override]
 	public function handle(Event $event): void {
@@ -97,7 +97,7 @@ class DeviceFeaturesListener implements IEventListener {
 	 *
 	 * @return object
 	 *
-	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
 	private function entityOf(ObjectCreatingEvent|ObjectUpdatingEvent $event): object {
 		if ($event instanceof ObjectCreatingEvent) {
@@ -114,7 +114,7 @@ class DeviceFeaturesListener implements IEventListener {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
 	private function isApplicationVersion(object $entity): bool {
 		return $this->slugs->registerSlug(entity: $entity) === ObjectSchemaSlugResolverInterface::REGISTER_SLUG
