@@ -19,7 +19,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-import-an-app-from-a-file-req-bqic-006
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-import-an-app-from-a-file-req-bqic-006
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * `occ buildiq:app:import <file> --owner=<uid>`.
  *
- * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-import-an-app-from-a-file-req-bqic-006
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-import-an-app-from-a-file-req-bqic-006
  */
 class AppImport extends Command {
 	/**
@@ -60,7 +60,7 @@ class AppImport extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-import-an-app-from-a-file-req-bqic-006
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-import-an-app-from-a-file-req-bqic-006
 	 */
 	#[\Override]
 	protected function configure(): void {
@@ -81,7 +81,7 @@ class AppImport extends Command {
 	 *
 	 * @return int Command exit code: 0 on success, 1 for a refused package or slug, 2 for bad input.
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-import-an-app-from-a-file-req-bqic-006
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-import-an-app-from-a-file-req-bqic-006
 	 */
 	#[\Override]
 	protected function execute(InputInterface $input, OutputInterface $output): int {
@@ -163,7 +163,7 @@ class AppImport extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
 	 */
 	private static function reportRecords(array $records, OutputInterface $output): void {
 		foreach ((array)($records['schemas'] ?? []) as $line) {

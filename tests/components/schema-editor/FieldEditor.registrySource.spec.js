@@ -6,7 +6,7 @@
  * can take its value from a registry integriq publishes, written as
  * `x-openregister-property-source` (data-registry-backed-field-option).
  *
- * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md
+ * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md
  */
 
 import { mount } from '@vue/test-utils'

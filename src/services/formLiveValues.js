@@ -19,7 +19,7 @@
  * these values are its half of the change. This module is the buildiq half:
  * the client calls, the token resolution and a renderer-independent bridge.
  *
- * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md
+ * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md
  */
 
 import axios from '@nextcloud/axios'
@@ -43,7 +43,7 @@ export const LIVE_DELAY_MS = 400
  *
  * @return {Promise<Array<{slug: string, name: string, status: string}>>}
  *
- * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+ * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
  */
 export async function listRuleSets() {
 	const { data } = await axios.get(
@@ -73,7 +73,7 @@ export async function listRuleSets() {
  * @param {string} slug The rule set slug.
  * @return {Promise<{inputs: Array<object>, outputs: Array<object>}>}
  *
- * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+ * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
  */
 export async function ruleSetColumns(slug) {
 	const { data } = await axios.get(
@@ -94,7 +94,7 @@ export async function ruleSetColumns(slug) {
  * @param {object} payload The answers it reads.
  * @return {Promise<object>} The rule set's outputs.
  *
- * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-live-evaluation-leaves-no-log-trail-req-bqlv-004
+ * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-live-evaluation-leaves-no-log-trail-req-bqlv-004
  */
 export async function evaluatePreview(slug, payload) {
 	const { data } = await axios.post(
@@ -145,7 +145,7 @@ const TOKEN_RESOLVERS = Object.freeze({
  * @param {{user?: object, object?: object, now?: Date}} context What is known.
  * @return {*} The value to show, or undefined when it cannot be known.
  *
- * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
+ * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
  */
 export function resolveDefault(value, context = {}) {
 	if (!isToken(value)) {
@@ -199,7 +199,7 @@ function objectFieldValue(token, context) {
  * @param {object} result The rule set's outputs.
  * @return {string}
  *
- * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
+ * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
  */
 export function unmetExplanation(eligibility, result) {
 	const passWhen = (eligibility && eligibility.passWhen) || {}
@@ -250,8 +250,8 @@ function pick(answers, keys) {
  * @param {number} [options.delay] Debounce in ms.
  * @return {{answersChanged: Function, dispose: Function}}
  *
- * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
- * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
+ * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+ * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
  */
 export function createLiveValuesBridge(options) {
 	const state = bridgeState(options)
@@ -263,7 +263,7 @@ export function createLiveValuesBridge(options) {
 		 *
 		 * @param {object} answers All answers of the form.
 		 * @return {void}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 		 */
 		answersChanged(answers) {
 			state.pending = { ...(answers || {}) }
@@ -276,7 +276,7 @@ export function createLiveValuesBridge(options) {
 		 * Cancel a pending evaluation, when the form closes.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 		 */
 		dispose() {
 			if (state.timer !== null) {

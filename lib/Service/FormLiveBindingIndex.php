@@ -28,7 +28,7 @@
  *
  * @link https://buildiq.nl
  *
- * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
+ * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
  */
 
 declare(strict_types=1);
@@ -93,7 +93,7 @@ class FormLiveBindingIndex implements FormLiveBindingIndexInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
+	 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
 	 */
 	#[\Override]
 	public function reindexVersion(string $versionId, array $version): void {
@@ -126,7 +126,7 @@ class FormLiveBindingIndex implements FormLiveBindingIndexInterface {
 	 *
 	 * @return list<LiveBinding>
 	 *
-	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
+	 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
 	 */
 	#[\Override]
 	public function bindingsFor(array $registerKeys, array $schemaKeys): array {
@@ -151,7 +151,7 @@ class FormLiveBindingIndex implements FormLiveBindingIndexInterface {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
+	 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
 	 */
 	#[\Override]
 	public function isEmpty(): bool {
@@ -233,7 +233,7 @@ class FormLiveBindingIndex implements FormLiveBindingIndexInterface {
 	 *
 	 * @return array<string,string> The format per field key.
 	 *
-	 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiqs-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
+	 * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiqs-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
 	 */
 	private static function formats(array $fields): array {
 		$out = [];

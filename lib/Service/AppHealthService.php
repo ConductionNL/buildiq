@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md
+ * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use Throwable;
  * RBAC is off on both paths: the schema is admin-only, and the controller has
  * already applied the version's own rule (open it to post, see its insights to read).
  *
- * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md
+ * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md
  */
 class AppHealthService implements AppHealthServiceInterface {
 
@@ -73,7 +73,7 @@ class AppHealthService implements AppHealthServiceInterface {
 	 *
 	 * @return int How many samples were stored.
 	 *
-	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
+	 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
 	 */
 	#[\Override]
 	public function record(string $applicationUuid, string $versionUuid, mixed $pages): int {
@@ -106,7 +106,7 @@ class AppHealthService implements AppHealthServiceInterface {
 	 *
 	 * @return array<string, mixed>|null The aggregate, null for an unknown window.
 	 *
-	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
+	 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
 	 */
 	#[\Override]
 	public function computeHealth(string $applicationUuid, string $versionUuid, string $window, ?DateTimeImmutable $now = null): ?array {
@@ -154,7 +154,7 @@ class AppHealthService implements AppHealthServiceInterface {
 	 *
 	 * @return array<string, mixed> The data.
 	 *
-	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
+	 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	#[\Override]

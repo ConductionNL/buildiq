@@ -5,7 +5,7 @@
  * VirtualAppsActions' "Import app" button: it opens ImportAppDialog, and an
  * import reports each schema's records and opens the new app.
  *
- * spec: openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md
+ * spec: openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md
  */
 
 import { mount } from '@vue/test-utils'

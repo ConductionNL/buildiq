@@ -18,7 +18,7 @@
  * @version   GIT: <git_id>
  * @link      https://github.com/ConductionNL/buildiq
  *
- * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-the-archive-is-read-and-never-run-req-bqic-002
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-the-archive-is-read-and-never-run-req-bqic-002
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -46,7 +46,7 @@ use ZipArchive;
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/buildiq
  *
- * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-the-archive-is-read-and-never-run-req-bqic-002
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-the-archive-is-read-and-never-run-req-bqic-002
  */
 class AppPackageImportService implements AppPackageImportServiceInterface {
 
@@ -126,7 +126,7 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 	 *
 	 * @return array{status:int,data:array<string,mixed>} 201 with the app; 400, 409, 413 or 422 with an error code.
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
 	 */
 	#[\Override]
 	public function import(string $archivePath, string $name, string $slug, string $ownerUid): array {
@@ -147,7 +147,7 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 	 *
 	 * @return array{status:int,data:array<string,mixed>} As import(); on 201 with records asked, `data.records` holds the per-schema report.
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
 	 */
 	#[\Override]
 	public function importWithRecords(string $archivePath, array $target): array {
@@ -242,7 +242,7 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 	 *
 	 * @return array{status:int,data:array<string,mixed>} 200 with the summary; 413 or 422 with an error code.
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
 	 */
 	#[\Override]
 	public function preview(string $archivePath): array {
@@ -281,7 +281,7 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 	 *
 	 * @throws AppRepoParseException When the archive is too large, unreadable or holds an unsafe entry.
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-the-archive-is-read-and-never-run-req-bqic-002
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-the-archive-is-read-and-never-run-req-bqic-002
 	 */
 	public function readPackage(string $archivePath): array {
 		$size = @filesize($archivePath);
@@ -383,7 +383,7 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 	 *
 	 * @return bool True for a package file.
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-the-archive-is-read-and-never-run-req-bqic-002
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-the-archive-is-read-and-never-run-req-bqic-002
 	 */
 	public static function isPackagePath(string $path): bool {
 		if (str_ends_with($path, '/') === true) {

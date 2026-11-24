@@ -33,7 +33,7 @@ export const PROPERTY_SOURCE_TYPES = Object.freeze(['string', 'object'])
  * without a list) is the typed result `{ available: false, results: [] }`,
  * never a throw: the designer then keeps existing declarations as they are.
  *
- * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-an-existing-declaration-survives-a-session-without-integriq-req-bqrf-002
+ * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-an-existing-declaration-survives-a-session-without-integriq-req-bqrf-002
  * @param {object} [opts] Options.
  * @param {object} [opts.client] An axios-like client, for tests.
  * @return {Promise<{available: boolean, results: Array<object>}>} The providers.
@@ -63,7 +63,7 @@ export async function listPropertySources(opts = {}) {
  * A declaration that is not an object is kept as null here; the raw property
  * still carries it, and OpenRegister judges it on save.
  *
- * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
+ * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
  * @param {object} prop The loaded property.
  * @return {{provider: string, mode: string, config: object}|null} The declaration.
  */
@@ -83,7 +83,7 @@ export function sourceFromProperty(prop) {
  * The declaration a field row writes: provider and mode, with `config` carried
  * through from the row (`{}` for a new one). Null for a row without a source.
  *
- * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
+ * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
  * @param {object|null} source The row's source.
  * @return {{provider: string, mode: string, config: object}|null} The declaration.
  */
@@ -103,7 +103,7 @@ export function propertySourceOf(source) {
  * "{label}, starting value". The provider id stands in for a label integriq
  * did not publish.
  *
- * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-the-fields-table-shows-the-registry-source-and-a-refusal-lands-on-its-field-req-bqrf-003
+ * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-the-fields-table-shows-the-registry-source-and-a-refusal-lands-on-its-field-req-bqrf-003
  * @param {object|null} source The row's source.
  * @param {Array<object>} providers The providers integriq publishes.
  * @return {string} The text, empty without a source.
@@ -122,7 +122,7 @@ export function sourceSummary(source, providers) {
 /**
  * The label of a provider, or its id when integriq did not publish it.
  *
- * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-the-fields-table-shows-the-registry-source-and-a-refusal-lands-on-its-field-req-bqrf-003
+ * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-the-fields-table-shows-the-registry-source-and-a-refusal-lands-on-its-field-req-bqrf-003
  * @param {string} id The provider id.
  * @param {Array<object>} providers The providers integriq publishes.
  * @return {string} The label.
@@ -139,7 +139,7 @@ export function providerLabel(id, providers) {
  * it names. OpenRegister quotes the property path in the message
  * (`'x-openregister-property-source' at 'properties.kvkNummer' ...`).
  *
- * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-the-fields-table-shows-the-registry-source-and-a-refusal-lands-on-its-field-req-bqrf-003
+ * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-the-fields-table-shows-the-registry-source-and-a-refusal-lands-on-its-field-req-bqrf-003
  * @param {object|string|null} err The store's error for the save.
  * @param {Array<string>} names The field names of the schema.
  * @return {Object<string, Array<string>>} Messages per field name.

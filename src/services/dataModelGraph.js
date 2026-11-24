@@ -13,7 +13,7 @@
  * column further, and schemas outside the register stand in a last column
  * at the edge.
  *
- * @spec openspec/changes/data-model-diagram/specs/data-model-diagram/spec.md
+ * @spec openspec/changes/archive/2026-11-24-data-model-diagram/specs/data-model-diagram/spec.md
  */
 
 /** The node type every schema box is drawn as. */
@@ -140,7 +140,7 @@ function boxHeight(data) {
  * @return {{nodes: Array<object>, edges: Array<object>, relations: Array<object>, unlinked: Array<object>, folded: boolean}}
  *   Canvas nodes and edges, the relation rows and the schemas without relations.
  *
- * @spec openspec/changes/data-model-diagram/tasks.md#T01
+ * @spec openspec/changes/archive/2026-11-24-data-model-diagram/tasks.md#T01
  */
 export function toDiagram(model, options = {}) {
 	const foldAbove = options.foldAbove ?? FOLD_THRESHOLD

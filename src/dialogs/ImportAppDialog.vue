@@ -10,7 +10,7 @@
   - taken slug asks for another one. Kept in its own file per the
   - modal-isolation gate.
   -
-  - spec: openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md
+  - spec: openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md
   -->
 <template>
 	<NcDialog
@@ -189,7 +189,7 @@ export default {
 		 *
 		 * @param {Event} event The file input's change event.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
+		 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
 		 */
 		async onFile(event) {
 			const files = event && event.target ? event.target.files : null
@@ -219,7 +219,7 @@ export default {
 		 * Import the archive under the chosen slug, with its records when ticked.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
+		 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
 		 */
 		async submit() {
 			if (!this.file || !this.summary) {

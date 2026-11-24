@@ -33,7 +33,7 @@
  * The fixture app `pw-registry-field` is created in beforeAll; the schema and
  * the app are removed in afterAll.
  *
- * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md
+ * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md
  * @e2e schema-designer-ui/requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001/a-kvk-backed-field-is-declared
  * @e2e schema-designer-ui/requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001/the-section-is-not-offered-for-a-number
  * @e2e schema-designer-ui/requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001/going-back-to-typed-in-removes-the-declaration

@@ -8,7 +8,7 @@
  * which the server's DutchFormatValidator reads too, so the form and the save
  * check cannot drift.
  *
- * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+ * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
  */
 import { translate as t } from '@nextcloud/l10n'
 import rules from '../../lib/Settings/dutch-formats.json'
@@ -21,7 +21,7 @@ export const DUTCH_FORMATS = Object.freeze([...rules.formats])
  *
  * @return {Array<{id: string, label: string, hint: string}>} The options.
  *
- * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+ * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
  */
 export function dutchFormatOptions() {
 	return [
@@ -42,7 +42,7 @@ export function dutchFormatOptions() {
  * @param {string} format The name.
  * @return {boolean}
  *
- * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+ * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
  */
 export function isDutchFormat(format) {
 	return DUTCH_FORMATS.includes(format)
@@ -54,7 +54,7 @@ export function isDutchFormat(format) {
  * @param {string} format The format name.
  * @return {string} The message.
  *
- * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiq-s-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
+ * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiq-s-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
  */
 export function dutchFormatMessage(format) {
 	const messages = {
@@ -191,7 +191,7 @@ const CHECKS = {
  * @param {string} value The value as entered.
  * @return {string|null} The normalised value; null when it fails or the format is unknown.
  *
- * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiq-s-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
+ * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiq-s-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
  */
 export function normaliseDutchFormat(format, value) {
 	const check = CHECKS[format]

@@ -512,7 +512,7 @@ export default {
 		 * Page titles by id, for the error log.
 		 *
 		 * @return {Record<string, string>} Titles.
-		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
+		 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
 		 */
 		debugPageTitles() {
 			return Object.fromEntries(
@@ -1104,7 +1104,7 @@ export default {
 		 *
 		 * @param {string} pageId The page id.
 		 * @return {void}
-		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
+		 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
 		 */
 		selectPageById(pageId) {
 			const index = this.pages.findIndex((page) => page && page.id === pageId)
@@ -1117,7 +1117,7 @@ export default {
 		 * Build the live preview again, so its requests run once more.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
+		 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
 		 */
 		reloadPreview() {
 			this.$refs.previewSandbox?.createSandbox()

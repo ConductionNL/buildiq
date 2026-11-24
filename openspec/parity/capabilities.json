@@ -412,7 +412,7 @@
 				"openbuild-rbac",
 				"application-rename-and-delete",
 				"apps-copy-app-and-page",
-				"apps-support-note-editor-saves",
+				"support-note",
 				"application-detail-overview",
 				"application-detail-ui"
 			]
@@ -497,8 +497,8 @@
 			"overlay": "openconnector-api-sources",
 			"specs": [
 				"openconnector-api-sources",
-				"integrations-connector-bound-pages",
-				"data-registry-backed-field-option"
+				"connector-bound-page-runtime",
+				"schema-designer-ui"
 			]
 		},
 		{
@@ -525,8 +525,8 @@
 			"overlay": null,
 			"specs": [
 				"openbuild-page-designer",
-				"pages-detail-related-items",
-				"pages-chart-widget-authoring"
+				"page-detail-related-items",
+				"page-chart-authoring"
 			]
 		},
 		{
@@ -560,7 +560,7 @@
 			"overlay": null,
 			"specs": [
 				"form-editor-logic",
-				"forms-live-values-and-checks",
+				"form-live-values",
 				"forms-signature-audio-and-location",
 				"registration-form-builder",
 				"forms-multi-product-request"
@@ -596,11 +596,10 @@
 			"overlay": null,
 			"specs": [
 				"automation-designer",
-				"logic-automation-actions-that-run",
 				"logic-automation-run-log",
 				"logic-script-step",
-				"logic-shared-flows-and-automations",
-				"logic-email-and-webhook-triggers",
+				"app-flow-bindings",
+				"automation-inbound-triggers",
 				"openbuild-schedules-authoring"
 			]
 		},
@@ -623,7 +622,7 @@
 			"overlay": "business-rules-engine",
 			"specs": [
 				"business-rules-engine",
-				"logic-automation-actions-that-run"
+				"automation-designer"
 			]
 		},
 		{
@@ -681,7 +680,7 @@
 			"area": "ai",
 			"overlay": null,
 			"specs": [
-				"ai-llm-steps-and-computed-fields",
+				"automation-ai-steps",
 				"ai-smart-paste-into-forms"
 			]
 		},
@@ -763,7 +762,8 @@
 			"overlay": "buildiq-exporter",
 			"specs": [
 				"openbuild-exporter",
-				"lifecycle-import-app-and-cli",
+				"app-management-cli",
+				"app-package-import",
 				"notifications",
 				"agent-export-hermiq-register",
 				"app-composition-bindings",
@@ -807,7 +807,7 @@
 			"overlay": null,
 			"specs": [
 				"component-blocks",
-				"logic-shared-flows-and-automations"
+				"app-flow-bindings"
 			]
 		},
 		{
@@ -847,8 +847,10 @@
 				"operate-organisation-scoped-apps",
 				"settings-and-observability",
 				"openbuild-exporter",
-				"operate-debug-log-and-monitoring",
-				"lifecycle-import-app-and-cli"
+				"builder-debug-log",
+				"built-app-health-monitoring",
+				"app-management-cli",
+				"app-package-import"
 			]
 		}
 	],
@@ -2168,7 +2170,7 @@
 				"readingRating": "r2 read yes from the authoring half; r4 read the runtime half as missing",
 				"note": "Specified in openspec/changes/integrations-connector-bound-pages (OpenSpec pass 2026-09-27).",
 				"change": "integrations-connector-bound-pages",
-				"requirement": "openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime :: A connector-bound index page renders its records (REQ-BQCB-001)"
+				"requirement": "openspec/changes/archive/2026-11-24-integrations-connector-bound-pages/specs/connector-bound-page-runtime :: A connector-bound index page renders its records (REQ-BQCB-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2210,7 +2212,7 @@
 				"spec": "openspec/specs/openbuild-page-designer",
 				"requirement": [
 					"openregister:openspec/specs/file-actions :: File creation and upsert run a fixed validate-write-own-tag pipeline",
-					"openspec/changes/pages-detail-related-items/specs/page-detail-related-items :: A maker decides whether the files tab shows (REQ-BQRI-003)"
+					"openspec/changes/archive/2026-11-24-pages-detail-related-items/specs/page-detail-related-items :: A maker decides whether the files tab shows (REQ-BQRI-003)"
 				]
 			},
 			"provider": "nextcloud-vue",
@@ -2695,9 +2697,9 @@
 				"note": "The missing half is buildiq's designer, so the owner moved to ConductionNL/buildiq (nextcloud-vue lane) (nextcloud-vue lane, OpenSpec pass 2026-09-27; owner was ConductionNL/nextcloud-vue). Specified in openspec/changes/pages-detail-related-items (owner-moves pass 2026-09-28) for related lists, link buttons and the files tab; header and status buttons are built (openspec/changes/archive/2026-11-22-pages-action-buttons).",
 				"change": "pages-detail-related-items",
 				"requirement": [
-					"openspec/changes/pages-detail-related-items/specs/page-detail-related-items :: A detail page lists related records (REQ-BQRI-001)",
+					"openspec/changes/archive/2026-11-24-pages-detail-related-items/specs/page-detail-related-items :: A detail page lists related records (REQ-BQRI-001)",
 					"openspec/specs/openbuild-page-designer :: Detail-page sub-editor: sidebar tabs and route param schema",
-					"openspec/changes/pages-detail-related-items/specs/page-detail-related-items :: A maker decides whether the files tab shows (REQ-BQRI-003)"
+					"openspec/changes/archive/2026-11-24-pages-detail-related-items/specs/page-detail-related-items :: A maker decides whether the files tab shows (REQ-BQRI-003)"
 				]
 			},
 			"provider": "nextcloud-vue",
@@ -2780,8 +2782,8 @@
 				"change": "publish-widgets-to-nc-dashboard",
 				"plan": "openspec/changes/publish-widgets-to-nc-dashboard",
 				"requirement": [
-					"openspec/changes/publish-widgets-to-nc-dashboard/specs/openbuild-page-designer :: Promote a widget to the Nextcloud dashboard from the page designer",
-					"openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets :: Promoted widgets are registered with the Nextcloud dashboard"
+					"openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/openbuild-page-designer :: Promote a widget to the Nextcloud dashboard from the page designer",
+					"openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets :: Promoted widgets are registered with the Nextcloud dashboard"
 				]
 			},
 			"provider": "buildiq",
@@ -2818,8 +2820,8 @@
 				"note": "The missing half is buildiq's designer, so the owner moved to ConductionNL/buildiq (nextcloud-vue lane) (nextcloud-vue lane, OpenSpec pass 2026-09-27; owner was ConductionNL/nextcloud-vue). Specified in openspec/changes/pages-chart-widget-authoring (owner-moves pass 2026-09-28): WidgetBuilder mounts nextcloud-vue's CnChartWidgetForm for a chart widget and saves props.chartKind and dataSource.",
 				"change": "pages-chart-widget-authoring",
 				"requirement": [
-					"openspec/changes/pages-chart-widget-authoring/specs/page-chart-authoring :: A chart widget is configured with the library's chart form (REQ-BQCW-001)",
-					"openspec/changes/pages-chart-widget-authoring/specs/page-chart-authoring :: A new chart is placed on the page (REQ-BQCW-003)"
+					"openspec/changes/archive/2026-11-24-pages-chart-widget-authoring/specs/page-chart-authoring :: A chart widget is configured with the library's chart form (REQ-BQCW-001)",
+					"openspec/changes/archive/2026-11-24-pages-chart-widget-authoring/specs/page-chart-authoring :: A new chart is placed on the page (REQ-BQCW-003)"
 				]
 			},
 			"provider": "nextcloud-vue",
@@ -3880,7 +3882,7 @@
 				"note": "Specified in openspec/changes/forms-live-values-and-checks (OpenSpec pass 2026-09-27).",
 				"change": "forms-live-values-and-checks",
 				"readOn": "2026-10-30",
-				"requirement": "openspec/changes/forms-live-values-and-checks/specs/form-live-values :: A field can be prefilled from the user or the record (REQ-BQLV-001)"
+				"requirement": "openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values :: A field can be prefilled from the user or the record (REQ-BQLV-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4776,7 +4778,7 @@
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/logic-automation-actions-that-run (OpenSpec pass 2026-09-27).",
 				"change": "logic-automation-actions-that-run",
-				"requirement": "openspec/changes/logic-automation-actions-that-run/specs/automation-designer :: A webhook step calls a configured source (REQ-BQAR-003)"
+				"requirement": "openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer :: A webhook step calls a configured source (REQ-BQAR-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4819,7 +4821,7 @@
 				"change": "logic-automation-actions-that-run",
 				"requirement": [
 					"openspec/specs/automation-designer :: Automation editor composes trigger, condition and actions (REQ-AUTD-002)",
-					"openspec/changes/logic-automation-actions-that-run/specs/automation-designer :: A record step runs outside an approval (REQ-BQAR-002)"
+					"openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer :: A record step runs outside an approval (REQ-BQAR-002)"
 				]
 			},
 			"provider": "buildiq",
@@ -5071,8 +5073,8 @@
 				"note": "Specified in openspec/changes/logic-shared-flows-and-automations (OpenSpec pass 2026-09-27).",
 				"change": "logic-shared-flows-and-automations",
 				"requirement": [
-					"openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings :: A bound flow declares where it runs (REQ-BQSF-001)",
-					"openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings :: A binding runs the flow on the app's records (REQ-BQSF-002)"
+					"openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings :: A bound flow declares where it runs (REQ-BQSF-001)",
+					"openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings :: A binding runs the flow on the app's records (REQ-BQSF-002)"
 				]
 			},
 			"provider": "buildiq",
@@ -5113,7 +5115,7 @@
 				"change": "integrations-connector-bound-pages",
 				"requirement": [
 					"openspec/specs/openconnector-api-sources :: REQ-OCAS-002 Builder step: bind an OpenConnector endpoint as a data source",
-					"openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime :: A connector-bound index page renders its records (REQ-BQCB-001)"
+					"openspec/changes/archive/2026-11-24-integrations-connector-bound-pages/specs/connector-bound-page-runtime :: A connector-bound index page renders its records (REQ-BQCB-001)"
 				],
 				"plan": "openspec/changes/openbuild-connector-widget-runtime"
 			},
@@ -5305,7 +5307,7 @@
 				"note": "The connectors exist in integriq now (sibling-has). The buildiq half is rendering a connector-bound page, specified in integrations-connector-bound-pages; the integriq change is integriq/connectors-catalogue-expansion (archived).",
 				"change": "integrations-connector-bound-pages",
 				"readOn": "2026-10-07",
-				"requirement": "openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime :: An endpoint from a ready-made connector binds like any other endpoint (REQ-BQCB-005)"
+				"requirement": "openspec/changes/archive/2026-11-24-integrations-connector-bound-pages/specs/connector-bound-page-runtime :: An endpoint from a ready-made connector binds like any other endpoint (REQ-BQCB-005)"
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -5591,7 +5593,7 @@
 				"note": "Building: a buildiq maker can now declare a registry-backed field. The row stays building until nextcloud-vue renders that field in a built app (cross-repo), and the Playwright spec of the change (T07) has run.",
 				"change": "data-registry-backed-field-option",
 				"readOn": "2026-11-17",
-				"requirement": "openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui :: A maker declares that a field takes its value from a registry (REQ-BQRF-001)"
+				"requirement": "openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui :: A maker declares that a field takes its value from a registry (REQ-BQRF-001)"
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -5954,7 +5956,7 @@
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/ai-llm-steps-and-computed-fields (OpenSpec pass 2026-09-27).",
 				"change": "ai-llm-steps-and-computed-fields",
-				"requirement": "openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps :: The composer offers an Ask AI step (REQ-BQLS-001)"
+				"requirement": "openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps :: The composer offers an Ask AI step (REQ-BQLS-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7173,7 +7175,7 @@
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/lifecycle-import-app-and-cli (OpenSpec pass 2026-09-27).",
 				"change": "lifecycle-import-app-and-cli",
-				"requirement": "openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import :: A maker imports an exported archive as a new app (REQ-BQIC-001)"
+				"requirement": "openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import :: A maker imports an exported archive as a new app (REQ-BQIC-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7741,7 +7743,7 @@
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/logic-shared-flows-and-automations (OpenSpec pass 2026-09-27).",
 				"change": "logic-shared-flows-and-automations",
-				"requirement": "openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings :: An automation can be shared with other apps (REQ-BQSF-003)",
+				"requirement": "openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings :: An automation can be shared with other apps (REQ-BQSF-003)",
 				"plan": "openspec/changes/rules-evaluation-for-other-apps"
 			},
 			"provider": "buildiq",
@@ -8565,8 +8567,8 @@
 				"note": "Specified in openspec/changes/operate-debug-log-and-monitoring (OpenSpec pass 2026-09-27).",
 				"change": "operate-debug-log-and-monitoring",
 				"requirement": [
-					"openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring :: A running app reports counts, not content (REQ-BQDM-004)",
-					"openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring :: The app detail page shows the app's health (REQ-BQDM-006)"
+					"openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring :: A running app reports counts, not content (REQ-BQDM-004)",
+					"openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring :: The app detail page shows the app's health (REQ-BQDM-006)"
 				]
 			},
 			"provider": "buildiq",
@@ -8641,11 +8643,11 @@
 				"note": "Specified in openspec/changes/lifecycle-import-app-and-cli (OpenSpec pass 2026-09-27).",
 				"change": "lifecycle-import-app-and-cli",
 				"requirement": [
-					"openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli :: Publish templates from the command line (REQ-BQIC-008)",
-					"openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli :: List apps from the command line (REQ-BQIC-004)",
-					"openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli :: Export an app to a file (REQ-BQIC-005)",
-					"openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli :: Import an app from a file (REQ-BQIC-006)",
-					"openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli :: Delete an app from the command line (REQ-BQIC-007)"
+					"openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli :: Publish templates from the command line (REQ-BQIC-008)",
+					"openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli :: List apps from the command line (REQ-BQIC-004)",
+					"openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli :: Export an app to a file (REQ-BQIC-005)",
+					"openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli :: Import an app from a file (REQ-BQIC-006)",
+					"openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli :: Delete an app from the command line (REQ-BQIC-007)"
 				]
 			},
 			"provider": "buildiq",
@@ -9417,7 +9419,7 @@
 				"owner": "ConductionNL/buildiq",
 				"note": "Designer (FieldCalculationBuilder.vue) and save-time recompute (FormLiveValuesListener) are built, nextcloud-vue CnFormPage takes a calculate hook; the live calculation while filling in waits on task T11 of forms-live-values-and-checks (BuildiqFormPage wrapper in src/builder.js pageTypes).",
 				"change": "forms-live-values-and-checks",
-				"requirement": "openspec/changes/forms-live-values-and-checks/specs/form-live-values :: A field can be calculated from a rule set (REQ-BQLV-002)"
+				"requirement": "openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values :: A field can be calculated from a rule set (REQ-BQLV-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -9750,7 +9752,7 @@
 				"owner": "ConductionNL/buildiq",
 				"note": "Designer (EligibilityCheckBuilder.vue) and save-time refusal (FormLiveValuesListener) are built, nextcloud-vue CnFormPage renders unmetConditions; showing the unmet condition while filling in waits on task T11 of forms-live-values-and-checks.",
 				"change": "forms-live-values-and-checks",
-				"requirement": "openspec/changes/forms-live-values-and-checks/specs/form-live-values :: A form can check eligibility as it is filled in (REQ-BQLV-003)"
+				"requirement": "openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values :: A form can check eligibility as it is filled in (REQ-BQLV-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -10919,8 +10921,8 @@
 				"note": "Specified in openspec/changes/data-model-diagram (OpenSpec pass 2026-09-27).",
 				"change": "data-model-diagram",
 				"requirement": [
-					"openspec/changes/data-model-diagram/specs/data-model-diagram :: The schema list has a diagram view (REQ-BQMD-001)",
-					"openspec/changes/data-model-diagram/specs/data-model-diagram :: Relations made in buildiq are drawn (REQ-BQMD-002)"
+					"openspec/changes/archive/2026-11-24-data-model-diagram/specs/data-model-diagram :: The schema list has a diagram view (REQ-BQMD-001)",
+					"openspec/changes/archive/2026-11-24-data-model-diagram/specs/data-model-diagram :: Relations made in buildiq are drawn (REQ-BQMD-002)"
 				]
 			},
 			"provider": "buildiq",
@@ -10996,8 +10998,8 @@
 				"note": "Specified in openspec/changes/logic-email-and-webhook-triggers (OpenSpec pass 2026-09-27).",
 				"change": "logic-email-and-webhook-triggers",
 				"requirement": [
-					"openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers :: The composer offers email and webhook triggers (REQ-BQTR-001)",
-					"openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers :: Mail starts the automation's flow (REQ-BQTR-002)"
+					"openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers :: The composer offers email and webhook triggers (REQ-BQTR-001)",
+					"openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers :: Mail starts the automation's flow (REQ-BQTR-002)"
 				]
 			},
 			"provider": "buildiq",
@@ -11038,7 +11040,7 @@
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/logic-email-and-webhook-triggers (OpenSpec pass 2026-09-27).",
 				"change": "logic-email-and-webhook-triggers",
-				"requirement": "openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers :: A webhook starts the automation's flow (REQ-BQTR-003)"
+				"requirement": "openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers :: A webhook starts the automation's flow (REQ-BQTR-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -11161,7 +11163,7 @@
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/ai-llm-steps-and-computed-fields (OpenSpec pass 2026-09-27).",
 				"change": "ai-llm-steps-and-computed-fields",
-				"requirement": "openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps :: A schema field can be filled by AI (REQ-BQLS-004)"
+				"requirement": "openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps :: A schema field can be filled by AI (REQ-BQLS-004)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -11429,8 +11431,8 @@
 				"note": "Specified in openspec/changes/operate-debug-log-and-monitoring (OpenSpec pass 2026-09-27).",
 				"change": "operate-debug-log-and-monitoring",
 				"requirement": [
-					"openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log :: The designer logs the preview's requests and errors (REQ-BQDM-001)",
-					"openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log :: The log names binding problems (REQ-BQDM-002)"
+					"openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log :: The designer logs the preview's requests and errors (REQ-BQDM-001)",
+					"openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log :: The log names binding problems (REQ-BQDM-002)"
 				]
 			},
 			"provider": "buildiq",
@@ -11524,8 +11526,8 @@
 				"owner": "ConductionNL/buildiq",
 				"readOn": "2026-11-17",
 				"requirement": [
-					"openspec/changes/apps-support-note-editor-saves/specs/support-note :: The support editor saves the note to the app's manifest (REQ-BQSN-001)",
-					"openspec/changes/apps-support-note-editor-saves/specs/support-note :: A virtual app shows the note only when it is switched on (REQ-BQSN-003)"
+					"openspec/changes/archive/2026-11-24-apps-support-note-editor-saves/specs/support-note :: The support editor saves the note to the app's manifest (REQ-BQSN-001)",
+					"openspec/changes/archive/2026-11-24-apps-support-note-editor-saves/specs/support-note :: A virtual app shows the note only when it is switched on (REQ-BQSN-003)"
 				]
 			},
 			"feature": "app-management",

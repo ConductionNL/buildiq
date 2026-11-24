@@ -127,14 +127,14 @@ export default {
 		/**
 		 * The log's entries, newest first, from useDebugLog.
 		 *
-		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
+		 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
 		 */
 		entries: { type: Array, default: () => [] },
 
 		/**
 		 * Page titles by page id.
 		 *
-		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
+		 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
 		 */
 		pageTitles: { type: Object, default: () => ({}) },
 	},
@@ -152,7 +152,7 @@ export default {
 		/**
 		 * The filter choices.
 		 *
-		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
+		 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
 		 * @return {Array<{value: string, label: string}>} Options.
 		 */
 		filterOptions() {
@@ -167,7 +167,7 @@ export default {
 		/**
 		 * The entries the filter keeps.
 		 *
-		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
+		 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
 		 * @return {Array<object>} Entries.
 		 */
 		shown() {
@@ -188,7 +188,7 @@ export default {
 		/**
 		 * Open or close an entry's detail.
 		 *
-		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
+		 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
 		 * @param {string} key The entry key.
 		 * @return {void}
 		 */
@@ -199,7 +199,7 @@ export default {
 		/**
 		 * A page's title, or its id.
 		 *
-		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
+		 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
 		 * @param {string} pageId The page id.
 		 * @return {string} The label.
 		 */
@@ -214,7 +214,7 @@ export default {
 		/**
 		 * What went wrong, in a sentence.
 		 *
-		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-log-names-binding-problems-req-bqdm-002
+		 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-log-names-binding-problems-req-bqdm-002
 		 * @param {object} entry A log entry.
 		 * @return {string} The sentence.
 		 */
@@ -300,7 +300,7 @@ export default {
 		/**
 		 * When it last happened and how often.
 		 *
-		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
+		 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
 		 * @param {object} entry A log entry.
 		 * @return {string} For example "10:41, 12 times".
 		 */
@@ -320,7 +320,7 @@ export default {
 		/**
 		 * The entry's detail as text.
 		 *
-		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
+		 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
 		 * @param {object} entry A log entry.
 		 * @return {string} The detail.
 		 */
@@ -344,7 +344,7 @@ export default {
 		/**
 		 * Copy the entry's detail to the clipboard.
 		 *
-		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
+		 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
 		 * @param {object} entry A log entry.
 		 * @return {void}
 		 */

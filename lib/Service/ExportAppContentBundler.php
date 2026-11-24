@@ -437,7 +437,7 @@ class ExportAppContentBundler implements ExportAppContentBundlerInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
 	 */
 	private function writeReadme(AppContentBundleRun $run, array $summary): void {
 		$lines = array_merge(
@@ -514,7 +514,7 @@ class ExportAppContentBundler implements ExportAppContentBundlerInterface {
 	 *
 	 * @return array<int,string>
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
 	 */
 	private function readmeUsage(): array {
 		return [

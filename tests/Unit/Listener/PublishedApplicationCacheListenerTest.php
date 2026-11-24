@@ -35,7 +35,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * A write to a Buildiq Application drops the published-Application cache; any other write does not.
  *
- * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-published-applications-are-read-once-per-request
+ * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-published-applications-are-read-once-per-request
  */
 #[CoversClass(PublishedApplicationCacheListener::class)]
 final class PublishedApplicationCacheListenerTest extends TestCase {

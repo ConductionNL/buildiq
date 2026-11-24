@@ -42,7 +42,7 @@
  * piece it needs is missing. Buildiq itself serves no route here (REQ-BQTR-004):
  * every outside call goes to integriq's address, which the composer shows.
  *
- * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md
+ * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md
  * @e2e automation-inbound-triggers/requirement-mail-starts-the-automations-flow-req-bqtr-002/a-report-by-mail-becomes-a-record
  * @e2e automation-inbound-triggers/requirement-a-webhook-starts-the-automations-flow-req-bqtr-003/the-planning-system-reports-a-finished-job
  * @e2e automation-inbound-triggers/requirement-a-webhook-starts-the-automations-flow-req-bqtr-003/a-call-without-the-key-does-nothing

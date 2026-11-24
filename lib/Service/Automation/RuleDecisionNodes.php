@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
+ * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
 /**
  * Builds and refuses the nodes of a rule decision.
  *
- * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
+ * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
  */
 final class RuleDecisionNodes {
 
@@ -61,7 +61,7 @@ final class RuleDecisionNodes {
 	 *
 	 * @throws UnsupportedAutomationCombinationException For a missing, condition-action or tableless rule set, or no record to write to.
 	 *
-	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
+	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
 	 */
 	public function build(array $action, int $index): array {
 		[$slug, $ruleSet] = $this->ruleSet(action: $action);

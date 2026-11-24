@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-mail-starts-the-automations-flow-req-bqtr-002
+ * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-mail-starts-the-automations-flow-req-bqtr-002
  */
 
 declare(strict_types=1);

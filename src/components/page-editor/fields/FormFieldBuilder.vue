@@ -771,7 +771,7 @@ export default {
 		 *
 		 * @param {object} field The form field.
 		 * @return {string}
-		 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
 		 */
 		inheritedFormat(field) {
 			const schema = (this.schemas || []).find((entry) => entry && this.parentSchema
@@ -876,8 +876,8 @@ export default {
 		 * @param {'default'|'calculate'|'expressionDefault'} key - the key to write.
 		 * @param {*} value - the next value, or `null` to clear.
 		 * @return {void}
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
-		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 		 */
 		updateLive(index, key, value) {
 			const next = this.localFields.slice()

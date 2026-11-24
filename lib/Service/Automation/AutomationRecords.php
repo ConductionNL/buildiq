@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-stuck-automations-are-moved-or-disabled-with-a-reason-req-bqar-007
+ * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-stuck-automations-are-moved-or-disabled-with-a-reason-req-bqar-007
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 /**
  * Automation reads and entry coercion for the automation services.
  *
- * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-stuck-automations-are-moved-or-disabled-with-a-reason-req-bqar-007
+ * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-stuck-automations-are-moved-or-disabled-with-a-reason-req-bqar-007
  */
 final class AutomationRecords {
 
@@ -68,7 +68,7 @@ final class AutomationRecords {
 	 *
 	 * @return list<array<string,mixed>>
 	 *
-	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-stuck-automations-are-moved-or-disabled-with-a-reason-req-bqar-007
+	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-stuck-automations-are-moved-or-disabled-with-a-reason-req-bqar-007
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
@@ -94,7 +94,7 @@ final class AutomationRecords {
 	 *
 	 * @return array<string,mixed>
 	 *
-	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-stuck-automations-are-moved-or-disabled-with-a-reason-req-bqar-007
+	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-stuck-automations-are-moved-or-disabled-with-a-reason-req-bqar-007
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */

@@ -168,7 +168,7 @@ final class ExportAppContentBundlerTest extends TestCase {
 	 * The README only names ways to use the archive that exist: the Applications page's "Import app" button, by its
 	 * label, and `occ buildiq:app:import`, next to running the archive as its own Nextcloud app.
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
 	 */
 	public function testReadmeNamesTheImportButtonAndCommand(): void {
 		$this->bundleDevelopment(includeSeedData: false);

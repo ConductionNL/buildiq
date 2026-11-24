@@ -704,7 +704,7 @@ export default {
 		 *
 		 * @return {Array<{id: string, label: string, hint: string}>}
 		 *
-		 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
 		 */
 		dutchFormatOptions() {
 			return dutchFormatOptions()
@@ -740,7 +740,7 @@ export default {
 		 * The registry picker options: the provider label, with the identifier
 		 * it keys on as the secondary line.
 		 *
-		 * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
+		 * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
 		 * @return {Array} Option objects.
 		 */
 		providerOptions() {
@@ -760,7 +760,7 @@ export default {
 		/**
 		 * REQ-BQRF-003: bring the first field a refused save names into view.
 		 *
-		 * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-the-fields-table-shows-the-registry-source-and-a-refusal-lands-on-its-field-req-bqrf-003
+		 * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-the-fields-table-shows-the-registry-source-and-a-refusal-lands-on-its-field-req-bqrf-003
 		 * @param {object} refusals Messages per field name.
 		 * @return {void}
 		 */
@@ -787,7 +787,7 @@ export default {
 		/**
 		 * Whether a field offers the value source section: string and object only.
 		 *
-		 * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
+		 * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
 		 * @param {object} field Field row.
 		 * @return {boolean} True for string and object.
 		 */
@@ -798,7 +798,7 @@ export default {
 		/**
 		 * The selected registry option, shown as its id when integriq does not publish it.
 		 *
-		 * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
+		 * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
 		 * @param {string} id Provider id.
 		 * @return {object|null} Matching option.
 		 */
@@ -818,7 +818,7 @@ export default {
 		/**
 		 * The source text a field row shows: "{label}, live" or "{label}, starting value".
 		 *
-		 * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-the-fields-table-shows-the-registry-source-and-a-refusal-lands-on-its-field-req-bqrf-003
+		 * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-the-fields-table-shows-the-registry-source-and-a-refusal-lands-on-its-field-req-bqrf-003
 		 * @param {object} field Field row.
 		 * @return {string} The text, empty without a source.
 		 */
@@ -830,7 +830,7 @@ export default {
 		 * Choose "Typed in" (removes the declaration) or "From a registry"
 		 * (starts one, live, with an empty config).
 		 *
-		 * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
+		 * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
 		 * @param {number} index Row index.
 		 * @param {string} kind `typed` or `registry`.
 		 * @return {void}
@@ -850,7 +850,7 @@ export default {
 		/**
 		 * Set the provider or the mode of a field's source, keeping its config.
 		 *
-		 * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
+		 * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
 		 * @param {number} index Row index.
 		 * @param {string} key `provider` or `mode`.
 		 * @param {string} value The new value.
@@ -1263,7 +1263,7 @@ export default {
 		 *
 		 * @param {string|undefined} format The stored format.
 		 * @return {string}
-		 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
 		 */
 		formatChoice(format) {
 			if (!format) {
@@ -1278,7 +1278,7 @@ export default {
 		 * @param {number} index Row index.
 		 * @param {string} choice The chosen option.
 		 * @return {void}
-		 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
 		 */
 		onFormatChoice(index, choice) {
 			this.otherFormatRows = this.otherFormatRows.filter((row) => row !== index)
@@ -1552,7 +1552,7 @@ function facetableRow(prop) {
  * The registry source of a loaded property: its declaration, null when it has
  * none, undefined when it has one that is not an object.
  *
- * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
+ * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
  * @param {object} prop The loaded property.
  * @return {object|null|undefined} The source.
  */
@@ -1860,7 +1860,7 @@ function propertyFromField(field, schemaSlug = '') {
  * Whether a field type takes a registry source: one saved as a JSON string or
  * object (text, a formatted text, a choice, ...), a relation excepted.
  *
- * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
+ * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
  * @param {string} type The field type.
  * @return {boolean} True when the type takes a source.
  */
@@ -1873,7 +1873,7 @@ function takesSourceType(type) {
  * declaration for a string or object field with a provider, config carried
  * through; an unreadable loaded declaration the row never touched, as it was.
  *
- * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-an-existing-declaration-survives-a-session-without-integriq-req-bqrf-002
+ * @spec openspec/changes/archive/2026-11-24-data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-an-existing-declaration-survives-a-session-without-integriq-req-bqrf-002
  * @param {object} prop The property being saved.
  * @param {object} field Editor field row.
  * @param {object} raw The property as it was loaded.

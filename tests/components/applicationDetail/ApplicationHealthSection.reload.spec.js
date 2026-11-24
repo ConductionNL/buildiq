@@ -5,7 +5,7 @@
  * Pins ApplicationHealthSection's reload on another application or version,
  * and how an unknown duration or share reads.
  *
- * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
+ * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
  */
 import { flushPromises, shallowMount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

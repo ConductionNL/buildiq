@@ -28,7 +28,7 @@
  * NOTE: Playwright binaries are NOT installed by `npm install`. Run
  * `npm run test:e2e:install` once before invoking `npm run test:e2e`.
  *
- * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md
  * @e2e app-package-import/requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001/a-maker-moves-the-permit-app-to-the-test-instance
  * @e2e app-package-import/requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001/a-slug-that-is-taken-is-refused
  */

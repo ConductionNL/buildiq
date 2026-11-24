@@ -29,7 +29,7 @@
  *
  * @link https://github.com/ConductionNL/buildiq
  *
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
  */
 
 declare(strict_types=1);
@@ -49,7 +49,7 @@ use Throwable;
 /**
  * Keeps the wrapper flows of an application's `runOn` entries in step with its bindings.
  *
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
  */
 class FlowBindingWrapperService {
 
@@ -104,7 +104,7 @@ class FlowBindingWrapperService {
 	 *
 	 * @return bool True for a wrapper.
 	 *
-	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
 	 */
 	public static function isWrapper(mixed $binding): bool {
 		if (is_array($binding) === false) {
@@ -126,7 +126,7 @@ class FlowBindingWrapperService {
 	 *
 	 * @return array<string,array{flow:string,entry:array{schema:string,event?:string,mode?:string}}> Per wrapper name, the bound flow and the entry.
 	 *
-	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
 	 */
 	public static function plan(string $appSlug, array $bindings): array {
 		$plan = [];
@@ -159,7 +159,7 @@ class FlowBindingWrapperService {
 	 *
 	 * @return string `aut-attach-<app>-<key>`.
 	 *
-	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
 	 */
 	public static function wrapperName(string $appSlug, array $wanted): string {
 		$entry = $wanted['entry'];
@@ -177,7 +177,7 @@ class FlowBindingWrapperService {
 	 *
 	 * @return array<string,mixed> What {@see FlowService::save()} takes.
 	 *
-	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
 	 */
 	public static function definition(array $target, array $wanted): array {
 		$entry   = $wanted['entry'];
@@ -222,7 +222,7 @@ class FlowBindingWrapperService {
 	 * @return array{flows:list<array<string,mixed>>,created:int,removed:int,failed:list<array{name:string,reason:string}>}
 	 *         The new bindings and what changed.
 	 *
-	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
 	 */
 	public function sync(string $applicationUuid, array $application, string $register): array {
 		$slug     = (string)($application['slug'] ?? '');
@@ -366,7 +366,7 @@ class FlowBindingWrapperService {
 	 *
 	 * @return string|null Null when the wrapper is gone, else `not_a_wrapper` or `remove_failed`.
 	 *
-	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md
 	 */
 	private function removeWrapper(array $binding, string $appSlug): ?string {
 		$uuid = (string)($binding['flow'] ?? '');

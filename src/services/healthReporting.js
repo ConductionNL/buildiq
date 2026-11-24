@@ -18,7 +18,7 @@ const FLUSH_MS = 5 * 60 * 1000
  * @param {string} options.slug The app slug.
  * @param {string} [options.versionSlug] The version, empty for production.
  * @return {(report: object) => void} The diagnostics listener to hand to CnAppRoot.
- * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-a-running-app-reports-counts-not-content-req-bqdm-004
+ * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-a-running-app-reports-counts-not-content-req-bqdm-004
  */
 export function startHealthReporting({ router, slug, versionSlug = '' }) {
 	let url = generateUrl(

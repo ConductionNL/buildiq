@@ -6,7 +6,7 @@
  * per bound flow, entries on the app version's schemas only, and buildiq's
  * own wrapper flows never shown or dropped.
  *
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
  */
 
 import { mount } from '@vue/test-utils'

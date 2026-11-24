@@ -77,7 +77,7 @@ export default {
 	 *
 	 * @return {object}
 	 *
-	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
+	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
 	 */
 	provide() {
 		return { cnAppSlug: () => this.slug }
@@ -233,7 +233,7 @@ export default {
 		 *
 		 * @param {string} url - the manifest endpoint.
 		 * @return {Promise<object>} - the response, with `data` normalised.
-		 * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-preview-and-published-app-render-the-same-pages-req-bqcb-004
+		 * @spec openspec/changes/archive/2026-11-24-integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-preview-and-published-app-render-the-same-pages-req-bqcb-004
 		 */
 		async fetchManifest(url) {
 			const response = await axios.get(url)

@@ -261,7 +261,7 @@ export default {
 		/**
 		 * Hears the preview's diagnostics reports and render errors (the designer's error log).
 		 *
-		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
+		 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
 		 */
 		diagnostics: {
 			type: Function,

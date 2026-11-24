@@ -10,7 +10,7 @@
  *  - Only the source fields the maker named are sent to the model (D3); the
  *    composer shows them before saving.
  *
- * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+ * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
  */
 
 import axios from '@nextcloud/axios'
@@ -34,7 +34,7 @@ export const CLEAN_INSTRUCTION = 'Correct the spelling and layout of the text be
  * The reason the AI step and the AI field are disabled without the node.
  *
  * @return {string} The reason.
- * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
+ * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
  */
 export function missingNodeReason() {
 	return t('buildiq', 'Install Hermiq to use AI steps.')
@@ -44,7 +44,7 @@ export function missingNodeReason() {
  * The preset options of the composer step.
  *
  * @return {Array<{value: string, label: string}>} The options.
- * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+ * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
  */
 export function aiPresetOptions() {
 	return [
@@ -74,7 +74,7 @@ function rowsOf(data) {
  * read answers false: the step stays disabled rather than failing at apply.
  *
  * @return {Promise<boolean>} Whether the node is there.
- * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
+ * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
  */
 export async function fetchAgentNodeAvailable() {
 	try {
@@ -89,7 +89,7 @@ export async function fetchAgentNodeAvailable() {
  * The Hermiq agents an AI step can name: active agents without tools.
  *
  * @return {Promise<Array<{id: string, label: string}>>} The options.
- * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+ * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
  */
 export async function fetchToolFreeAgents() {
 	const register = resolveFleetAppId('hermiq')
@@ -133,7 +133,7 @@ export function namesOf(values) {
  *
  * @param {object} action The editor or stored AI step.
  * @return {string} The summary, '' without source fields.
- * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+ * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
  */
 export function aiStepSummary(action) {
 	const fields = namesOf(action && action.sourceFields)
@@ -148,7 +148,7 @@ export function aiStepSummary(action) {
  *
  * @param {object} action The editor AI step.
  * @return {string} The message.
- * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+ * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
  */
 export function aiStepIncomplete(action) {
 	const preset = action && action.preset
@@ -200,7 +200,7 @@ function presetIncomplete(action, preset) {
  *
  * @param {object} action The stored action.
  * @return {object} The AI keys of the editor row.
- * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+ * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
  */
 export function aiStepToEditor(action) {
 	return {
@@ -220,7 +220,7 @@ export function aiStepToEditor(action) {
  *
  * @param {object} action The editor row.
  * @return {object} The stored action.
- * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+ * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
  */
 export function toPersistedAiStep(action) {
 	const stored = {
@@ -251,7 +251,7 @@ export function toPersistedAiStep(action) {
  *
  * @param {object} draft The AI field: field, operation, sourceFields, agent, language, labels, prompt.
  * @return {object} The stored AI step.
- * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+ * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
  */
 export function aiFieldStep(draft) {
 	const base = { agent: draft.agent, sourceFields: draft.sourceFields, targetField: draft.field }
@@ -271,7 +271,7 @@ export function aiFieldStep(draft) {
  *
  * @param {object} step The stored AI step.
  * @return {string} The operation.
- * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+ * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
  */
 export function operationOfStep(step) {
 	if (step.preset === 'classify') {
@@ -291,7 +291,7 @@ export function operationOfStep(step) {
  *
  * @param {object} draft The AI field.
  * @return {object} The JSON Schema property.
- * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+ * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
  */
 export function aiFieldProperty(draft) {
 	const step = aiFieldStep(draft)
@@ -311,7 +311,7 @@ export function aiFieldProperty(draft) {
  *
  * @param {object} draft The AI field.
  * @return {string} The message.
- * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+ * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
  */
 export function aiFieldIncomplete(draft) {
 	if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(String(draft.field || ''))) {

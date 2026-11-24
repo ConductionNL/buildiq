@@ -65,7 +65,7 @@ interface FormLiveBindingIndexInterface {
 	 *
 	 * @return list<LiveBinding>
 	 *
-	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
+	 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
 	 */
 	public function bindingsFor(array $registerKeys, array $schemaKeys): array;
 
@@ -74,7 +74,7 @@ interface FormLiveBindingIndexInterface {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
+	 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
 	 */
 	public function isEmpty(): bool;
 
@@ -86,7 +86,7 @@ interface FormLiveBindingIndexInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
+	 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
 	 */
 	public function reindexVersion(string $versionId, array $version): void;
 }//end interface

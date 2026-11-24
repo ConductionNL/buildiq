@@ -10,7 +10,7 @@
  *  - A "Decide with a rule set" step names a decision table rule set; a
  *    condition-action rule set cannot decide, so it is not offered.
  *
- * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
+ * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
  */
 
 import axios from '@nextcloud/axios'
@@ -47,7 +47,7 @@ function referenceOf(row) {
  *
  * @return {Promise<Array<{id: string, label: string}>>} The options.
  *
- * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
+ * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
  */
 export async function fetchIntegriqSources() {
 	const register = resolveFleetAppId('integriq')
@@ -66,7 +66,7 @@ export async function fetchIntegriqSources() {
  *
  * @return {Promise<Array<{id: string, label: string}>>} The options.
  *
- * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
+ * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
  */
 export async function fetchDecisionRuleSets() {
 	const { data } = await axios.get(
@@ -85,7 +85,7 @@ export async function fetchDecisionRuleSets() {
  * uuid, which the mail subscription filters on.
  *
  * @return {Promise<Array<{id: string, label: string}>>} The options.
- * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
+ * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
  */
 export async function fetchIntegriqMailboxes() {
 	const register = resolveFleetAppId('integriq')

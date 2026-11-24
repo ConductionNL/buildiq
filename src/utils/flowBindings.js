@@ -7,7 +7,7 @@
  * (`runOn`), and the wrapper flows buildiq keeps for those entries, which the
  * maker never sees or edits (logic-shared-flows-and-automations D1, D2).
  *
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
  */
 
 /** The name every wrapper flow starts with (FlowBindingWrapperService::NAME_PREFIX). */
@@ -24,7 +24,7 @@ export const FROM_RECORD = 'from-record'
  *
  * @param {object} binding One `Application.flows` entry.
  * @return {boolean}
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
  */
 export function isWrapperBinding(binding) {
 	return !!binding
@@ -38,7 +38,7 @@ export function isWrapperBinding(binding) {
  *
  * @param {object} entry A `runOn` entry.
  * @return {string}
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
  */
 export function runOnWhen(entry) {
 	if (entry && entry.mode === FROM_RECORD) {
@@ -54,7 +54,7 @@ export function runOnWhen(entry) {
  * @param {string} schema The schema slug.
  * @param {string} when An event from RUN_ON_EVENTS, or `from-record`.
  * @return {{schema: string, event?: string, mode?: string}}
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
  */
 export function runOnEntry(schema, when) {
 	if (when === FROM_RECORD) {
@@ -72,7 +72,7 @@ export function runOnEntry(schema, when) {
  * @param {Array<object>} bindings The current `Application.flows`.
  * @param {Array<{label: string, value: string}>} picked The picked options.
  * @return {Array<object>}
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
  */
 export function withPickedFlows(bindings, picked) {
 	const list = Array.isArray(bindings) ? bindings : []
@@ -90,7 +90,7 @@ export function withPickedFlows(bindings, picked) {
  * @param {string} flow The bound flow's uuid.
  * @param {Array<object>} runOn Its new entries.
  * @return {Array<object>}
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
  */
 export function withRunOn(bindings, flow, runOn) {
 	return (Array.isArray(bindings) ? bindings : []).map((binding) => (

@@ -186,7 +186,7 @@ export default {
 	computed: {
 		/**
 		 * @return {string}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
 		 */
 		noNodeReason() {
 			return missingNodeReason()
@@ -196,7 +196,7 @@ export default {
 		 * The rows that are not waiting to be removed.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
 		 */
 		visibleRows() {
 			return this.rows.filter((row) => !row.removed)
@@ -206,7 +206,7 @@ export default {
 		 * The operations of an AI field (D5).
 		 *
 		 * @return {Array<{value: string, label: string}>}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
 		 */
 		operationOptions() {
 			return [
@@ -223,7 +223,7 @@ export default {
 		 * The fields an AI field can read: the schema's other fields.
 		 *
 		 * @return {Array<{value: string, label: string}>}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
 		 */
 		sourceOptions() {
 			const aiFields = this.visibleRows.map((row) => row.field)
@@ -236,7 +236,7 @@ export default {
 		 * What the draft still needs, or ''.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
 		 */
 		draftProblem() {
 			if (!this.draft) {
@@ -256,7 +256,7 @@ export default {
 		 * Reload when the designer opens another schema.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
 		 */
 		schemaSlug() {
 			this.load()
@@ -273,7 +273,7 @@ export default {
 		/**
 		 * @param {string} operation - the operation id.
 		 * @return {string}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
 		 */
 		operationLabel(operation) {
 			const option = this.operationOptions.find((o) => o.value === operation)
@@ -283,7 +283,7 @@ export default {
 		/**
 		 * @param {object} row - an AI field row.
 		 * @return {string}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
 		 */
 		summaryOf(row) {
 			return aiStepSummary(row)
@@ -293,7 +293,7 @@ export default {
 		 * Read the node catalogue, the agents and this schema's AI field automations.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
 		 */
 		async load() {
 			this.errorMessage = ''
@@ -366,7 +366,7 @@ export default {
 		 * Declare the read-only property on the staged schema and queue the automation.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
 		 */
 		confirmDraft() {
 			if (this.draftProblem !== '') {
@@ -391,7 +391,7 @@ export default {
 		 *
 		 * @param {object} row - the row.
 		 * @return {void}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
 		 */
 		removeRow(row) {
 			this.$emit('remove', row.field)
@@ -407,7 +407,7 @@ export default {
 		 * remove each removed one, with its flow (D5). Called by the designer.
 		 *
 		 * @return {Promise<boolean>} Whether every write succeeded.
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
 		 */
 		async persist() {
 			this.errorMessage = ''

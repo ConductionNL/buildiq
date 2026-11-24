@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-condition-gates-the-actions-req-bqar-004
+ * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-condition-gates-the-actions-req-bqar-004
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
 /**
  * Builds and refuses the nodes of a rule-set condition.
  *
- * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-condition-gates-the-actions-req-bqar-004
+ * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-condition-gates-the-actions-req-bqar-004
  */
 final class RuleSetConditionNodes {
 
@@ -64,7 +64,7 @@ final class RuleSetConditionNodes {
 	 *
 	 * @throws UnsupportedAutomationCombinationException When the rule set is missing, not a table or decides more than one outcome.
 	 *
-	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-condition-gates-the-actions-req-bqar-004
+	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-condition-gates-the-actions-req-bqar-004
 	 */
 	public function build(array $condition): array {
 		$slug    = trim((string)($condition['ruleSetSlug'] ?? ''));

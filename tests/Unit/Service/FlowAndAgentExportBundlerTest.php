@@ -169,7 +169,7 @@ final class FlowAndAgentExportBundlerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
 	 */
 	public function testAWrapperFlowIsNotExported(): void {
 		$bound = '6b14a1fd-0cab-40c0-a3e7-7fea3be29bdc';

@@ -113,7 +113,7 @@ export default {
 	computed: {
 		/**
 		 * @return {Array<{value: string, label: string}>}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
 		 */
 		presetOptions() {
 			return aiPresetOptions()
@@ -121,7 +121,7 @@ export default {
 
 		/**
 		 * @return {?{value: string, label: string}}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
 		 */
 		presetOption() {
 			return this.presetOptions.find((o) => o.value === this.modelValue.preset) || this.presetOptions[0]
@@ -129,7 +129,7 @@ export default {
 
 		/**
 		 * @return {?{id: string, label: string}}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
 		 */
 		agentOption() {
 			return this.agentOptions.find((o) => o.id === this.modelValue.agent) || null
@@ -139,7 +139,7 @@ export default {
 		 * The fields this step sends, shown before the maker saves (D3).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
 		 */
 		summary() {
 			return aiStepSummary(this.modelValue)
@@ -153,7 +153,7 @@ export default {
 		 * @param {string} key - the action key.
 		 * @param {string|Array<string>} value - its new value.
 		 * @return {void}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
 		 */
 		emitKey(key, value) {
 			this.$emit('update', { key, value })
@@ -164,7 +164,7 @@ export default {
 		 *
 		 * @param {Array<string>} names - the field names.
 		 * @return {Array<{value: string, label: string}>}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
 		 */
 		optionsFor(names) {
 			return namesOf(names).map((name) => this.fieldOptions.find((o) => o.value === name) || { value: name, label: name })
@@ -175,7 +175,7 @@ export default {
 		 *
 		 * @param {Array<{value: string}>|null} options - the picked options.
 		 * @return {Array<string>}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
 		 */
 		valuesOf(options) {
 			return namesOf((options || []).map((option) => option && option.value))
@@ -186,7 +186,7 @@ export default {
 		 *
 		 * @param {string} text - the typed text.
 		 * @return {Array<string>}
-		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+		 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
 		 */
 		splitLabels(text) {
 			return namesOf(String(text || '').split(','))

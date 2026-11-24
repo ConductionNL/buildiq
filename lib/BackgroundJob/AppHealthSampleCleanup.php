@@ -16,7 +16,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
+ * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use Throwable;
 /**
  * Daily retention for app-health-sample objects.
  *
- * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
+ * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
  */
 class AppHealthSampleCleanup extends TimedJob {
 	/**
@@ -84,7 +84,7 @@ class AppHealthSampleCleanup extends TimedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
+	 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
@@ -101,7 +101,7 @@ class AppHealthSampleCleanup extends TimedJob {
 	 *
 	 * @return int How many samples were deleted.
 	 *
-	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
+	 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
 	 */
 	public function purge(int $now): int {
 		$days = $this->appConfig->getValueInt(AppIdentity::APP_ID, 'health_retention_days', self::DEFAULT_DAYS);

@@ -9,7 +9,7 @@
  * makes one request. The schema list already carries each schema's
  * `properties`, so the field lists need no second request.
  *
- * @spec openspec/changes/pages-detail-related-items/design.md
+ * @spec openspec/changes/archive/2026-11-24-pages-detail-related-items/design.md
  */
 export const schemaListCacheMixin = {
 	props: {

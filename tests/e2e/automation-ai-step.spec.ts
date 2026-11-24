@@ -201,7 +201,7 @@ test.describe('ai-llm-steps-and-computed-fields: AI steps and AI fields run', ()
 	})
 
 	test('REQ-BQLS-002: a classify automation fills categorie on a new record', async ({ page }) => {
-		// @e2e openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
+		// @e2e openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
 		test.skip(missingFixture.length > 0, `set ${missingFixture.join(', ')} to run AI step e2e`)
 		test.skip(!nodeListed, 'OpenRegister lists no hermiq.agent-step: install Hermiq on the instance')
 
@@ -222,7 +222,7 @@ test.describe('ai-llm-steps-and-computed-fields: AI steps and AI fields run', ()
 	})
 
 	test('REQ-BQLS-004: an AI field fills when a record is created', async ({ page }) => {
-		// @e2e openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+		// @e2e openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
 		test.skip(missingFixture.length > 0, `set ${missingFixture.join(', ')} to run AI step e2e`)
 		test.skip(!nodeListed, 'OpenRegister lists no hermiq.agent-step: install Hermiq on the instance')
 

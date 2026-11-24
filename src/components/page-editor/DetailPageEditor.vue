@@ -548,7 +548,7 @@ export default {
 		 * Whether the sidebar's files tab shows: on unless `files` is in
 		 * `sidebar.hiddenTabs`.
 		 *
-		 * @spec openspec/changes/pages-detail-related-items/tasks.md#task-T03
+		 * @spec openspec/changes/archive/2026-11-24-pages-detail-related-items/tasks.md#task-T03
 		 */
 		filesShown() {
 			const s = this.config.sidebar
@@ -691,7 +691,7 @@ export default {
 		 *
 		 * @param {'relatedCollections'|'relationLinks'} key - the config key.
 		 * @param {Array<object>} list - the rebuilt list from its builder.
-		 * @spec openspec/changes/pages-detail-related-items/tasks.md#task-T01
+		 * @spec openspec/changes/archive/2026-11-24-pages-detail-related-items/tasks.md#task-T01
 		 */
 		updateList(key, list) {
 			const next = { ...this.config }
@@ -712,7 +712,7 @@ export default {
 		 * `hiddenTabs` itself when nothing else is hidden.
 		 *
 		 * @param {boolean} shown - the Files checkbox state.
-		 * @spec openspec/changes/pages-detail-related-items/tasks.md#task-T03
+		 * @spec openspec/changes/archive/2026-11-24-pages-detail-related-items/tasks.md#task-T03
 		 */
 		setFilesShown(shown) {
 			const next = { ...this.config }

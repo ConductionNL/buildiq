@@ -5,7 +5,7 @@
  * REQ-BQDM-004: a running app folds diagnostics into per-page counts and
  * posts counts only.
  *
- * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-a-running-app-reports-counts-not-content-req-bqdm-004
+ * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-a-running-app-reports-counts-not-content-req-bqdm-004
  */
 import { describe, expect, it, vi } from 'vitest'
 import { createHealthReporter } from '../../src/services/healthReporter.js'

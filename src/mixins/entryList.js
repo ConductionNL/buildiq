@@ -10,7 +10,7 @@ import { schemaListCacheMixin } from './schemaListCache.js'
  *
  * Brings schemaListCacheMixin, whose `loadSchemas` it calls.
  *
- * @spec openspec/changes/pages-detail-related-items/tasks.md#task-T01
+ * @spec openspec/changes/archive/2026-11-24-pages-detail-related-items/tasks.md#task-T01
  */
 export const entryListMixin = {
 	mixins: [schemaListCacheMixin],
@@ -70,7 +70,7 @@ export const entryListMixin = {
 		 * @param {number} index - position of the entry.
 		 * @param {string} key - the key, e.g. `title` or `fkField`.
 		 * @param {string} value - the new value.
-		 * @spec openspec/changes/pages-detail-related-items/tasks.md#task-T02
+		 * @spec openspec/changes/archive/2026-11-24-pages-detail-related-items/tasks.md#task-T02
 		 */
 		updateField(index, key, value) {
 			const rest = { ...(this.localEntries[index] || {}) }

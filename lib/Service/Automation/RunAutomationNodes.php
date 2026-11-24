@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
 /**
  * Builds and refuses the node of a step that runs another automation.
  *
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
  */
 final class RunAutomationNodes {
 
@@ -98,7 +98,7 @@ final class RunAutomationNodes {
 	 *
 	 * @return list<string>
 	 *
-	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
 	 */
 	public static function targetUuids(array $actions): array {
 		$uuids = [];
@@ -126,7 +126,7 @@ final class RunAutomationNodes {
 	 *
 	 * @throws UnsupportedAutomationCombinationException For a missing, self, unknown, unshared or uncompiled automation.
 	 *
-	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
 	 */
 	public function build(array $action, int $index): array {
 		$uuid = trim((string)($action['automation'] ?? ''));

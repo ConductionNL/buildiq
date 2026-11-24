@@ -66,7 +66,7 @@ export default {
 		 * Whether the binding maps any field the search can match.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-the-list-page-shows-every-state-of-the-fetch-req-bqcb-002
+		 * @spec openspec/changes/archive/2026-11-24-integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-the-list-page-shows-every-state-of-the-fetch-req-bqcb-002
 		 */
 		hasFields() {
 			const connector = (this.dataSource && this.dataSource.connector) || {}
@@ -79,7 +79,7 @@ export default {
 		 * Store the search term the rows are filtered on.
 		 *
 		 * @param {string} value - the search box's text.
-		 * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-the-list-page-shows-every-state-of-the-fetch-req-bqcb-002
+		 * @spec openspec/changes/archive/2026-11-24-integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-the-list-page-shows-every-state-of-the-fetch-req-bqcb-002
 		 */
 		onSearch(value) {
 			this.search = value === null || value === undefined ? '' : String(value)

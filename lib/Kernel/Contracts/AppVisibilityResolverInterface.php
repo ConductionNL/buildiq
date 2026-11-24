@@ -54,7 +54,7 @@ interface AppVisibilityResolverInterface {
 	 *
 	 * @return bool True when the placement should be visible.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
 	 */
 	public function isPlacementVisibleToUser(
 		array $appPrincipals,

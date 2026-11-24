@@ -30,7 +30,7 @@
  * `FormLiveValuesListenerTest`), and not the absence of an execution log for
  * preview evaluations (REQ-BQLV-004, PHPUnit `RuleEngineServiceTest`).
  *
- * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md
+ * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md
  * @e2e form-live-values/requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001/the-applicants-e-mail-is-filled-in
  * @e2e form-live-values/requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002/the-fee-follows-the-size-of-the-event
  * @e2e form-live-values/requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003/the-applicant-learns-why-they-do-not-qualify

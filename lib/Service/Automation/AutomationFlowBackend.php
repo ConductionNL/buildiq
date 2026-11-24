@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
+ * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use Throwable;
  *                                                 (find target and options, save options) and the flow
  *                                                 entity; the collaborators themselves are five.
  *
- * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
+ * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
  */
 class AutomationFlowBackend {
 
@@ -109,7 +109,7 @@ class AutomationFlowBackend {
 	 *
 	 * @throws UnsupportedAutomationCombinationException When the version or its register cannot be read.
 	 *
-	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-record-step-runs-outside-an-approval-req-bqar-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-record-step-runs-outside-an-approval-req-bqar-002
 	 */
 	public function scope(string $versionUuid): array {
 		$version = $this->loadVersion(uuid: $versionUuid);
@@ -164,7 +164,7 @@ class AutomationFlowBackend {
 	 *
 	 * @throws Throwable When OpenRegister refuses the flow.
 	 *
-	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
+	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 */
 	public function apply(array $flow, ?string $priorUuid, bool $enabled, string $versionUuid): string {
 		$existing = $this->findFlow(uuid: $priorUuid);
@@ -208,7 +208,7 @@ class AutomationFlowBackend {
 	 *
 	 * @throws Throwable When OpenRegister refuses the delete (a run has not finished).
 	 *
-	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
+	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 */
 	public function remove(string $flowUuid, string $versionUuid): void {
 		if ($flowUuid === '') {
@@ -230,7 +230,7 @@ class AutomationFlowBackend {
 	 *
 	 * @return array{name: string, nodes: list<array<string, mixed>>, edges: list<array<string, mixed>>}|null
 	 *
-	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
+	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 */
 	public function live(string $flowUuid): ?array {
 		$flow = $this->findFlow(uuid: $flowUuid);

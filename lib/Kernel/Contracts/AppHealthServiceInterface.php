@@ -64,7 +64,7 @@ interface AppHealthServiceInterface {
 	 *
 	 * @return array<string, mixed>|null The aggregate, null for an unknown window.
 	 *
-	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
+	 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
 	 */
 	public function computeHealth(string $applicationUuid, string $versionUuid, string $window, ?DateTimeImmutable $now = null): ?array;
 
@@ -75,7 +75,7 @@ interface AppHealthServiceInterface {
 	 *
 	 * @return array<string, mixed> The data.
 	 *
-	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
+	 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function normalise(mixed $object): array;
@@ -89,7 +89,7 @@ interface AppHealthServiceInterface {
 	 *
 	 * @return int How many samples were stored.
 	 *
-	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
+	 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
 	 */
 	public function record(string $applicationUuid, string $versionUuid, mixed $pages): int;
 }//end interface

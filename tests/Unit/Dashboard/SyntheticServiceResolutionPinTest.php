@@ -81,7 +81,7 @@ class SyntheticServiceResolutionPinTest extends TestCase {
 		. "absent, which is indistinguishable from a working system on which no user has\n"
 		. "configured any widgets. No exception, no log line, no 404.\n"
 		. "\n"
-		. "See openspec/changes/publish-widgets-to-nc-dashboard/design.md, risk R1.\n"
+		. "See openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/design.md, risk R1.\n"
 		. "THE FALLBACK IS: generate one real PHP class per promoted widget into a writable\n"
 		. "app directory and register those, with a cache-invalidation story on every\n"
 		. 'manifest save and an autoloader entry for the generated namespace.';

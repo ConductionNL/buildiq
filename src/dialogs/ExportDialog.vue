@@ -512,7 +512,7 @@ export default {
 		 * renders as "you have no GitHub credential yet", and submit() still refuses
 		 * to queue a GitHub export without one.
 		 *
-		 * @spec openspec/changes/export-github-broker/tasks.md#task-4-credential-picker-in-the-export-dialog
+		 * @spec openspec/changes/archive/2026-11-24-export-github-broker/tasks.md#task-4-credential-picker-in-the-export-dialog
 		 */
 		async fetchGithubCredentials() {
 			this.loadingCredentials = true

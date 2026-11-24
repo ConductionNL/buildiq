@@ -414,9 +414,9 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 *
 	 * @throws UnsupportedAutomationCombinationException When the shape cannot run in a flow.
 	 *
-	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
+	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 *
-	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
 	 *
 	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
 	 *
@@ -523,7 +523,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @throws UnsupportedAutomationCombinationException When the plan runs an AI step and the engine lacks Hermiq's node.
 	 *
 	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
-	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
+	 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
 	 *
 	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
 	 *
@@ -609,7 +609,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 *
 	 * @throws UnsupportedAutomationCombinationException When a node is missing.
 	 *
-	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
+	 * @spec openspec/changes/archive/2026-11-24-ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
 	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) AiStepNodes::flowRunsAgent() and ScriptStepNodes::flowRunsCode() are pure checks of the compiled flow.
@@ -688,7 +688,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 *
 	 * @return array<string,mixed>
 	 *
-	 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-a-webhook-starts-the-automations-flow-req-bqtr-003
+	 * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-a-webhook-starts-the-automations-flow-req-bqtr-003
 	 */
 	private function withInbound(array $provenance, array $automation, ?string $flowUuid, array $priorProvenance): array {
 		$prior = $this->orArray(value: $priorProvenance['inbound'] ?? null);
@@ -766,7 +766,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 *
 	 * @return string|null The flow uuid, or null without a flow.
 	 *
-	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
+	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 */
 	private function applyFlow(array $automation, ?array $planned, ?string $priorUuid): ?string {
 		$versionUuid = (string)($automation['versionUuid'] ?? '');

@@ -30,9 +30,9 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-clients-that-cannot-run-the-widget-receive-projected-items
- * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-an-unprojectable-widget-returns-an-honest-empty-state
- * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-each-openregister-endpoint-is-queried-in-its-own-filter-grammar
+ * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-clients-that-cannot-run-the-widget-receive-projected-items
+ * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-an-unprojectable-widget-returns-an-honest-empty-state
+ * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-each-openregister-endpoint-is-queried-in-its-own-filter-grammar
  */
 
 declare(strict_types=1);
@@ -96,7 +96,7 @@ class WidgetItemProjector implements WidgetItemProjectorInterface {
 	 *
 	 * @return WidgetItems The items, or an honest empty state.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-clients-that-cannot-run-the-widget-receive-projected-items
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-clients-that-cannot-run-the-widget-receive-projected-items
 	 */
 	#[\Override]
 	public function project(WidgetDescriptor $descriptor, int $limit = 7): WidgetItems {
@@ -125,7 +125,7 @@ class WidgetItemProjector implements WidgetItemProjectorInterface {
 	 *
 	 * @return array<string,mixed> Request parameters with bare filter keys.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-each-openregister-endpoint-is-queried-in-its-own-filter-grammar
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-each-openregister-endpoint-is-queried-in-its-own-filter-grammar
 	 */
 	public function objectsRequestParams(array $dataSource, int $limit): array {
 		$params = [
@@ -154,7 +154,7 @@ class WidgetItemProjector implements WidgetItemProjectorInterface {
 	 *
 	 * @return array<string,mixed> Request parameters with a nested filter map.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-each-openregister-endpoint-is-queried-in-its-own-filter-grammar
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-each-openregister-endpoint-is-queried-in-its-own-filter-grammar
 	 */
 	public function aggregationsRequestParams(array $dataSource): array {
 		return [
@@ -171,7 +171,7 @@ class WidgetItemProjector implements WidgetItemProjectorInterface {
 	 *
 	 * @return WidgetItems One item per returned row.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-clients-that-cannot-run-the-widget-receive-projected-items
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-clients-that-cannot-run-the-widget-receive-projected-items
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function projectRows(WidgetDescriptor $descriptor, int $limit): WidgetItems {
@@ -222,7 +222,7 @@ class WidgetItemProjector implements WidgetItemProjectorInterface {
 	 *
 	 * @return WidgetItems Exactly one item, or an honest empty state.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-clients-that-cannot-run-the-widget-receive-projected-items
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-clients-that-cannot-run-the-widget-receive-projected-items
 	 */
 	private function projectAggregate(WidgetDescriptor $descriptor): WidgetItems {
 		$value = $this->aggregations->value(
@@ -254,7 +254,7 @@ class WidgetItemProjector implements WidgetItemProjectorInterface {
 	 *
 	 * @return bool True when a projection is possible.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-an-unprojectable-widget-returns-an-honest-empty-state
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-an-unprojectable-widget-returns-an-honest-empty-state
 	 */
 	private function isProjectable(WidgetDescriptor $descriptor): bool {
 		$dataSource = $descriptor->dataSource;
@@ -316,7 +316,7 @@ class WidgetItemProjector implements WidgetItemProjectorInterface {
 	 *
 	 * @return WidgetItems An empty list with a pointer to the app page.
 	 *
-	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-an-unprojectable-widget-returns-an-honest-empty-state
+	 * @spec openspec/changes/archive/2026-11-24-publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-an-unprojectable-widget-returns-an-honest-empty-state
 	 */
 	private function emptyState(WidgetDescriptor $descriptor): WidgetItems {
 		$appName = $descriptor->applicationName;

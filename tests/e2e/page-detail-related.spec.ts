@@ -15,7 +15,7 @@
  * setup, a non-admin with its own storage state, given the viewer role on the
  * fixture app.
  *
- * @spec openspec/changes/pages-detail-related-items/specs/page-detail-related-items/spec.md
+ * @spec openspec/changes/archive/2026-11-24-pages-detail-related-items/specs/page-detail-related-items/spec.md
  */
 import type { APIRequestContext, Page } from '@playwright/test'
 

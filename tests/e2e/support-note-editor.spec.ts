@@ -21,7 +21,7 @@
  *
  * Not run in the change that wrote it (decision 139): the live pass runs it.
  *
- * @spec openspec/changes/apps-support-note-editor-saves/specs/support-note/spec.md
+ * @spec openspec/changes/archive/2026-11-24-apps-support-note-editor-saves/specs/support-note/spec.md
  * @e2e support-note/requirement-the-support-editor-saves-the-note-to-the-apps-manifest-req-bqsn-001/a-maker-saves-a-support-note
  * @e2e support-note/requirement-the-support-editor-saves-the-note-to-the-apps-manifest-req-bqsn-001/closing-without-done-keeps-the-saved-note
  * @e2e support-note/requirement-the-support-editor-saves-the-note-to-the-apps-manifest-req-bqsn-001/a-viewer-does-not-get-the-action

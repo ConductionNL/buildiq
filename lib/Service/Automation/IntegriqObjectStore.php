@@ -25,7 +25,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-mail-starts-the-automations-flow-req-bqtr-002
+ * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-mail-starts-the-automations-flow-req-bqtr-002
  */
 
 declare(strict_types=1);
@@ -82,7 +82,7 @@ class IntegriqObjectStore {
 	/**
 	 * @param ContainerInterface $container Resolves OpenRegister's object service at use time.
 	 *
-	 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-mail-starts-the-automations-flow-req-bqtr-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-mail-starts-the-automations-flow-req-bqtr-002
 	 */
 	public function __construct(
 		private readonly ContainerInterface $container,
@@ -94,7 +94,7 @@ class IntegriqObjectStore {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
+	 * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
 	 */
 	public function available(): bool {
 		return class_exists(self::SAVE_OPTIONS) === true
@@ -114,7 +114,7 @@ class IntegriqObjectStore {
 	 *
 	 * @throws UnsupportedAutomationCombinationException When the write cannot be made.
 	 *
-	 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-mail-starts-the-automations-flow-req-bqtr-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-mail-starts-the-automations-flow-req-bqtr-002
 	 */
 	public function save(string $schema, array $object, ?string $uuid): string {
 		if ($this->available() === false) {
@@ -147,7 +147,7 @@ class IntegriqObjectStore {
 	 *
 	 * @return bool Whether the delete went through (false when OpenRegister refused or is absent).
 	 *
-	 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-mail-starts-the-automations-flow-req-bqtr-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-mail-starts-the-automations-flow-req-bqtr-002
 	 */
 	public function delete(string $schema, string $uuid): bool {
 		if ($uuid === '' || $this->available() === false) {

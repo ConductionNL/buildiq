@@ -10,7 +10,7 @@
  * picker and no input that would take a token: no password field and no
  * field labelled token.
  *
- * @spec openspec/changes/export-github-broker/specs/export-github-broker/spec.md
+ * @spec openspec/changes/archive/2026-11-24-export-github-broker/specs/export-github-broker/spec.md
  * @e2e export-github-broker/requirement-the-github-export-holds-no-token/the-export-dialog-offers-credentials-never-a-token-field
  */
 

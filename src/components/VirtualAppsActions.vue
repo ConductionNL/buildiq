@@ -171,7 +171,7 @@ export default {
 		 *
 		 * @param {object} app The import's answer: the app's `uuid` and, with records, `records.schemas`.
 		 * @return {void}
-		 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
+		 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
 		 */
 		onImported(app) {
 			const records = app && app.records ? app.records.schemas || [] : []

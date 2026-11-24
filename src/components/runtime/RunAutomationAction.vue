@@ -64,7 +64,7 @@ export default {
 		 * The app this record belongs to.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
+		 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
 		 */
 		appSlug() {
 			return typeof this.cnAppSlug === 'function' ? (this.cnAppSlug() || '') : (this.cnAppSlug || '')
@@ -74,7 +74,7 @@ export default {
 		 * The record's schema slug.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
+		 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
 		 */
 		schema() {
 			return objectSchemaKeys(this.object, this.cnObjectContext)[0] || ''
@@ -84,7 +84,7 @@ export default {
 		 * The record's id.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
+		 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
 		 */
 		recordId() {
 			return this.objectId || (this.object && this.object['@self'] && this.object['@self'].id) || ''
@@ -97,7 +97,7 @@ export default {
 			/**
 			 * Reload the list when the record's schema changes.
 			 *
-			 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
+			 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
 			 */
 			handler() {
 				this.load()
@@ -110,7 +110,7 @@ export default {
 		 * Load the manual automations the caller may run on this schema; none on any refusal.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
+		 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
 		 */
 		async load() {
 			if (this.appSlug === '' || this.schema === '') {
@@ -132,7 +132,7 @@ export default {
 		 *
 		 * @param {{uuid: string, name: string}} automation The automation.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
+		 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
 		 */
 		async run(automation) {
 			this.running = automation.uuid

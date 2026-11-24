@@ -8,8 +8,8 @@
  * - A rule decision needs a rule set and the field its decision is written to (D7).
  * - "Run another automation" needs the automation it runs (logic-shared-flows-and-automations D4).
  *
- * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
- * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+ * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
+ * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
  */
 
 const REQUIREMENTS = Object.freeze({

@@ -4,7 +4,7 @@
  * (pages-detail-related-items): the register and schema picker, a field select
  * and the inline mark. One import for each builder.
  *
- * @spec openspec/changes/pages-detail-related-items/tasks.md#task-T01
+ * @spec openspec/changes/archive/2026-11-24-pages-detail-related-items/tasks.md#task-T01
  */
 export { default as FieldSelect } from './FieldSelect.vue'
 export { default as InlineFieldMark } from './InlineFieldMark.vue'

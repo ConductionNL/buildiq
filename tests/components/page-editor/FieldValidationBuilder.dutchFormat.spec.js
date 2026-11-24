@@ -5,7 +5,7 @@
  * the field as `format`, a format disables and drops the pattern, and a
  * format the schema property carries is shown, disabled, and never dropped.
  *
- * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+ * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
  */
 
 import { mount } from '@vue/test-utils'

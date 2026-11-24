@@ -208,7 +208,7 @@ export default {
 		 *
 		 * @param {number} index - position of the chart widget in the `widgets` array.
 		 * @param {{ chartKind: string, dataSource: object }} content - the form's `update:content` payload.
-		 * @spec openspec/changes/pages-chart-widget-authoring/specs/page-chart-authoring/spec.md#requirement-the-chart-is-saved-in-the-shape-the-manifest-schema-allows-req-bqcw-002
+		 * @spec openspec/changes/archive/2026-11-24-pages-chart-widget-authoring/specs/page-chart-authoring/spec.md#requirement-the-chart-is-saved-in-the-shape-the-manifest-schema-allows-req-bqcw-002
 		 */
 		updateChart(index, content) {
 			const next = this.localWidgets.slice()
@@ -367,7 +367,7 @@ export default {
 		 *
 		 * @param {object} widget - a widget definition.
 		 * @return {boolean}
-		 * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-a-maker-can-place-a-connector-widget-on-a-dashboard-req-bqcb-003
+		 * @spec openspec/changes/archive/2026-11-24-integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-a-maker-can-place-a-connector-widget-on-a-dashboard-req-bqcb-003
 		 */
 		isConnectorWidget(widget) {
 			return Boolean(widget) && widget.type === CONNECTOR_WIDGET_TYPE
@@ -378,7 +378,7 @@ export default {
 		 *
 		 * @param {object} widget - a connector widget definition.
 		 * @return {object}
-		 * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-a-maker-can-place-a-connector-widget-on-a-dashboard-req-bqcb-003
+		 * @spec openspec/changes/archive/2026-11-24-integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-a-maker-can-place-a-connector-widget-on-a-dashboard-req-bqcb-003
 		 */
 		connectorDataSource(widget) {
 			const content = widget && widget.content
@@ -391,7 +391,7 @@ export default {
 		 *
 		 * @param {number} index - position of the widget in the `widgets` array.
 		 * @param {object} dataSource - the data source the origin toggle emitted.
-		 * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-a-maker-can-place-a-connector-widget-on-a-dashboard-req-bqcb-003
+		 * @spec openspec/changes/archive/2026-11-24-integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-a-maker-can-place-a-connector-widget-on-a-dashboard-req-bqcb-003
 		 */
 		updateDataSource(index, dataSource) {
 			const next = this.localWidgets.slice()
@@ -412,7 +412,7 @@ export default {
 		 * The parent adds it to `widgets` and places it on the grid in one
 		 * update (`add:connectorWidget`).
 		 *
-		 * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-a-maker-can-place-a-connector-widget-on-a-dashboard-req-bqcb-003
+		 * @spec openspec/changes/archive/2026-11-24-integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-a-maker-can-place-a-connector-widget-on-a-dashboard-req-bqcb-003
 		 */
 		addConnectorWidget() {
 			const taken = new Set(this.localWidgets.map((w) => w && w.id))

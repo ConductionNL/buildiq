@@ -549,7 +549,7 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 	 *
 	 * @return JSONResponse|null The refusal.
 	 *
-	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
 	 */
 	private function shareChangeRefusal(bool $changes, ?array $application): ?JSONResponse {
 		if ($changes === false || $this->callerOwns(application: $application) === true) {
@@ -612,7 +612,7 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 	 *
 	 * @return JSONResponse|null The refusal.
 	 *
-	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
 	 */
 	private function shareabilityRefusal(array $automation): ?JSONResponse {
 		$step = null;
@@ -675,7 +675,7 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 	 *
 	 * @return array{number:int,schema:string}|null The step, counted from 1, and the schema it writes.
 	 *
-	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
 	 */
 	public static function stepWritingOwnRecords(array $actions): ?array {
 		$number = 0;

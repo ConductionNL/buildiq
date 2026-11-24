@@ -203,7 +203,7 @@ class PublishTemplatesTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-publish-templates-from-the-command-line-req-bqic-008
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-publish-templates-from-the-command-line-req-bqic-008
 	 */
 	public function testEverySeededTemplateIsPublishedWithOneLineEach(): void {
 		$this->syncService->method('isBrokerAvailable')->willReturn(true);
@@ -242,7 +242,7 @@ class PublishTemplatesTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-publish-templates-from-the-command-line-req-bqic-008
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-publish-templates-from-the-command-line-req-bqic-008
 	 */
 	public function testWithoutACredentialNothingIsPublished(): void {
 		$this->syncService->expects($this->never())->method('publishTemplate');

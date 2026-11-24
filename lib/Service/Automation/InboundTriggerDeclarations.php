@@ -25,7 +25,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
+ * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
  */
 
 declare(strict_types=1);
@@ -125,7 +125,7 @@ class InboundTriggerDeclarations {
 	 * @param IAppManager         $appManager  Asks whether integriq is installed.
 	 * @param IUserSession        $userSession The maker applying the automation (D5).
 	 *
-	 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
+	 * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
 	 */
 	public function __construct(
 		private readonly IntegriqObjectStore $store,
@@ -141,7 +141,7 @@ class InboundTriggerDeclarations {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
+	 * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
 	 */
 	public static function isInbound(string $triggerType): bool {
 		return in_array($triggerType, self::TRIGGERS, true);
@@ -157,7 +157,7 @@ class InboundTriggerDeclarations {
 	 *
 	 * @throws UnsupportedAutomationCombinationException When either slug is missing.
 	 *
-	 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-a-webhook-starts-the-automations-flow-req-bqtr-003
+	 * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-a-webhook-starts-the-automations-flow-req-bqtr-003
 	 */
 	public static function endpointPath(string $appSlug, string $automationSlug): string {
 		if ($appSlug === '' || $automationSlug === '') {
@@ -176,7 +176,7 @@ class InboundTriggerDeclarations {
 	 *
 	 * @throws UnsupportedAutomationCombinationException When a setting is missing or not supported.
 	 *
-	 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
+	 * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
 	 */
 	public static function check(array $trigger): void {
 		$type = (string)($trigger['type'] ?? '');
@@ -203,7 +203,7 @@ class InboundTriggerDeclarations {
 	 *
 	 * @throws UnsupportedAutomationCombinationException When integriq is absent or refuses a write (fail closed).
 	 *
-	 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-mail-starts-the-automations-flow-req-bqtr-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-mail-starts-the-automations-flow-req-bqtr-002
 	 */
 	public function apply(array $automation, ?string $flowUuid, array $prior): array {
 		$trigger = (array)($automation['trigger'] ?? []);
@@ -256,7 +256,7 @@ class InboundTriggerDeclarations {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-mail-starts-the-automations-flow-req-bqtr-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-mail-starts-the-automations-flow-req-bqtr-002
 	 */
 	public function remove(array $prior): void {
 		$this->removeExcept(prior: $prior, keep: []);
@@ -290,7 +290,7 @@ class InboundTriggerDeclarations {
 	 *
 	 * @throws UnsupportedAutomationCombinationException When the trigger cannot be applied.
 	 *
-	 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
+	 * @spec openspec/changes/archive/2026-11-24-logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
 	 */
 	public function assertReady(array $trigger): void {
 		if ($this->appManager->isEnabledForUser('integriq') === false) {

@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md
+ * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md
  */
 
 declare(strict_types=1);
@@ -27,7 +27,7 @@ namespace OCA\Buildiq\Service;
 /**
  * Sanitises posted samples and aggregates stored ones. No I/O.
  *
- * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md
+ * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md
  */
 class AppHealthSamples {
 	/**
@@ -74,8 +74,8 @@ class AppHealthSamples {
 	 *
 	 * @return list<array<string, int|string>> One `{pageId, ...counts, failures}` per kept page.
 	 *
-	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
-	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-operators-read-the-same-numbers-as-metrics-req-bqdm-007
+	 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
+	 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-operators-read-the-same-numbers-as-metrics-req-bqdm-007
 	 */
 	public function sanitise(mixed $pages): array {
 		if (is_array($pages) === false) {
@@ -113,7 +113,7 @@ class AppHealthSamples {
 	 *
 	 * @return array<string, mixed> Totals, shares and the slowest pages.
 	 *
-	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
+	 * @spec openspec/changes/archive/2026-11-24-operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
 	 */
 	public function aggregate(iterable $samples): array {
 		$total = array_fill_keys(self::COUNTS, 0);
