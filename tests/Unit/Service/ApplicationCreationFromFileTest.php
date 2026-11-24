@@ -24,6 +24,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Exception\WizardCreationException;
 use OCA\Buildiq\Service\ApplicationCreationService;
+use OCA\Buildiq\Service\AppStartSources;
 use OCA\Buildiq\Service\DatabaseManifestBuilder;
 use OCA\Buildiq\Service\RegisterStore;
 use OCA\Buildiq\Service\SlugValidator;
@@ -124,11 +125,11 @@ class ApplicationCreationFromFileTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->objectService = $this->createMock(ObjectServiceInterface::class);
-		$this->registerService = $this->createMock(RegisterService::class);
-		$this->registerMapper = $this->createMock(RegisterMapper::class);
-		$this->schemaMapper = $this->createMock(SchemaMapper::class);
-		$this->importer = $this->createMock(ObjectImporterInterface::class);
+		$this->objectService = $this->createMock(originalClassName: ObjectServiceInterface::class);
+		$this->registerService = $this->createMock(originalClassName: RegisterService::class);
+		$this->registerMapper = $this->createMock(originalClassName: RegisterMapper::class);
+		$this->schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
+		$this->importer = $this->createMock(originalClassName: ObjectImporterInterface::class);
 
 		$this->register = new Register();
 		$this->registerMapper->method('find')->willReturn($this->register);
@@ -150,7 +151,7 @@ class ApplicationCreationFromFileTest extends TestCase {
 		$this->objectService->method('searchObjects')->willReturn([]);
 		$this->objectService->method('saveObject')->willReturnCallback(function (array $object): ObjectEntity {
 			$this->saved[] = $object;
-			$entity = $this->createMock(ObjectEntity::class);
+			$entity = $this->createMock(originalClassName: ObjectEntity::class);
 			$id = 'uuid-' . count($this->saved);
 			$entity->method('jsonSerialize')->willReturn(['id' => $id, 'uuid' => $id]);
 			return $entity;
@@ -165,22 +166,22 @@ class ApplicationCreationFromFileTest extends TestCase {
 	 * @return ApplicationCreationService
 	 */
 	private function service(bool $withSpreadsheets = true): ApplicationCreationService {
-		$user = $this->createMock(IUser::class);
+		$user = $this->createMock(originalClassName: IUser::class);
 		$user->method('getUID')->willReturn('admin');
-		$session = $this->createMock(IUserSession::class);
+		$session = $this->createMock(originalClassName: IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
-		$container = $this->createMock(ContainerInterface::class);
+		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$container->method('has')->willReturn(true);
 		$container->method('get')->willReturnCallback(fn (): object => $this->importer);
 
 		$spreadsheets = null;
 		if ($withSpreadsheets === true) {
-			$spreadsheets = new SpreadsheetAppSource($container);
+			$spreadsheets = new SpreadsheetAppSource(container: $container);
 		}
 
 		return new ApplicationCreationService(
-			logger: $this->createMock(LoggerInterface::class),
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
 			store: new RegisterStore(
 				objectService: $this->objectService,
 				registerMapper: $this->registerMapper,
@@ -189,8 +190,7 @@ class ApplicationCreationFromFileTest extends TestCase {
 			registerService: $this->registerService,
 			userSession: $session,
 			slugValidator: new SlugValidator(),
-			databaseManifests: new DatabaseManifestBuilder(),
-			spreadsheets: $spreadsheets,
+			sources: new AppStartSources(databaseManifests: new DatabaseManifestBuilder(), spreadsheets: $spreadsheets),
 		);
 	}//end service()
 
@@ -233,29 +233,32 @@ class ApplicationCreationFromFileTest extends TestCase {
 		);
 		$this->objectService->expects(self::never())->method('deleteObject');
 
-		$uuid = $this->service()->createApplication(self::payload());
+		$uuid = $this->service()->createApplication(payload: self::payload());
 
-		self::assertSame('uuid-1', $uuid);
+		self::assertSame(expected: 'uuid-1', actual: $uuid);
 
 		$fileSchemas = array_values(array_filter($this->schemas, static fn (array $schema): bool => str_ends_with((string)$schema['slug'], '-permits')));
-		self::assertCount(1, $fileSchemas);
-		self::assertSame('vergunningen-production-permits', $fileSchemas[0]['slug']);
-		self::assertSame(['name', 'address', 'status'], array_keys($fileSchemas[0]['properties']));
+		self::assertCount(expectedCount: 1, haystack: $fileSchemas);
+		self::assertSame(expected: 'vergunningen-production-permits', actual: $fileSchemas[0]['slug']);
+		self::assertSame(expected: ['name', 'address', 'status'], actual: array_keys($fileSchemas[0]['properties']));
 
-		self::assertSame(['rows' => 40, 'header' => ['name', 'address', 'status'], 'schema' => 'vergunningen-production-permits'], $imported);
+		self::assertSame(
+			expected: ['rows' => 40, 'header' => ['name', 'address', 'status'], 'schema' => 'vergunningen-production-permits'],
+			actual: $imported
+		);
 
 		$versions = array_values(array_filter($this->saved, static fn (array $object): bool => isset($object['manifest']) === true));
 		$pages = $versions[0]['manifest']['pages'];
-		self::assertSame(['PermitsIndex', 'PermitsDetail'], array_column($pages, 'id'));
-		self::assertSame('index', $pages[0]['type']);
-		self::assertSame('detail', $pages[1]['type']);
+		self::assertSame(expected: ['PermitsIndex', 'PermitsDetail'], actual: array_column($pages, 'id'));
+		self::assertSame(expected: 'index', actual: $pages[0]['type']);
+		self::assertSame(expected: 'detail', actual: $pages[1]['type']);
 		foreach ($pages as $page) {
-			self::assertSame('openbuild-vergunningen-production', $page['config']['register']);
-			self::assertSame('vergunningen-production-permits', $page['config']['schema']);
+			self::assertSame(expected: 'openbuild-vergunningen-production', actual: $page['config']['register']);
+			self::assertSame(expected: 'vergunningen-production-permits', actual: $page['config']['schema']);
 		}
 
-		self::assertSame('PermitsIndex', $versions[0]['manifest']['menu'][0]['route']);
-		self::assertSame('permits', $versions[0]['manifest']['menu'][0]['label']);
+		self::assertSame(expected: 'PermitsIndex', actual: $versions[0]['manifest']['menu'][0]['route']);
+		self::assertSame(expected: 'permits', actual: $versions[0]['manifest']['menu'][0]['label']);
 	}//end aMakerStartsAnAppFromASpreadsheet()
 
 	/**
@@ -268,13 +271,13 @@ class ApplicationCreationFromFileTest extends TestCase {
 	public function onlyTheFirstVersionGetsTheRecords(): void {
 		$this->importer->expects(self::once())->method('importFromCsv')->willReturn(['created' => 40, 'errors' => []]);
 
-		$this->service()->createApplication(self::payload('dev-prod'));
+		$this->service()->createApplication(payload: self::payload(preset: 'dev-prod'));
 
 		$slugs = array_column($this->schemas, 'slug');
-		self::assertContains('vergunningen-development-permits', $slugs);
-		self::assertContains('vergunningen-production-permits', $slugs);
-		self::assertContains('vergunningen-development-permits', $this->schemaLookups);
-		self::assertNotContains('vergunningen-production-permits', $this->schemaLookups);
+		self::assertContains(needle: 'vergunningen-development-permits', haystack: $slugs);
+		self::assertContains(needle: 'vergunningen-production-permits', haystack: $slugs);
+		self::assertContains(needle: 'vergunningen-development-permits', haystack: $this->schemaLookups);
+		self::assertNotContains(needle: 'vergunningen-production-permits', haystack: $this->schemaLookups);
 	}//end onlyTheFirstVersionGetsTheRecords()
 
 	/**
@@ -293,17 +296,17 @@ class ApplicationCreationFromFileTest extends TestCase {
 		$this->importer->expects(self::once())->method('softDeleteByImportJobId')->with('job-9')->willReturn([]);
 		$this->schemaMapper->expects(self::once())->method('delete');
 		$this->registerService->expects(self::once())->method('delete');
-		$this->objectService->expects(self::exactly(2))->method('deleteObject');
+		$this->objectService->expects(self::exactly(count: 2))->method('deleteObject');
 
 		try {
-			$this->service()->createApplication(self::payload());
-			self::fail('Expected a WizardCreationException.');
+			$this->service()->createApplication(payload: self::payload());
+			self::fail(message: 'Expected a WizardCreationException.');
 		} catch (WizardCreationException $e) {
-			self::assertSame('import-file', $e->getFailedAtStep());
-			self::assertSame('complete', $e->getRollbackStatus());
+			self::assertSame(expected: 'import-file', actual: $e->getFailedAtStep());
+			self::assertSame(expected: 'complete', actual: $e->getRollbackStatus());
 			self::assertSame(
-				'The file could not be imported: 1 row(s) were refused. Row 4 has 5 cells, the header has 3.',
-				$e->getMessage()
+				expected: 'The file could not be imported: 1 row(s) were refused. Row 4 has 5 cells, the header has 3.',
+				actual: $e->getMessage()
 			);
 		}
 	}//end aFileOpenRegisterCannotImportCreatesNothing()
@@ -322,11 +325,11 @@ class ApplicationCreationFromFileTest extends TestCase {
 		$this->registerService->expects(self::once())->method('delete');
 
 		try {
-			$this->service()->createApplication(self::payload());
-			self::fail('Expected a WizardCreationException.');
+			$this->service()->createApplication(payload: self::payload());
+			self::fail(message: 'Expected a WizardCreationException.');
 		} catch (WizardCreationException $e) {
-			self::assertSame('import-file', $e->getFailedAtStep());
-			self::assertSame('The file could not be imported: The file is not a valid CSV file.', $e->getMessage());
+			self::assertSame(expected: 'import-file', actual: $e->getFailedAtStep());
+			self::assertSame(expected: 'The file could not be imported: The file is not a valid CSV file.', actual: $e->getMessage());
 		}
 	}//end anImportThatFailsRollsEverythingBack()
 
@@ -346,16 +349,16 @@ class ApplicationCreationFromFileTest extends TestCase {
 		$unreadable['fromFile']['content'] = base64_encode("\x00\x01\xFF");
 
 		$messages = [];
-		foreach ([[$this->service(), $unreadable], [$this->service(false), self::payload()]] as [$service, $payload]) {
+		foreach ([[$this->service(), $unreadable], [$this->service(withSpreadsheets: false), self::payload()]] as [$service, $payload]) {
 			try {
-				$service->createApplication($payload);
+				$service->createApplication(payload: $payload);
 			} catch (WizardCreationException $e) {
-				self::assertSame('validate', $e->getFailedAtStep());
+				self::assertSame(expected: 'validate', actual: $e->getFailedAtStep());
 				$messages[] = $e->getMessage();
 			}
 		}
 
-		self::assertSame(['The file is not a readable CSV file.', 'Spreadsheets cannot be imported on this instance.'], $messages);
-		self::assertSame([], $this->saved);
+		self::assertSame(expected: ['The file is not a readable CSV file.', 'Spreadsheets cannot be imported on this instance.'], actual: $messages);
+		self::assertSame(expected: [], actual: $this->saved);
 	}//end unusableFilesAreRefusedBeforeAnythingIsSaved()
 }//end class

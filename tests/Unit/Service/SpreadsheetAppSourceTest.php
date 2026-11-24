@@ -65,11 +65,11 @@ class SpreadsheetAppSourceTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->importer = $this->createMock(ObjectImporterInterface::class);
-		$container = $this->createMock(ContainerInterface::class);
+		$this->importer = $this->createMock(originalClassName: ObjectImporterInterface::class);
+		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$container->method('has')->willReturnCallback(static fn (string $id): bool => $id === ObjectImporterInterface::class);
 		$container->method('get')->willReturnCallback(fn (): object => $this->importer);
-		$this->source = new SpreadsheetAppSource($container);
+		$this->source = new SpreadsheetAppSource(container: $container);
 	}//end setUp()
 
 	/**
@@ -106,16 +106,16 @@ class SpreadsheetAppSourceTest extends TestCase {
 	 * @return void
 	 */
 	public function readMakesASchemaFromTheHeaderRow(): void {
-		$file = $this->source->read(self::block('Permits 2026.csv', self::permitsCsv()));
+		$file = $this->source->read(block: self::block(name: 'Permits 2026.csv', bytes: self::permitsCsv()));
 
-		self::assertSame('csv', $file['format']);
-		self::assertSame(['name', 'address', 'status'], $file['columns']);
-		self::assertSame('permits-2026', $file['schema']['slug']);
-		self::assertSame('Permits 2026', $file['schema']['title']);
-		self::assertSame(['name', 'address', 'status'], array_keys($file['schema']['properties']));
-		self::assertSame(['type' => 'string', 'title' => 'address'], $file['schema']['properties']['address']);
-		self::assertTrue($file['schema']['configuration']['exportable']);
-		self::assertSame(self::permitsCsv(), $file['bytes']);
+		self::assertSame(expected: 'csv', actual: $file['format']);
+		self::assertSame(expected: ['name', 'address', 'status'], actual: $file['columns']);
+		self::assertSame(expected: 'permits-2026', actual: $file['schema']['slug']);
+		self::assertSame(expected: 'Permits 2026', actual: $file['schema']['title']);
+		self::assertSame(expected: ['name', 'address', 'status'], actual: array_keys($file['schema']['properties']));
+		self::assertSame(expected: ['type' => 'string', 'title' => 'address'], actual: $file['schema']['properties']['address']);
+		self::assertTrue(condition: $file['schema']['configuration']['exportable']);
+		self::assertSame(expected: self::permitsCsv(), actual: $file['bytes']);
 	}//end readMakesASchemaFromTheHeaderRow()
 
 	/**
@@ -127,12 +127,12 @@ class SpreadsheetAppSourceTest extends TestCase {
 	 */
 	public function readHandlesSemicolonsTheByteOrderMarkAndATakenSlug(): void {
 		$file = $this->source->read(
-			self::block('hello-message.csv', "\xEF\xBB\xBFname;address;status\r\nA;B;C\r\n"),
+			self::block(name: 'hello-message.csv', bytes: "\xEF\xBB\xBFname;address;status\r\nA;B;C\r\n"),
 			['hello-message']
 		);
 
-		self::assertSame(['name', 'address', 'status'], $file['columns']);
-		self::assertSame('hello-message-data', $file['schema']['slug']);
+		self::assertSame(expected: ['name', 'address', 'status'], actual: $file['columns']);
+		self::assertSame(expected: 'hello-message-data', actual: $file['schema']['slug']);
 	}//end readHandlesSemicolonsTheByteOrderMarkAndATakenSlug()
 
 	/**
@@ -143,7 +143,7 @@ class SpreadsheetAppSourceTest extends TestCase {
 	 * @return void
 	 */
 	public function aFileNameWithoutLettersGivesTheFallbackSlug(): void {
-		self::assertSame('records', SpreadsheetAppSource::schemaFor('2026.csv', ['name'])['slug']);
+		self::assertSame(expected: 'records', actual: SpreadsheetAppSource::schemaFor(name: '2026.csv', columns: ['name'])['slug']);
 	}//end aFileNameWithoutLettersGivesTheFallbackSlug()
 
 	/**
@@ -154,10 +154,10 @@ class SpreadsheetAppSourceTest extends TestCase {
 	 * @return void
 	 */
 	public function readTakesTheHeaderRowOfAnXlsxWorkbook(): void {
-		$file = $this->source->read(self::block('permits.xlsx', self::xlsx()));
+		$file = $this->source->read(block: self::block(name: 'permits.xlsx', bytes: self::xlsx()));
 
-		self::assertSame('excel', $file['format']);
-		self::assertSame(['name', 'address', 'status'], $file['columns']);
+		self::assertSame(expected: 'excel', actual: $file['format']);
+		self::assertSame(expected: ['name', 'address', 'status'], actual: $file['columns']);
 	}//end readTakesTheHeaderRowOfAnXlsxWorkbook()
 
 	/**
@@ -170,22 +170,22 @@ class SpreadsheetAppSourceTest extends TestCase {
 	public function unreadableFilesAreRefused(): void {
 		$cases = [
 			'fromFile needs a file name and its contents.' => ['name' => 'x.csv'],
-			'Choose a CSV, XLS or XLSX file.' => self::block('permits.pdf', 'x'),
+			'Choose a CSV, XLS or XLSX file.' => self::block(name: 'permits.pdf', bytes: 'x'),
 			'The file is empty or could not be read.' => ['name' => 'permits.csv', 'content' => '***'],
 			'The file is larger than 10 MB.' => ['name' => 'permits.csv', 'content' => str_repeat('A', 14000000)],
-			'The file has no header row. Put the column names in the first row.' => self::block('permits.csv', ",,\nA,B,C\n"),
-			'Column 2 has no name in the header row.' => self::block('permits.csv', "name,,status\n"),
-			'The column "Name" appears twice in the header row.' => self::block('permits.csv', "name,Name\n"),
-			'The file is not a readable CSV file.' => self::block('permits.csv', "\x00\x01\x02\xFF\xFE"),
-			'The file is not a readable XLSX workbook.' => self::block('permits.xlsx', 'not a zip'),
+			'The file has no header row. Put the column names in the first row.' => self::block(name: 'permits.csv', bytes: ",,\nA,B,C\n"),
+			'Column 2 has no name in the header row.' => self::block(name: 'permits.csv', bytes: "name,,status\n"),
+			'The column "Name" appears twice in the header row.' => self::block(name: 'permits.csv', bytes: "name,Name\n"),
+			'The file is not a readable CSV file.' => self::block(name: 'permits.csv', bytes: "\x00\x01\x02\xFF\xFE"),
+			'The file is not a readable XLSX workbook.' => self::block(name: 'permits.xlsx', bytes: 'not a zip'),
 		];
 
 		foreach ($cases as $message => $block) {
 			try {
-				$this->source->read($block);
-				self::fail('Expected a refusal: ' . $message);
+				$this->source->read(block: $block);
+				self::fail(message: 'Expected a refusal: ' . $message);
 			} catch (InvalidArgumentException $e) {
-				self::assertSame($message, $e->getMessage());
+				self::assertSame(expected: $message, actual: $e->getMessage());
 			}
 		}
 	}//end unreadableFilesAreRefused()
@@ -199,12 +199,12 @@ class SpreadsheetAppSourceTest extends TestCase {
 	 */
 	public function anXlsFileWithoutTheLibraryIsRefused(): void {
 		if (class_exists('\\PhpOffice\\PhpSpreadsheet\\Reader\\Xls') === true) {
-			self::markTestSkipped('The spreadsheet library is loaded.');
+			self::markTestSkipped(message: 'The spreadsheet library is loaded.');
 		}
 
-		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage('XLS files cannot be read on this instance. Save the file as XLSX or CSV.');
-		$this->source->read(self::block('permits.xls', "\xD0\xCF\x11\xE0"));
+		$this->expectException(exception: InvalidArgumentException::class);
+		$this->expectExceptionMessage(message: 'XLS files cannot be read on this instance. Save the file as XLSX or CSV.');
+		$this->source->read(block: self::block(name: 'permits.xls', bytes: "\xD0\xCF\x11\xE0"));
 	}//end anXlsFileWithoutTheLibraryIsRefused()
 
 	/**
@@ -215,7 +215,7 @@ class SpreadsheetAppSourceTest extends TestCase {
 	 * @return void
 	 */
 	public function importHandsTheFileToOpenRegistersCsvImport(): void {
-		$file = $this->source->read(self::block('permits.csv', self::permitsCsv()));
+		$file = $this->source->read(block: self::block(name: 'permits.csv', bytes: self::permitsCsv()));
 		$register = new Register();
 		$schema = new Schema();
 		$seen = null;
@@ -232,13 +232,13 @@ class SpreadsheetAppSourceTest extends TestCase {
 		);
 		$this->importer->expects(self::never())->method('importFromExcel');
 
-		$summary = $this->source->import($file, $register, $schema, null);
+		$summary = $this->source->import(file: $file, register: $register, schema: $schema, user: null);
 
-		self::assertSame(['created' => 40, 'errors' => [], 'importJobId' => 'job-1'], $summary);
-		self::assertSame(self::permitsCsv(), $seen['contents']);
-		self::assertSame('csv', $seen['extension']);
-		self::assertSame($register, $seen['register']);
-		self::assertSame($schema, $seen['schema']);
+		self::assertSame(expected: ['created' => 40, 'errors' => [], 'importJobId' => 'job-1'], actual: $summary);
+		self::assertSame(expected: self::permitsCsv(), actual: $seen['contents']);
+		self::assertSame(expected: 'csv', actual: $seen['extension']);
+		self::assertSame(expected: $register, actual: $seen['register']);
+		self::assertSame(expected: $schema, actual: $seen['schema']);
 	}//end importHandsTheFileToOpenRegistersCsvImport()
 
 	/**
@@ -249,10 +249,10 @@ class SpreadsheetAppSourceTest extends TestCase {
 	 * @return void
 	 */
 	public function importHandsAWorkbookToOpenRegistersExcelImport(): void {
-		$file = $this->source->read(self::block('permits.xlsx', self::xlsx()));
+		$file = $this->source->read(block: self::block(name: 'permits.xlsx', bytes: self::xlsx()));
 		$this->importer->expects(self::once())->method('importFromExcel')->willReturn(['created' => [['id' => 1]], 'errors' => []]);
 
-		self::assertSame(1, $this->source->import($file, new Register(), new Schema(), null)['created']);
+		self::assertSame(expected: 1, actual: $this->source->import(file: $file, register: new Register(), schema: new Schema(), user: null)['created']);
 	}//end importHandsAWorkbookToOpenRegistersExcelImport()
 
 	/**
@@ -263,12 +263,12 @@ class SpreadsheetAppSourceTest extends TestCase {
 	 * @return void
 	 */
 	public function importWithoutTheImporterFails(): void {
-		$file = $this->source->read(self::block('permits.csv', self::permitsCsv()));
-		$source = new SpreadsheetAppSource($this->createMock(ContainerInterface::class));
+		$file = $this->source->read(block: self::block(name: 'permits.csv', bytes: self::permitsCsv()));
+		$source = new SpreadsheetAppSource(container: $this->createMock(originalClassName: ContainerInterface::class));
 
-		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessage('OpenRegister\'s import is not available on this instance.');
-		$source->import($file, new Register(), new Schema(), null);
+		$this->expectException(exception: RuntimeException::class);
+		$this->expectExceptionMessage(message: 'OpenRegister\'s import is not available on this instance.');
+		$source->import(file: $file, register: new Register(), schema: new Schema(), user: null);
 	}//end importWithoutTheImporterFails()
 
 	/**
@@ -284,8 +284,8 @@ class SpreadsheetAppSourceTest extends TestCase {
 			'Sheet2' => ['created' => 2, 'errors' => []],
 		]);
 
-		self::assertSame(['created' => 5, 'errors' => [['row' => 2, 'error' => 'bad']], 'importJobId' => 'job-2'], $summary);
-		self::assertSame(['created' => 0, 'errors' => [], 'importJobId' => null], SpreadsheetAppSource::summarise('nothing'));
+		self::assertSame(expected: ['created' => 5, 'errors' => [['row' => 2, 'error' => 'bad']], 'importJobId' => 'job-2'], actual: $summary);
+		self::assertSame(expected: ['created' => 0, 'errors' => [], 'importJobId' => null], actual: SpreadsheetAppSource::summarise('nothing'));
 	}//end summariseAddsUpSheets()
 
 	/**
@@ -296,11 +296,11 @@ class SpreadsheetAppSourceTest extends TestCase {
 	 * @return void
 	 */
 	public function undoRollsTheImportJobBack(): void {
-		$this->importer->expects(self::exactly(2))->method('softDeleteByImportJobId')->with('job-1')
-			->willReturnOnConsecutiveCalls(['deleted' => 40], self::throwException(new RuntimeException('gone')));
+		$this->importer->expects(self::exactly(count: 2))->method('softDeleteByImportJobId')->with('job-1')
+			->willReturnOnConsecutiveCalls(['deleted' => 40], self::throwException(exception: new RuntimeException('gone')));
 
-		self::assertTrue($this->source->undo('job-1'));
-		self::assertFalse($this->source->undo('job-1'));
+		self::assertTrue(condition: $this->source->undo(importJobId: 'job-1'));
+		self::assertFalse(condition: $this->source->undo(importJobId: 'job-1'));
 	}//end undoRollsTheImportJobBack()
 
 	/**
@@ -320,7 +320,8 @@ class SpreadsheetAppSourceTest extends TestCase {
 		);
 		$zip->addFromString(
 			'xl/_rels/workbook.xml.rels',
-			'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="worksheet" Target="worksheets/permits.xml"/></Relationships>'
+			'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+			. '<Relationship Id="rId1" Type="worksheet" Target="worksheets/permits.xml"/></Relationships>'
 		);
 		$zip->addFromString('xl/sharedStrings.xml', '<sst xmlns="' . $main . '"><si><t>name</t></si><si><r><t>add</t></r><r><t>ress</t></r></si></sst>');
 		$zip->addFromString(

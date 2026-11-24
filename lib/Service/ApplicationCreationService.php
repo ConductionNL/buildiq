@@ -128,10 +128,8 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	 * @param RegisterService $registerService OpenRegister register-level service
 	 * @param IUserSession $userSession Current Nextcloud user session
 	 * @param SlugValidator $slugValidator Slug validation helper
-	 * @param ConnectedDatabaseReader|null $databases Reads a connected database register for "Start from a database".
-	 * @param DatabaseManifestBuilder|null $databaseManifests Builds the pages of an app made from a connected database.
+	 * @param AppStartSources|null $sources The starting points beside the default app: a connected database or a spreadsheet.
 	 * @param AppOrganisationGuard|null $organisationGuard Gives a new app its default organisation scope; null leaves it absent.
-	 * @param SpreadsheetAppSource|null $spreadsheets Reads and imports the file for "Start from a spreadsheet".
 	 *
 	 * @return void
 	 */
@@ -141,10 +139,8 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 		private readonly RegisterService $registerService,
 		private readonly IUserSession $userSession,
 		private readonly SlugValidator $slugValidator,
-		private readonly ?ConnectedDatabaseReader $databases = null,
-		private readonly ?DatabaseManifestBuilder $databaseManifests = null,
+		private readonly ?AppStartSources $sources = null,
 		private readonly ?AppOrganisationGuard $organisationGuard = null,
-		private readonly ?SpreadsheetAppSource $spreadsheets = null,
 	) {
 	}//end __construct()
 
@@ -468,7 +464,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			return $this->loadWizardFixture(fixture: ['name' => 'manifest', 'shape' => 'object']);
 		}
 
-		$builder = ($this->databaseManifests ?? new DatabaseManifestBuilder());
+		$builder = ($this->sources ?? new AppStartSources())->manifests();
 		try {
 			return $builder->build(
 				register: $plan['database']['register'],
@@ -494,7 +490,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
 	 */
 	private function fileManifest(array $plan, array $state): array {
-		$builder = ($this->databaseManifests ?? new DatabaseManifestBuilder());
+		$builder = ($this->sources ?? new AppStartSources())->manifests();
 		try {
 			return $builder->build(register: '{registerSlug}', schemas: [$plan['file']['schema']], writable: true);
 		} catch (Throwable $e) {
@@ -516,7 +512,8 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
 	 */
 	private function importFile(array $plan, array &$state): void {
-		if (($plan['file'] ?? null) === null || $this->spreadsheets === null) {
+		$spreadsheets = $this->sources?->spreadsheets;
+		if (($plan['file'] ?? null) === null || $spreadsheets === null) {
 			return;
 		}
 
@@ -524,7 +521,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 		try {
 			$register = $this->store->registerMapper->find($state['registerSlugs'][$firstSlug], _multitenancy: false);
 			$schema = $this->store->schemaMapper->find($state['fileSchemas'][0], _multitenancy: false);
-			$summary = $this->spreadsheets->import(
+			$summary = $spreadsheets->import(
 				file: $plan['file'],
 				register: $register,
 				schema: $schema,
@@ -536,10 +533,11 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 
 		$state['importJobId'] = $summary['importJobId'];
 		if ($summary['errors'] !== []) {
+			$cause = sprintf('The file could not be imported: %d row(s) were refused.', count($summary['errors']));
 			$this->rollbackAndThrow(
 				state: $state,
 				failedAtStep: 'import-file',
-				cause: sprintf('The file could not be imported: %d row(s) were refused. %s', count($summary['errors']), self::firstError(errors: $summary['errors']))
+				cause: trim($cause . ' ' . self::firstError(errors: $summary['errors']))
 			);
 		}
 	}//end importFile()
@@ -879,23 +877,21 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			return null;
 		}
 
-		$refusal = null;
-		if ($database !== null) {
-			$refusal = 'Start from a database or from a spreadsheet, not both.';
-		} else if ($this->spreadsheets === null) {
-			$refusal = 'Spreadsheets cannot be imported on this instance.';
-		}
-
+		$spreadsheets = $this->sources?->spreadsheets;
 		try {
-			if ($refusal !== null) {
-				throw new InvalidArgumentException($refusal);
+			if ($database !== null) {
+				throw new InvalidArgumentException('Start from a database or from a spreadsheet, not both.');
+			}
+
+			if ($spreadsheets === null) {
+				throw new InvalidArgumentException('Spreadsheets cannot be imported on this instance.');
 			}
 
 			$reserved = array_values(array_filter(array_map(
 				static fn ($schema): string => (string)($schema['slug'] ?? ''),
 				$this->loadWizardFixture(fixture: ['name' => 'schemas', 'shape' => 'array'])
 			)));
-			return $this->spreadsheets->read(block: $payload['fromFile'], reservedSlugs: $reserved);
+			return $spreadsheets->read(block: $payload['fromFile'], reservedSlugs: $reserved);
 		} catch (InvalidArgumentException $e) {
 			throw new WizardCreationException(
 				errorCode: 'validation_error',
@@ -928,7 +924,8 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 		$block = $payload['fromDatabase'];
 		$tables = self::databaseTables(block: $block);
 
-		if ($this->databases === null) {
+		$databases = $this->sources?->databases;
+		if ($databases === null) {
 			throw new WizardCreationException(
 				errorCode: 'validation_error',
 				failedAtStep: 'validate',
@@ -938,7 +935,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 		}
 
 		try {
-			return $this->databases->read(register: $block['register'], tables: array_values(array_filter($tables, 'is_string')));
+			return $databases->read(register: $block['register'], tables: array_values(array_filter($tables, 'is_string')));
 		} catch (InvalidArgumentException $e) {
 			throw new WizardCreationException(
 				errorCode: 'validation_error',
@@ -1345,8 +1342,9 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	 */
 	private function rollbackFile(array $state, array &$orphaned): void {
 		$jobId = ($state['importJobId'] ?? null);
-		if (is_string($jobId) === true && $jobId !== '' && $this->spreadsheets !== null
-			&& $this->spreadsheets->undo(importJobId: $jobId) === false
+		$spreadsheets = $this->sources?->spreadsheets;
+		if (is_string($jobId) === true && $jobId !== '' && $spreadsheets !== null
+			&& $spreadsheets->undo(importJobId: $jobId) === false
 		) {
 			$orphaned[] = 'import:' . $jobId;
 		}

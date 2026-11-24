@@ -38,7 +38,6 @@ use OCP\IUser;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
 use Throwable;
-use ZipArchive;
 
 /**
  * Reads an uploaded spreadsheet for the wizard and imports its rows.
@@ -86,19 +85,21 @@ class SpreadsheetAppSource {
 	/**
 	 * Constructor.
 	 *
-	 * @param ContainerInterface $container Resolves OpenRegister's importer when OpenRegister is installed.
+	 * @param ContainerInterface      $container Resolves OpenRegister's importer when OpenRegister is installed.
+	 * @param SpreadsheetHeaderReader $headers   Reads a file's header row and keeps its temporary files.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ContainerInterface $container,
+		private readonly SpreadsheetHeaderReader $headers = new SpreadsheetHeaderReader(),
 	) {
 	}//end __construct()
 
 	/**
 	 * Check a `fromFile` block and read its header row; nothing is written.
 	 *
-	 * @param mixed    $block        The `fromFile` block: `{name, mime?, content}` with base64 content.
+	 * @param mixed    $block         The `fromFile` block: `{name, mime?, content}` with base64 content.
 	 * @param string[] $reservedSlugs Schema slugs the new app already uses.
 	 *
 	 * @return array{name:string,format:string,extension:string,bytes:string,columns:list<string>,schema:array<string,mixed>}
@@ -108,6 +109,26 @@ class SpreadsheetAppSource {
 	 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
 	 */
 	public function read(mixed $block, array $reservedSlugs = []): array {
+		$file    = $this->decode(block: $block);
+		$columns = self::checkedColumns(header: $this->headers->header(bytes: $file['bytes'], extension: $file['extension']));
+
+		return $file + [
+			'format'  => self::FORMATS[$file['extension']],
+			'columns' => $columns,
+			'schema'  => self::schemaFor(name: $file['name'], columns: $columns, reservedSlugs: $reservedSlugs),
+		];
+	}//end read()
+
+	/**
+	 * The file name, extension and bytes of a `fromFile` block, once its type and size are checked.
+	 *
+	 * @param mixed $block The `fromFile` block.
+	 *
+	 * @return array{name:string,extension:string,bytes:string}
+	 *
+	 * @throws InvalidArgumentException When the block has no file, the type is not taken, or the file is empty or too large.
+	 */
+	private function decode(mixed $block): array {
 		if (is_array($block) === false || is_string($block['name'] ?? null) === false || is_string($block['content'] ?? null) === false) {
 			throw new InvalidArgumentException('fromFile needs a file name and its contents.');
 		}
@@ -118,7 +139,8 @@ class SpreadsheetAppSource {
 			throw new InvalidArgumentException('Choose a CSV, XLS or XLSX file.');
 		}
 
-		if (strlen($block['content']) > (int)ceil(self::MAX_BYTES * 4 / 3) + 4) {
+		// Base64 is 4 characters per 3 bytes: refuse an oversized file before decoding it.
+		if (strlen($block['content']) > ((int)ceil(self::MAX_BYTES * 4 / 3) + 4)) {
 			throw new InvalidArgumentException(self::tooLarge());
 		}
 
@@ -131,17 +153,8 @@ class SpreadsheetAppSource {
 			throw new InvalidArgumentException(self::tooLarge());
 		}
 
-		$columns = self::checkedColumns(header: $this->headerRow(bytes: $bytes, extension: $extension));
-
-		return [
-			'name'      => $name,
-			'format'    => self::FORMATS[$extension],
-			'extension' => $extension,
-			'bytes'     => $bytes,
-			'columns'   => $columns,
-			'schema'    => self::schemaFor(name: $name, columns: $columns, reservedSlugs: $reservedSlugs),
-		];
-	}//end read()
+		return ['name' => $name, 'extension' => $extension, 'bytes' => $bytes];
+	}//end decode()
 
 	/**
 	 * Load the file's rows as records of its schema through OpenRegister's register import.
@@ -159,26 +172,18 @@ class SpreadsheetAppSource {
 	 */
 	public function import(array $file, RegisterInterface $register, SchemaInterface $schema, ?IUser $user): array {
 		$importer = $this->importer();
-		$path     = tempnam(sys_get_temp_dir(), 'buildiq-sheet-');
-		if ($path === false) {
-			throw new RuntimeException('No temporary file for the spreadsheet.');
-		}
-
-		$typed = $path . '.' . $file['extension'];
+		$path     = $this->headers->tempFile(bytes: (string)$file['bytes'], extension: (string)$file['extension']);
 		try {
-			file_put_contents($typed, $file['bytes']);
 			$request = new ImportRequest(
-				filePath: $typed,
+				filePath: $path,
 				scope: new ImportScope(register: $register, schema: $schema, currentUser: $user)
 			);
-			if ($file['format'] === 'csv') {
-				$result = $importer->importFromCsv($request);
-			} else {
-				$result = $importer->importFromExcel($request);
-			}
+			$result  = match ($file['format']) {
+				'csv' => $importer->importFromCsv(request: $request),
+				default => $importer->importFromExcel(request: $request),
+			};
 		} finally {
-			@unlink($typed);
-			@unlink($path);
+			$this->headers->removeFile(path: $path);
 		}
 
 		return self::summarise(result: $result);
@@ -195,7 +200,7 @@ class SpreadsheetAppSource {
 	 */
 	public function undo(string $importJobId): bool {
 		try {
-			$this->importer()->softDeleteByImportJobId($importJobId);
+			$this->importer()->softDeleteByImportJobId(importJobId: $importJobId);
 			return true;
 		} catch (Throwable $exception) {
 			return false;
@@ -210,8 +215,8 @@ class SpreadsheetAppSource {
 	 * @throws RuntimeException When OpenRegister does not offer it.
 	 */
 	private function importer(): ObjectImporterInterface {
-		if (interface_exists(ObjectImporterInterface::class) === true && $this->container->has(ObjectImporterInterface::class) === true) {
-			$importer = $this->container->get(ObjectImporterInterface::class);
+		if (interface_exists(ObjectImporterInterface::class) === true && $this->container->has(id: ObjectImporterInterface::class) === true) {
+			$importer = $this->container->get(id: ObjectImporterInterface::class);
 			if ($importer instanceof ObjectImporterInterface) {
 				return $importer;
 			}
@@ -235,28 +240,36 @@ class SpreadsheetAppSource {
 			return $summary;
 		}
 
-		$sheets = [$result];
-		if (array_key_exists('created', $result) === false && array_key_exists('errors', $result) === false) {
-			$sheets = array_filter($result, 'is_array');
+		$sheets = array_filter($result, 'is_array');
+		if (array_key_exists('created', $result) === true || array_key_exists('errors', $result) === true) {
+			$sheets = [$result];
 		}
 
 		foreach ($sheets as $sheet) {
 			$summary['created'] += self::countOf(value: ($sheet['created'] ?? 0));
-			foreach ((array)($sheet['errors'] ?? []) as $error) {
-				$summary['errors'][] = $error;
-			}
-
-			if (is_string($sheet['importJobId'] ?? null) === true) {
-				$summary['importJobId'] = $sheet['importJobId'];
-			}
+			array_push($summary['errors'], ...array_values((array)($sheet['errors'] ?? [])));
+			$summary['importJobId'] = self::jobIdOf(summary: $sheet, current: $summary['importJobId']);
 		}
 
-		if (is_string($result['importJobId'] ?? null) === true) {
-			$summary['importJobId'] = $result['importJobId'];
-		}
-
+		$summary['importJobId'] = self::jobIdOf(summary: $result, current: $summary['importJobId']);
 		return $summary;
 	}//end summarise()
+
+	/**
+	 * The import job a summary names, else the one found before.
+	 *
+	 * @param array<mixed> $summary The summary or sheet.
+	 * @param string|null  $current The job id found so far.
+	 *
+	 * @return string|null
+	 */
+	private static function jobIdOf(array $summary, ?string $current): ?string {
+		if (is_string($summary['importJobId'] ?? null) === true) {
+			return $summary['importJobId'];
+		}
+
+		return $current;
+	}//end jobIdOf()
 
 	/**
 	 * A count OpenRegister reports as a number or as the list of created records.
@@ -272,246 +285,6 @@ class SpreadsheetAppSource {
 
 		return (int)$value;
 	}//end countOf()
-
-	/**
-	 * The header row of a CSV or Excel file.
-	 *
-	 * @param string $bytes     The file contents.
-	 * @param string $extension The file extension.
-	 *
-	 * @return list<string>
-	 *
-	 * @throws InvalidArgumentException When the file cannot be read.
-	 */
-	private function headerRow(string $bytes, string $extension): array {
-		if ($extension === 'csv') {
-			return self::csvHeader(bytes: $bytes);
-		}
-
-		if ($extension === 'xlsx') {
-			return self::xlsxHeader(bytes: $bytes);
-		}
-
-		return self::xlsHeader(bytes: $bytes);
-	}//end headerRow()
-
-	/**
-	 * The first row of a CSV file; the separator is a comma, semicolon or tab.
-	 *
-	 * @param string $bytes The file contents.
-	 *
-	 * @return list<string>
-	 *
-	 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
-	 */
-	public static function csvHeader(string $bytes): array {
-		if (str_starts_with($bytes, "\xEF\xBB\xBF") === true) {
-			$bytes = substr($bytes, 3);
-		}
-
-		if (mb_check_encoding($bytes, 'UTF-8') === false || str_contains($bytes, "\0") === true) {
-			throw new InvalidArgumentException('The file is not a readable CSV file.');
-		}
-
-		$line = strtok($bytes, "\r\n");
-		if ($line === false) {
-			return [];
-		}
-
-		$separator = ',';
-		$best      = substr_count($line, ',');
-		foreach ([';', "\t"] as $candidate) {
-			if (substr_count($line, $candidate) > $best) {
-				$best      = substr_count($line, $candidate);
-				$separator = $candidate;
-			}
-		}
-
-		return array_map('strval', str_getcsv($line, $separator, '"', ''));
-	}//end csvHeader()
-
-	/**
-	 * The first row of an XLSX workbook's first sheet.
-	 *
-	 * @param string $bytes The file contents.
-	 *
-	 * @return list<string>
-	 *
-	 * @throws InvalidArgumentException When the file is not a readable workbook.
-	 *
-	 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
-	 */
-	public static function xlsxHeader(string $bytes): array {
-		$path = tempnam(sys_get_temp_dir(), 'buildiq-xlsx-');
-		if ($path === false) {
-			throw new InvalidArgumentException('The file could not be read.');
-		}
-
-		$zip = new ZipArchive();
-		try {
-			file_put_contents($path, $bytes);
-			if ($zip->open($path) !== true) {
-				throw new InvalidArgumentException('The file is not a readable XLSX workbook.');
-			}
-
-			$sheet = self::firstSheetXml(zip: $zip);
-			$strings = self::sharedStrings(xml: $zip->getFromName('xl/sharedStrings.xml'));
-			$zip->close();
-		} finally {
-			@unlink($path);
-		}
-
-		return self::firstRowOf(xml: $sheet, strings: $strings);
-	}//end xlsxHeader()
-
-	/**
-	 * The XML of a workbook's first sheet.
-	 *
-	 * @param ZipArchive $zip The opened workbook.
-	 *
-	 * @return string
-	 *
-	 * @throws InvalidArgumentException When the workbook has no sheet.
-	 */
-	private static function firstSheetXml(ZipArchive $zip): string {
-		$target = 'worksheets/sheet1.xml';
-		$workbook = self::xml(xml: $zip->getFromName('xl/workbook.xml'));
-		$rels     = self::xml(xml: $zip->getFromName('xl/_rels/workbook.xml.rels'));
-		if ($workbook !== null && $rels !== null) {
-			$first = ($workbook->xpath('//*[local-name()="sheet"]') ?: [])[0] ?? null;
-			$relId = (string)($first?->attributes('http://schemas.openxmlformats.org/officeDocument/2006/relationships')['id'] ?? '');
-			foreach (($rels->xpath('//*[local-name()="Relationship"]') ?: []) as $rel) {
-				if ((string)$rel['Id'] === $relId && $relId !== '') {
-					$target = ltrim(str_replace('/xl/', '', (string)$rel['Target']), '/');
-				}
-			}
-		}
-
-		$sheet = $zip->getFromName('xl/' . $target);
-		if (is_string($sheet) === false || $sheet === '') {
-			throw new InvalidArgumentException('The workbook has no sheet to read.');
-		}
-
-		return $sheet;
-	}//end firstSheetXml()
-
-	/**
-	 * A workbook's shared strings, in order.
-	 *
-	 * @param string|false $xml The sharedStrings part, or false when there is none.
-	 *
-	 * @return list<string>
-	 */
-	private static function sharedStrings(string|false $xml): array {
-		$doc = self::xml(xml: $xml);
-		if ($doc === null) {
-			return [];
-		}
-
-		$strings = [];
-		foreach (($doc->xpath('//*[local-name()="si"]') ?: []) as $item) {
-			$parts = $item->xpath('.//*[local-name()="t"]') ?: [];
-			$strings[] = implode('', array_map('strval', $parts));
-		}
-
-		return $strings;
-	}//end sharedStrings()
-
-	/**
-	 * The cells of a sheet's first row, as text.
-	 *
-	 * @param string       $xml     The sheet XML.
-	 * @param list<string> $strings The workbook's shared strings.
-	 *
-	 * @return list<string>
-	 *
-	 * @throws InvalidArgumentException When the sheet is not readable XML.
-	 */
-	private static function firstRowOf(string $xml, array $strings): array {
-		$doc = self::xml(xml: $xml);
-		if ($doc === null) {
-			throw new InvalidArgumentException('The workbook\'s sheet could not be read.');
-		}
-
-		$row = ($doc->xpath('//*[local-name()="sheetData"]/*[local-name()="row"]') ?: [])[0] ?? null;
-		if ($row === null) {
-			return [];
-		}
-
-		$cells = [];
-		foreach (($row->xpath('./*[local-name()="c"]') ?: []) as $cell) {
-			$type  = (string)$cell['t'];
-			$value = (string)(($cell->xpath('./*[local-name()="v"]') ?: [''])[0]);
-			if ($type === 's') {
-				$value = ($strings[(int)$value] ?? '');
-			} else if ($type === 'inlineStr') {
-				$value = implode('', array_map('strval', ($cell->xpath('.//*[local-name()="t"]') ?: [])));
-			}
-
-			$cells[] = $value;
-		}
-
-		return $cells;
-	}//end firstRowOf()
-
-	/**
-	 * Parse an XML part without network or entity loading.
-	 *
-	 * @param string|false $xml The XML, or false.
-	 *
-	 * @return \SimpleXMLElement|null
-	 */
-	private static function xml(string|false $xml): ?\SimpleXMLElement {
-		if (is_string($xml) === false || $xml === '' || stripos($xml, '<!DOCTYPE') !== false) {
-			return null;
-		}
-
-		$previous = libxml_use_internal_errors(true);
-		$doc      = simplexml_load_string($xml, \SimpleXMLElement::class, LIBXML_NONET);
-		libxml_clear_errors();
-		libxml_use_internal_errors($previous);
-
-		if ($doc === false) {
-			return null;
-		}
-
-		return $doc;
-	}//end xml()
-
-	/**
-	 * The first row of an XLS (BIFF) workbook, read with the spreadsheet library OpenRegister ships.
-	 *
-	 * @param string $bytes The file contents.
-	 *
-	 * @return list<string>
-	 *
-	 * @throws InvalidArgumentException When the library is not loaded or the file cannot be read.
-	 *
-	 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
-	 */
-	public static function xlsHeader(string $bytes): array {
-		$reader = '\\PhpOffice\\PhpSpreadsheet\\Reader\\Xls';
-		if (class_exists($reader) === false) {
-			throw new InvalidArgumentException('XLS files cannot be read on this instance. Save the file as XLSX or CSV.');
-		}
-
-		$path = tempnam(sys_get_temp_dir(), 'buildiq-xls-');
-		if ($path === false) {
-			throw new InvalidArgumentException('The file could not be read.');
-		}
-
-		try {
-			file_put_contents($path, $bytes);
-			$sheet = (new $reader())->load($path)->getSheet(0);
-			$row   = ($sheet->rangeToArray('A1:' . $sheet->getHighestColumn() . '1', '', false, false)[0] ?? []);
-		} catch (Throwable $exception) {
-			throw new InvalidArgumentException('The file is not a readable XLS workbook.', 0, $exception);
-		} finally {
-			@unlink($path);
-		}
-
-		return array_map('strval', $row);
-	}//end xlsHeader()
 
 	/**
 	 * The header row as field names: trimmed, trailing empty cells dropped, none empty or repeated.
@@ -544,12 +317,11 @@ class SpreadsheetAppSource {
 				throw new InvalidArgumentException(sprintf('Column %d has no name in the header row.', ($index + 1)));
 			}
 
-			$key = mb_strtolower($column);
-			if (isset($seen[$key]) === true) {
+			if (isset($seen[mb_strtolower($column)]) === true) {
 				throw new InvalidArgumentException(sprintf('The column "%s" appears twice in the header row.', $column));
 			}
 
-			$seen[$key] = true;
+			$seen[mb_strtolower($column)] = true;
 		}
 
 		return array_values($columns);
@@ -567,35 +339,46 @@ class SpreadsheetAppSource {
 	 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
 	 */
 	public static function schemaFor(string $name, array $columns, array $reservedSlugs = []): array {
-		$stem = (string)pathinfo($name, PATHINFO_FILENAME);
-		$slug = trim((string)preg_replace('/[^a-z0-9]+/', '-', strtolower($stem)), '-');
-		if ($slug === '' || preg_match('/^[a-z]/', $slug) !== 1) {
-			$slug = self::FALLBACK_SLUG;
-		}
-
-		$slug = substr($slug, 0, 48);
-		if (in_array($slug, $reservedSlugs, true) === true) {
-			$slug .= '-data';
-		}
-
+		$stem       = trim((string)pathinfo($name, PATHINFO_FILENAME));
 		$properties = [];
 		foreach ($columns as $column) {
 			$properties[$column] = ['type' => 'string', 'title' => $column];
 		}
 
-		$title = trim($stem);
+		$title = $stem;
 		if ($title === '') {
 			$title = 'Records';
 		}
 
 		return [
-			'slug'          => $slug,
+			'slug'          => self::slugFor(stem: $stem, reservedSlugs: $reservedSlugs),
 			'title'         => $title,
 			'description'   => 'Made from the spreadsheet ' . $name . '.',
 			'properties'    => $properties,
 			'configuration' => ['exportable' => true, 'objectNameField' => $columns[0]],
 		];
 	}//end schemaFor()
+
+	/**
+	 * The schema slug a file name gives: lower-kebab, starting with a letter, not one the app already uses.
+	 *
+	 * @param string   $stem          The file name without its extension.
+	 * @param string[] $reservedSlugs Schema slugs the new app already uses.
+	 *
+	 * @return string
+	 */
+	private static function slugFor(string $stem, array $reservedSlugs): string {
+		$slug = substr(trim((string)preg_replace('/[^a-z0-9]+/', '-', strtolower($stem)), '-'), 0, 48);
+		if (preg_match('/^[a-z]/', $slug) !== 1) {
+			$slug = self::FALLBACK_SLUG;
+		}
+
+		if (in_array($slug, $reservedSlugs, true) === true) {
+			$slug .= '-data';
+		}
+
+		return $slug;
+	}//end slugFor()
 
 	/**
 	 * The refusal of a file over the limit.
