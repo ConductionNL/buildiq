@@ -11,7 +11,7 @@
   - conflict has a side. When a colleague saved the target after the preview,
   - the server answers `target_changed` and the dialog offers a new preview.
   -
-  - @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
+  - @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
   -->
 <template>
 	<NcDialog

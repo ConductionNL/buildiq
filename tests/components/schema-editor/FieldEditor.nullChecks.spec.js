@@ -2,7 +2,7 @@
  * The schema designer treats a missing value and a null the same way, and
  * keeps a falsy value such as 0 or false that a maker set on purpose.
  *
- * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
+ * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
  */
 import { describe, expect, it, vi } from 'vitest'
 import FieldEditor, {

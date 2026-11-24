@@ -555,7 +555,7 @@ export default {
 		 * Every Nextcloud language as a picker option.
 		 *
 		 * @return {Array<{label: string, value: string}>} Options.
-		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
 		 */
 		sourceOptions() {
 			return NEXTCLOUD_LANGUAGES.map((code) => ({
@@ -580,7 +580,7 @@ export default {
 		 * one already offered.
 		 *
 		 * @return {Array<{label: string, value: string}>} Options.
-		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
 		 */
 		addOptions() {
 			const taken = new Set([this.sourceLanguage, ...this.languages])
@@ -692,7 +692,7 @@ export default {
 			 *
 			 * @param {boolean} open Whether the modal is now open.
 			 * @return {void}
-			 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+			 * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
 			 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
 			 */
 			handler(open) {
@@ -777,7 +777,7 @@ export default {
 		 *
 		 * @param {?{value: string}} option The picked option.
 		 * @return {void}
-		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
 		 */
 		onSourcePicked(option) {
 			if (!option || !option.value || option.value === this.sourceLanguage) {
@@ -794,7 +794,7 @@ export default {
 		 *
 		 * @param {?{value: string}} option The picked option.
 		 * @return {void}
-		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
 		 */
 		onLanguageAdded(option) {
 			if (!option || !option.value || this.languages.includes(option.value)) {
@@ -812,7 +812,7 @@ export default {
 		 *
 		 * @param {string} code The language to remove.
 		 * @return {void}
-		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
 		 */
 		confirmRemoveLanguage(code) {
 			this.pendingRemoval = ''

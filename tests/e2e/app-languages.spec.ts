@@ -178,7 +178,7 @@ test.describe('experience-multilingual-apps: users see the app in their own lang
 	})
 
 	test('REQ-BQML-003: a Dutch user sees the Dutch menu and column labels, and English where one is missing', async ({ page }) => {
-		// @e2e openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-an-app-user-sees-the-app-in-their-language-req-bqml-003
+		// @e2e openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-an-app-user-sees-the-app-in-their-language-req-bqml-003
 		await loginAs(page, VIEWER_USER, VIEWER_PASS)
 		await suppressSupportDialog(page)
 		await page.goto(`${BASE_URL}/index.php/apps/buildiq/builder/${APP_SLUG}/${PAGE_ID}`, { waitUntil: 'domcontentloaded' })

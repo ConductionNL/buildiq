@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lifecycle-git-branches/tasks.md
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/tasks.md
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 /**
  * Starts a branch from a version.
  *
- * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
  */
 class VersionBranchService {
 
@@ -74,7 +74,7 @@ class VersionBranchService {
 	 *
 	 * @throws VersionBranchRefused When the name is not a valid slug (400) or its register is taken (409).
 	 *
-	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
 	 */
 	public function start(array $application, array $source, string $name): array {
 		if (preg_match(self::NAME_PATTERN, $name) !== 1) {
@@ -109,7 +109,7 @@ class VersionBranchService {
 	 *
 	 * @return array{source: string, manifestHash: string, manifest: array<string,mixed>, schemas: array<string,mixed>}
 	 *
-	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
 	 */
 	public function baseOf(array $source, array $snapshot): array {
 		$manifest = [];

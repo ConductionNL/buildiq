@@ -271,7 +271,7 @@ async function loadManifest() {
  *
  * @return {void}
  *
- * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-the-frame-never-asks-for-a-password-req-bqem-003
+ * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-the-frame-never-asks-for-a-password-req-bqem-003
  */
 function mountSignInNotice() {
 	const notice = signInNotice(window.location.href)

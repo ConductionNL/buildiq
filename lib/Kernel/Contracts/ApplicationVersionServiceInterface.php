@@ -184,7 +184,7 @@ interface ApplicationVersionServiceInterface {
 	 *
 	 * @throws \JsonException When the manifest contains non-encodable values
 	 *
-	 * @spec openspec/changes/lifecycle-git-branches/tasks.md
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/tasks.md
 	 */
 	public function hashManifest(array $manifest): string;
 

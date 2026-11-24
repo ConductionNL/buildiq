@@ -192,7 +192,7 @@ export default {
 		 * Missing translations per language, over the app's own labels.
 		 *
 		 * @return {Record<string, number>}
-		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-translates-every-label-in-one-view-req-bqml-002
+		 * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-translates-every-label-in-one-view-req-bqml-002
 		 */
 		missing() {
 			const texts = this.labels.filter((l) => !l.fromSchema).map((l) => l.text)
@@ -220,7 +220,7 @@ export default {
 		 * since they cannot be translated here).
 		 *
 		 * @return {Array<{text: string, places: string[], fromSchema: boolean}>}
-		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-translates-every-label-in-one-view-req-bqml-002
+		 * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-translates-every-label-in-one-view-req-bqml-002
 		 */
 		rows() {
 			return this.labels.filter((label) => {
@@ -260,7 +260,7 @@ export default {
 		 * @param {string} text - the label as written.
 		 * @param {string} value - the translation; '' removes it.
 		 * @return {void}
-		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-translates-every-label-in-one-view-req-bqml-002
+		 * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-translates-every-label-in-one-view-req-bqml-002
 		 */
 		onEdit(code, text, value) {
 			const next = withTranslation(this.manifest, code, text, value)

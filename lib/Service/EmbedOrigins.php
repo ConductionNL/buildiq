@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-switches-embedding-on-and-lists-the-allowed-sites-req-bqem-001
+ * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-switches-embedding-on-and-lists-the-allowed-sites-req-bqem-001
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ namespace OCA\Buildiq\Service;
 /**
  * Checks embed origins and reads an app's embedding setting.
  *
- * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-switches-embedding-on-and-lists-the-allowed-sites-req-bqem-001
+ * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-switches-embedding-on-and-lists-the-allowed-sites-req-bqem-001
  */
 class EmbedOrigins {
 
@@ -52,7 +52,7 @@ class EmbedOrigins {
 	 *
 	 * @return string|null The reason, in English.
 	 *
-	 * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-switches-embedding-on-and-lists-the-allowed-sites-req-bqem-001
+	 * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-switches-embedding-on-and-lists-the-allowed-sites-req-bqem-001
 	 */
 	public function reason(string $origin): ?string {
 		$origin = trim($origin);
@@ -87,7 +87,7 @@ class EmbedOrigins {
 	 *
 	 * @return array<int,string> The origins.
 	 *
-	 * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-only-listed-sites-can-frame-the-app-req-bqem-002
+	 * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-only-listed-sites-can-frame-the-app-req-bqem-002
 	 */
 	public function allowedFor(?array $application): array {
 		$embed = ($application['embed'] ?? null);

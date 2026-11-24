@@ -610,7 +610,7 @@ const FIELD_NAME_PATTERN = /^[a-zA-Z][a-zA-Z0-9_-]*$/
  * maker reads (data-field-types-and-choice-lists design D1). Each is stored as
  * one JSON Schema shape; `fieldTypeOf()` reads a stored property back to it.
  *
- * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-the-designer-offers-named-field-types-req-bqft-001
+ * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-the-designer-offers-named-field-types-req-bqft-001
  */
 export const NAMED_TYPES = [
 	{ value: 'text', label: 'Text' },
@@ -890,7 +890,7 @@ export default {
 		 * The type picker's options for one row: the named types, plus the
 		 * row's own JSON type when no named type fits it.
 		 *
-		 * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-the-designer-offers-named-field-types-req-bqft-001
+		 * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-the-designer-offers-named-field-types-req-bqft-001
 		 * @param {object} field Field row.
 		 * @return {Array} Option objects.
 		 */
@@ -904,7 +904,7 @@ export default {
 		/**
 		 * Whether a row holds choices.
 		 *
-		 * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
+		 * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
 		 * @param {object} field Field row.
 		 * @return {boolean} True for a choice or several choices.
 		 */
@@ -936,7 +936,7 @@ export default {
 		 * Switch a choice row between inline options and a shared list. The
 		 * two are never kept together (design D2).
 		 *
-		 * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
+		 * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
 		 * @param {number} index Row index.
 		 * @param {boolean} shared True for a shared list.
 		 * @return {void}
@@ -959,7 +959,7 @@ export default {
 		/**
 		 * Add an empty option row to an inline choice.
 		 *
-		 * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
+		 * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
 		 * @param {number} index Row index.
 		 * @return {void}
 		 */
@@ -972,7 +972,7 @@ export default {
 		/**
 		 * Change one option's value or label.
 		 *
-		 * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
+		 * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
 		 * @param {number} index Row index.
 		 * @param {number} position Option position.
 		 * @param {string} key `value` or `label`.
@@ -992,7 +992,7 @@ export default {
 		/**
 		 * Move an option one place up (-1) or down (+1).
 		 *
-		 * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
+		 * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
 		 * @param {number} index Row index.
 		 * @param {number} position Option position.
 		 * @param {number} delta -1 or +1.
@@ -1014,7 +1014,7 @@ export default {
 		/**
 		 * Remove one option.
 		 *
-		 * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
+		 * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
 		 * @param {number} index Row index.
 		 * @param {number} position Option position.
 		 * @return {void}
@@ -1028,7 +1028,7 @@ export default {
 		/**
 		 * Point a choice row at a shared list and show its options.
 		 *
-		 * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
+		 * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
 		 * @param {number} index Row index.
 		 * @param {object|null} option The picked scheme option.
 		 * @return {void}
@@ -1059,7 +1059,7 @@ export default {
 		/**
 		 * Load OpenRegister's concept schemes once.
 		 *
-		 * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
+		 * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
 		 * @return {Promise<void>}
 		 */
 		async loadSchemes() {
@@ -1081,7 +1081,7 @@ export default {
 		/**
 		 * Load the options of a shared list, read-only, so the maker sees what the field offers.
 		 *
-		 * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
+		 * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
 		 * @param {object} option The scheme option.
 		 * @return {Promise<void>}
 		 */
@@ -1100,7 +1100,7 @@ export default {
 		/**
 		 * When a row already uses a shared list, load the lists and its options.
 		 *
-		 * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
+		 * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
 		 * @return {Promise<void>}
 		 */
 		async loadSharedLists() {
@@ -1584,7 +1584,7 @@ function fieldTypeOf(prop) {
  * The named type of a single value (design D1): a file, a user, a choice, a
  * formatted text, plain text; else its JSON type.
  *
- * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-the-designer-offers-named-field-types-req-bqft-001
+ * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-the-designer-offers-named-field-types-req-bqft-001
  * @param {object} prop A property or an items schema.
  * @return {string} The named type, or the JSON type when none fits.
  */
@@ -1664,7 +1664,7 @@ function validationFromProperty(prop, type) {
  * The choice settings of a property: its shared list, or its inline options
  * as ordered value and label rows.
  *
- * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
+ * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
  * @param {object} prop A property or an items schema.
  * @return {object} `{ conceptScheme }` or `{ options }`.
  */
@@ -1700,7 +1700,7 @@ function keysFor(type) {
  * @param {object} source The object to read.
  * @param {{truthy: Array<string>, present: Array<string>}} keys The keys.
  * @return {void}
- * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
+ * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
  */
 function copyKeys(target, source, keys) {
 	for (const key of keys.truthy) {
@@ -1715,7 +1715,7 @@ function copyKeys(target, source, keys) {
  * The property keys this editor reads into a field row and writes back.
  * Every other key of a loaded property is carried through a save untouched.
  *
- * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
+ * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
  */
 const EDITOR_OWNED_KEYS = new Set([
 	'type',
@@ -1745,7 +1745,7 @@ const EDITOR_OWNED_KEYS = new Set([
  * clears the previous type's own slots, and an `enum` on, say, a number set
  * by an import still passes through untouched (REQ-BQFT-004).
  *
- * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
+ * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
  * @param {string} type The row's type.
  * @param {string} loadedType The named type the property was loaded as.
  * @return {Set<string>} The keys.
@@ -1773,7 +1773,7 @@ function ownedKeys(type, loadedType) {
  * @param {object} source The object to copy (anything else yields `{}`).
  * @param {Array<string>|Set<string>} keys The keys to leave out.
  * @return {object} The copy.
- * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
+ * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
  */
 function withoutKeys(source, keys) {
 	const skip = keys instanceof Set ? keys : new Set(keys)
@@ -1824,7 +1824,7 @@ export function fieldsToSchema(fields, schemaSlug = '') {
  * @param {object} field Editor field row.
  * @param {string} schemaSlug The schema's slug.
  * @return {object} The JSON Schema property.
- * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
+ * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
  * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-schema-designer/spec.md#requirement-a-maker-links-one-object-type-to-another-req-bqcv-003
  * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-shows-records-in-a-table-with-sorting-filtering-and-paging-req-bqcv-006
  */
@@ -1925,7 +1925,7 @@ function generatedFromField(field, raw, schemaSlug) {
 /**
  * Write the shape a named type is stored as (design D1) onto a property.
  *
- * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-the-designer-offers-named-field-types-req-bqft-001
+ * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-the-designer-offers-named-field-types-req-bqft-001
  * @param {object} prop The property being saved.
  * @param {string} type The row's named type.
  * @param {object} v The row's validation values.
@@ -1961,7 +1961,7 @@ function writeNamedShape(prop, type, v, raw) {
  * or inline options as `enum` with `x-enum-labels` for the labelled ones.
  * Never both (design D2).
  *
- * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
+ * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
  * @param {object} target The property or items schema being saved.
  * @param {object} v The row's validation values.
  * @return {void}
@@ -2006,7 +2006,7 @@ function propertyTypeOf(type) {
  * @param {object} field Editor field row.
  * @param {object} raw The property as it was loaded.
  * @return {object} The start of the saved property.
- * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
+ * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
  */
 function baseProperty(field, raw) {
 	const prop = withoutKeys(raw, ownedKeys(field.type, fieldTypeOf(raw)))

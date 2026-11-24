@@ -51,7 +51,7 @@ interface AppTemplateCaptureInterface {
 	 *
 	 * @throws InvalidArgumentException When two schemas de-namespace to one slug.
 	 *
-	 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+	 * @spec openspec/changes/archive/2026-11-24-apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
 	 */
 	public function capture(array $application, array $schemas, array $manifest): array;
 }//end interface

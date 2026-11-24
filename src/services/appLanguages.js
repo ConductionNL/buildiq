@@ -16,7 +16,7 @@
  * single write path (and with it undo/redo and the version's save) treats a
  * language or translation edit like any other edit.
  *
- * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+ * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
  */
 
 /** A Nextcloud language code: `nl`, `de_DE`, `pt_BR`, `zh_Hans`. */
@@ -41,7 +41,7 @@ export const NEXTCLOUD_LANGUAGES = Object.freeze([
  *
  * @param {unknown} code - the value.
  * @return {boolean}
- * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+ * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
  */
 export function isLanguageCode(code) {
 	return typeof code === 'string'
@@ -54,7 +54,7 @@ export function isLanguageCode(code) {
  * @param {string} code - a Nextcloud language code.
  * @param {string} [displayLanguage] - the language to name it in.
  * @return {string} The name, or the code itself.
- * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+ * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
  */
 export function languageName(code, displayLanguage = 'en') {
 	try {
@@ -75,7 +75,7 @@ export function languageName(code, displayLanguage = 'en') {
  * @param {object} manifest - a version's manifest.
  * @param {string} [fallbackSource] - the written language when none is set.
  * @return {{sourceLanguage: string, languages: string[], labels: object}}
- * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+ * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
  */
 export function appI18n(manifest, fallbackSource = '') {
 	const block = (manifest && manifest.i18n && typeof manifest.i18n === 'object')
@@ -102,7 +102,7 @@ export function appI18n(manifest, fallbackSource = '') {
  * @param {object} manifest - a version's manifest.
  * @param {{sourceLanguage: string, languages: string[]}} next - the languages.
  * @return {object} The new manifest.
- * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+ * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
  */
 export function withLanguages(manifest, { sourceLanguage, languages }) {
 	const current = appI18n(manifest)
@@ -132,7 +132,7 @@ export function withLanguages(manifest, { sourceLanguage, languages }) {
  * @param {object} manifest - a version's manifest.
  * @param {string[]} languages - the languages to keep.
  * @return {string[]} Removed languages that hold at least one translation.
- * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+ * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
  */
 export function languagesLosingTranslations(manifest, languages) {
 	const { labels } = appI18n(manifest)
@@ -151,7 +151,7 @@ export function languagesLosingTranslations(manifest, languages) {
  * @param {string} text - the label as written.
  * @param {string} value - its translation.
  * @return {object} The new manifest (the same one when nothing changes).
- * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-translates-every-label-in-one-view-req-bqml-002
+ * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-translates-every-label-in-one-view-req-bqml-002
  */
 export function withTranslation(manifest, language, text, value) {
 	const i18n = appI18n(manifest)
@@ -186,7 +186,7 @@ export function withTranslation(manifest, language, text, value) {
  * @param {object} manifest - a version's manifest.
  * @param {string[]} texts - the translatable texts.
  * @return {Record<string, number>} Missing count by language.
- * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-translates-every-label-in-one-view-req-bqml-002
+ * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-translates-every-label-in-one-view-req-bqml-002
  */
 export function missingCounts(manifest, texts) {
 	const { languages, labels } = appI18n(manifest)

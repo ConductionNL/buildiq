@@ -29,7 +29,7 @@
  * The fixture app `pw-app-embed` is created in beforeAll with two pages and
  * removed, data included, in afterAll.
  *
- * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md
+ * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md
  * @e2e app-embedding/requirement-a-maker-switches-embedding-on-and-lists-the-allowed-sites-req-bqem-001/a-maker-allows-the-intranet
  * @e2e app-embedding/requirement-a-maker-switches-embedding-on-and-lists-the-allowed-sites-req-bqem-001/a-wildcard-is-refused
  * @e2e app-embedding/requirement-only-listed-sites-can-frame-the-app-req-bqem-002/the-intranet-shows-the-app

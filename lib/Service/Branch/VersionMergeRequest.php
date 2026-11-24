@@ -19,7 +19,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lifecycle-git-branches/tasks.md
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/tasks.md
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ namespace OCA\Buildiq\Service\Branch;
 /**
  * One merge request.
  *
- * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-merge-only-writes-a-draft-that-has-not-moved-req-bqgb-004
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-merge-only-writes-a-draft-that-has-not-moved-req-bqgb-004
  */
 final class VersionMergeRequest {
 

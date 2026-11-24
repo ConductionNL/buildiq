@@ -593,7 +593,7 @@ export default {
 		 * refuses anyone else (REQ-BQCP-002).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-copying-an-app-has-the-gates-of-cloning-a-template-req-bqcp-002
+		 * @spec openspec/changes/archive/2026-11-24-apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-copying-an-app-has-the-gates-of-cloning-a-template-req-bqcp-002
 		 */
 		canCopyApp() {
 			return (
@@ -1004,7 +1004,7 @@ export default {
 		 * @param {{enabled: boolean, origins: string[]}} embed The setting.
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-switches-embedding-on-and-lists-the-allowed-sites-req-bqem-001
+		 * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-switches-embedding-on-and-lists-the-allowed-sites-req-bqem-001
 		 */
 		async setEmbed(embed) {
 			if (this.obAppRole !== 'owner' || !this.obApp) {
@@ -1292,7 +1292,7 @@ export default {
 		 * An app that never set any shows the viewer's language as written.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
 		 */
 		async loadLanguages() {
 			if (!this.obApp || !this.obApp.slug) {
@@ -1318,7 +1318,7 @@ export default {
 		 *
 		 * @param {{sourceLanguage: string, languages: string[]}} next The languages.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
 		 */
 		async setLanguages(next) {
 			if (!this.canSaveAsTemplate || !this.obApp || !this.obApp.slug) {
@@ -1634,7 +1634,7 @@ export default {
 		 *
 		 * @param {{uuid: string, slug: string}} created The new app.
 		 * @return {void}
-		 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+		 * @spec openspec/changes/archive/2026-11-24-apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
 		 */
 		onCopied(created) {
 			this.copyOpen = false

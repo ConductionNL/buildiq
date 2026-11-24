@@ -205,6 +205,11 @@ ordered per-step results. When
 result, and the final outcome, regardless of success, rollback, or
 plan-rejection.
 
+Outside MCP agents reach the same handlers through `BuildiqToolProvider`, and SHALL write only
+under a plan a person approved, as `openbuild-mcp-surface` says. The Copilot and an outside agent
+therefore share one approval rule: `plan()` performs zero writes and returns a predicted manifest
+for review, and only an explicitly approved plan may be executed.
+
 **ID:** REQ-OBAIC-004
 
 @e2e exclude backend atomicity contract — snapshot/rollback, created-app
@@ -236,6 +241,12 @@ Playwright specs under REQ-OBAIC-006/007, which create and mutate real apps.
 - **THEN** it is rejected by `UpsertPageHandler`'s own route-injection guard
   (issue #167) — proving the copilot path runs the identical handler
   validation
+
+#### Scenario: An outside agent's write needs the same approval
+
+- **WHEN** an MCP client calls `buildiq.upsertPage` without an approved plan
+- **THEN** the call is refused
+- **AND** the same call inside an approved plan runs `UpsertPageHandler` as the Copilot does
 
 #### Scenario: An agent-scoped execute persists a transparent run record
 

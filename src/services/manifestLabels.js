@@ -19,7 +19,7 @@
  * listed with `fromSchema: true`: it is the schema's, not the app's, so it
  * is not translatable here.
  *
- * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-translates-every-label-in-one-view-req-bqml-002
+ * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-translates-every-label-in-one-view-req-bqml-002
  */
 
 /** Keys whose string value is display text. */
@@ -135,7 +135,7 @@ function walkColumns(found, columns, path) {
  *
  * @param {object} manifest - a version's manifest.
  * @return {Array<{text: string, places: string[], fromSchema: boolean}>} The labels.
- * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-translates-every-label-in-one-view-req-bqml-002
+ * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-translates-every-label-in-one-view-req-bqml-002
  */
 export function collectManifestLabels(manifest) {
 	const found = new Map()
@@ -153,7 +153,7 @@ export function collectManifestLabels(manifest) {
  *
  * @param {object} manifest - a version's manifest.
  * @return {Set<string>} The texts.
- * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-translates-every-label-in-one-view-req-bqml-002
+ * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-translates-every-label-in-one-view-req-bqml-002
  */
 export function translatableTexts(manifest) {
 	return new Set(

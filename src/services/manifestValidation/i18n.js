@@ -13,7 +13,7 @@
  * Returned errors are `<pointer>: <code>` strings, like the sibling modules,
  * so the designer's side panel lists them.
  *
- * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+ * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
  */
 import { isLanguageCode } from '../appLanguages.js'
 
@@ -22,7 +22,7 @@ import { isLanguageCode } from '../appLanguages.js'
  *
  * @param {object} manifest - the manifest.
  * @return {string[]} Errors; empty when valid or when there is no block.
- * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+ * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
  */
 export function validateI18n(manifest) {
 	const block = manifest && manifest.i18n

@@ -7,7 +7,7 @@
  * the no-session sign-in notice, and the settings section that emits only
  * savable sites.
  *
- * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md
+ * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'

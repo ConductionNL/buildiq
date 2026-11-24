@@ -23,7 +23,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lifecycle-git-branches/tasks.md
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/tasks.md
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 /**
  * Runs a version merge: preview first, write once.
  *
- * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-merge-only-writes-a-draft-that-has-not-moved-req-bqgb-004
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-merge-only-writes-a-draft-that-has-not-moved-req-bqgb-004
  */
 class VersionMergeRunner implements VersionMergeRunnerInterface {
 
@@ -75,7 +75,7 @@ class VersionMergeRunner implements VersionMergeRunnerInterface {
 	 *
 	 * @throws VersionBranchRefused When the name is not a valid slug (400) or its register is taken (409).
 	 *
-	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
 	 */
 	#[\Override]
 	public function startBranch(array $application, array $source, string $name): array {
@@ -93,7 +93,7 @@ class VersionMergeRunner implements VersionMergeRunnerInterface {
 	 *
 	 * @throws VersionBranchRefused When the target cannot take a merge or the pair has no common base.
 	 *
-	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
 	 */
 	#[\Override]
 	public function previewMerge(array $application, array $source, array $target): array {
@@ -112,7 +112,7 @@ class VersionMergeRunner implements VersionMergeRunnerInterface {
 	 *
 	 * @throws VersionBranchRefused When anything would make the write wrong; nothing is written then.
 	 *
-	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-merge-only-writes-a-draft-that-has-not-moved-req-bqgb-004
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-merge-only-writes-a-draft-that-has-not-moved-req-bqgb-004
 	 */
 	#[\Override]
 	public function applyMerge(array $application, array $source, array $target, array $resolution): array {
@@ -132,7 +132,7 @@ class VersionMergeRunner implements VersionMergeRunnerInterface {
 	 *
 	 * @throws VersionBranchRefused When the target cannot take a merge or the pair has no common base.
 	 *
-	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
 	 */
 	public function preview(array $application, VersionMergeRequest $request): array {
 		$states = $this->states(application: $application, request: $request);
@@ -154,7 +154,7 @@ class VersionMergeRunner implements VersionMergeRunnerInterface {
 	 *
 	 * @throws VersionBranchRefused When anything would make the write wrong; nothing is written then.
 	 *
-	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-merge-only-writes-a-draft-that-has-not-moved-req-bqgb-004
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-merge-only-writes-a-draft-that-has-not-moved-req-bqgb-004
 	 */
 	public function apply(array $application, VersionMergeRequest $request): array {
 		$states = $this->states(application: $application, request: $request);

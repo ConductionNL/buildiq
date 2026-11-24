@@ -358,7 +358,7 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-each-version-pushes-to-its-own-branch-req-bqgb-002
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-each-version-pushes-to-its-own-branch-req-bqgb-002
 	 */
 	private function versionBranch(array $application, array $version, string $defaultBranch): string {
 		$branch = trim((string)($version['githubBranch'] ?? ''));
@@ -379,7 +379,7 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 	 *
 	 * @return string|null Null when the branch is there (or is the default branch), else the failure outcome.
 	 *
-	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-each-version-pushes-to-its-own-branch-req-bqgb-002
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-each-version-pushes-to-its-own-branch-req-bqgb-002
 	 */
 	private function ensureBranch(BrokeredRepo $repo, string $branch, string $defaultBranch): ?string {
 		if ($branch === $defaultBranch || $this->resolveHead(repo: $repo, branch: $branch) !== null) {

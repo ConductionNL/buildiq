@@ -280,7 +280,7 @@ export default {
 		 * production and for a version without one (lifecycle-git-branches).
 		 *
 		 * @return {function(object): string}
-		 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-each-version-pushes-to-its-own-branch-req-bqgb-002
+		 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-each-version-pushes-to-its-own-branch-req-bqgb-002
 		 */
 		versionBranch() {
 			const fallback = (this.status && this.status.githubDefaultBranch) || 'main'

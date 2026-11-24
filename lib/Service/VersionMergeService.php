@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use InvalidArgumentException;
  * Nothing here reads or writes storage: the caller passes the three states
  * and saves the result.
  *
- * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
  */
 class VersionMergeService {
 
@@ -84,7 +84,7 @@ class VersionMergeService {
 	 *
 	 * @throws InvalidArgumentException When neither was branched from the other.
 	 *
-	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
 	 */
 	public function baseFor(array $source, array $target): array {
 		// The target's base first: a merge moves the target's base, so it is the latest one.
@@ -122,7 +122,7 @@ class VersionMergeService {
 	 * @return array{manifest: array<string,mixed>, schemas: array<string,mixed>, conflicts: array<int,array<string,mixed>>}
 	 *         The merged state, with every conflict left at the target's side, and the conflicts.
 	 *
-	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
 	 */
 	public function merge(array $base, array $source, array $target): array {
 		return $this->resolve(sides: ['base' => $base, 'source' => $source, 'target' => $target], choices: null);
@@ -141,7 +141,7 @@ class VersionMergeService {
 	 *
 	 * @throws InvalidArgumentException When a conflict has no valid choice; nothing is merged.
 	 *
-	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
+	 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
 	 */
 	public function apply(array $base, array $source, array $target, array $choices): array {
 		return $this->resolve(sides: ['base' => $base, 'source' => $source, 'target' => $target], choices: $choices);

@@ -496,7 +496,7 @@ export default {
 		 * ones the app is translated into. Empty for an app without languages.
 		 *
 		 * @return {string[]} Language codes.
-		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-the-preview-can-switch-language-req-bqml-004
+		 * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-the-preview-can-switch-language-req-bqml-004
 		 */
 		previewLanguages() {
 			const i18n = appI18n(this.manifest)
@@ -1326,7 +1326,7 @@ export default {
 		 * @param {object} [vars] - Interpolation vars.
 		 * @return {string} Translated string (or the key on miss).
 		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-2.3
-		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-the-preview-can-switch-language-req-bqml-004
+		 * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-the-preview-can-switch-language-req-bqml-004
 		 */
 		translateForPreview(key, vars) {
 			if (!this._previewTranslate) {
@@ -1343,7 +1343,7 @@ export default {
 		 *
 		 * @param {string} code - a Nextcloud language code.
 		 * @return {string} The name, with the code.
-		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-the-preview-can-switch-language-req-bqml-004
+		 * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-the-preview-can-switch-language-req-bqml-004
 		 */
 		languageLabel(code) {
 			const name = languageName(code, getLanguage())

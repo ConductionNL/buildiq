@@ -55,7 +55,7 @@ export function labelText(label) {
  * The concept schemes, as picker options: the slug a property stores, the
  * title a maker reads, and the uri the concept listing needs.
  *
- * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
+ * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
  * @return {Promise<Array<{value: string, label: string, uri: string}>>} The options, by title.
  */
 export async function listConceptSchemes() {
@@ -76,7 +76,7 @@ export async function listConceptSchemes() {
 /**
  * The options of one scheme, read-only, in the order OpenRegister serves them.
  *
- * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
+ * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002
  * @param {string} schemeUri The scheme's uri.
  * @return {Promise<Array<{value: string, label: string}>>} The options.
  */

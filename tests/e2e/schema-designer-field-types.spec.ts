@@ -34,7 +34,7 @@
  * The fixture app `pw-field-types` is created in beforeAll; its records, the
  * schema and the app are removed in afterAll.
  *
- * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md
+ * @spec openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md
  * @e2e schema-designer-field-types/requirement-the-designer-offers-named-field-types-req-bqft-001/a-maker-adds-a-date-field
  * @e2e schema-designer-field-types/requirement-the-designer-offers-named-field-types-req-bqft-001/an-existing-date-field-opens-as-a-date
  * @e2e schema-designer-field-types/requirement-a-choice-field-has-inline-or-shared-options-req-bqft-002/a-maker-points-a-field-at-the-shared-list-of-municipalities

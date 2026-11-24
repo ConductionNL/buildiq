@@ -411,7 +411,7 @@
 			"specs": [
 				"openbuild-rbac",
 				"application-rename-and-delete",
-				"apps-copy-app-and-page",
+				"copy-app-page-and-form",
 				"support-note",
 				"application-detail-overview",
 				"application-detail-ui"
@@ -425,7 +425,7 @@
 			"overlay": "buildiq-runtime",
 			"specs": [
 				"openbuild-runtime",
-				"apps-embed-in-other-sites",
+				"app-embedding",
 				"apps-standalone-deploy",
 				"openbuild-application-register",
 				"deep-link-registration",
@@ -450,7 +450,7 @@
 			"overlay": "buildiq-schema-designer",
 			"specs": [
 				"openbuild-schema-designer",
-				"data-field-types-and-choice-lists",
+				"schema-designer-field-types",
 				"data-calculated-fields",
 				"data-model-diagram",
 				"schema-designer-ui"
@@ -513,7 +513,7 @@
 				"openbuild-runtime",
 				"pages-action-buttons",
 				"pages-custom-code",
-				"apps-copy-app-and-page",
+				"copy-app-page-and-form",
 				"page-designer-ui"
 			]
 		},
@@ -702,7 +702,7 @@
 			"area": "experience",
 			"overlay": null,
 			"specs": [
-				"experience-multilingual-apps",
+				"app-interface-languages",
 				"frontend-foundation"
 			]
 		},
@@ -779,7 +779,7 @@
 			"overlay": null,
 			"specs": [
 				"github-app-sync",
-				"lifecycle-git-branches",
+				"app-version-branches",
 				"app-channel-application"
 			]
 		},
@@ -1578,8 +1578,8 @@
 				"note": "Specified in openspec/changes/apps-embed-in-other-sites (OpenSpec pass 2026-09-27).",
 				"change": "apps-embed-in-other-sites",
 				"requirement": [
-					"openspec/changes/apps-embed-in-other-sites/specs/app-embedding :: A maker switches embedding on and lists the allowed sites (REQ-BQEM-001)",
-					"openspec/changes/apps-embed-in-other-sites/specs/app-embedding :: A maker embeds one page (REQ-BQEM-004)"
+					"openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding :: A maker switches embedding on and lists the allowed sites (REQ-BQEM-001)",
+					"openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding :: A maker embeds one page (REQ-BQEM-004)"
 				]
 			},
 			"provider": "buildiq",
@@ -1701,7 +1701,7 @@
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/data-field-types-and-choice-lists (OpenSpec pass 2026-09-27).",
 				"change": "data-field-types-and-choice-lists",
-				"requirement": "openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types :: The designer offers named field types (REQ-BQFT-001)"
+				"requirement": "openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types :: The designer offers named field types (REQ-BQFT-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1854,7 +1854,7 @@
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/data-field-types-and-choice-lists (OpenSpec pass 2026-09-27).",
 				"change": "data-field-types-and-choice-lists",
-				"requirement": "openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types :: A choice field has inline or shared options (REQ-BQFT-002)"
+				"requirement": "openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types :: A choice field has inline or shared options (REQ-BQFT-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7211,8 +7211,8 @@
 				"note": "Specified in openspec/changes/lifecycle-git-branches (OpenSpec pass 2026-09-27).",
 				"change": "lifecycle-git-branches",
 				"requirement": [
-					"openspec/changes/lifecycle-git-branches/specs/app-version-branches :: A maker starts a branch from a version (REQ-BQGB-001)",
-					"openspec/changes/lifecycle-git-branches/specs/app-version-branches :: A maker merges a branch and picks a side per conflict (REQ-BQGB-003)"
+					"openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches :: A maker starts a branch from a version (REQ-BQGB-001)",
+					"openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches :: A maker merges a branch and picks a side per conflict (REQ-BQGB-003)"
 				]
 			},
 			"provider": "buildiq",
@@ -7981,8 +7981,8 @@
 				"note": "Specified in openspec/changes/experience-multilingual-apps (OpenSpec pass 2026-09-27).",
 				"change": "experience-multilingual-apps",
 				"requirement": [
-					"openspec/changes/experience-multilingual-apps/specs/app-interface-languages :: A maker sets the app's languages (REQ-BQML-001)",
-					"openspec/changes/experience-multilingual-apps/specs/app-interface-languages :: An app user sees the app in their language (REQ-BQML-003)"
+					"openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages :: A maker sets the app's languages (REQ-BQML-001)",
+					"openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages :: An app user sees the app in their language (REQ-BQML-003)"
 				]
 			},
 			"provider": "buildiq",
@@ -9627,7 +9627,7 @@
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/apps-copy-app-and-page (OpenSpec pass 2026-09-27).",
 				"change": "apps-copy-app-and-page",
-				"requirement": "openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form :: A maker copies a registration form as a draft (REQ-BQCP-004)"
+				"requirement": "openspec/changes/archive/2026-11-24-apps-copy-app-and-page/specs/copy-app-page-and-form :: A maker copies a registration form as a draft (REQ-BQCP-004)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -10084,8 +10084,8 @@
 				"note": "Open Register's half shipped in ConductionNL/openregister openspec/changes/archive/2026-07-13-or-mcp-attribute-hints; the missing half is buildiq's own work, so the owner moved to ConductionNL/buildiq (openregister lane, OpenSpec pass 2026-09-27; owner was ConductionNL/openregister).",
 				"spec": "openspec/specs/ai-copilot",
 				"requirement": [
-					"openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface :: Outside agents SHALL build apps through the eight builder tools",
-					"openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface :: A builder tool SHALL write only under a plan a person approved"
+					"openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface :: Outside agents SHALL build apps through the eight builder tools",
+					"openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface :: A builder tool SHALL write only under a plan a person approved"
 				],
 				"plan": "openspec/changes/openbuild-mcp-adoption"
 			},
@@ -11123,7 +11123,7 @@
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/data-field-types-and-choice-lists (OpenSpec pass 2026-09-27).",
 				"change": "data-field-types-and-choice-lists",
-				"requirement": "openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types :: A user field points at a Nextcloud user (REQ-BQFT-003)"
+				"requirement": "openspec/changes/archive/2026-11-24-data-field-types-and-choice-lists/specs/schema-designer-field-types :: A user field points at a Nextcloud user (REQ-BQFT-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -11390,7 +11390,7 @@
 				"note": "Specified in openspec/changes/apps-copy-app-and-page (OpenSpec pass 2026-09-27). Code built; stays building until the Playwright copy (tests/e2e/copy-app-and-page.spec.ts) has run against a live stack.",
 				"change": "apps-copy-app-and-page",
 				"readOn": "2026-10-30",
-				"requirement": "openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form :: A maker copies an app (REQ-BQCP-001)"
+				"requirement": "openspec/changes/archive/2026-11-24-apps-copy-app-and-page/specs/copy-app-page-and-form :: A maker copies an app (REQ-BQCP-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",

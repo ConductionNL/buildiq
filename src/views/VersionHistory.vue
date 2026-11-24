@@ -557,7 +557,7 @@ export default {
 		 * @param {object} row The version row.
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
+		 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
 		 */
 		askBranch(row) {
 			this.branchSource = row
@@ -569,7 +569,7 @@ export default {
 		 * @param {string} name The branch name the maker entered.
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
+		 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
 		 */
 		async startBranch(name) {
 			const source = this.branchSource
@@ -598,7 +598,7 @@ export default {
 		 * @param {object} row The version row merged in.
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
+		 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
 		 */
 		askMerge(row) {
 			this.mergeSource = row

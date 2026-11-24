@@ -100,7 +100,7 @@ class ExportAppContentBundler implements ExportAppContentBundlerInterface {
 	 *
 	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-companion-schemas-migrate-into-the-exported-app-s-own-namespace
 	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-optional-seed-data-inclusion
-	 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-translations-travel-with-the-app-req-bqml-005
+	 * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-translations-travel-with-the-app-req-bqml-005
 	 */
 	public function bundle(string $rootDir, array $source, string $appId, string $semver): array {
 		$run = new AppContentBundleRun(rootDir: $rootDir, appId: $appId, semver: $semver);

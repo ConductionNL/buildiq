@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-translations-travel-with-the-app-req-bqml-005
+ * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-translations-travel-with-the-app-req-bqml-005
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -37,7 +37,7 @@ namespace OCA\Buildiq\Service;
  * language gets no file of its own beyond the template's: its labels are
  * the source.
  *
- * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-translations-travel-with-the-app-req-bqml-005
+ * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-translations-travel-with-the-app-req-bqml-005
  */
 class ExportAppTranslationWriter {
 	/**
@@ -53,7 +53,7 @@ class ExportAppTranslationWriter {
 	 *
 	 * @return array<int,string> The languages written, sorted.
 	 *
-	 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-translations-travel-with-the-app-req-bqml-005
+	 * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-translations-travel-with-the-app-req-bqml-005
 	 */
 	public function write(string $rootDir, array $i18n): array {
 		$written = [];
@@ -79,7 +79,7 @@ class ExportAppTranslationWriter {
 	 *
 	 * @return array<string,array<string,string>> Translations keyed by language, then by source text.
 	 *
-	 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-translations-travel-with-the-app-req-bqml-005
+	 * @spec openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-translations-travel-with-the-app-req-bqml-005
 	 */
 	public function catalogues(array $i18n): array {
 		$source = (string)($i18n['sourceLanguage'] ?? '');
