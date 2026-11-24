@@ -649,3 +649,97 @@ describe('PageDesignerHost', () => {
 		})
 	})
 })
+
+describe('PageDesignerHost on a version that extends a base (app-delta-override D6)', () => {
+	const BASE = {
+		version: '1.0.0',
+		menu: [{ id: 'home', label: 'Home' }],
+		pages: [{ id: 'home', title: 'Home' }, { id: 'list', title: 'List' }],
+	}
+	const APP = { slug: 'petstore', name: 'Pet Store', '@self': { id: 'app-1' } }
+
+	/**
+	 * A delta-mode version, the app list and the base endpoint's answer.
+	 *
+	 * @param {object} answer What the base endpoint answers, or an Error to reject with.
+	 * @param {object} [delta] The version's stored delta.
+	 * @return {object} The mounted host.
+	 */
+	function mountDelta(answer, delta = { pages: [{ id: 'home', title: 'Start' }] }) {
+		const wrapper = mountHost({
+			version: { '@self': { id: 'v-1' }, uuid: 'v-1', manifest: {}, baseRef: { kind: 'template', id: 'permits' }, manifestDelta: delta },
+			appList: [APP],
+		})
+		axiosGetMock.mockImplementation((url) => {
+			if (String(url).endsWith('/manifest-base')) {
+				return answer instanceof Error ? Promise.reject(answer) : Promise.resolve({ data: answer })
+			}
+			return Promise.resolve({ data: { results: [APP] } })
+		})
+		return wrapper
+	}
+
+	beforeEach(() => {
+		axiosPostMock.mockReset()
+		axiosPostMock.mockResolvedValue({ data: { accepted: true, findings: [] } })
+		versionResolvesAsync = false
+	})
+
+	it('edits the delta merged over the base, and saves only the difference', async () => {
+		const wrapper = mountDelta({ base: BASE, orphanedDeltaPaths: [] })
+		await flush(wrapper)
+		await wrapper.vm.loadDeltaBase()
+		await flush(wrapper)
+
+		expect(axiosGetMock).toHaveBeenCalledWith('/apps/buildiq/api/applications/petstore/manifest-base', { params: {} })
+		expect(wrapper.vm.manifest.pages.map((page) => page.title)).toEqual(['Start', 'List'])
+
+		const edited = { ...wrapper.vm.manifest, pages: [wrapper.vm.manifest.pages[0], { id: 'list', title: 'Cases' }] }
+		wrapper.vm.onManifestUpdate(edited)
+		expect(await wrapper.vm.save()).toBe(true)
+
+		const [url, body] = axiosPatchMock.mock.calls[0]
+		expect(url).toBe('/apps/openregister/api/objects/buildiq/applicationVersion/v-1')
+		expect(Object.keys(body)).toEqual(['manifestDelta'])
+		expect(body.manifestDelta.menu).toBeUndefined()
+		expect(body.manifestDelta.version).toBeUndefined()
+		expect(body.manifestDelta.pages).toEqual([{ id: 'home', title: 'Start' }, { id: 'list', title: 'Cases' }])
+		// The preview shows `manifest`; base plus the saved delta gives exactly that.
+		const { mergeManifestDelta } = await import('@conduction/nextcloud-vue')
+		expect(mergeManifestDelta(BASE, body.manifestDelta).manifest).toEqual(wrapper.vm.manifest)
+	})
+
+	it('shows the delta paths that no longer match the base, without stopping a save', async () => {
+		const wrapper = mountDelta({ base: BASE, orphanedDeltaPaths: ['pages/gone'] })
+		await flush(wrapper)
+		await wrapper.vm.loadDeltaBase()
+		await flush(wrapper)
+
+		expect(wrapper.find('[data-testid="orphaned-delta-paths"]').text()).toContain('pages/gone')
+		expect(await wrapper.vm.save()).toBe(true)
+	})
+
+	it('turns saving off when the base cannot be loaded', async () => {
+		const wrapper = mountDelta(new Error('offline'))
+		await flush(wrapper)
+		await wrapper.vm.loadDeltaBase()
+		await flush(wrapper)
+
+		expect(wrapper.vm.error).toContain('could not be loaded')
+		expect(await wrapper.vm.save()).toBe(false)
+		expect(axiosPatchMock).not.toHaveBeenCalled()
+	})
+
+	it('keeps saving the manifest of a version without a base, and asks for no base', async () => {
+		const wrapper = mountHost({
+			version: { '@self': { id: 'v-2' }, uuid: 'v-2', manifest: { version: '1.0.0', pages: [{ id: 'a' }] } },
+			appList: [APP],
+		})
+		await flush(wrapper)
+		await wrapper.vm.loadDeltaBase()
+		expect(await wrapper.vm.save()).toBe(true)
+
+		expect(axiosGetMock.mock.calls.some(([url]) => String(url).endsWith('/manifest-base'))).toBe(false)
+		expect(Object.keys(axiosPatchMock.mock.calls[0][1])).toEqual(['manifest'])
+	})
+})

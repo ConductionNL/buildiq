@@ -375,6 +375,35 @@ final class AutomationsControllerTest extends TestCase {
 	}//end testCompileReturns422OnUnsupportedCombination()
 
 	/**
+	 * REQ-BQLS-005: an apply refusal (an AI step without Hermiq's node) maps to
+	 * 422 with its message, and nothing is stored.
+	 *
+	 * @return void
+	 */
+	public function testCompileReturns422WhenApplyRefuses(): void {
+		$this->wireUser(uid: 'bob');
+		$this->wireLookup(
+			automation: ['id' => 'a-1', 'applicationSlug' => 'permit-tracker', 'versionUuid' => 'draft-version'],
+			application: [
+				'id' => 'app-1',
+				'slug' => 'permit-tracker',
+				'permissions' => ['owners' => ['user:alice'], 'editors' => ['user:bob']],
+			]
+		);
+
+		$this->compiler->method('compile')->willReturn(['hash' => 'h', 'flow' => ['nodes' => [['type' => 'hermiq.agent-step']]]]);
+		$this->compiler->method('apply')->willThrowException(
+			new \OCA\Buildiq\Exception\UnsupportedAutomationCombinationException('Install Hermiq to use AI steps.')
+		);
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$response = $this->controller->compile(uuid: 'a-1');
+
+		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+		$this->assertStringContainsString('Install Hermiq to use AI steps.', (string)json_encode($response->getData()));
+	}//end testCompileReturns422WhenApplyRefuses()
+
+	/**
 	 * REQ-AUTD-007: dry-run compiles the automation in-memory and evaluates
 	 * it via the rules engine with dryRun:true, returning the condition
 	 * match + would-be actions without dispatching any side effect.
@@ -746,4 +775,95 @@ final class AutomationsControllerTest extends TestCase {
 		$this->assertSame(['remove', 'deleteObject'], $order);
 
 	}//end testDestroyRemovesArtifactsBeforeDeletingThroughTheRoute()
+	/**
+	 * Wire the lookups of a compile of an automation with a script step:
+	 * the automation, its app for the role check, and its app for the
+	 * script check.
+	 *
+	 * @param string $uid The caller.
+	 *
+	 * @return void
+	 */
+	private function wireScriptCompile(string $uid): void {
+		$this->wireUser(uid: $uid);
+		$application = [
+			'id' => 'app-1',
+			'slug' => 'permit-tracker',
+			'permissions' => ['owners' => ['user:alice'], 'editors' => ['user:bob']],
+		];
+		$this->objectService->method('find')->willReturnOnConsecutiveCalls(
+			$this->buildEntity(payload: [
+				'id' => 'a-1',
+				'applicationSlug' => 'permit-tracker',
+				'versionUuid' => 'draft-version',
+				'actions' => [['type' => 'script-step', 'code' => 'return items;']],
+				'provenance' => ['scriptAuthor' => 'alice', 'compiledHash' => 'old'],
+			]),
+			$this->buildEntity(payload: $application),
+			$this->buildEntity(payload: $application)
+		);
+	}//end wireScriptCompile()
+
+	/**
+	 * REQ-BQSS-002: an editor may not compile or enable an automation that holds a script step.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
+	 */
+	public function testAnEditorCannotCompileAScriptStep(): void {
+		$this->wireScriptCompile(uid: 'bob');
+		$this->compiler->expects($this->never())->method('compile');
+
+		$response = $this->controller->compile(uuid: 'a-1');
+
+		$this->assertSame(expected: Http::STATUS_FORBIDDEN, actual: $response->getStatus());
+		$this->assertSame(expected: 'Only app owners can change a script step.', actual: $response->getData()['detail']);
+	}//end testAnEditorCannotCompileAScriptStep()
+
+	/**
+	 * REQ-BQSS-002: enabling compiles too, so an editor is refused there as well.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
+	 */
+	public function testAnEditorCannotEnableAScriptStep(): void {
+		$this->wireScriptCompile(uid: 'bob');
+		$this->compiler->expects($this->never())->method('compile');
+
+		$this->assertSame(expected: Http::STATUS_FORBIDDEN, actual: $this->controller->enable(uuid: 'a-1')->getStatus());
+	}//end testAnEditorCannotEnableAScriptStep()
+
+	/**
+	 * REQ-BQSS-002 and D6: an owner compiles, and the script author outlives the new provenance.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 */
+	public function testAnOwnerCompilesAndTheScriptAuthorIsKept(): void {
+		$this->wireScriptCompile(uid: 'alice');
+		$this->compiler->method('compile')->willReturn(['hash' => 'new']);
+		$this->compiler->method('apply')->willReturn(['compiledHash' => 'new']);
+		$saved = null;
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (...$arguments) use (&$saved): ObjectEntity {
+				foreach ($arguments as $argument) {
+					if (is_array($argument) === true) {
+						$saved = $argument;
+						break;
+					}
+				}
+
+				return $this->buildEntity(payload: ['id' => 'a-1']);
+			}
+		);
+
+		$response = $this->controller->compile(uuid: 'a-1');
+
+		$this->assertSame(expected: Http::STATUS_OK, actual: $response->getStatus());
+		$this->assertSame(expected: ['compiledHash' => 'new', 'scriptAuthor' => 'alice'], actual: $saved['provenance'] ?? null);
+	}//end testAnOwnerCompilesAndTheScriptAuthorIsKept()
 }//end class

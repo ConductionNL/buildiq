@@ -85,8 +85,18 @@
 				:actions="writeActions"
 				:readOnly="databaseReadOnly"
 				@set="setWriteAction" />
+			<label class="index-page-editor__inline">
+				<input
+					type="checkbox"
+					data-testid="index-page-allow-export"
+					:checked="config.allowExport === true"
+					@change="onExportToggle($event.target.checked)" />
+				{{ t('buildiq', 'Export to CSV or Excel') }}
+			</label>
 			<ActionBuilder
 				:modelValue="config.actions || []"
+				:pages="pages"
+				:flows="flows"
 				@update:modelValue="update('actions', $event)" />
 			<InlineFieldMark :error="markFor('actions')" />
 		</fieldset>
@@ -105,6 +115,48 @@
 				v-if="sidebarEnabled"
 				:modelValue="(config.sidebar && config.sidebar.columnGroups) || []"
 				@update:modelValue="updateSidebar('columnGroups', $event)" />
+		</fieldset>
+
+		<fieldset class="index-page-editor__fieldset" data-testid="index-page-scan">
+			<legend>{{ t('buildiq', 'Scan') }}</legend>
+			<label class="index-page-editor__inline">
+				<input
+					type="checkbox"
+					:checked="scanEnabled"
+					@change="onScanToggle($event.target.checked)" />
+				{{ t('buildiq', 'Find a record by scanning its code') }}
+			</label>
+			<template v-if="scanEnabled">
+				<label>
+					{{ t('buildiq', 'Field that holds the code') }}
+					<select
+						:value="scan.field || ''"
+						data-testid="index-page-scan-field"
+						@change="updateScan('field', $event.target.value)">
+						<option value="">
+							{{ t('buildiq', 'Choose a field') }}
+						</option>
+						<option v-for="name in scanFieldOptions" :key="name" :value="name">
+							{{ name }}
+						</option>
+					</select>
+				</label>
+				<label>
+					{{ t('buildiq', 'When a code is scanned') }}
+					<select
+						:value="scan.onMatch || 'open'"
+						data-testid="index-page-scan-match"
+						@change="updateScan('onMatch', $event.target.value)">
+						<option value="open">
+							{{ t('buildiq', 'Open the matching record') }}
+						</option>
+						<option value="filter">
+							{{ t('buildiq', 'Show the matching records') }}
+						</option>
+					</select>
+				</label>
+			</template>
+			<InlineFieldMark :error="markFor('scan')" />
 		</fieldset>
 
 		<fieldset class="index-page-editor__fieldset">
@@ -178,6 +230,18 @@ export default {
 			default: 'index',
 		},
 
+		/** This app's pages, for a "go to a page" action. */
+		pages: {
+			type: Array,
+			default: () => [],
+		},
+
+		/** The app's declared flows (`{flow, label?}`), for a "start a flow" action. */
+		flows: {
+			type: Array,
+			default: () => [],
+		},
+
 		/** Whether users of the built app may order rows by dragging (`page.manualOrder`, REQ-PEC-009). */
 		manualOrder: {
 			type: Boolean,
@@ -194,7 +258,7 @@ export default {
 		 * The config keys a read-only database switches off on an index page.
 		 *
 		 * @return {string[]}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
 		 */
 		writeActionKeys() {
 			return ['showAdd', 'showEditAction', 'showDeleteAction']
@@ -204,7 +268,7 @@ export default {
 		 * The write action switches of an index page.
 		 *
 		 * @return {Array<{key: string, label: string}>}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
 		 */
 		writeActions() {
 			return [
@@ -227,12 +291,50 @@ export default {
 				'columns',
 				'actions',
 				'sidebar',
+				'scan',
 				'viewModes',
 				'calendar',
 				'board',
 				'dateAxis',
 				'defaultSavedViews',
 			]
+		},
+
+		/**
+		 * The page's scan block, or an empty one.
+		 *
+		 * @return {object}
+		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001
+		 */
+		scan() {
+			const scan = this.config.scan
+			return scan && typeof scan === 'object' ? scan : {}
+		},
+
+		/**
+		 * Whether the page scans to find a record.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001
+		 */
+		scanEnabled() {
+			return this.scan.enabled === true
+		},
+
+		/**
+		 * The schema's properties the code can be in, with the chosen field kept
+		 * even when the schema has not loaded yet.
+		 *
+		 * @return {Array<string>}
+		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001
+		 */
+		scanFieldOptions() {
+			const names = Object.keys(this.schemaProperties || {}).sort()
+			const chosen = this.scan.field
+			if (chosen && !names.includes(chosen)) {
+				names.unshift(chosen)
+			}
+			return names
 		},
 
 		/**
@@ -330,6 +432,19 @@ export default {
 		},
 
 		/**
+		 * Offer the list's Export menu (CSV or Excel through OpenRegister's
+		 * export), or not. Off stores `allowExport: false`, so the maker's
+		 * choice survives a later change of the default.
+		 *
+		 * @param {boolean} enabled - the checkbox's new state.
+		 * @return {void}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-exports-its-records-to-csv-or-excel-req-bqcv-004
+		 */
+		onExportToggle(enabled) {
+			this.$emit('update:config', { ...this.config, allowExport: enabled === true })
+		},
+
+		/**
 		 * Let app users save their own views on this page, or not. Off
 		 * deletes `config.allowSavedViews` rather than storing `false`, which
 		 * nextcloud-vue reads as "turn the Views tab off" and so would also
@@ -363,6 +478,40 @@ export default {
 				enabled: true,
 			}
 			next.sidebar = { ...current, [key]: value }
+			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Turn scanning on or off. Off deletes `config.scan`; on starts it as
+		 * opening the one matching record, keeping a field chosen before.
+		 *
+		 * @param {boolean} enabled - the checkbox's new state.
+		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001
+		 */
+		onScanToggle(enabled) {
+			const next = { ...this.config }
+			if (!enabled) {
+				delete next.scan
+			} else {
+				next.scan = {
+					enabled: true,
+					field: this.scan.field || '',
+					onMatch: this.scan.onMatch || 'open',
+				}
+			}
+			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Write one key of the scan block.
+		 *
+		 * @param {string} key - `field` or `onMatch`.
+		 * @param {string} value - the chosen value.
+		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001
+		 */
+		updateScan(key, value) {
+			const next = { ...this.config }
+			next.scan = { enabled: true, onMatch: 'open', ...this.scan, [key]: value }
 			this.$emit('update:config', next)
 		},
 

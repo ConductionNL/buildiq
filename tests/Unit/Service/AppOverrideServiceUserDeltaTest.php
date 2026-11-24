@@ -305,7 +305,10 @@ class AppOverrideServiceUserDeltaTest extends TestCase {
 		self::assertSame(expected: 'demo', actual: $result['appId']);
 		self::assertSame(expected: 'Alice.Smith@example', actual: $result['owner']);
 		self::assertSame(expected: 'new-row', actual: $result['versionUuid']);
-		self::assertNotEmpty(actual: $result['updatedAt']);
+		self::assertMatchesRegularExpression(
+			pattern: '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/',
+			string: (string)$result['updatedAt']
+		);
 
 		self::assertSame(expected: 'user', actual: $captured['object']['scope']);
 		self::assertSame(expected: 'Alice.Smith@example', actual: $captured['object']['owner']);

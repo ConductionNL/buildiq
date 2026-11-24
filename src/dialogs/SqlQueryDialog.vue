@@ -111,7 +111,7 @@ export const PREVIEW_ROWS = 50
  *
  * @param {object} [response] The axios error response.
  * @return {string}
- * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-only-a-safe-query-from-an-administrator-runs-req-bqdb-006
+ * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-only-a-safe-query-from-an-administrator-runs-req-bqdb-006
  */
 export function refusalMessage(response) {
 	const status = response?.status
@@ -136,7 +136,7 @@ export function refusalMessage(response) {
  *
  * @param {object} [response] The axios error response.
  * @return {string}
- * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-only-a-safe-query-from-an-administrator-runs-req-bqdb-006
+ * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-only-a-safe-query-from-an-administrator-runs-req-bqdb-006
  */
 function upstreamSentence(response) {
 	const error = response?.data?.error
@@ -151,7 +151,7 @@ function upstreamSentence(response) {
  *
  * @param {Array<{name: string, type?: string}>} columns The preview columns.
  * @return {object}
- * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
+ * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
  */
 export function columnProperties(columns) {
 	const known = ['string', 'integer', 'number', 'boolean']
@@ -195,7 +195,7 @@ export default {
 		 * Whether a preview can run: a database and a query, and nothing running.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
 		 */
 		canPreview() {
 			return !this.busy && this.database !== null && this.query.trim() !== ''
@@ -205,7 +205,7 @@ export default {
 		 * Whether "Save as table" is on: only after a preview of this very query succeeded, with a name.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-only-a-safe-query-from-an-administrator-runs-req-bqdb-006
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-only-a-safe-query-from-an-administrator-runs-req-bqdb-006
 		 */
 		canSave() {
 			return !this.busy
@@ -218,7 +218,7 @@ export default {
 		 * The preview's columns for the result grid.
 		 *
 		 * @return {Array<{key: string, label: string}>}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
 		 */
 		previewColumns() {
 			return (this.preview?.columns || []).map((column) => ({ key: column.name, label: column.name }))
@@ -228,7 +228,7 @@ export default {
 		 * The preview's rows, at most 50.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
 		 */
 		previewRows() {
 			return (this.preview?.rows || []).slice(0, PREVIEW_ROWS)
@@ -240,7 +240,7 @@ export default {
 		 * A different database or query invalidates the preview.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
 		 */
 		database() {
 			this.preview = null
@@ -252,7 +252,7 @@ export default {
 	 * Read the connected databases for the picker.
 	 *
 	 * @return {Promise<void>}
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
 	 */
 	async created() {
 		this.databases = await fetchConnectedDatabases()
@@ -266,7 +266,7 @@ export default {
 		 * Preview the query through OpenRegister.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
 		 */
 		async runPreview() {
 			const query = this.query
@@ -289,7 +289,7 @@ export default {
 		 * Save the previewed query as a read-only table of the database's register.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
 		 */
 		async saveAsTable() {
 			this.busy = true

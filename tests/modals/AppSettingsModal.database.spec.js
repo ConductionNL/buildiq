@@ -5,7 +5,7 @@
  * Vitest unit tests for the "Connect a database" picker in
  * `src/modals/AppSettingsModal.vue` (data-external-database-sources T02).
  *
- * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
+ * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
  */
 
 import { flushPromises, mount } from '@vue/test-utils'

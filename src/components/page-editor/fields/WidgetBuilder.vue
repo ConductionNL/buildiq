@@ -1,6 +1,10 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <!--
-  - WidgetBuilder — authors the `widgetDef` $def. Used by DashboardPageEditor.
+  - WidgetBuilder — authors the `widgetDef` $def. Used by DashboardPageEditor
+  - and DetailPageEditor.
+  -
+  - A `custom` widget may carry a code component, `config.code` (pages-custom-code
+  - D1, D5): "Write your own" opens the same CodeComponentEditor as a custom page.
   -->
 <template>
 	<div class="widget-builder">
@@ -38,6 +42,19 @@
 					✕
 				</button>
 			</div>
+			<!-- A data widget is edited in place unless the maker makes it
+			     read-only: `content.editable: false`, the key nextcloud-vue's
+			     CnDetailWidgetHost reads (REQ-BQCV-013). -->
+			<label
+				v-if="widget.type === 'data'"
+				class="widget-builder__code-toggle"
+				data-testid="widget-builder-read-only">
+				<input
+					type="checkbox"
+					:checked="isReadOnly(widget)"
+					@change="setReadOnly(index, $event.target.checked)">
+				{{ t('buildiq', 'Read-only (users cannot edit fields in place)') }}
+			</label>
 			<!-- A chart is configured with the library's own chart form, the one
 			     the dashboard's in-app editor uses (pages-chart-widget-authoring D1). -->
 			<CnChartWidgetForm
@@ -45,8 +62,32 @@
 				class="widget-builder__chart"
 				:editingWidget="chartFormInput(widget)"
 				@update:content="updateChart(index, $event)" />
+			<!-- A count tile is configured with the library's own stats-block form:
+			     what to count, in which register and schema, and with which filter (REQ-BQCV-007). -->
+			<CnStatsBlockWidgetForm
+				v-if="widget.type === 'stats-block'"
+				class="widget-builder__count"
+				:editingWidget="countFormInput(widget)"
+				@update:content="updateCount(index, $event)" />
 			<!-- A connector widget binds its own data source with the same origin
 			     toggle, source picker and field mapper as a page (REQ-BQCB-003). -->
+			<!-- A custom widget may be written by hand (REQ-BQCC-001). The server
+			     decides who may save it (REQ-BQCC-005). -->
+			<label
+				v-if="widget.type === 'custom'"
+				class="widget-builder__code-toggle"
+				data-testid="widget-builder-write-your-own">
+				<input
+					type="checkbox"
+					:checked="hasCode(widget)"
+					@change="setCodeMode(index, $event.target.checked)">
+				{{ t('buildiq', 'Write your own') }}
+			</label>
+			<CodeComponentEditor
+				v-if="widget.type === 'custom' && hasCode(widget)"
+				class="widget-builder__code"
+				:modelValue="widget.config.code"
+				@update:modelValue="updateCode(index, $event)" />
 			<DataSourceOriginToggle
 				v-if="isConnectorWidget(widget)"
 				class="widget-builder__binding"
@@ -58,6 +99,7 @@
 				+ {{ t('buildiq', 'Add widget') }}
 			</button>
 			<button
+				v-if="!withoutConnectors"
 				type="button"
 				class="widget-builder__add"
 				data-testid="widget-builder-add-connector"
@@ -69,15 +111,40 @@
 </template>
 
 <script>
-import { CnChartWidgetForm } from '@conduction/nextcloud-vue'
+import { CnChartWidgetForm, CnStatsBlockWidgetForm } from '@conduction/nextcloud-vue'
 import DataSourceOriginToggle from '../DataSourceOriginToggle.vue'
+import CodeComponentEditor from './CodeComponentEditor.vue'
 import { CONNECTOR_WIDGET_TYPE } from '../../../services/connectorPages.js'
 import { chartFormInput, widgetWithChartContent } from './chartWidget.js'
+import { countFormInput, widgetWithCountContent } from './countWidget.js'
+
+/**
+ * Whether a value is a plain (non-array) object.
+ *
+ * @param {*} value - the value.
+ * @return {boolean}
+ */
+function isObjectValue(value) {
+	return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+/**
+ * The key a widget's switched-off code is kept under: its id, else its position.
+ *
+ * @param {object} widget - the widget.
+ * @param {number} index - its position in the `widgets` array.
+ * @return {string}
+ */
+function stashKeyOf(widget, index) {
+	return widget.id || String(index)
+}
 
 export default {
 	name: 'WidgetBuilder',
 	components: {
 		CnChartWidgetForm,
+		CnStatsBlockWidgetForm,
+		CodeComponentEditor,
 		DataSourceOriginToggle,
 	},
 
@@ -86,9 +153,24 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
+		/** Leave out the external data (connector) widget, for pages that do not place one. */
+		withoutConnectors: {
+			type: Boolean,
+			default: false,
+		},
 	},
 
 	emits: ['update:modelValue', 'add:connectorWidget'],
+
+	data() {
+		return {
+			// The code a widget held when "Write your own" was switched off, by
+			// widget id, so switching it back on within the session restores it.
+			stashedCode: {},
+		}
+	},
+
 	computed: {
 		/**
 		 * Observed behaviour of `localWidgets` (retrofit annotation).
@@ -102,6 +184,23 @@ export default {
 
 	methods: {
 		chartFormInput,
+
+		countFormInput,
+
+		/**
+		 * Write the stats-block form's content onto a count widget: its title,
+		 * `props` and `dataSource`, never a `content` key.
+		 *
+		 * @param {number} index - position of the count widget in the `widgets` array.
+		 * @param {{ title: string, props: object, dataSource: object }} content - the form's `update:content` payload.
+		 * @return {void}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-maker-adds-a-dashboard-page-req-bqcv-007
+		 */
+		updateCount(index, content) {
+			const next = this.localWidgets.slice()
+			next[index] = widgetWithCountContent(next[index], content)
+			this.$emit('update:modelValue', next)
+		},
 
 		/**
 		 * Write the chart form's content onto the widget: the chart type as
@@ -130,6 +229,125 @@ export default {
 			const next = this.localWidgets.slice()
 			const current = next[index] || {}
 			next[index] = { ...current, [key]: value }
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Whether a data widget is read-only: its `content.editable` is `false`.
+		 * Absent means editable, the library's default.
+		 *
+		 * @param {object} widget - a widget definition.
+		 * @return {boolean}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-detail-page-lets-users-edit-record-fields-in-place-req-bqcv-013
+		 */
+		isReadOnly(widget) {
+			const content = widget ? widget.content : undefined
+			return isObjectValue(content) && content.editable === false
+		},
+
+		/**
+		 * Make a data widget read-only or editable again. Read-only writes
+		 * `content.editable: false`; editable takes the key out and drops a
+		 * `content` left empty, so the widget falls back to the default.
+		 *
+		 * @param {number} index - position of the widget in the `widgets` array.
+		 * @param {boolean} readOnly - whether users may no longer edit fields in place.
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-detail-page-lets-users-edit-record-fields-in-place-req-bqcv-013
+		 */
+		setReadOnly(index, readOnly) {
+			const next = this.localWidgets.slice()
+			const widget = { ...(next[index] || {}) }
+			const content = { ...(isObjectValue(widget.content) ? widget.content : {}) }
+			if (readOnly) {
+				content.editable = false
+			} else {
+				delete content.editable
+			}
+			if (Object.keys(content).length === 0) {
+				delete widget.content
+			} else {
+				widget.content = content
+			}
+			next[index] = widget
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Whether a widget carries a code component.
+		 *
+		 * @param {object} widget - a widget definition.
+		 * @return {boolean}
+		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
+		 */
+		hasCode(widget) {
+			const config = widget ? widget.config : undefined
+			return isObjectValue(config) && isObjectValue(config.code)
+		},
+
+		/**
+		 * A widget's config when it is an object, else an empty one.
+		 *
+		 * @param {object} widget - the widget.
+		 * @return {object}
+		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
+		 */
+		configOf(widget) {
+			return (widget.config && typeof widget.config === 'object') ? widget.config : {}
+		},
+
+		/**
+		 * Switch "Write your own" on or off for a widget. On writes
+		 * `config.code` (the code switched off earlier in this session, else
+		 * empty); off takes it out again and drops a `config` left empty.
+		 *
+		 * @param {number} index - position of the widget in the `widgets` array.
+		 * @param {boolean} on - whether the widget is now written by hand.
+		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
+		 */
+		setCodeMode(index, on) {
+			const current = this.localWidgets[index] || {}
+			if (on === this.hasCode(current)) {
+				return
+			}
+			const stashKey = stashKeyOf(current, index)
+			const config = { ...this.configOf(current) }
+			if (on) {
+				config.code = this.stashedCode[stashKey] || {}
+			} else {
+				this.stashedCode = { ...this.stashedCode, [stashKey]: config.code }
+				delete config.code
+			}
+			this.writeConfig(index, config)
+		},
+
+		/**
+		 * Write a widget's code component.
+		 *
+		 * @param {number} index - position of the widget in the `widgets` array.
+		 * @param {object} code - the code block CodeComponentEditor emitted.
+		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
+		 */
+		updateCode(index, code) {
+			const current = this.localWidgets[index] || {}
+			this.writeConfig(index, { ...(current.config || {}), code })
+		},
+
+		/**
+		 * Replace a widget's `config`, removing the key when it is empty.
+		 *
+		 * @param {number} index - position of the widget in the `widgets` array.
+		 * @param {object} config - the new config.
+		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
+		 */
+		writeConfig(index, config) {
+			const next = this.localWidgets.slice()
+			const widget = { ...(next[index] || {}) }
+			if (Object.keys(config).length === 0) {
+				delete widget.config
+			} else {
+				widget.config = config
+			}
+			next[index] = widget
 			this.$emit('update:modelValue', next)
 		},
 
@@ -246,6 +464,18 @@ export default {
 .widget-builder__chart {
 	padding: 8px;
 	border-left: 2px solid var(--color-border);
+}
+
+.widget-builder__code-toggle {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+}
+
+.widget-builder__code {
+	padding-inline-start: 12px;
+	border-inline-start: 2px solid var(--color-border);
 }
 
 .widget-builder__binding {

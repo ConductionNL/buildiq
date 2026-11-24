@@ -43,7 +43,6 @@ namespace OCA\Buildiq\Repair;
 use Closure;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
-use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -97,6 +96,13 @@ class MigrateToVersionedModel implements IRepairStep {
 	private const ROW_FAILED = 'row_failed';
 
 	/**
+	 * Reads every row of the schema being migrated.
+	 *
+	 * @var SchemaRowReader
+	 */
+	private readonly SchemaRowReader $rows;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger PSR logger for diagnostics
@@ -116,6 +122,7 @@ class MigrateToVersionedModel implements IRepairStep {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly IAppConfig $appConfig,
 	) {
+		$this->rows = new SchemaRowReader(objectService: $objectService);
 	}//end __construct()
 
 	/**
@@ -311,7 +318,6 @@ class MigrateToVersionedModel implements IRepairStep {
 	 * @return array<int,array<string,mixed>>
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-26
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function enumerateApplications(): array {
 		try {
@@ -330,21 +336,7 @@ class MigrateToVersionedModel implements IRepairStep {
 			return [];
 		}
 
-		$rows = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => $registerId,
-					'schema' => $schemaId,
-				],
-			]
-		);
-
-		$normalised = [];
-		foreach ($rows as $row) {
-			$normalised[] = ObjectRecord::toArray(object: $row);
-		}
-
-		return $normalised;
+		return $this->rows->rows(registerId: $registerId, schemaId: $schemaId);
 	}//end enumerateApplications()
 
 	/**

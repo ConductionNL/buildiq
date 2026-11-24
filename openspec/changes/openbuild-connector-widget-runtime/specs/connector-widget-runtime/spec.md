@@ -6,6 +6,8 @@
 
 Every Buildiq host that mounts a virtual app's `CnAppRoot` MUST obtain its runtime component registry from one canonical accessor exported by `src/runtimeRegistry.js`, and MUST pass that value as the `registry` prop; no host may construct, filter or inline its own registry object. The accessor SHALL return the full runtime registry — at minimum the `connector-data` widget entry — so that the set of widget keys a virtual app can render is identical no matter which host mounted it. `CnAppRoot` re-exposes the prop to descendants as the injected `cnRegistry`, which `CnWidgetGrid` resolves `widgetKey` against ahead of the library built-ins and the dashboard widget catalog; a host that omits the prop therefore degrades every registry-only widget to `CnUnknownWidget` with nothing but a `console.warn`, which SHALL be treated as a defect rather than a tolerated fallback.
 
+@e2e exclude the registry seam is a build-time wiring of the two hosts, asserted in Vitest `tests/vitest/runtimeRegistryParity.spec.js`; its published-route effect is proven by `tests/e2e/connector-widget-runtime.spec.ts` under REQ-CWR-004
+
 #### Scenario: Published standalone entry supplies the registry
 
 - **GIVEN** the standalone runtime entry `src/builder.js`, which serves `/apps/buildiq/builder/{slug}`
@@ -33,6 +35,8 @@ Buildiq SHALL treat the following as the closed, normative set of ways a widget 
 
 #### Scenario: Documented matrix matches the canonical manifest schema
 
+@e2e exclude a schema rule with no runtime surface: the matrix is checked against the vendored v2 schema in Vitest `tests/services/endpointBindingMatrix.spec.js`
+
 - **GIVEN** `@conduction/nextcloud-vue/src/schemas/app-manifest-v2.schema.json`
 - **WHEN** the endpoint-capable widget keys named in this requirement are checked against it
 - **THEN** each of `object-table`, `chart`, `stat`, `delta` and `workspace-filter` accepts an `endpointSource` at the stated location
@@ -47,6 +51,8 @@ Buildiq SHALL treat the following as the closed, normative set of ways a widget 
 
 #### Scenario: Both bindings on one widget are rejected
 
+@e2e exclude a manifest validation rule with no runtime surface: the canonical validator's refusal, naming the widget, is asserted in Vitest `tests/services/endpointBindingExclusive.spec.js`
+
 - **GIVEN** a widget declaring an OpenRegister source and an `endpointSource` at the same time
 - **WHEN** manifest validation runs
 - **THEN** the manifest is rejected with an error naming the widget and stating that exactly one data binding is allowed
@@ -54,6 +60,8 @@ Buildiq SHALL treat the following as the closed, normative set of ways a widget 
 ### Requirement: REQ-CWR-003 `stats-block` remains register-bound, with a stated rationale
 
 The `stats-block` widget key MUST NOT accept an endpoint binding, and Buildiq MUST NOT work around this by patching the vendored manifest schema or by injecting endpoint data into `props.entries[]`. Its entries validate against `$defs.statsBlockEntry`, which declares `additionalProperties: false` and requires `register` and `schema`, so an `endpointSource` key inside an entry is a schema violation rather than an omission. Endpoint parity for `stats-block` SHALL be recorded as an upstream `@conduction/nextcloud-vue` concern together with the reason it is a design and not a key addition — each entry is a per-schema object count (`metric`, `field`, `filter`, `hideWhenZero`) and would need its own per-entry response mapping. Authors needing endpoint-backed KPIs SHALL be directed to individual `stat` or `delta` widgets, which do accept `props.content.endpointSource`.
+
+@e2e exclude a schema rule with no runtime surface: the rejected entry and the stat/delta alternative are asserted against the vendored schema in Vitest `tests/services/endpointBindingMatrix.spec.js`
 
 #### Scenario: An endpoint-bound stats-block entry is rejected
 

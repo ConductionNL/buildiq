@@ -28,6 +28,7 @@ use OCA\Buildiq\Event\RuleEvaluationRequestedEvent;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\PublishedApplicationProviderInterface;
+use OCA\Buildiq\Service\PublishedApplicationProvider;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -119,9 +120,10 @@ final class ListenerRegistrar {
 			event: ObjectUpdatingEvent::class,
 			listener: FormLiveValuesListener::class
 		);
-		// Device features (forms-signature-audio-and-location, REQ-BQSA-004):
-		// every ApplicationVersion save stores the browser devices its manifest
-		// uses, which the page serving the app allows and nothing else.
+		// Device features (forms-signature-audio-and-location REQ-BQSA-004,
+		// pages-qr-and-barcodes REQ-BQQR-004): every ApplicationVersion save
+		// stores the browser devices its manifest uses (the camera where it
+		// scans), which the page serving the app allows and nothing else.
 		$context->registerEventListener(
 			event: ObjectCreatingEvent::class,
 			listener: DeviceFeaturesListener::class
@@ -353,6 +355,26 @@ final class ListenerRegistrar {
 				'listener' => AutomationCleanupListener::class,
 				'registers' => null,
 				'schemas' => ['automation'],
+			],
+			// The published-Application read is cached across requests; a write
+			// to an Application drops it. Schema-only, like the guard above.
+			[
+				'event' => ObjectCreatedEvent::class,
+				'listener' => PublishedApplicationCacheListener::class,
+				'registers' => null,
+				'schemas' => [PublishedApplicationProvider::APPLICATION_SCHEMA],
+			],
+			[
+				'event' => ObjectUpdatedEvent::class,
+				'listener' => PublishedApplicationCacheListener::class,
+				'registers' => null,
+				'schemas' => [PublishedApplicationProvider::APPLICATION_SCHEMA],
+			],
+			[
+				'event' => ObjectDeletedEvent::class,
+				'listener' => PublishedApplicationCacheListener::class,
+				'registers' => null,
+				'schemas' => [PublishedApplicationProvider::APPLICATION_SCHEMA],
 			],
 		];
 	}//end filteredObjectListeners()

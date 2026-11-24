@@ -472,6 +472,13 @@
 						"order": 40
 					},
 					{
+						"id": "tests",
+						"label": "Tests",
+						"icon": "TestTube",
+						"component": "ApplicationTestsTab",
+						"order": 45
+					},
+					{
 						"id": "icons",
 						"label": "Icons",
 						"icon": "ImageOutline",
@@ -677,6 +684,8 @@
 			"title": "Applications",
 			"_note": "Every filter is scalar equality, the only kind OpenRegister's aggregation endpoint can evaluate. A multi-value or relative-date filter is accepted and then silently not applied.",
 			"config": {
+				"download": true,
+				"downloadName": "buildiq-applications",
 				"widgets": [
 					{
 						"id": "apps-published",
@@ -914,6 +923,8 @@
 			"title": "Versions and exports",
 			"_note": "applicationVersion keeps its camelCase slug while every other schema here is kebab-case. Two schemas on one page deliberately: a version is what was cut, an export is where it went, and the question a reader has spans both.",
 			"config": {
+				"download": true,
+				"downloadName": "buildiq-delivery",
 				"widgets": [
 					{
 						"id": "versions-published",

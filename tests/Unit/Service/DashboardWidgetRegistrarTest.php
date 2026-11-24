@@ -159,6 +159,30 @@ class DashboardWidgetRegistrarTest extends TestCase {
 	}//end testThePlacementRolesAreKeptApartFromTheAppPermissions()
 
 	/**
+	 * REQ-BQOS-002: each Application's organisation scope and holder are read by
+	 * uuid for the widget context, and nothing else of the record is.
+	 *
+	 * @return void
+	 */
+	public function testTheOrganisationScopeIsReadPerApplication(): void {
+		$scoped = WidgetDescriptorTest::fixtureApplication(slug: 'pet-store', name: 'Pet Store');
+		$scoped['organisationScope'] = 'holder';
+		$scoped['@self'] = ['organisation' => 'org-a'];
+		$shared = WidgetDescriptorTest::fixtureApplication(slug: 'other', name: 'Other');
+		$shared['uuid'] = 'other-uuid';
+
+		$scopes = $this->registrar()->scopesByApplication(applications: [$scoped, $shared, ['slug' => 'no-uuid']]);
+
+		$this->assertSame(
+			expected: [
+				(string)$scoped['uuid'] => ['organisationScope' => 'holder', '@self' => ['organisation' => 'org-a']],
+				'other-uuid' => [],
+			],
+			actual: $scopes
+		);
+	}//end testTheOrganisationScopeIsReadPerApplication()
+
+	/**
 	 * A placement whose roles are neither a string nor a list is skipped with
 	 * a warning instead of falling open to every viewer of the Application.
 	 *
@@ -408,8 +432,11 @@ class DashboardWidgetRegistrarTest extends TestCase {
 	private function widgetContext(): VirtualAppWidgetContext {
 		return new VirtualAppWidgetContext(
 			urlGenerator: $this->createMock(IURLGenerator::class),
-			userSession: $this->createMock(IUserSession::class),
-			groupManager: $this->createMock(IGroupManager::class),
+			caller: new CallerContext(
+				userSession: $this->createMock(originalClassName: IUserSession::class),
+				groupManager: $this->createMock(originalClassName: IGroupManager::class),
+				permissionResolver: $this->createMock(originalClassName: PermissionResolver::class)
+			),
 			visibility: new AppVisibilityResolver(),
 			projector: $this->createMock(WidgetItemProjector::class),
 			initialState: $this->createMock(IInitialState::class)

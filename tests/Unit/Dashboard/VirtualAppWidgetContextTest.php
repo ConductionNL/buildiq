@@ -27,6 +27,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Dashboard;
 
+use OCA\Buildiq\Service\AppOrganisationGuard;
+use OCA\Buildiq\Service\CallerContext;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Dashboard\VirtualAppWidgetContext;
 use OCA\Buildiq\Kernel\Values\WidgetApplication;
 use OCA\Buildiq\Kernel\Values\WidgetDescriptor;
@@ -52,11 +55,12 @@ class VirtualAppWidgetContextTest extends TestCase {
 	/**
 	 * A context for caller `alice` (member of `sales`, not an admin), or anonymous.
 	 *
-	 * @param bool $signedIn Whether alice is signed in.
+	 * @param bool                      $signedIn Whether alice is signed in.
+	 * @param AppOrganisationGuard|null $guard    The organisation guard, if any.
 	 *
 	 * @return VirtualAppWidgetContext
 	 */
-	private function context(bool $signedIn = true): VirtualAppWidgetContext {
+	private function context(bool $signedIn = true, ?AppOrganisationGuard $guard = null): VirtualAppWidgetContext {
 		$user = null;
 		if ($signedIn === true) {
 			$user = $this->createMock(originalClassName: IUser::class);
@@ -71,8 +75,12 @@ class VirtualAppWidgetContextTest extends TestCase {
 
 		return new VirtualAppWidgetContext(
 			urlGenerator: $this->createMock(originalClassName: IURLGenerator::class),
-			userSession: $session,
-			groupManager: $groupManager,
+			caller: new CallerContext(
+				userSession: $session,
+				groupManager: $groupManager,
+				permissionResolver: $this->createMock(originalClassName: PermissionResolver::class),
+				organisationGuard: $guard
+			),
 			visibility: new AppVisibilityResolver(),
 			projector: $this->createMock(originalClassName: WidgetItemProjector::class),
 			initialState: $this->createMock(originalClassName: IInitialState::class)
@@ -178,4 +186,33 @@ class VirtualAppWidgetContextTest extends TestCase {
 		);
 		$this->assertSame(expected: ['Shown', 'Also'], actual: array_column(array: $context->visibleDescriptors(), column_key: 'title'));
 	}//end testVisibleDescriptorsAreSerialisedInOrder()
+
+	/**
+	 * REQ-BQOS-002: a scoped app's widget is offered only to a member of its
+	 * holder organisation, whatever its permissions name; a shared app's is not
+	 * held back, and the scope never reaches the browser.
+	 *
+	 * @return void
+	 */
+	public function testAScopedAppOffersItsWidgetsOnlyToItsOrganisation(): void {
+		$scope = ['organisationScope' => 'holder', '@self' => ['organisation' => 'org-a']];
+		$scoped = $this->descriptor(entryId: 'scoped', principals: ['group:*']);
+		$shared = $this->descriptor(entryId: 'shared', principals: ['group:*']);
+		$member = $this->createMock(originalClassName: AppOrganisationGuard::class);
+		$member->method('canSee')->willReturnCallback(static fn (array $application): bool => $application === $scope);
+		$outsider = $this->createMock(originalClassName: AppOrganisationGuard::class);
+		$outsider->method('canSee')->willReturn(false);
+
+		foreach ([[$member, true], [$outsider, false], [null, false]] as [$guard, $expected]) {
+			$context = $this->context(guard: $guard);
+			$context->addDescriptor(descriptor: $scoped, scope: $scope);
+			$context->addDescriptor(descriptor: $shared);
+			$this->assertSame(expected: $expected, actual: $context->isVisible(descriptor: $scoped));
+			$this->assertTrue(condition: $context->isVisible(descriptor: $shared));
+		}
+
+		$context = $this->context(guard: $member);
+		$context->addDescriptor(descriptor: $scoped, scope: $scope);
+		$this->assertArrayNotHasKey(key: 'scope', array: $context->visibleDescriptors()[0]);
+	}//end testAScopedAppOffersItsWidgetsOnlyToItsOrganisation()
 }//end class

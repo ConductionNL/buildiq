@@ -5,8 +5,28 @@
 			"Automation": {
 				"x-schema-org": "schema:Action",
 				"slug": "automation",
+				"x-openregister-mcp": {
+					"enabled": true,
+					"tools": {
+						"search": {
+							"description": "Find the automations of Buildiq apps: the trigger and action rules that run on their own. Filter by applicationSlug, enabled or trigger, to see what runs automatically on an app.",
+							"scope": "read",
+							"readOnlyHint": true,
+							"filters": [
+								"applicationSlug",
+								"enabled",
+								"trigger"
+							]
+						},
+						"get": {
+							"description": "Read one automation by id: its trigger, condition and actions, and whether it is enabled.",
+							"scope": "read",
+							"readOnlyHint": true
+						}
+					}
+				},
 				"icon": "VectorPolylinePlus",
-				"version": "1.1.0",
+				"version": "1.3.0",
 				"title": "Automation",
 				"description": "A single trigger→condition→actions declarative automation, compiled on demand to Buildiq's existing declarative primitives (notifications dialect, lifecycle actions, schedules, rules engine). One automation is managed as one unit: list/edit/enable/disable/dry-run/delete.",
 				"authorization": {
@@ -68,10 +88,15 @@
 						"default": true,
 						"description": "Whether the automation is active. Disabling recompiles with every artifact's own enabled switch off; artifacts stay in place (design.md Decision 5)."
 					},
+					"disabledReason": {
+						"title": "Disabled Reason",
+						"type": "string",
+						"description": "Why buildiq switched this automation off: the step it could not run, for example a record step on a lifecycle transition (logic-automation-actions-that-run D9). Shown on the automations page. Absent while the automation runs."
+					},
 					"trigger": {
 						"title": "Trigger",
 						"type": "object",
-						"description": "Exactly one trigger: object created/updated/deleted, a lifecycle transition, a cron/interval schedule, or manual (rules-backend) invocation.",
+						"description": "Exactly one trigger: object created/updated/deleted, a lifecycle transition, a cron/interval schedule, manual invocation, an email received on an integriq mailbox, or a call to a webhook integriq serves.",
 						"required": [
 							"type"
 						],
@@ -86,7 +111,9 @@
 									"object-deleted",
 									"lifecycle-transition",
 									"schedule",
-									"manual"
+									"manual",
+									"email-received",
+									"webhook-called"
 								]
 							},
 							"schema": {
@@ -108,6 +135,34 @@
 								"title": "Cron Expression",
 								"type": "string",
 								"description": "5-field cron expression (schedule trigger type; mutually exclusive with `interval`)."
+							},
+							"source": {
+								"title": "Mailbox Source",
+								"type": "string",
+								"description": "UUID of the integriq mailbox source whose received messages start the automation (email-received trigger type)."
+							},
+							"from": {
+								"title": "Sender Filter",
+								"type": "string",
+								"description": "Only mail from this sender address starts the automation (email-received trigger type, optional)."
+							},
+							"subjectContains": {
+								"title": "Subject Filter",
+								"type": "string",
+								"description": "Only mail whose subject contains this text starts the automation (email-received trigger type, optional)."
+							},
+							"authorization": {
+								"title": "Caller Authorization",
+								"type": "string",
+								"description": "How the calling system signs in at the webhook address integriq serves (webhook-called trigger type). The secret is issued and shown by integriq, never stored here.",
+								"enum": [
+									"api-key"
+								]
+							},
+							"bodyExample": {
+								"title": "Example Body",
+								"type": "string",
+								"description": "Optional JSON example of the request body, offered as fields in the step pickers (webhook-called trigger type)."
 							}
 						}
 					},
@@ -156,7 +211,10 @@
 										"object-op",
 										"webhook",
 										"approval",
-										"generateDocument"
+										"generateDocument",
+										"rule-decision",
+										"ai-step",
+										"script-step"
 									],
 									"description": "`approval` (automation-approval-steps) is selectable only on object-created|object-updated|object-deleted|lifecycle-transition triggers: compiles to an OpenRegister ApprovalChain; blocked fail-closed on schedule/manual. `generateDocument` (automation-document-action) is selectable on the same four event/lifecycle-transition triggers. Dispatches an owner-impersonated call to Docudesk's pinned `correspondence/generate` route; blocked fail-closed on schedule/manual."
 								},
@@ -239,6 +297,36 @@
 									"type": "object",
 									"description": "webhook: payload body template with `{{payload}}` placeholders."
 								},
+								"source": {
+									"title": "Source",
+									"type": "string",
+									"description": "webhook: the integriq source the step calls (logic-automation-actions-that-run D5). A webhook without a source is refused on save."
+								},
+								"path": {
+									"title": "Path",
+									"type": "string",
+									"description": "webhook: the path on that source the payload is posted to, e.g. /intake."
+								},
+								"ruleSetSlug": {
+									"title": "Rule Set",
+									"type": "string",
+									"description": "rule-decision: the decision table rule set that decides (logic-automation-actions-that-run D7). A condition-action rule set is refused."
+								},
+								"inputMapping": {
+									"title": "Input Mapping",
+									"type": "object",
+									"description": "rule-decision: which record field each table input reads, as input column to field. An input without an entry reads the field with its own name."
+								},
+								"outputField": {
+									"title": "Output Field",
+									"type": "string",
+									"description": "rule-decision: the record field the decision is written to, for a table with one output."
+								},
+								"outputMapping": {
+									"title": "Output Mapping",
+									"type": "object",
+									"description": "rule-decision: the record field each table output is written to, as output column to field. Needed when the table has more than one output."
+								},
 								"assigneeGroup": {
 									"title": "Assignee Group",
 									"type": "string",
@@ -311,9 +399,93 @@
 										]
 									},
 									"description": "generateDocument: one or more of `attach` (writes the rendered document to Nextcloud Files and sets a `{ ref: <fileId> }` reference on the triggering object's `generatedDocument` field), `download-link` (generates a short-lived, ~24h, signed download URL without persisting a file) and `notify` (dispatches a notification referencing the generated document). `notify` MUST be combined with `attach` and/or `download-link`: `[\"notify\"]` alone is rejected as incomplete."
+								},
+								"preset": {
+									"title": "AI Preset",
+									"type": "string",
+									"enum": [
+										"classify",
+										"summarise",
+										"extract",
+										"translate",
+										"prompt"
+									],
+									"description": "ai-step (ai-llm-steps-and-computed-fields): what the AI does with the source fields. `classify` picks one of `labels`, `summarise` and `translate` write text, `extract` fills `fields`, `prompt` answers the maker's own `prompt`."
+								},
+								"agent": {
+									"title": "Hermiq Agent",
+									"type": "string",
+									"description": "ai-step: the uuid of the Hermiq agent that runs the turn. Pick one without enabled tools."
+								},
+								"sourceFields": {
+									"title": "Source Fields",
+									"type": "array",
+									"minItems": 1,
+									"items": {
+										"type": "string"
+									},
+									"description": "ai-step: the record fields the AI reads. Only these fields are sent; the whole record never is."
+								},
+								"targetField": {
+									"title": "Target Field",
+									"type": "string",
+									"description": "ai-step: the record field the answer is written to. For `classify` it must be a choice list of exactly `labels`."
+								},
+								"labels": {
+									"title": "Labels",
+									"type": "array",
+									"items": {
+										"type": "string"
+									},
+									"description": "ai-step classify: the labels the AI picks one of."
+								},
+								"fields": {
+									"title": "Extracted Fields",
+									"type": "array",
+									"items": {
+										"type": "string"
+									},
+									"description": "ai-step extract: the record fields the AI fills from the source text, each under its own name."
+								},
+								"language": {
+									"title": "Target Language",
+									"type": "string",
+									"description": "ai-step translate: the language the source text is translated into, e.g. English."
+								},
+								"prompt": {
+									"title": "Prompt",
+									"type": "string",
+									"description": "ai-step prompt: the maker's instruction. `{{field}}` placeholders may only name source fields."
+								},
+								"code": {
+									"title": "Script",
+									"type": "string",
+									"description": "script-step (logic-script-step): the JavaScript body of a function `(items) => items`. It runs only in OpenRegister's sandboxed code runner; buildiq never evaluates it. Only an app owner may add, change or remove it."
+								},
+								"timeoutSeconds": {
+									"title": "Timeout (seconds)",
+									"type": "integer",
+									"minimum": 1,
+									"maximum": 30,
+									"default": 10,
+									"description": "script-step: how long the code runner may run the script, 1 to 30 seconds."
+								},
+								"note": {
+									"title": "Note",
+									"type": "string",
+									"description": "script-step: what the script does, in words, for the people who read the automation."
 								}
 							}
 						}
+					},
+					"origin": {
+						"title": "Origin",
+						"type": "string",
+						"enum": [
+							"composer",
+							"ai-field"
+						],
+						"description": "Who authored the automation. `ai-field` automations are written by the schema designer for an AI field, hidden from the automations list, and edited there."
 					},
 					"provenance": {
 						"title": "Provenance",
@@ -390,6 +562,46 @@
 									"type": "string"
 								},
 								"description": "Reserved for future OpenConnector-materialised artifacts (e.g. webhook call configs)."
+							},
+							"ruleSetVersions": {
+								"title": "Rule Set Versions",
+								"type": "array",
+								"items": {
+									"type": "object",
+									"properties": {
+										"slug": {"title": "Rule Set", "type": "string", "description": "The rule set a rule decision step runs."},
+										"version": {"title": "Version", "type": "string", "description": "Its version when the automation was last compiled."}
+									}
+								},
+								"description": "Each rule set the flow's rule decision steps run, with its version at the last compile (logic-automation-actions-that-run D7)."
+							},
+							"flowUuid": {
+								"title": "Flow UUID",
+								"type": "string",
+								"description": "The uuid of the OpenRegister flow `aut-<slug>` this automation compiled to: a manual trigger, or a record, webhook or rule step (logic-automation-actions-that-run). Absent for an automation without a flow. Disable switches that flow off; delete removes it and its Application.flows binding."
+							},
+							"inbound": {
+								"title": "Inbound Declarations",
+								"type": "object",
+								"description": "The integriq objects that start the flow from outside, by schema slug: `event_subscription` for an email-received trigger, `endpoint`, `rule` and `consumer` for a webhook-called trigger (logic-email-and-webhook-triggers D2, D3). Absent for every other trigger. Remove deletes exactly these.",
+								"properties": {
+									"event_subscription": {
+										"type": "string",
+										"description": "UUID of the mailbox subscription."
+									},
+									"endpoint": {
+										"type": "string",
+										"description": "UUID of the webhook endpoint."
+									},
+									"rule": {
+										"type": "string",
+										"description": "UUID of the endpoint rule that starts the flow."
+									},
+									"consumer": {
+										"type": "string",
+										"description": "UUID of the consumer whose credential integriq checks."
+									}
+								}
 							},
 							"compiledHash": {
 								"title": "Compiled Hash",

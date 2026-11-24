@@ -3,16 +3,11 @@
 ### Requirement: Application version stores baseRef and manifestDelta
 
 The manifest-carrying schema (`ApplicationVersion` per ADR-002) SHALL support
-two optional, additive top-level properties: `baseRef` — a structured reference
-naming what the design extends (an OpenBuilt template, another OpenBuilt app, or
-a fleet app's bundled manifest), and `manifestDelta` — the keyed structural delta
-(the `diffManifest` output) layered over the resolved base. Both properties SHALL
-be optional; an `ApplicationVersion` MAY carry neither, only `manifestDelta` with a
-`baseRef`, or the legacy `manifest` blob with no `baseRef`. The `manifestDelta`
-value SHALL be a keyed delta consumable by `mergeManifestDelta` (page entries keyed
-by `page.id`, widget entries keyed by `widget.id`, `{ "$op": "remove" }` deletions,
-optional `__order`), as defined by the `@conduction/nextcloud-vue`
-`manifest-delta-merge-and-flex-columns` contract.
+two optional, additive top-level properties: `baseRef`, a structured reference
+naming what the design extends, and `manifestDelta`, the keyed structural delta
+(the `diffManifest` output) layered over the resolved base. An
+`ApplicationVersion` MAY carry neither, only `manifestDelta` with a `baseRef`, or
+the legacy `manifest` blob with no `baseRef`.
 
 #### Scenario: Delta-mode version persists baseRef and minimal delta
 
@@ -27,18 +22,20 @@ optional `__order`), as defined by the `@conduction/nextcloud-vue`
 - **THEN** the schema SHALL accept it as valid
 - **AND** the existing `manifest` blob property SHALL remain the resolution source
 
+#### Scenario: The stored pair has the shape resolution reads
+
+- **WHEN** a delta-mode `ApplicationVersion` stores a `baseRef` and a `manifestDelta`
+- **THEN** the `baseRef` SHALL name an OpenBuilt template, another OpenBuilt app, or a fleet app's bundled manifest
+- **AND** the `manifestDelta` SHALL be a keyed delta consumable by `mergeManifestDelta`: page entries keyed by `page.id`, widget entries keyed by `widget.id`, `{ "$op": "remove" }` deletions and an optional `__order`
+- **AND** that shape SHALL be the one the `@conduction/nextcloud-vue` `manifest-delta-merge-and-flex-columns` contract defines
+
 ### Requirement: Manifest endpoint resolves base plus delta server-side
 
 The manifest resolution path (`ManifestResolverService`) SHALL, when an
-`ApplicationVersion` carries a non-null `baseRef`, resolve `baseRef` to its base manifest, apply
-the `manifestDelta` over that base via a server-side keyed merge equivalent to the
-canonical JS `mergeManifestDelta`, and return the fully-merged manifest to the
-caller. Consumers (the runtime `CnAppRoot`, the export pipeline, Newman, any HTTP
-caller) SHALL receive a complete, already-merged manifest and SHALL NOT be required
-to perform any merge themselves. The merged manifest SHALL validate against
-`@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json`. The server-side
-merge SHALL produce output bit-identical to the JS `mergeManifestDelta` for the same
-`base` and `delta` inputs.
+`ApplicationVersion` carries a non-null `baseRef`, resolve `baseRef` to its base
+manifest, apply the `manifestDelta` over that base via a server-side keyed merge
+equivalent to the canonical JS `mergeManifestDelta`, and return the fully merged
+manifest to the caller. No consumer SHALL be required to perform a merge itself.
 
 #### Scenario: Base plus delta resolves to a merged manifest
 
@@ -54,6 +51,13 @@ merge SHALL produce output bit-identical to the JS `mergeManifestDelta` for the 
 - **THEN** the resulting manifest SHALL equal the output of the canonical JS
   `mergeManifestDelta(base, delta)` for the same inputs (page/widget keyed merge,
   `$op:"remove"` deletion, `__order` reordering, plain-object recursion)
+- **AND** the two outputs SHALL be bit-identical
+
+#### Scenario: Every consumer receives a complete manifest
+
+- **WHEN** the runtime `CnAppRoot`, the export pipeline, Newman or any other HTTP caller reads the manifest of a delta-mode app
+- **THEN** it SHALL receive the complete, already-merged manifest and SHALL NOT perform a merge itself
+- **AND** that manifest SHALL validate against `@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json`
 
 ### Requirement: Built apps inherit base-app upgrades
 
@@ -94,11 +98,11 @@ serve their blob byte-for-byte as it did before this change.
 ### Requirement: Editor save persists a minimal delta
 
 The Buildiq manifest editor SHALL, on save for a delta-mode app, compute the
-minimal keyed delta between the resolved base manifest and the edited manifest using
-the canonical JS `diffManifest(base, edited)`, and SHALL persist `{ baseRef,
+minimal keyed delta between the resolved base and the edited manifest with the
+canonical JS `diffManifest(base, edited)`, and SHALL persist `{ baseRef,
 manifestDelta }` to the `ApplicationVersion` rather than a whole-manifest blob. The
-editor SHALL preview the app live using the canonical JS `mergeManifestDelta(base,
-delta)` so the previewed result equals what the server will later resolve.
+editor SHALL preview the app with the canonical JS `mergeManifestDelta(base,
+delta)`, so the preview equals what the server later resolves.
 
 #### Scenario: Editing one field stores only the delta
 

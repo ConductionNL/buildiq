@@ -118,6 +118,11 @@ class AppOverrideServiceTest extends TestCase {
 		self::assertSame('opencatalogi', $result['appId']);
 		self::assertSame('alice', $result['updatedBy']);
 		self::assertSame('app-1', $result['applicationUuid']);
+		// The save time is an ISO-8601 timestamp with its offset.
+		self::assertMatchesRegularExpression(
+			pattern: '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/',
+			string: (string)$result['updatedAt']
+		);
 
 	}//end testUpsertCreatesHybridAppWhenNone()
 

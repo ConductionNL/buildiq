@@ -24,7 +24,7 @@
 		<NcLoadingIcon v-if="loading" :size="32" />
 
 		<NcEmptyContent
-			v-else-if="ruleSets.length === 0"
+			v-else-if="shownRuleSets.length === 0"
 			:name="t('buildiq', 'No rule sets yet')"
 			:description="
 				t(
@@ -63,7 +63,7 @@
 				</tr>
 			</thead>
 			<tbody>
-				<tr v-for="rs in ruleSets" :key="rs.slug" data-testid="rule-set-row">
+				<tr v-for="rs in shownRuleSets" :key="rs.slug" data-testid="rule-set-row">
 					<td>{{ rs.name }}</td>
 					<td>{{ rs.ruleType }}</td>
 					<td>
@@ -169,6 +169,38 @@ export default {
 			showCallers: false,
 			testResults: {},
 		}
+	},
+
+	computed: {
+		/**
+		 * The app the page was opened for (`?app=`), or '' for every rule set.
+		 *
+		 * @return {string}
+		 *
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-the-app-leads-to-its-business-rules-req-bqar-008
+		 */
+		appFilter() {
+			const app = this.$route && this.$route.query ? this.$route.query.app : ''
+			return typeof app === 'string' ? app.trim() : ''
+		},
+
+		/**
+		 * The rule sets listed: for an app, the ones it owns and the global
+		 * ones (no owner app); otherwise all of them.
+		 *
+		 * @return {Array<object>}
+		 *
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-the-app-leads-to-its-business-rules-req-bqar-008
+		 */
+		shownRuleSets() {
+			if (this.appFilter === '') {
+				return this.ruleSets
+			}
+			return this.ruleSets.filter((rs) => {
+				const owner = rs && typeof rs.ownerApp === 'string' ? rs.ownerApp.trim() : ''
+				return owner === '' || owner === this.appFilter
+			})
+		},
 	},
 
 	mounted() {
@@ -286,13 +318,34 @@ export default {
 			return `${result.passed}/${result.total}`
 		},
 
-		exportRuleSet(ruleSet) {
-			const blob = new Blob([JSON.stringify(ruleSet, null, 2)], {
+		/**
+		 * Download a rule set as one JSON file named after its slug.
+		 *
+		 * The server assembles the file: the rule set's metadata with its
+		 * decision tables, condition-action rules and test cases, and no
+		 * execution logs, so it can be imported elsewhere.
+		 *
+		 * @param {object} ruleSet - the rule set row.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/business-rules-engine/spec.md#requirement-a-rule-set-can-be-exported-as-a-file-req-bqcv-017
+		 */
+		async exportRuleSet(ruleSet) {
+			this.errorMessage = ''
+			let exported
+			try {
+				const url = generateUrl('/apps/buildiq/api/rules/{slug}/export', { slug: ruleSet.slug })
+				const { data } = await axios.get(url)
+				exported = data
+			} catch {
+				this.errorMessage = t('buildiq', 'Could not export the rule set.')
+				return
+			}
+			const blob = new Blob([JSON.stringify(exported, null, 2)], {
 				type: 'application/json',
 			})
 			const link = document.createElement('a')
 			link.href = URL.createObjectURL(blob)
-			link.download = `${ruleSet.slug || 'rule-set'}.json`
+			link.download = `${ruleSet.slug}.json`
 			link.click()
 			URL.revokeObjectURL(link.href)
 		},

@@ -12,8 +12,8 @@
  * administrator who turns writes off is followed the next time a picker or an
  * editor opens, and a maker cannot mark a read-only database writable.
  *
- * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
- * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+ * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
+ * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
  */
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -58,7 +58,7 @@ function databaseSourcesByKey(sources) {
  *
  * @param {object} [http] An axios-like client (defaults to @nextcloud/axios).
  * @return {Promise<Array<{register: string, label: string, source: string, sourceId: string, writable: boolean}>>}
- * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
+ * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
  */
 export async function fetchConnectedDatabases(http = axios) {
 	try {
@@ -91,7 +91,7 @@ export async function fetchConnectedDatabases(http = axios) {
  * @param {Array<{register: string, writable: boolean}>} databases The connected databases.
  * @param {string} register A register slug or id.
  * @return {{database: boolean, writable: boolean}} `writable` is true for a register that is not a database.
- * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+ * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
  */
 export function databaseWriteSetting(databases, register) {
 	const match = (Array.isArray(databases) ? databases : []).find((entry) => entry.register === String(register))
@@ -105,7 +105,7 @@ export function databaseWriteSetting(databases, register) {
  * The composable.
  *
  * @return {{fetchConnectedDatabases: typeof fetchConnectedDatabases, databaseWriteSetting: typeof databaseWriteSetting}}
- * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
+ * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
  */
 export function useConnectedDatabases() {
 	return { fetchConnectedDatabases, databaseWriteSetting }

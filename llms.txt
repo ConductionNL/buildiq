@@ -1,0 +1,37 @@
+# Buildiq
+
+> Citizen-developer app builder for Nextcloud. Users compose apps from registers, connectors, workflows and documents in the browser; each built app is a manifest stored as an OpenRegister object and rendered at runtime.
+
+## Start here
+
+- [AGENTS.md](AGENTS.md): setup, build, test, lint and repo conventions for coding agents
+- [README.md](README.md): overview, features, installation and development
+- [project.md](project.md): project overview
+- [CONTRIBUTING.md](CONTRIBUTING.md): contribution workflow and commit format
+
+## Docs
+
+- [docs/intro.md](docs/intro.md): what a Nextcloud app is made of and how Buildiq builds one
+- [docs/installation.md](docs/installation.md): installation
+- [docs/Installation/demo-environment.md](docs/Installation/demo-environment.md): local demo environment
+- [docs/integrator-guide.md](docs/integrator-guide.md): guide for integrators
+- [docs/Features/index.md](docs/Features/index.md): features
+- [docs/Integrations/index.md](docs/Integrations/index.md): integrations
+- [docs/Technical/index.md](docs/Technical/index.md): technical reference
+- [docs/UseCases/index.md](docs/UseCases/index.md): use cases
+
+## API
+
+- [openapi.json](openapi.json): OpenAPI document for the app's HTTP API
+
+## Specs and decisions
+
+- [openspec/specs/](openspec/specs/): current capability specs
+- [openspec/changes/](openspec/changes/): open changes; finished ones in `openspec/changes/archive/`
+- [openspec/architecture/](openspec/architecture/): architecture decision records
+- [openspec/config.yaml](openspec/config.yaml): project context and spec rules
+
+## Configuration
+
+- [lib/Settings/openbuild_register.json](lib/Settings/openbuild_register.json): OpenRegister register and schemas, with fragments in `lib/Settings/register.d/`
+- [src/manifest.json](src/manifest.json): frontend page manifest, with fragments in `src/manifest.d/`

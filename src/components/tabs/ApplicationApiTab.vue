@@ -60,9 +60,9 @@
 					<table v-if="card.fields.length" class="ob-api-tab__fields">
 						<thead>
 							<tr>
-								<th>{{ t('buildiq', 'Field') }}</th>
-								<th>{{ t('buildiq', 'Type') }}</th>
-								<th>{{ t('buildiq', 'Rules') }}</th>
+								<th scope="col">{{ t('buildiq', 'Field') }}</th>
+								<th scope="col">{{ t('buildiq', 'Type') }}</th>
+								<th scope="col">{{ t('buildiq', 'Rules') }}</th>
 							</tr>
 						</thead>
 						<tbody>

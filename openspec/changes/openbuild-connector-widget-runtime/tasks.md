@@ -58,6 +58,7 @@ Acceptance criteria:
 ## 4. Published-path proof (REQ-CWR-004, REQ-OCAS-006)
 
 - [ ] 4.1 Add a Playwright spec that creates and publishes a fixture app carrying a `connector-data` widget bound to a placeholder endpoint path with no credential-bearing keys.
+  > Written 21 Nov (4.1 to 4.4): `tests/e2e/connector-widget-runtime.spec.ts` builds the fixture app `pw-cwr-fixture` (marked as a Playwright fixture, deleted in `afterAll`) with a dashboard holding two `connector-data` widgets and an endpoint-bound `object-table`, answers the endpoints with `page.route`, asserts the stored bindings carry no credential key, the projected table, the error state with Retry, and the object-table rows at `responsePath` on `/apps/buildiq/builder/{slug}`, and fails on any `CnWidgetGrid` unresolved `widgetKey` warning. Left: running it on an instance.
 
 Acceptance criteria:
 - The fixture is self-identifying as test data and is torn down after the run.
@@ -86,7 +87,8 @@ Acceptance criteria:
 Acceptance criteria:
 - Gate-16 spec-coverage passes on the diff.
 
-- [ ] 5.2 Reference the new scenarios from the e2e specs so gate-19 e2e-coverage resolves every added scenario.
+- [x] 5.2 Reference the new scenarios from the e2e specs so gate-19 e2e-coverage resolves every added scenario.
+  > Done 21 Nov: the tags in `tests/e2e/connector-widget-runtime.spec.ts` were in a path form gate-19 reads as prose; they are now `@e2e <spec>::<scenario>` anchors, in the header and in the test that proves each one. Two tests were added there: three `connector-data` widgets on one endpoint and query make one request (cache hit), and a failed refresh past the TTL shows the cached rows with the notice and a Retry (stale on error). The stale notice had no Retry, which the scenario asks for: `ConnectorDataView` now offers one beside it (Vitest `tests/components/runtime/ConnectorDataView.spec.js`). The index-page scenario is anchored on the REQ-BQCB-001 test in `tests/e2e/connector-bound-pages.spec.ts`. "Documented matrix" and "Both bindings on one widget are rejected" carry a reason-bearing `@e2e exclude` and are asserted in Vitest (`endpointBindingMatrix.spec.js`, new `endpointBindingExclusive.spec.js`). Gate-19 lists none of this change's scenarios as missing. The e2e specs are written, not run here (no live instance).
 
 Acceptance criteria:
 - Scenarios not covered by a test carry a reason-bearing `@e2e exclude`.

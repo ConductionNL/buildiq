@@ -119,7 +119,7 @@ class ManifestEditHandlersGoldenTest extends TestCase {
 		$this->wireVersion(manifest: null);
 		$this->objectService->expects(self::never())->method('saveObject');
 
-		$result = $this->provider->invokeTool($tool, $args);
+		$result = $this->provider->invokeApprovedTool($tool, $args);
 
 		$message = "No version 'development' found for app 'my-app'.";
 		self::assertSame(['isError' => true, 'error' => 'not_found', 'message' => $message], $result);
@@ -160,7 +160,7 @@ class ManifestEditHandlersGoldenTest extends TestCase {
 				&& array_slice($logged, 0, count($expected)) === $expected
 		));
 
-		self::assertSame($answer, $this->provider->invokeTool($tool, $args));
+		self::assertSame($answer, $this->provider->invokeApprovedTool($tool, $args));
 	}//end testStoreFailureIsLogged()
 
 	/**
@@ -171,7 +171,7 @@ class ManifestEditHandlersGoldenTest extends TestCase {
 	public function testUpsertPageCreates(): void {
 		$this->wireVersion(manifest: $this->manifest(menuItems: 1));
 
-		$result = $this->provider->invokeTool(...self::editCalls()['upsertPage']);
+		$result = $this->provider->invokeApprovedTool(...self::editCalls()['upsertPage']);
 
 		self::assertSame(['success', 'action', 'page', 'pageCount', 'version'], array_keys($result));
 		self::assertSame(['created', 2, self::version()], [$result['action'], $result['pageCount'], $result['version']]);
@@ -187,7 +187,7 @@ class ManifestEditHandlersGoldenTest extends TestCase {
 		$this->wireVersion(manifest: $this->manifest(menuItems: 31));
 		$args = ['pageId' => 'HOME', 'route' => '/'] + self::editCalls()['upsertPage'][1];
 
-		$result = $this->provider->invokeTool('buildiq.upsertPage', $args);
+		$result = $this->provider->invokeApprovedTool('buildiq.upsertPage', $args);
 
 		self::assertSame(['updated', 1, self::version()], [$result['action'], $result['pageCount'], $result['version']]);
 	}//end testUpsertPageUpdatesPastTheCap()
@@ -205,7 +205,7 @@ class ManifestEditHandlersGoldenTest extends TestCase {
 		$this->wireVersion(manifest: $this->manifest(menuItems: 31));
 		$this->objectService->expects(self::never())->method('saveObject');
 
-		$result = $this->provider->invokeTool($tool, $args);
+		$result = $this->provider->invokeApprovedTool($tool, $args);
 
 		$expected = ['isError' => true, 'error' => 'invalid_arguments', 'message' => 'Manifest exceeds maximum of 30 menu items.'];
 		self::assertSame($expected, $result);
@@ -218,13 +218,13 @@ class ManifestEditHandlersGoldenTest extends TestCase {
 	 */
 	public function testUpsertMenuItemCreatesAndUpdates(): void {
 		$this->wireVersion(manifest: $this->manifest(menuItems: 1));
-		$created = $this->provider->invokeTool(...self::editCalls()['upsertMenuItem']);
+		$created = $this->provider->invokeApprovedTool(...self::editCalls()['upsertMenuItem']);
 		$item = ['id' => 'about', 'label' => 'About', 'icon' => '', 'route' => 'about', 'order' => 100];
 		self::assertSame(['success' => true, 'action' => 'created', 'menuItem' => $item, 'menuCount' => 2, 'version' => self::version()], $created);
 
 		$this->setUp();
 		$this->wireVersion(manifest: $this->manifest(menuItems: 31));
-		$updated = $this->provider->invokeTool('buildiq.upsertMenuItem', ['id' => 'M0'] + self::editCalls()['upsertMenuItem'][1]);
+		$updated = $this->provider->invokeApprovedTool('buildiq.upsertMenuItem', ['id' => 'M0'] + self::editCalls()['upsertMenuItem'][1]);
 		self::assertSame(['updated', 31], [$updated['action'], $updated['menuCount']]);
 	}//end testUpsertMenuItemCreatesAndUpdates()
 
@@ -236,7 +236,7 @@ class ManifestEditHandlersGoldenTest extends TestCase {
 	public function testAddWidgetAdds(): void {
 		$this->wireVersion(manifest: $this->manifest(menuItems: 1));
 
-		$result = $this->provider->invokeTool(...self::editCalls()['addWidget']);
+		$result = $this->provider->invokeApprovedTool(...self::editCalls()['addWidget']);
 
 		self::assertSame(['success', 'added', 'widget', 'pageId', 'widgetCount', 'version'], array_keys($result));
 		self::assertSame([true, 'home', 1, self::version()], [$result['added'], $result['pageId'], $result['widgetCount'], $result['version']]);

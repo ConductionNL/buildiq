@@ -392,10 +392,6 @@ class PageLayoutAuthoringService implements PageLayoutAuthoringServiceInterface 
 			->setSchema(self::SCHEMA)
 			->findAll(['limit' => 500]);
 
-		if (is_array($rows) === false) {
-			return null;
-		}
-
 		foreach ($rows as $row) {
 			$row = ObjectRecord::toArray(object: $row);
 			if ((string)($row['id'] ?? '') === $layoutId) {

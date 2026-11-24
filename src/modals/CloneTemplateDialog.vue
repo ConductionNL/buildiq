@@ -237,7 +237,7 @@ export default {
 		 * clone wording for a local template.
 		 *
 		 * @return {string} The translated heading.
-		 * @spec openspec/changes/github-shop-catalogue/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/template-catalogue-ui/spec.md
 		 */
 		dialogHeading() {
 			if (this.github) {
@@ -252,7 +252,7 @@ export default {
 		 * Lead-in sentence of the summary line, matching the install/clone verb.
 		 *
 		 * @return {string} The translated lead-in.
-		 * @spec openspec/changes/github-shop-catalogue/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/template-catalogue-ui/spec.md
 		 */
 		dialogSummaryLead() {
 			if (this.remote || this.github) {
@@ -453,7 +453,7 @@ export default {
 		 *
 		 * @param {object} payload The new app `{name, slug}`.
 		 * @return {Promise<void>} Resolves once the request settles.
-		 * @spec openspec/changes/github-shop-catalogue/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/template-catalogue-ui/spec.md
 		 */
 		async installGithub(payload) {
 			const repo = this.githubRepo || {}

@@ -75,7 +75,7 @@ describe('REQ-BQFT-001: named field types', () => {
 		['files', {}, { type: 'array', items: { type: 'file' } }],
 		['user', {}, { type: 'string', referenceType: 'nextcloud-user' }],
 		['users', {}, { type: 'array', items: { type: 'string', referenceType: 'nextcloud-user' } }],
-		['relation', { target: 'person' }, { type: 'string', 'x-openregister-relation': { target: 'person', cardinality: 'one' } }],
+		['relation', { target: 'person' }, { type: 'string', $ref: 'person', 'x-openregister-relation': { label: 'f', target: 'person', cardinality: 'one' } }],
 		['array', { itemsType: 'integer' }, { type: 'array', items: { type: 'integer' } }],
 		['object', {}, { type: 'object' }],
 	]

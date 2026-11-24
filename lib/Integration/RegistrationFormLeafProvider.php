@@ -155,38 +155,11 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
 		$forms = $this->publishedFormsFor(register: $register, schema: $schema, objectId: $objectId);
 
-		$audience = (string)($filters['audience'] ?? '');
-		if ($audience !== '') {
-			$forms = array_values(
-				array_filter($forms, static fn (array $form): bool => (string)($form['audience'] ?? '') === $audience)
-			);
-		}
-
-		$name = (string)($filters['name'] ?? '');
-		if ($name !== '') {
-			$forms = array_values(
-				array_filter($forms, static fn (array $form): bool => (string)($form['name'] ?? '') === $name)
-			);
-		}
+		$forms = self::matchingFilters(forms: $forms, filters: $filters);
 
 		$channel = (string)($filters['channel'] ?? '');
 		if ($channel !== '') {
-			// The channel's own forms first, then the forms that declare no
-			// channel. A channel with no form of its own must fall back rather
-			// than answer nothing, or adding a channel silently removes the form
-			// from every application that arrives through it.
-			$onChannel = [];
-			$channelless = [];
-			foreach ($forms as $form) {
-				$formChannel = (string)($form['channel'] ?? '');
-				if ($formChannel === $channel) {
-					$onChannel[] = $form;
-				} elseif ($formChannel === '') {
-					$channelless[] = $form;
-				}
-			}
-
-			$forms = array_merge($onChannel, $channelless);
+			$forms = self::channelFirst(forms: $forms, channel: $channel);
 		}
 
 		$forms = $this->presenter->defaultsFirst(forms: $forms);
@@ -203,6 +176,58 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 			'drafts' => $this->draftsOfCaller(forms: $items),
 		];
 	}//end list()
+
+	/**
+	 * The forms whose `audience` and `name` equal the filter's, for each of the two the filter sets.
+	 *
+	 * @param array<int, array<string, mixed>> $forms   The forms.
+	 * @param array<string, mixed>             $filters Optional `audience` and `name`.
+	 *
+	 * @return array<int, array<string, mixed>> The matching forms, in their order.
+	 *
+	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-006, REQ-OBRF-009)
+	 */
+	private static function matchingFilters(array $forms, array $filters): array {
+		foreach (['audience', 'name'] as $key) {
+			$wanted = (string)($filters[$key] ?? '');
+			if ($wanted !== '') {
+				$forms = array_values(
+					array_filter($forms, static fn (array $form): bool => (string)($form[$key] ?? '') === $wanted)
+				);
+			}
+		}
+
+		return $forms;
+	}//end matchingFilters()
+
+	/**
+	 * The channel's own forms first, then the forms that declare no channel.
+	 *
+	 * A channel with no form of its own must fall back rather than answer
+	 * nothing, or adding a channel silently removes the form from every
+	 * application that arrives through it.
+	 *
+	 * @param array<int, array<string, mixed>> $forms   The forms.
+	 * @param string                           $channel The channel asked for.
+	 *
+	 * @return array<int, array<string, mixed>> The forms on the channel, then the channel-less ones.
+	 *
+	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-006, REQ-OBRF-009)
+	 */
+	private static function channelFirst(array $forms, string $channel): array {
+		$onChannel = [];
+		$channelless = [];
+		foreach ($forms as $form) {
+			$formChannel = (string)($form['channel'] ?? '');
+			if ($formChannel === $channel) {
+				$onChannel[] = $form;
+			} elseif ($formChannel === '') {
+				$channelless[] = $form;
+			}
+		}
+
+		return array_merge($onChannel, $channelless);
+	}//end channelFirst()
 
 	/**
 	 * One form by id, scoped to the type object it is bound to.
@@ -364,10 +389,6 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 			->setSchema(self::SCHEMA_DRAFT)
 			->findAll(['filters' => ['userId' => $uid], 'limit' => 100]);
 
-		if (is_array($rows) === false) {
-			return [];
-		}
-
 		$mine = [];
 		foreach ($rows as $row) {
 			$row = ObjectRecord::toArray(object: $row);
@@ -408,10 +429,6 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 			->setRegister($this->registerSlug())
 			->setSchema(self::SCHEMA_FORM)
 			->findAll(['limit' => 500]);
-
-		if (is_array($rows) === false) {
-			return [];
-		}
 
 		$mine = [];
 		foreach ($rows as $row) {

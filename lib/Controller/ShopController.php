@@ -32,7 +32,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+ * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
  */
 
 declare(strict_types=1);
@@ -57,7 +57,7 @@ use Throwable;
 /**
  * Controller for the GitHub shop search + install endpoints.
  *
- * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+ * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
  */
 class ShopController extends Controller {
 	/**
@@ -113,7 +113,7 @@ class ShopController extends Controller {
 	 *
 	 * @return JSONResponse 200 with `{outcome, cards, brokerCredentialAvailable, rateLimited}`; 401 anonymous.
 	 *
-	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	#[NoAdminRequired]
@@ -151,7 +151,7 @@ class ShopController extends Controller {
 	 *
 	 * @return JSONResponse 201 with the new Application; 400/401/404/422 on failure.
 	 *
-	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 *
 	 * @no-admin-idor-exempt Addresses no buildiq-owned object: the slug identifies a
 	 *   template in an EXTERNAL catalogue (the configured store registry / a GitHub

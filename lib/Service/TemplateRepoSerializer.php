@@ -27,7 +27,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+ * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use Throwable;
 /**
  * Serialises a seeded application-template into the canonical repo layout.
  *
- * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+ * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
  */
 class TemplateRepoSerializer {
 	/**
@@ -71,7 +71,7 @@ class TemplateRepoSerializer {
 	 *
 	 * @return array<string,string> Ordered map (canonical JSON + README).
 	 *
-	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+	 * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) RepoDescriptor is a pure function with no collaborators.
 	 */
 	public function serialize(array $template): array {

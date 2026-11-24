@@ -46,6 +46,64 @@ One caveat worth knowing before you design around it: the rule engine's
 workflow engine of its own, so that action logs a warning and changes nothing.
 To run a flow, use OpenRegister.
 
+## Attaching a flow to your app
+
+Any OpenRegister flow can be attached to an app, including one written for
+another app. Open the app, choose **Settings**, and pick the flow under
+**Flows**. Attaching it on its own only records that the app uses the flow, so
+it travels with an export. To make it run on the app's records, add where it
+runs under **Run on**:
+
+- one of the app's schemas with **Created**, **Updated** or **Deleted**, to
+  run the flow on every record of that schema that changes that way
+- one of the app's schemas with **From a record**, for a run an app user starts
+  from a record
+
+Only the schemas of the app's production version are offered. A flow can have
+several entries.
+
+For each entry Buildiq keeps a small flow of its own, named
+`aut-attach-<app>-<code>`: the app's trigger, then a step that starts the
+attached flow with the record. The attached flow itself is never changed, so a
+flow shared by several apps stays one flow. Removing an entry, or the flow,
+removes Buildiq's small flow with it. These small flows are rebuilt wherever the
+app is installed, so an export does not carry them.
+
+Only an owner of the app can change its flows. If an entry cannot be wired, for
+instance because the app has no production version yet, the settings say so;
+save again once that is fixed.
+
+The app's detail page lists each attached flow with where it runs and how its
+last run went.
+
+## Sharing an automation with other apps
+
+An owner of an app can mark one of its automations as **shared**. An editor
+can change a shared automation, but cannot share or unshare it; an edit that
+does not mention sharing keeps it as it was.
+
+A shared automation runs on data other apps hand it, so it may not write
+records of its own app. Sharing one with a step that creates or updates a
+record is refused, and the refusal names that step.
+
+Other apps find a shared automation in their flow picker (App settings,
+Flows), under **Shared automations**, named with the app it comes from, for
+example "Stuur bevestiging (permits)". Only an automation that has been
+compiled is listed there, because the picker binds its flow. Bind it like any
+other flow and give it a "Run on" entry.
+
+### Running another automation as a step
+
+The step **Run another automation** names one automation of the same app, or a
+shared automation of another app. It runs that automation's flow and waits for
+it, so the steps after it see what it returned: a shared "Controleer adres"
+that sets `adresGeldig`, followed by a record step that reads `adresGeldig`.
+
+Saving is refused when the step names no automation, names the automation
+itself, names another app's automation that is not shared, or names one that
+has not been compiled yet. OpenRegister also stops a longer loop of
+automations calling each other when it runs.
+
 ## Triggering from the UI
 
 An action on a page can call an endpoint or run an operation, which is how a

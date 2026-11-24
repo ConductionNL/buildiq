@@ -83,7 +83,15 @@
 				<h3 class="agent-edit__subtitle">
 					{{ t('buildiq', 'Knowledge') }}
 				</h3>
-				<p class="agent-edit__hint">
+				<p v-if="knowledgeRetrieval" class="agent-edit__hint" data-testid="agent-knowledge-retrieval">
+					{{
+						t(
+							'buildiq',
+							'Text and Markdown files this agent reads before it plans. Its knowledge is searched for the passages that match each request, so files of any size can be added.',
+						)
+					}}
+				</p>
+				<p v-else class="agent-edit__hint">
 					{{
 						t(
 							'buildiq',
@@ -170,6 +178,7 @@ import {
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
+import { fetchCopilotHealth } from '../services/copilot.js'
 
 /**
  * The stored id of an agent record (`id`, else `uuid`), or null for a new one.
@@ -271,6 +280,8 @@ export default {
 			pendingKnowledge: {},
 			removedKnowledge: [],
 			knowledgeError: '',
+			// T08: OpenRegister's vector facade searches the knowledge, so no budget refusal.
+			knowledgeRetrieval: false,
 			showValidation: false,
 			saving: false,
 			errorMessage: '',
@@ -327,7 +338,7 @@ export default {
 		 * The file input's accepted types.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base/spec.md#requirement-a-maker-attaches-knowledge-files-to-an-agent-req-bqag-001
+		 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base/spec.md#requirement-a-maker-attaches-knowledge-files-to-an-agent-req-bqag-001
 		 */
 		knowledgeAccept() {
 			return '.txt,.md,.markdown,text/plain,text/markdown'
@@ -337,7 +348,7 @@ export default {
 		 * Characters of knowledge the agent has room for.
 		 *
 		 * @return {number}
-		 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base/spec.md#requirement-a-maker-attaches-knowledge-files-to-an-agent-req-bqag-001
+		 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base/spec.md#requirement-a-maker-attaches-knowledge-files-to-an-agent-req-bqag-001
 		 */
 		knowledgeRoom() {
 			const used = this.knowledge.reduce(
@@ -407,6 +418,7 @@ export default {
 		open(isOpen) {
 			if (isOpen) {
 				this.hydrate()
+				this.checkKnowledgeRetrieval()
 			}
 		},
 	},
@@ -447,6 +459,18 @@ export default {
 		},
 
 		/**
+		 * Ask the copilot health whether knowledge is searched rather than read
+		 * whole; a failed probe keeps the budget (ai-agents-knowledge-and-run-trace T08).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base/spec.md#requirement-a-maker-attaches-knowledge-files-to-an-agent-req-bqag-001
+		 */
+		async checkKnowledgeRetrieval() {
+			const health = await fetchCopilotHealth()
+			this.knowledgeRetrieval = health.knowledgeRetrieval === true
+		},
+
+		/**
 		 * Take a picked file into the agent's knowledge, or refuse it: a type
 		 * other than text or Markdown, a name already listed, or a file that
 		 * would pass the budget (the refusal names the room left). The file is
@@ -454,7 +478,7 @@ export default {
 		 *
 		 * @param {Event} event - the file input's change event.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base/spec.md#requirement-a-maker-attaches-knowledge-files-to-an-agent-req-bqag-001
+		 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base/spec.md#requirement-a-maker-attaches-knowledge-files-to-an-agent-req-bqag-001
 		 */
 		async onKnowledgePick(event) {
 			const file = event?.target?.files?.[0]
@@ -486,7 +510,7 @@ export default {
 			}
 			const text = await file.text()
 			const characters = characterCount(text)
-			if (characters > this.knowledgeRoom) {
+			if (!this.knowledgeRetrieval && characters > this.knowledgeRoom) {
 				return t(
 					'buildiq',
 					'{file} has {size} characters, but only {room} characters of room are left.',
@@ -514,7 +538,7 @@ export default {
 		 *
 		 * @param {string} fileName - the file to remove.
 		 * @return {void}
-		 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base/spec.md#requirement-a-maker-attaches-knowledge-files-to-an-agent-req-bqag-001
+		 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base/spec.md#requirement-a-maker-attaches-knowledge-files-to-an-agent-req-bqag-001
 		 */
 		removeKnowledge(fileName) {
 			this.knowledge = this.knowledge.filter((entry) => entry.fileName !== fileName)
@@ -642,7 +666,7 @@ export default {
 		 *
 		 * @param {string} filesUrl - the agent object's files URL.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base/spec.md#requirement-a-maker-attaches-knowledge-files-to-an-agent-req-bqag-001
+		 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base/spec.md#requirement-a-maker-attaches-knowledge-files-to-an-agent-req-bqag-001
 		 */
 		async syncKnowledgeFiles(filesUrl) {
 			for (const [name, content] of Object.entries(this.pendingKnowledge)) {

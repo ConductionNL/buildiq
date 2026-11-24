@@ -75,10 +75,6 @@ final class AuthoredRowReader {
 			->setSchema($this->schema)
 			->findAll(['limit' => 500]);
 
-		if (is_array($rows) === false) {
-			return [];
-		}
-
 		$mine = [];
 		foreach ($rows as $row) {
 			$row = ObjectRecord::toArray(object: $row);

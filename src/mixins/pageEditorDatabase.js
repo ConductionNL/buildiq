@@ -9,7 +9,7 @@ import { databaseWriteSetting, fetchConnectedDatabases } from '../composables/us
  *
  * The editor names the config keys it locks in `writeActionKeys`.
  *
- * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+ * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
  */
 export const pageEditorDatabaseMixin = {
 	data() {
@@ -23,7 +23,7 @@ export const pageEditorDatabaseMixin = {
 		 * Whether the bound register is a connected database, and whether it takes writes.
 		 *
 		 * @return {{database: boolean, writable: boolean}}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
 		 */
 		databaseSetting() {
 			return databaseWriteSetting(this.databases, this.config.register || '')
@@ -33,7 +33,7 @@ export const pageEditorDatabaseMixin = {
 		 * Whether the bound register is a connected database that takes no writes.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
 		 */
 		databaseReadOnly() {
 			return this.databaseSetting.database && !this.databaseSetting.writable
@@ -43,7 +43,7 @@ export const pageEditorDatabaseMixin = {
 		 * The registers served from a database, for the register select's mark.
 		 *
 		 * @return {string[]}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
 		 */
 		databaseRegisters() {
 			return this.databases.map((database) => database.register)
@@ -57,7 +57,7 @@ export const pageEditorDatabaseMixin = {
 			 *
 			 * @param {boolean} readOnly Whether the bound database takes no writes.
 			 * @return {void}
-			 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#scenario-a-read-only-database-gets-no-add-button
+			 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#scenario-a-read-only-database-gets-no-add-button
 			 */
 			handler(readOnly) {
 				if (readOnly) {
@@ -76,7 +76,7 @@ export const pageEditorDatabaseMixin = {
 		 * Read the connected databases and their write setting from OpenRegister.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#scenario-an-administrator-turns-writes-on
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#scenario-an-administrator-turns-writes-on
 		 */
 		async loadDatabases() {
 			this.databases = await fetchConnectedDatabases()
@@ -86,7 +86,7 @@ export const pageEditorDatabaseMixin = {
 		 * Set every write action of this page type to `false` on the config, emitting only when one was not off yet.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#scenario-a-read-only-database-gets-no-add-button
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#scenario-a-read-only-database-gets-no-add-button
 		 */
 		lockWriteActions() {
 			const open = this.writeActionKeys.filter((key) => this.config[key] !== false)
@@ -106,7 +106,7 @@ export const pageEditorDatabaseMixin = {
 		 * @param {string} key The config key, such as `showAdd`.
 		 * @param {boolean} shown Whether the action shows.
 		 * @return {void}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
 		 */
 		setWriteAction(key, shown) {
 			const next = { ...this.config }

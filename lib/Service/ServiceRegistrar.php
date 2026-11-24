@@ -34,6 +34,7 @@ use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\Dashboard\IManager as IDashboardManager;
+use OCP\ICacheFactory;
 use OCP\INavigationManager;
 use OCP\IURLGenerator;
 use Psr\Container\ContainerInterface;
@@ -137,7 +138,8 @@ final class ServiceRegistrar {
 		$context->registerService(
 			PublishedApplicationProvider::class,
 			static fn ($c): PublishedApplicationProvider => new PublishedApplicationProvider(
-				objectService: $c->get(ObjectServiceInterface::class)
+				objectService: static fn (): ObjectServiceInterface => $c->get(ObjectServiceInterface::class),
+				cacheFactory: $c->get(ICacheFactory::class)
 			)
 		);
 
@@ -274,8 +276,7 @@ final class ServiceRegistrar {
 	public function registerDashboardWidgets(ContainerInterface $container): void {
 		$widgetContext = new VirtualAppWidgetContext(
 			urlGenerator: $container->get(IURLGenerator::class),
-			userSession: $container->get('OCP\\IUserSession'),
-			groupManager: $container->get('OCP\\IGroupManager'),
+			caller: $container->get(CallerContext::class),
 			visibility: $container->get(AppVisibilityResolver::class),
 			projector: $container->get(WidgetItemProjector::class),
 			initialState: $container->get(IInitialState::class)

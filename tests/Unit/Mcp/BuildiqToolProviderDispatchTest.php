@@ -35,6 +35,7 @@ use Psr\Log\LoggerInterface;
  * Catalogue and dispatch of BuildiqToolProvider.
  *
  * @covers \OCA\Buildiq\Mcp\BuildiqToolProvider
+ * @uses   \OCA\Buildiq\Service\AgentPlanService
  */
 final class BuildiqToolProviderDispatchTest extends TestCase {
 
@@ -61,7 +62,23 @@ final class BuildiqToolProviderDispatchTest extends TestCase {
 	public function testBothAccessorsReturnTheSameCatalogue(): void {
 		$provider = $this->provider();
 
-		self::assertSame($provider->getTools(), $provider->getToolDescriptors());
+		$descriptors = $provider->getToolDescriptors();
+		$tools = $provider->getTools();
+
+		// The MCP catalogue is the Copilot's, plus a planId on every write tool.
+		self::assertSame(array_column($descriptors, 'id'), array_column($tools, 'id'));
+		foreach ($tools as $index => $tool) {
+			$expected = $descriptors[$index];
+			if (in_array($tool['id'], \OCA\Buildiq\Service\AgentPlanService::WRITE_TOOLS, true) === true) {
+				self::assertSame('string', $tool['inputSchema']['properties']['planId']['type'], $tool['id']);
+				self::assertNotContains('planId', $tool['inputSchema']['required'], $tool['id']);
+				unset($tool['inputSchema']['properties']['planId']);
+				self::assertStringStartsWith($expected['description'], $tool['description']);
+				$tool['description'] = $expected['description'];
+			}
+
+			self::assertSame($expected, $tool, $tool['id']);
+		}
 	}//end testBothAccessorsReturnTheSameCatalogue()
 
 	/**

@@ -17,7 +17,27 @@
 			</NcButton>
 		</header>
 
-		<p v-if="relations.length === 0" class="buildiq-relation-editor__empty">
+		<!-- REQ-BQCV-003: a field of type relation is listed here too, with its
+		     target and cardinality; it is edited on its field. -->
+		<div
+			v-if="fieldRelations.length > 0"
+			class="buildiq-relation-editor__fields"
+			data-testid="relation-editor-field-relations">
+			<h4>{{ t('buildiq', 'Relation fields') }}</h4>
+			<ul class="buildiq-relation-editor__rows">
+				<li
+					v-for="relation in fieldRelations"
+					:key="relation.name"
+					class="buildiq-relation-editor__field-row"
+					data-testid="relation-editor-field-relation">
+					<strong>{{ relation.name }}</strong>
+					<span>{{ relation.target }}</span>
+					<span>{{ cardinalityOption(relation.cardinality).label }}</span>
+				</li>
+			</ul>
+		</div>
+
+		<p v-if="relations.length === 0 && fieldRelations.length === 0" class="buildiq-relation-editor__empty">
 			{{ t('buildiq', 'No relations yet.') }}
 		</p>
 
@@ -77,8 +97,7 @@
 import { NcButton, NcSelect, NcTextField } from '@nextcloud/vue'
 import DeleteIcon from 'vue-material-design-icons/Delete.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
-
-const CARDINALITIES = ['one', 'many']
+import { relationPickerMixin } from '../../mixins/relationPicker.js'
 
 let keyCounter = 0
 /**
@@ -92,65 +111,17 @@ function nextKey() {
 export default {
 	name: 'RelationEditor',
 	components: { DeleteIcon, NcButton, NcSelect, NcTextField, PlusIcon },
+	mixins: [relationPickerMixin],
+
 	props: {
 		relations: { type: Array, default: () => [] },
-		schemaSlugs: { type: Array, default: () => [] },
+		/** The schema's relation fields, `{ name, target, cardinality }`, shown read-only (REQ-BQCV-003). */
+		fieldRelations: { type: Array, default: () => [] },
 	},
 
 	emits: ['update:relations'],
-	computed: {
-		/**
-		 * Build target-schema picker options from the available slugs.
-		 *
-		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
-		 * @return {Array} Option objects.
-		 */
-		schemaOptions() {
-			return this.schemaSlugs.map((slug) => ({ value: slug, label: slug }))
-		},
-
-		/**
-		 * Build cardinality picker options (one/many) with translated labels.
-		 *
-		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
-		 * @return {Array} Option objects.
-		 */
-		cardinalityOptions() {
-			return CARDINALITIES.map((value) => ({
-				value,
-				label:
-					value === 'one'
-						? this.t('buildiq', 'One')
-						: this.t('buildiq', 'Many'),
-			}))
-		},
-	},
 
 	methods: {
-		/**
-		 * Resolve the selected target-schema option for a value.
-		 *
-		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
-		 * @param {string} value Schema slug.
-		 * @return {object|null} The matching option.
-		 */
-		schemaOption(value) {
-			return this.schemaOptions.find((o) => o.value === value) || null
-		},
-
-		/**
-		 * Resolve the selected cardinality option for a value.
-		 *
-		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
-		 * @param {string} value Cardinality.
-		 * @return {object} The matching option (defaults to first).
-		 */
-		cardinalityOption(value) {
-			return (
-				this.cardinalityOptions.find((o) => o.value === value)
-				|| this.cardinalityOptions[0]
-			)
-		},
 
 		/**
 		 * Emit the updated relations array to the parent.
@@ -209,6 +180,26 @@ export default {
 			this.emitRelations(next)
 		},
 	},
+}
+
+/**
+ * The relation fields among the schema editor's field rows, as
+ * `{ name, target, cardinality }` for the Relations section.
+ *
+ * @param {Array<object>} fields The field editor rows.
+ * @return {Array<{name: string, target: string, cardinality: string}>} The relation fields.
+ * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-schema-designer/spec.md#requirement-a-maker-links-one-object-type-to-another-req-bqcv-003
+ */
+export function relationsFromFields(fields) {
+	if (!Array.isArray(fields)) {
+		return []
+	}
+	return fields
+		.filter((field) => field && field.type === 'relation' && field.name)
+		.map((field) => {
+			const v = field.validation || {}
+			return { name: field.name, target: v.target || '', cardinality: v.cardinality || 'one' }
+		})
 }
 
 /**
@@ -280,6 +271,21 @@ export function editorToRelations(relations) {
 
 .buildiq-relation-editor__rows {
 	@include c.plain-list(8px);
+}
+
+.buildiq-relation-editor__fields h4 {
+	margin: 0 0 4px;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.buildiq-relation-editor__field-row {
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr;
+	gap: 8px;
+	padding: 8px;
+	border: 1px dashed var(--color-border);
+	border-radius: var(--border-radius);
 }
 
 .buildiq-relation-editor__row {

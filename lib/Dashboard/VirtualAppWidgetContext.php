@@ -32,10 +32,9 @@ namespace OCA\Buildiq\Dashboard;
 use OCA\Buildiq\Kernel\Contracts\AppVisibilityResolverInterface;
 use OCA\Buildiq\Kernel\Contracts\WidgetItemProjectorInterface;
 use OCA\Buildiq\Kernel\Values\WidgetDescriptor;
+use OCA\Buildiq\Service\CallerContext;
 use OCP\AppFramework\Services\IInitialState;
-use OCP\IGroupManager;
 use OCP\IURLGenerator;
-use OCP\IUserSession;
 
 /**
  * Shared collaborators and descriptor set for the promoted widgets.
@@ -49,11 +48,19 @@ final class VirtualAppWidgetContext {
 	private array $descriptors = [];
 
 	/**
+	 * The organisation scope and holder of each widget's app, by widget id
+	 * (REQ-BQOS-002). Kept here rather than on the descriptor, which is
+	 * serialised to the browser.
+	 *
+	 * @var array<string,array<string,mixed>>
+	 */
+	private array $scopes = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IURLGenerator $urlGenerator URL generator.
-	 * @param IUserSession $userSession User session.
-	 * @param IGroupManager $groupManager Group manager.
+	 * @param CallerContext $caller The signed-in user's session, the group manager and the organisation guard.
 	 * @param AppVisibilityResolverInterface $visibility Shared per-user visibility check order.
 	 * @param WidgetItemProjectorInterface $projector Server-side item projection.
 	 * @param IInitialState $initialState Initial state for the browser entry.
@@ -62,8 +69,7 @@ final class VirtualAppWidgetContext {
 	 */
 	public function __construct(
 		public readonly IURLGenerator $urlGenerator,
-		public readonly IUserSession $userSession,
-		public readonly IGroupManager $groupManager,
+		public readonly CallerContext $caller,
 		public readonly AppVisibilityResolverInterface $visibility,
 		public readonly WidgetItemProjectorInterface $projector,
 		public readonly IInitialState $initialState,
@@ -73,14 +79,18 @@ final class VirtualAppWidgetContext {
 	/**
 	 * Record a descriptor registered this request.
 	 *
-	 * @param WidgetDescriptor $descriptor The promoted widget.
+	 * @param WidgetDescriptor     $descriptor The promoted widget.
+	 * @param array<string, mixed> $scope      Its app's organisation scope and holder; [] for an
+	 *                                         app every organisation sees (REQ-BQOS-002).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-promoted-widgets-are-registered-with-the-nextcloud-dashboard
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
 	 */
-	public function addDescriptor(WidgetDescriptor $descriptor): void {
+	public function addDescriptor(WidgetDescriptor $descriptor, array $scope = []): void {
 		$this->descriptors[] = $descriptor;
+		$this->scopes[$descriptor->id] = $scope;
 	}//end addDescriptor()
 
 	/**
@@ -108,13 +118,20 @@ final class VirtualAppWidgetContext {
 	 * @return bool True when the widget should be offered and rendered.
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
 	 */
 	public function isVisible(WidgetDescriptor $descriptor): bool {
+		// Operate-organisation-scoped-apps REQ-BQOS-002: another organisation's
+		// scoped app offers no widget, whatever its permissions name.
+		if ($this->caller->seesApplication(application: ($this->scopes[$descriptor->id] ?? [])) === false) {
+			return false;
+		}
+
 		return $this->visibility->isPlacementVisibleToUser(
 			appPrincipals: $descriptor->principals,
 			roles: $descriptor->roles,
-			user: $this->userSession->getUser(),
-			groupManager: $this->groupManager
+			user: $this->caller->userSession->getUser(),
+			groupManager: $this->caller->groupManager
 		);
 	}//end isVisible()
 

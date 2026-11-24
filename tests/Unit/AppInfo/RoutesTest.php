@@ -278,6 +278,37 @@ class RoutesTest extends TestCase {
 	}//end testManifestDesignerRoutesAllResolveToTheDesigner()
 
 	/**
+	 * REQ-BQTR-004 (logic-email-and-webhook-triggers D4): no automations route
+	 * reaches a public page. Mail and webhook calls from outside land at
+	 * integriq, which checks the caller; a `#[PublicPage]` automations method
+	 * would let an unauthenticated caller start or change an automation here.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-buildiq-opens-no-route-of-its-own-req-bqtr-004
+	 */
+	public function testNoAutomationsRouteTargetsAPublicPage(): void {
+		$checked = 0;
+		foreach ($this->routes as $route) {
+			[$controller, $method] = array_pad(explode('#', (string)($route['name'] ?? ''), 2), 2, '');
+			if ($controller !== 'automations') {
+				continue;
+			}
+
+			$reflection = new \ReflectionMethod(\OCA\Buildiq\Controller\AutomationsController::class, $method);
+			$this->assertSame(
+				[],
+				$reflection->getAttributes(\OCP\AppFramework\Http\Attribute\PublicPage::class),
+				'Route automations#' . $method . ' targets a #[PublicPage] method.'
+			);
+			$this->assertStringNotContainsString('@PublicPage', (string)$reflection->getDocComment(), 'Route automations#' . $method . ' is a public page.');
+			$checked++;
+		}
+
+		$this->assertGreaterThan(0, $checked, 'No automations routes were found to check.');
+	}//end testNoAutomationsRouteTargetsAPublicPage()
+
+	/**
 	 * The routes that clone into a new app read its `name` and `slug` from the
 	 * JSON body, and Nextcloud merges a JSON body over the URL parameters. A
 	 * placeholder with either name would be replaced by the new app's value,

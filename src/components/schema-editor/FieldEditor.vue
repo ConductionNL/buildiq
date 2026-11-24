@@ -89,6 +89,15 @@
 						{{ t('buildiq', 'Required') }}
 					</NcCheckboxRadioSwitch>
 
+					<!-- REQ-BQCV-006: a facetable property is a filter on every list page of this schema. -->
+					<NcCheckboxRadioSwitch
+						:modelValue="field.facetable === true"
+						type="switch"
+						data-testid="schema-field-facetable"
+						@update:modelValue="updateField(index, 'facetable', $event)">
+						{{ t('buildiq', 'Users can filter on this field') }}
+					</NcCheckboxRadioSwitch>
+
 					<NcTextField
 						:modelValue="field.description || ''"
 						:label="t('buildiq', 'Description')"
@@ -570,6 +579,7 @@ import DeleteIcon from 'vue-material-design-icons/Delete.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import DeleteFieldDialog from '../../modals/DeleteFieldDialog.vue'
 import GeneratedNumberSettings from './GeneratedNumberSettings.vue'
+import { relationPickerMixin } from '../../mixins/relationPicker.js'
 import { listConceptSchemes, listSchemeOptions } from '../../services/conceptSchemes.js'
 import { dutchFormatOptions, isDutchFormat } from '../../services/dutchFormats.js'
 import {
@@ -627,7 +637,6 @@ const JSON_TYPES = ['string', 'number', 'integer', 'boolean', 'array', 'object']
 /** The user reference key nextcloud-vue renders as a user picker (design D3). */
 const USER_REFERENCE = 'nextcloud-user'
 const ITEMS_TYPES = ['string', 'number', 'integer', 'boolean', 'object']
-const CARDINALITIES = ['one', 'many']
 
 let keyCounter = 0
 /**
@@ -653,9 +662,10 @@ export default {
 		PlusIcon,
 	},
 
+	mixins: [relationPickerMixin],
+
 	props: {
 		fields: { type: Array, default: () => [] },
-		schemaSlugs: { type: Array, default: () => [] },
 		/** The schema's own slug, the default counter name of an automatic number. */
 		schemaSlug: { type: String, default: '' },
 		/**
@@ -727,16 +737,6 @@ export default {
 		},
 
 		/**
-		 * Build relation target-schema picker options.
-		 *
-		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
-		 * @return {Array} Option objects.
-		 */
-		schemaOptions() {
-			return this.schemaSlugs.map((slug) => ({ value: slug, label: slug }))
-		},
-
-		/**
 		 * The registry picker options: the provider label, with the identifier
 		 * it keys on as the secondary line.
 		 *
@@ -752,22 +752,6 @@ export default {
 							identifier: provider.identifier,
 						})
 					: '',
-			}))
-		},
-
-		/**
-		 * Build cardinality picker options (one/many).
-		 *
-		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
-		 * @return {Array} Option objects.
-		 */
-		cardinalityOptions() {
-			return CARDINALITIES.map((value) => ({
-				value,
-				label:
-					value === 'one'
-						? this.t('buildiq', 'One')
-						: this.t('buildiq', 'Many'),
 			}))
 		},
 	},
@@ -1150,31 +1134,6 @@ export default {
 		},
 
 		/**
-		 * Resolve the selected target-schema option.
-		 *
-		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
-		 * @param {string} value Schema slug.
-		 * @return {object|null} Matching option.
-		 */
-		schemaOption(value) {
-			return this.schemaOptions.find((o) => o.value === value) || null
-		},
-
-		/**
-		 * Resolve the selected cardinality option.
-		 *
-		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
-		 * @param {string} value Cardinality.
-		 * @return {object} Matching option.
-		 */
-		cardinalityOption(value) {
-			return (
-				this.cardinalityOptions.find((o) => o.value === value)
-				|| this.cardinalityOptions[0]
-			)
-		},
-
-		/**
 		 * Validate a field name: presence, pattern, and uniqueness.
 		 *
 		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
@@ -1210,7 +1169,7 @@ export default {
 		 * @return {number|null} Parsed integer or null.
 		 */
 		toIntOrNull(value) {
-			if (value === '' || value == null) {
+			if (value === '' || value === null || value === undefined) {
 				return null
 			}
 			const parsed = parseInt(value, 10)
@@ -1225,7 +1184,7 @@ export default {
 		 * @return {number|null} Parsed number or null.
 		 */
 		toNumberOrNull(value) {
-			if (value === '' || value == null) {
+			if (value === '' || value === null || value === undefined) {
 				return null
 			}
 			const parsed = Number(value)
@@ -1330,11 +1289,21 @@ export default {
 			this.updateValidation(index, 'format', choice)
 		},
 
+		/**
+		 * Set one validation rule on a field row, or drop it when the value
+		 * is empty, null or undefined.
+		 *
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-schema-designer/spec.md#requirement-a-field-carries-required-length-range-and-pattern-rules-req-bqcv-021
+		 * @param {number} index The row index.
+		 * @param {string} key The validation key.
+		 * @param {string|number|null|undefined} value The new value.
+		 * @return {void}
+		 */
 		updateValidation(index, key, value) {
 			const next = this.fields.slice()
 			const current = { ...next[index] }
 			const validation = { ...(current.validation || {}) }
-			if (value === '' || value == null) {
+			if (value === '' || value === null || value === undefined) {
 				delete validation[key]
 			} else {
 				validation[key] = value
@@ -1520,10 +1489,13 @@ const USER_KEYS = ['referenceType', 'format']
 const ITEM_KEYS = ['type', 'format', 'referenceType', 'enum', 'x-enum-labels', 'conceptScheme']
 
 /**
+ * The editor row for one loaded property.
  *
- * @param name
- * @param prop
- * @param isRequired
+ * @param {string} name The property name.
+ * @param {object} prop The loaded property.
+ * @param {boolean} isRequired Whether the schema lists it as required.
+ * @return {object} The row.
+ * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-shows-records-in-a-table-with-sorting-filtering-and-paging-req-bqcv-006
  */
 function fieldFromProperty(name, prop, isRequired) {
 	prop = prop || {}
@@ -1533,11 +1505,13 @@ function fieldFromProperty(name, prop, isRequired) {
 		name,
 		type,
 		required: isRequired,
-		default: prop.default != null ? prop.default : null,
+		default: prop.default !== null && prop.default !== undefined ? prop.default : null,
 		description: prop.description || '',
 		validation: validationFromProperty(prop, type),
 		// REQ-OBSD-009: the automatic-number setting, only on a field that has one.
 		...generatedRow(prop),
+		// REQ-BQCV-006: the filter switch, only on a field that is a filter.
+		...facetableRow(prop),
 		// REQ-BQRF-001: the registry source, or null for a typed-in field. A
 		// declaration that is not an object is left undefined, so a save
 		// carries it through for OpenRegister to judge instead of dropping it.
@@ -1560,6 +1534,18 @@ function fieldFromProperty(name, prop, isRequired) {
 function generatedRow(prop) {
 	const generated = generatedFromProperty(prop)
 	return generated ? { generated } : {}
+}
+
+/**
+ * The filter part of a row: `{ facetable: true }` when the property is a
+ * facet, else nothing, so other rows keep their shape.
+ *
+ * @param {object} prop The loaded property.
+ * @return {object} The part.
+ * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-shows-records-in-a-table-with-sorting-filtering-and-paging-req-bqcv-006
+ */
+function facetableRow(prop) {
+	return prop.facetable === true ? { facetable: true } : {}
 }
 
 /**
@@ -1690,7 +1676,7 @@ function choiceFromProperty(prop) {
 	return {
 		options: (Array.isArray(prop.enum) ? prop.enum : []).map((value) => ({
 			value: String(value),
-			label: labels[value] != null ? String(labels[value]) : '',
+			label: labels[value] !== null && labels[value] !== undefined ? String(labels[value]) : '',
 		})),
 	}
 }
@@ -1714,13 +1700,14 @@ function keysFor(type) {
  * @param {object} source The object to read.
  * @param {{truthy: Array<string>, present: Array<string>}} keys The keys.
  * @return {void}
+ * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
  */
 function copyKeys(target, source, keys) {
 	for (const key of keys.truthy) {
 		if (source[key]) target[key] = source[key]
 	}
 	for (const key of keys.present) {
-		if (source[key] != null) target[key] = source[key]
+		if (source[key] !== null && source[key] !== undefined) target[key] = source[key]
 	}
 }
 
@@ -1745,6 +1732,8 @@ const EDITOR_OWNED_KEYS = new Set([
 	'minItems',
 	'maxItems',
 	'x-openregister-relation',
+	// REQ-BQCV-006: written from the row's filter switch; off removes it.
+	'facetable',
 	GENERATED_KEY,
 	// REQ-BQRF-001: written from the row's source; "Typed in" removes it.
 	PROPERTY_SOURCE_KEY,
@@ -1769,6 +1758,10 @@ function ownedKeys(type, loadedType) {
 		}
 		if (named === 'user') {
 			USER_KEYS.forEach((key) => keys.add(key))
+		}
+		if (named === 'relation') {
+			// REQ-BQCV-003: a relation writes its own `$ref`; another type drops it.
+			keys.add('$ref')
 		}
 	}
 	return keys
@@ -1832,6 +1825,8 @@ export function fieldsToSchema(fields, schemaSlug = '') {
  * @param {string} schemaSlug The schema's slug.
  * @return {object} The JSON Schema property.
  * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
+ * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-schema-designer/spec.md#requirement-a-maker-links-one-object-type-to-another-req-bqcv-003
+ * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-shows-records-in-a-table-with-sorting-filtering-and-paging-req-bqcv-006
  */
 function propertyFromField(field, schemaSlug = '') {
 	const raw = loadedProperty(field)
@@ -1847,7 +1842,10 @@ function propertyFromField(field, schemaSlug = '') {
 		}
 	}
 	if (field.type === 'relation') {
-		prop['x-openregister-relation'] = relationFromField(raw, v)
+		writeRelation(prop, raw, v, field.name)
+	}
+	if (field.facetable === true) {
+		prop.facetable = true
 	}
 	const generated = generatedFromField(field, raw, schemaSlug)
 	if (generated) {
@@ -2008,34 +2006,67 @@ function propertyTypeOf(type) {
  * @param {object} field Editor field row.
  * @param {object} raw The property as it was loaded.
  * @return {object} The start of the saved property.
+ * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
  */
 function baseProperty(field, raw) {
 	const prop = withoutKeys(raw, ownedKeys(field.type, fieldTypeOf(raw)))
 	if (field.description) {
 		prop.description = field.description
 	}
-	if (field.default != null && field.default !== '') {
+	if (field.default !== null && field.default !== undefined && field.default !== '') {
 		prop.default = field.default
 	}
 	return prop
 }
 
 /**
+ * Write a relation row onto its property: the relation block, and the
+ * `$ref` OpenRegister needs to accept it, on the property for a one relation
+ * and on its items for a many relation, which is stored as a list of
+ * references (`type: array` with string items) instead of a single one.
+ *
+ * @param {object} prop The property being saved.
+ * @param {object} raw The property as it was loaded.
+ * @param {object} v The row's validation values.
+ * @param {string} name The field name, the label when the relation has none.
+ * @return {void}
+ * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-schema-designer/spec.md#requirement-a-maker-links-one-object-type-to-another-req-bqcv-003
+ */
+function writeRelation(prop, raw, v, name) {
+	const relation = relationFromField(raw, v, name)
+	const ref = relation.target ? { $ref: relation.target } : {}
+	prop['x-openregister-relation'] = relation
+	if (relation.cardinality !== 'many') {
+		Object.assign(prop, ref)
+		return
+	}
+	prop.type = 'array'
+	prop.items = { ...withoutKeys(raw.items, ['type', '$ref']), type: 'string', ...ref }
+}
+
+/**
  * The `x-openregister-relation` block of a relation row: the loaded block
  * minus the keys the row owns, then the row's target, cardinality and
- * (when set) inverse.
+ * (when set) inverse. A block with neither a `label` nor a `type` gets the
+ * property's title, else the field name, as its label: OpenRegister refuses
+ * a relation that names neither.
  *
  * @param {object} raw The property as it was loaded.
  * @param {object} v The row's validation values.
+ * @param {string} name The field name.
  * @return {object} The relation block.
+ * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-schema-designer/spec.md#requirement-a-maker-links-one-object-type-to-another-req-bqcv-003
  */
-function relationFromField(raw, v) {
+function relationFromField(raw, v, name) {
+	const kept = withoutKeys(raw['x-openregister-relation'], [
+		'target',
+		'cardinality',
+		'inverseOf',
+	])
+	const named = kept.label || kept.type ? {} : { label: raw.title || name }
 	return {
-		...withoutKeys(raw['x-openregister-relation'], [
-			'target',
-			'cardinality',
-			'inverseOf',
-		]),
+		...kept,
+		...named,
 		target: v.target || '',
 		cardinality: v.cardinality || 'one',
 		...(v.inverseOf ? { inverseOf: v.inverseOf } : {}),

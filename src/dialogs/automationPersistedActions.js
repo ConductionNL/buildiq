@@ -11,6 +11,8 @@
  * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
  */
 
+import { toPersistedAiStep } from '../services/aiSteps.js'
+import { toPersistedScriptStep } from '../services/scriptSteps.js'
 import { storedForm } from './approvalFormFields.js'
 
 /**
@@ -108,6 +110,22 @@ const BUILDERS = Object.freeze({
 		templateId: action.templateId,
 		output: listOrEmpty(action.output),
 	}),
+	'ai-step': toPersistedAiStep,
+	// logic-script-step D1: the code, its time limit and a note.
+	'script-step': toPersistedScriptStep,
+	// logic-shared-flows-and-automations D4: the step names the automation it runs.
+	'run-automation': (action) => ({
+		type: 'run-automation',
+		automation: String(action.automation || '').trim(),
+	}),
+	'rule-decision': (action) => withOptionalObject(
+		{
+			type: 'rule-decision',
+			ruleSetSlug: String(action.ruleSetSlug || '').trim(),
+			outputField: String(action.outputField || '').trim(),
+		},
+		{ key: 'inputMapping', text: action.inputMappingText },
+	),
 })
 
 /**
@@ -117,8 +135,14 @@ const BUILDERS = Object.freeze({
  * @return {object} The persisted webhook action.
  */
 function webhookAction(action) {
+	// A webhook names an integriq source and a path; a bare URL is no longer
+	// stored (logic-automation-actions-that-run D5, REQ-BQAR-003).
 	return withOptionalObject(
-		{ type: 'webhook', url: action.url },
+		{
+			type: 'webhook',
+			source: String(action.source || '').trim(),
+			path: String(action.path || '').trim() || '/',
+		},
 		{ key: 'payloadTemplate', text: action.payloadTemplateText },
 	)
 }

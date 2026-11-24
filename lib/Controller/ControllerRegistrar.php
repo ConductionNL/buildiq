@@ -25,9 +25,13 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\DeviceFeaturesInterface;
+use OCA\Buildiq\Kernel\Contracts\PublishedApplicationProviderInterface;
 use OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\TemplateInstallSeamInterface;
+use OCP\App\IAppManager;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use RuntimeException;
 
 /**
  * Registers the hand-built controller factories.
@@ -83,6 +87,8 @@ final class ControllerRegistrar {
 				userSession: $c->get('OCP\\IUserSession'),
 				groupManager: $c->get('OCP\\IGroupManager'),
 				navigationManager: $c->get('OCP\\INavigationManager'),
+				publishedApps: $c->get(PublishedApplicationProviderInterface::class),
+				deviceFeatures: $c->get(DeviceFeaturesInterface::class),
 				settings: $c->get(SettingsServiceInterface::class),
 				manifestResolver: $c->get('OCA\\Buildiq\\Kernel\\Contracts\\ManifestResolverServiceInterface'),
 				embedOrigins: $c->get('OCA\\Buildiq\\Service\\EmbedOrigins')
@@ -163,6 +169,7 @@ final class ControllerRegistrar {
 		$context->registerService(
 			'OCA\\Buildiq\\Controller\\HealthController',
 			static function ($c) {
+				self::requireOpenRegister(appManager: $c->get(IAppManager::class));
 				$class = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericHealthController';
 				return new $class(
 					appName: AppIdentity::APP_ID,
@@ -175,6 +182,7 @@ final class ControllerRegistrar {
 		$context->registerService(
 			'OCA\\Buildiq\\Controller\\MetricsController',
 			static function ($c) {
+				self::requireOpenRegister(appManager: $c->get(IAppManager::class));
 				$class = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericMetricsController';
 				return new $class(
 					appName: AppIdentity::APP_ID,
@@ -185,4 +193,26 @@ final class ControllerRegistrar {
 			}
 		);
 	}//end registerObservabilityControllers()
+
+	/**
+	 * Establish that OpenRegister is installed before a probe controller
+	 * reaches into its AppHost classes.
+	 *
+	 * The health and metrics controllers are OpenRegister's generic
+	 * implementations, so they cannot be built without it. Asking first turns
+	 * a bare class-not-found error into a message that names the missing app.
+	 *
+	 * @param IAppManager $appManager The app manager of the resolving container
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When OpenRegister is not installed
+	 *
+	 * @spec openspec/specs/app-composition-bindings/spec.md
+	 */
+	private static function requireOpenRegister(IAppManager $appManager): void {
+		if ($appManager->isInstalled('openregister') === false) {
+			throw new RuntimeException('The health and metrics probes need OpenRegister, which is not installed.');
+		}
+	}//end requireOpenRegister()
 }//end class

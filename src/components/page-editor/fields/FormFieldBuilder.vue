@@ -73,11 +73,29 @@
 			<select
 				:value="field.type || 'string'"
 				class="form-field-builder__field form-field-builder__field--narrow"
-				@change="updateField(index, 'type', $event.target.value)">
+				@change="changeType(index, $event.target.value)">
 				<option v-for="type in FIELD_TYPES" :key="type" :value="type">
 					{{ type }}
 				</option>
 			</select>
+			<span
+				v-if="field.type === 'scan'"
+				class="form-field-builder__formats"
+				role="group"
+				:aria-label="t('buildiq', 'Code formats')"
+				data-testid="form-field-scan-formats">
+				<label
+					v-for="format in CODE_FORMAT_OPTIONS"
+					:key="format.value"
+					class="form-field-builder__inline">
+					<input
+						type="checkbox"
+						:value="format.value"
+						:checked="(field.formats || []).includes(format.value)"
+						@change="toggleFormat(index, format.value, $event.target.checked)" />
+					{{ format.value === 'qr' ? t('buildiq', 'QR code') : format.label }}
+				</label>
+			</span>
 
 			<template v-if="!showLogic">
 				<label class="form-field-builder__inline">
@@ -308,6 +326,26 @@
 							field.default === undefined ? null : field.default
 						"
 						@update:modelValue="updateLive(index, 'default', $event)" />
+					<div class="form-field-builder__fx-default">
+						<button
+							type="button"
+							class="form-field-builder__fx"
+							:class="{ 'form-field-builder__fx--on': hasExpressionDefault(field) }"
+							:aria-pressed="hasExpressionDefault(field) ? 'true' : 'false'"
+							:title="hasExpressionDefault(field) ? t('buildiq', 'Stop computing the value') : t('buildiq', 'Compute the value with an expression')"
+							@click="toggleExpressionDefault(index, field)">
+							fx
+						</button>
+						<textarea
+							v-if="hasExpressionDefault(field)"
+							class="form-field-builder__expression"
+							rows="2"
+							spellcheck="false"
+							:aria-label="t('buildiq', 'Default value expression')"
+							:placeholder="t('buildiq', 'For example: user.displayName')"
+							:value="field.expressionDefault"
+							@input="updateLive(index, 'expressionDefault', $event.target.value)" />
+					</div>
 				</div>
 				<div class="form-field-builder__section">
 					<span class="form-field-builder__section-label">{{
@@ -343,6 +381,24 @@
 		<button type="button" class="form-field-builder__add" @click="addField">
 			+ {{ t('buildiq', 'Add field') }}
 		</button>
+		<!-- REQ-BQCV-024: add a property of the bound schema as a field. -->
+		<select
+			v-if="schemaPropertyChoices.length"
+			class="form-field-builder__add-property"
+			data-testid="form-field-add-property"
+			value=""
+			:aria-label="t('buildiq', 'Add a field from {schema}', { schema: targetSchemaName })"
+			@change="onAddProperty($event)">
+			<option value="">
+				+ {{ t('buildiq', 'Add a field from {schema}', { schema: targetSchemaName }) }}
+			</option>
+			<option
+				v-for="choice in schemaPropertyChoices"
+				:key="choice.key"
+				:value="choice.key">
+				{{ choice.label }}
+			</option>
+		</select>
 	</div>
 </template>
 
@@ -383,6 +439,28 @@ import {
  */
 const FIELD_TYPES = [...BASE_FIELD_TYPES, ...DEVICE_FIELD_TYPES]
 
+/**
+ * The field type a schema property is filled in with: a number, a yes or no,
+ * a date, or text.
+ *
+ * @param {?object} property - the JSON-schema property.
+ * @return {string} the field type.
+ * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-maker-picks-and-orders-the-fields-of-a-form-page-req-bqcv-024
+ */
+function fieldTypeForProperty(property) {
+	const type = property && property.type
+	if (type === 'integer' || type === 'number') {
+		return 'number'
+	}
+	if (type === 'boolean') {
+		return 'boolean'
+	}
+	if (property && (property.format === 'date' || property.format === 'date-time')) {
+		return 'date'
+	}
+	return 'string'
+}
+
 
 /**
  * The maker-facing sentence of each device field problem (REQ-BQSA-002, REQ-BQSA-004).
@@ -406,6 +484,16 @@ const DEVICE_PROBLEM_TEXT = {
 function remapIndices(order, indices) {
 	return indices.map((i) => order.indexOf(i)).filter((i) => i !== -1)
 }
+
+/**
+ * The code formats a `scan` field accepts (pages-qr-and-barcodes D2). Code 128
+ * and EAN-13 are names, not words, so they are not translated.
+ */
+const CODE_FORMAT_OPTIONS = [
+	{ value: 'qr', label: 'QR code' },
+	{ value: 'code128', label: 'Code 128' },
+	{ value: 'ean13', label: 'EAN-13' },
+]
 
 /**
  * Whether a `visibleWhen` condition points at a field of this form (not an
@@ -529,6 +617,7 @@ export default {
 	data() {
 		return {
 			FIELD_TYPES,
+			CODE_FORMAT_OPTIONS,
 			AUDIO_MIN_SECONDS,
 			AUDIO_MAX_SECONDS,
 			expandedIndices: [],
@@ -577,6 +666,32 @@ export default {
 				.map((f) => f && f.key)
 				.filter((k) => typeof k === 'string' && k !== '')
 		},
+
+		/**
+		 * The name of the schema the form saves into, for the add control.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-maker-picks-and-orders-the-fields-of-a-form-page-req-bqcv-024
+		 */
+		targetSchemaName() {
+			const entry = this.targetSchemaEntry
+			return (entry && (entry.title || entry.slug)) || this.parentSchema
+		},
+
+		/**
+		 * The properties of the bound schema that are not on the form yet, in
+		 * the schema's order, each with the label the field gets.
+		 *
+		 * @return {Array<{key: string, label: string}>}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-maker-picks-and-orders-the-fields-of-a-form-page-req-bqcv-024
+		 */
+		schemaPropertyChoices() {
+			const properties = (this.targetSchemaEntry && this.targetSchemaEntry.properties) || {}
+			const used = new Set(this.declaredKeys)
+			return Object.keys(properties)
+				.filter((key) => !used.has(key))
+				.map((key) => ({ key, label: (properties[key] && properties[key].title) || key }))
+		},
 	},
 
 	watch: {
@@ -591,6 +706,51 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Change a field's type. Choosing `scan` accepts every code format
+		 * unless formats were chosen before; any other type drops `formats`.
+		 *
+		 * @param {number} index - the field's row.
+		 * @param {string} type - the new type.
+		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-forms-can-fill-a-field-from-a-scan-req-bqqr-002
+		 */
+		changeType(index, type) {
+			const next = this.localFields.slice()
+			const { formats, ...rest } = next[index] || {}
+			next[index] = { ...rest, type }
+			if (type === 'scan') {
+				next[index].formats = Array.isArray(formats) && formats.length > 0
+					? formats
+					: CODE_FORMAT_OPTIONS.map((format) => format.value)
+			}
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Accept or drop one code format on a `scan` field, keeping the
+		 * formats in their listed order.
+		 *
+		 * @param {number} index - the field's row.
+		 * @param {string} format - `qr`, `code128` or `ean13`.
+		 * @param {boolean} checked - whether the format is now accepted.
+		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-forms-can-fill-a-field-from-a-scan-req-bqqr-002
+		 */
+		toggleFormat(index, format, checked) {
+			const next = this.localFields.slice()
+			const current = next[index] || {}
+			const chosen = new Set(Array.isArray(current.formats) ? current.formats : [])
+			if (checked) {
+				chosen.add(format)
+			} else {
+				chosen.delete(format)
+			}
+			next[index] = {
+				...current,
+				formats: CODE_FORMAT_OPTIONS.map((option) => option.value).filter((value) => chosen.has(value)),
+			}
+			this.$emit('update:modelValue', next)
+		},
+
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
 		 *
@@ -684,11 +844,36 @@ export default {
 		},
 
 		/**
+		 * Whether a field's default is an fx expression (pages-custom-code REQ-BQCC-002).
+		 *
+		 * @param {object} field - the field entry.
+		 * @return {boolean}
+		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
+		 */
+		hasExpressionDefault(field) {
+			return !!field && typeof field.expressionDefault === 'string'
+		},
+
+		/**
+		 * Switch a field's default to an fx expression (`expressionDefault`,
+		 * JavaScript over `values`, `user` and `route`), or back. Its `default`
+		 * is left as it is.
+		 *
+		 * @param {number} index - the field index.
+		 * @param {object} field - the field entry.
+		 * @return {void}
+		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
+		 */
+		toggleExpressionDefault(index, field) {
+			this.updateLive(index, 'expressionDefault', this.hasExpressionDefault(field) ? null : '')
+		},
+
+		/**
 		 * Write (or delete, on `null`) one field's `default` or `calculate`
 		 * (REQ-BQLV-001, REQ-BQLV-002). Unknown sibling keys survive.
 		 *
 		 * @param {number} index - the field index.
-		 * @param {'default'|'calculate'} key - the key to write.
+		 * @param {'default'|'calculate'|'expressionDefault'} key - the key to write.
 		 * @param {*} value - the next value, or `null` to clear.
 		 * @return {void}
 		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
@@ -878,6 +1063,29 @@ export default {
 			const next = this.localFields.slice()
 			next.push({ key: '', label: '', type: 'string' })
 			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Add the picked schema property as a field at the end of the form,
+		 * with the property's title as its label and a type that fits it,
+		 * and set the picker back to its prompt.
+		 *
+		 * @param {Event} event - the change event of the add control.
+		 * @return {void}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-maker-picks-and-orders-the-fields-of-a-form-page-req-bqcv-024
+		 */
+		onAddProperty(event) {
+			const key = event.target.value
+			event.target.value = ''
+			const choice = this.schemaPropertyChoices.find((entry) => entry.key === key)
+			if (!choice) {
+				return
+			}
+			const property = this.targetSchemaEntry.properties[key]
+			this.$emit('update:modelValue', [
+				...this.localFields,
+				{ key, label: choice.label, type: fieldTypeForProperty(property) },
+			])
 		},
 
 		/**
@@ -1200,6 +1408,11 @@ export default {
 	@include c.add-button;
 }
 
+.form-field-builder__add-property {
+	align-self: flex-start;
+	@include c.control;
+}
+
 .form-field-builder__details {
 	flex-basis: 100%;
 	display: flex;
@@ -1223,5 +1436,31 @@ export default {
 	font-weight: 600;
 	color: var(--color-text-maxcontrast);
 	text-transform: uppercase;
+}
+.form-field-builder__fx-default {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	align-items: flex-start;
+	margin-top: 6px;
+}
+
+.form-field-builder__fx {
+	font-style: italic;
+	font-weight: bold;
+	background: none;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	color: var(--color-main-text);
+	cursor: pointer;
+}
+
+.form-field-builder__fx--on {
+	color: var(--color-primary-element);
+}
+
+.form-field-builder__expression {
+	flex: 1 1 100%;
+	font-family: var(--font-face-monospace, monospace);
 }
 </style>

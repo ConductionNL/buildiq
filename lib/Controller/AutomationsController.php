@@ -83,6 +83,8 @@ use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
 use OCA\Buildiq\Kernel\Contracts\AutomationWriteServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ConditionActionExecutorInterface;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
+use OCA\Buildiq\Service\Automation\ManualAutomationRun;
+use OCA\Buildiq\Service\Automation\ScriptSteps;
 use OCA\Buildiq\Service\CallerContext;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -120,6 +122,14 @@ class AutomationsController extends Controller {
 	private const PRODUCTION_ENABLE_ROLES = ['owners'];
 
 	/**
+	 * Roles that may run a manual automation from a record: any role on the
+	 * app (logic-automation-actions-that-run D8).
+	 *
+	 * @var array<int,string>
+	 */
+	private const USE_ROLES = ['owners', 'editors', 'viewers'];
+
+	/**
 	 * Runs per page by default, and the most one page or one summary call holds (logic-automation-run-log D3).
 	 */
 	private const RUNS_DEFAULT_LIMIT = 25;
@@ -150,6 +160,7 @@ class AutomationsController extends Controller {
 	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
 	 * @param AutomationWriteServiceInterface $writeService Create/update/delete write path.
 	 * @param AutomationRunRecorderInterface|null $runs The run log (logic-automation-run-log).
+	 * @param ManualAutomationRun|null $manualRuns Lists and starts manual automations on a record (logic-automation-actions-that-run D8).
 	 *
 	 * @return void
 	 */
@@ -161,6 +172,7 @@ class AutomationsController extends Controller {
 		CallerContext $caller,
 		private readonly AutomationWriteServiceInterface $writeService,
 		private readonly ?AutomationRunRecorderInterface $runs = null,
+		private readonly ?ManualAutomationRun $manualRuns = null,
 	) {
 		$this->userSession = $caller->userSession;
 		$this->permissionResolver = $caller->permissionResolver;
@@ -259,6 +271,7 @@ class AutomationsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#3.1
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 30, period: 60)]
@@ -268,7 +281,9 @@ class AutomationsController extends Controller {
 			roles: self::WRITE_ROLES,
 			productionRoles: null,
 			action: function (array $automation): JSONResponse {
-				return $this->recompileAndRespond(automation: $automation);
+				// Logic-script-step REQ-BQSS-002: a script step is compiled by an app owner only.
+				return $this->writeService->compileRefusal(automation: $automation)
+					?? $this->recompileAndRespond(automation: $automation);
 			}
 		);
 
@@ -283,6 +298,7 @@ class AutomationsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#3.1
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 30, period: 60)]
@@ -293,7 +309,9 @@ class AutomationsController extends Controller {
 			productionRoles: self::PRODUCTION_ENABLE_ROLES,
 			action: function (array $automation): JSONResponse {
 				$automation['enabled'] = true;
-				return $this->recompileAndRespond(automation: $automation);
+				// Logic-script-step REQ-BQSS-002: enabling compiles the script step too.
+				return $this->writeService->compileRefusal(automation: $automation)
+					?? $this->recompileAndRespond(automation: $automation);
 			}
 		);
 
@@ -503,6 +521,101 @@ class AutomationsController extends Controller {
 	}//end runsSummary()
 
 	/**
+	 * The enabled manual automations of an app for a record schema (design D8).
+	 *
+	 * A caller with any role on the app (`?app=`) gets the automations whose
+	 * trigger is manual on `?schema=`; anyone else is refused.
+	 *
+	 * @return JSONResponse {results: [{uuid, name}]}
+	 *
+	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
+	 */
+	#[NoAdminRequired]
+	public function manual(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return $this->error(code: 'unauthenticated', detail: null, status: Http::STATUS_UNAUTHORIZED);
+		}
+
+		if ($this->manualRuns === null) {
+			return $this->error(code: 'unavailable', detail: null, status: Http::STATUS_SERVICE_UNAVAILABLE);
+		}
+
+		$slug        = (string)($this->request->getParam('app') ?? '');
+		$application = $this->writeService->loadApplication(slug: $slug);
+		if ($application === null) {
+			return $this->error(code: 'not_found', detail: 'Application ' . $slug . ' not found', status: Http::STATUS_NOT_FOUND);
+		}
+
+		$allowed = $this->permissionResolver->matchesCaller(
+			permissions: $this->orArray(value: $application['permissions'] ?? null),
+			caller: $user,
+			userGroups: $this->permissionResolver->resolveUserGroups(user: $user),
+			allowAdminBypass: false,
+			roles: self::USE_ROLES
+		);
+		if ($allowed === false) {
+			return $this->error(code: 'insufficient_permission', detail: null, status: Http::STATUS_FORBIDDEN);
+		}
+
+		$schema = (string)($this->request->getParam('schema') ?? '');
+
+		return new JSONResponse(data: ['results' => $this->manualRuns->listFor(applicationSlug: $slug, schemaSlug: $schema)], statusCode: Http::STATUS_OK);
+	}//end manual()
+
+	/**
+	 * Run a manual automation on one record (design D8).
+	 *
+	 * Refused with 403 for a caller without a role on the automation's app and
+	 * for a record (`object` in the body) the caller cannot read, and with 409
+	 * for an automation that is not manual, not enabled or not compiled to a
+	 * flow. The flow is queued and runs as the caller.
+	 *
+	 * @param string $uuid The Automation object uuid.
+	 *
+	 * @return JSONResponse 202 {started, flowUuid, run}, or an error envelope
+	 *
+	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 30, period: 60)]
+	public function run(string $uuid): JSONResponse {
+		return $this->withAutomation(
+			uuid: $uuid,
+			roles: self::USE_ROLES,
+			productionRoles: null,
+			action: function (array $automation): JSONResponse {
+				if ($this->manualRuns === null) {
+					return $this->error(code: 'unavailable', detail: null, status: Http::STATUS_SERVICE_UNAVAILABLE);
+				}
+
+				if ($this->manualRuns->isRunnable(automation: $automation) === false) {
+					return $this->error(code: 'not_runnable', detail: 'Only an enabled manual automation can be run by hand.', status: Http::STATUS_CONFLICT);
+				}
+
+				$subject = $this->manualRuns->readableSubject(
+					objectUuid: (string)($this->request->getParam('object') ?? ''),
+					schemaSlug: (string)($automation['trigger']['schema'] ?? '')
+				);
+				if ($subject === null) {
+					return $this->error(code: 'record_not_readable', detail: null, status: Http::STATUS_FORBIDDEN);
+				}
+
+				$started = $this->manualRuns->start(automation: $automation, subject: $subject);
+				if ($started === null) {
+					return $this->error(
+						code: 'unavailable',
+						detail: 'OpenRegister cannot start this flow for an app user yet.',
+						status: Http::STATUS_SERVICE_UNAVAILABLE
+					);
+				}
+
+				return new JSONResponse(data: ['started' => true] + $started, statusCode: Http::STATUS_ACCEPTED);
+			}
+		);
+	}//end run()
+
+	/**
 	 * Shared load → RBAC → action pipeline for every route in this controller.
 	 *
 	 * Resolves the automation and its parent Application, enforces RBAC
@@ -574,18 +687,24 @@ class AutomationsController extends Controller {
 	 * @param array<string,mixed> $automation The (possibly enabled/disabled-mutated) automation.
 	 *
 	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
 	 */
 	private function recompileAndRespond(array $automation): JSONResponse {
+		$priorProvenance = $this->orArray(value: $automation['provenance'] ?? null);
+		// Apply refuses too, as a 422 rather than a 500: an AI step without
+		// Hermiq's node in the engine (ai-llm-steps-and-computed-fields
+		// REQ-BQLS-005), or an email or webhook trigger integriq cannot take,
+		// which fails closed before anything is written (logic-email-and-webhook-triggers D6).
 		try {
 			$plan = $this->compiler->compile(automation: $automation);
+			$provenance = $this->compiler->apply(automation: $automation, plan: $plan, priorProvenance: $priorProvenance);
 		} catch (UnsupportedAutomationCombinationException $e) {
 			return $this->error(code: $e->getErrorCode(), detail: $e->getMessage(), status: Http::STATUS_UNPROCESSABLE_ENTITY);
 		}
 
-		$priorProvenance = $this->orArray(value: $automation['provenance'] ?? null);
-		$provenance = $this->compiler->apply(automation: $automation, plan: $plan, priorProvenance: $priorProvenance);
-
-		$automation['provenance'] = $provenance;
+		// Logic-script-step D6: the author of the last code change outlives a recompile.
+		$automation['provenance'] = $provenance + array_intersect_key($priorProvenance, [ScriptSteps::AUTHOR_KEY => true]);
 		$uuid = (string)($automation['id'] ?? $automation['uuid'] ?? '');
 
 		// SYSTEM CONTEXT (`_rbac: false`). Every caller of this method has

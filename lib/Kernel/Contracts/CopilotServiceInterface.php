@@ -99,6 +99,16 @@ interface CopilotServiceInterface {
 	public function health(): array;
 
 	/**
+	 * Whether an agent's knowledge is searched for the passages that match a
+	 * request rather than read whole under the budget (ai-agents-knowledge-and-run-trace T08).
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base/spec.md#requirement-a-maker-attaches-knowledge-files-to-an-agent-req-bqag-001
+	 */
+	public function knowledgeRetrieval(): bool;
+
+	/**
 	 * Turn a natural-language brief into a validated plan. Performs zero
 	 * builder writes (an agent-scoped rejected plan still writes exactly
 	 * one `AgentRun` audit record — never an Application/ApplicationVersion/

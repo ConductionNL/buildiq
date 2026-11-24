@@ -48,7 +48,7 @@ interface GitHubShopSearchInterface {
 	 *
 	 * @return array<string,mixed> `{outcome, cards, brokerCredentialAvailable, brokerUsed, rateLimited}`.
 	 *
-	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
 	public function answered(array $result): array;
 
@@ -61,7 +61,7 @@ interface GitHubShopSearchInterface {
 	 *
 	 * @return array<string,mixed> `{outcome, cards, brokerCredentialAvailable, rateLimited}`.
 	 *
-	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
 	public function failed(Throwable $error): array;
 }//end interface

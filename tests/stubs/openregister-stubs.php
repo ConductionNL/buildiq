@@ -1412,6 +1412,11 @@ namespace OCA\OpenRegister\Db {
 		class Flow extends \OCP\AppFramework\Db\Entity {
 
 			/**
+			 * The manual trigger, as OpenRegister names it.
+			 */
+			public const TRIGGER_MANUAL = 'manual';
+
+			/**
 			 * Stub uuid column.
 			 *
 			 * @var string|null
@@ -1494,6 +1499,27 @@ namespace OCA\OpenRegister\Db {
 			 * @var array|null
 			 */
 			protected ?array $limits = null;
+
+			/**
+			 * Stub owning-app column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $app = null;
+
+			/**
+			 * Stub lifecycleStatus column: the head's draft or published state.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $lifecycleStatus = 'draft';
+
+			/**
+			 * Stub application-slug column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $applicationSlug = null;
 		}//end class
 	}//end if
 
@@ -1618,9 +1644,19 @@ namespace OCA\OpenRegister\Db {
 	if (class_exists(OrganisationMapper::class, autoload: false) === false) {
 		/**
 		 * Stub OrganisationMapper — the membership and hierarchy reads
-		 * AppOrganisationGuard makes, with the real mapper's signatures.
+		 * AppOrganisationGuard makes and the active-organisation read
+		 * PageLayoutLayerStack makes, with the real mapper's signatures.
 		 */
 		class OrganisationMapper {
+			/**
+			 * @param string $userId The user.
+			 *
+			 * @return string|null The active organisation uuid.
+			 */
+			public function getActiveOrganisationUuidForUser(string $userId): ?string {
+				return null;
+			}//end getActiveOrganisationUuidForUser()
+
 			/**
 			 * @param string $userId The user.
 			 *
@@ -2876,7 +2912,79 @@ namespace OCA\OpenRegister\Service\Flow {
 			public function find(string $uuid): \OCA\OpenRegister\Db\Flow {
 				return new \OCA\OpenRegister\Db\Flow();
 			}//end find()
+
+			/**
+			 * Delete a flow by uuid.
+			 *
+			 * @param string $uuid The flow's uuid.
+			 *
+			 * @return void
+			 */
+			public function delete(string $uuid): void {
+			}//end delete()
+
+			/**
+			 * Run a flow on behalf of an action whose right the caller already holds.
+			 *
+			 * @param string         $uuid    The flow uuid.
+			 * @param FlowRunOptions $options The subject, context, sync and trigger.
+			 *
+			 * @return \OCA\OpenRegister\Db\FlowRun The queued run.
+			 */
+			public function runForAction(string $uuid, FlowRunOptions $options): \OCA\OpenRegister\Db\FlowRun {
+				return new \OCA\OpenRegister\Db\FlowRun();
+			}//end runForAction()
 		}//end class
+	}//end if
+
+	if (class_exists(FlowRunOptions::class, autoload: false) === false) {
+		/**
+		 * Stub FlowRunOptions: the options of one flow run, as on OpenRegister main.
+		 */
+		final class FlowRunOptions {
+			/**
+			 * Name the options.
+			 *
+			 * @param array<string, mixed> $subject `{uuid, register, schema}` of the object.
+			 * @param array<string, mixed> $context Run-level metadata.
+			 * @param bool                 $sync    Whether the caller waits.
+			 * @param string               $trigger The trigger.
+			 */
+			public function __construct(
+				public readonly array $subject,
+				public readonly array $context,
+				public readonly bool $sync,
+				public readonly string $trigger,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
+	if (interface_exists(FlowVersionServiceInterface::class, autoload: false) === false) {
+		/**
+		 * Stub FlowVersionServiceInterface: the publish and draft calls a flow
+		 * buildiq saves needs before its trigger is subscribed.
+		 */
+		interface FlowVersionServiceInterface {
+			/**
+			 * Publish the flow's head.
+			 *
+			 * @param \OCA\OpenRegister\Db\Flow $flow    The flow.
+			 * @param mixed                     $options The publish options.
+			 *
+			 * @return mixed The published version.
+			 */
+			public function publish(\OCA\OpenRegister\Db\Flow $flow, mixed $options = null): mixed;
+
+			/**
+			 * Copy the published graph into a new draft.
+			 *
+			 * @param \OCA\OpenRegister\Db\Flow $flow The flow.
+			 *
+			 * @return mixed The draft version.
+			 */
+			public function createDraft(\OCA\OpenRegister\Db\Flow $flow): mixed;
+		}//end interface
 	}//end if
 }
 
@@ -4239,6 +4347,33 @@ namespace OCA\OpenRegister\Db\AuditTrail {
 				public readonly ObjectAuditEventOptions $options=new ObjectAuditEventOptions(),
 			) {
 			}//end __construct()
+		}//end class
+	}//end if
+}
+
+namespace OCA\OpenRegister\Db {
+
+	if (class_exists(FlowRun::class, autoload: false) === false) {
+		/**
+		 * Stub FlowRun: one run of a flow.
+		 */
+		class FlowRun extends \OCP\AppFramework\Db\Entity implements \JsonSerializable {
+
+			/**
+			 * Stub uuid column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $uuid = null;
+
+			/**
+			 * The run as JSON.
+			 *
+			 * @return array<string, mixed>
+			 */
+			public function jsonSerialize(): array {
+				return ['uuid' => $this->uuid];
+			}//end jsonSerialize()
 		}//end class
 	}//end if
 }

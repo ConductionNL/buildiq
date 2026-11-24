@@ -296,6 +296,17 @@ export default [
 		ignores: ['**/*.sh', '**/*.bash'],
 	},
 
+	{
+		// The FEEL parser's golden fixture maps each expression to its expected
+		// syntax error, and the empty expression `""` is one of the cases under
+		// test. An empty key is the data here, not a mistake, so the rule is off
+		// for this one file only.
+		files: ['tests/Fixtures/feel-parser-golden.json'],
+		rules: {
+			'json/no-empty-keys': 'off',
+		},
+	},
+
 
 	{
 		// Test globals. Several apps keep their spec files INSIDE `src/`, which the

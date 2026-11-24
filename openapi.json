@@ -2,7 +2,7 @@
     "openapi": "3.0.3",
     "info": {
         "title": "Buildiq",
-        "version": "0.7.16-unstable.20261103190000",
+        "version": "0.7.22-unstable.20261121185036",
         "description": "The JSON API of Buildiq, the app builder for Nextcloud: applications and their versions, page layouts, forms and registration forms, rules and automations, the copilot, exports, the shop and the settings behind them. The records themselves are stored in OpenRegister and read and written through its API; this document covers the endpoints Buildiq adds on top.\n\nEvery path is served under `/api/v1/`, the version this document describes. The unversioned `/api/` paths keep working, are deprecated, and name their `/api/v1/` successor in a `Link` header next to a `Deprecation` header. Errors are RFC 9457 problem details (`application/problem+json`), and every response carries an `API-Version` header. Paths that implement an external standard keep the formats of that standard and are not described here.",
         "contact": {
             "name": "Conduction B.V.",
@@ -35,6 +35,10 @@
         }
     ],
     "tags": [
+        {
+            "name": "agent-plans",
+            "description": "Controller letting an owner or editor read, approve or reject an outside agent's builder plan."
+        },
         {
             "name": "agents",
             "description": "Controller serving the Agent run-history read surface."
@@ -142,9 +146,163 @@
         {
             "name": "application-import",
             "description": "Import an exported app archive as a new app."
+        },
+        {
+            "name": "application-tests",
+            "description": "An app's test suite: the Tests tab's record tests, owned rule sets and latest runs, a manual run, and record-test writes (lifecycle-release-test-gate)."
         }
     ],
     "paths": {
+        "/agent-plans/{id}": {
+            "get": {
+                "operationId": "agent-plan-show",
+                "summary": "GET /api/agent-plans/{id} — read an outside agent's builder plan",
+                "description": "GET /api/agent-plans/{id} — read the steps an outside MCP agent asked to run for one app, its status and who submitted and decided it. Only an owner or editor of the plan's app (an admin when the plan creates its app) may call it; admin power does not stand in for the role. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "agent-plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The agent plan uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/agent-plans/{id}/approve": {
+            "post": {
+                "operationId": "agent-plan-approve",
+                "summary": "POST /api/agent-plans/{id}/approve — approve a pending agent plan",
+                "description": "POST /api/agent-plans/{id}/approve — approve a pending plan. Each approved step may then be used once by a matching builder write over MCP, as the user who submitted the plan. Only an owner or editor of the plan's app (an admin when the plan creates its app) may call it; admin power does not stand in for the role. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "agent-plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The agent plan uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/agent-plans/{id}/reject": {
+            "post": {
+                "operationId": "agent-plan-reject",
+                "summary": "POST /api/agent-plans/{id}/reject — reject a pending agent plan",
+                "description": "POST /api/agent-plans/{id}/reject — reject a pending plan; none of its steps can run. Only an owner or editor of the plan's app (an admin when the plan creates its app) may call it; admin power does not stand in for the role. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "agent-plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The agent plan uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
         "/agents/{uuid}/runs": {
             "get": {
                 "operationId": "agents-runs",
@@ -1487,6 +1645,223 @@
                 }
             }
         },
+        "/applications/{appUuid}/flow-wrappers": {
+            "post": {
+                "operationId": "flow-bindings-sync",
+                "summary": "Wire the app's flow bindings: one wrapper flow per Run on entry",
+                "description": "Wire the app's flow bindings: one wrapper flow per Run on entry. Saves, publishes and binds a wrapper flow for each `runOn` entry of the flows bound in `Application.flows`, removes wrappers whose entry or binding is gone, and answers the new bindings. The bound flows themselves are never changed. Wired in `appinfo/routes.php` under name `flowBindings#sync`. `#[NoAdminRequired]`; only an owner of the Application may call it. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "applications"
+                ],
+                "parameters": [
+                    {
+                        "name": "appUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "Application UUID (path param).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "flows": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            },
+                                            "description": "The Application's bindings after the sync, wrappers included."
+                                        },
+                                        "created": {
+                                            "type": "integer",
+                                            "description": "Wrappers saved and bound."
+                                        },
+                                        "removed": {
+                                            "type": "integer",
+                                            "description": "Wrappers deleted and unbound."
+                                        },
+                                        "failed": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "reason": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "no_register",
+                                                            "save_failed",
+                                                            "not_published",
+                                                            "remove_failed"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "description": "Wrappers that could not be saved, published or removed."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/applications/{appUuid}/demo-records": {
+            "post": {
+                "operationId": "app-demo-records-fill",
+                "summary": "Fill the app with demo records generated from its own schemas",
+                "description": "Fill the app with demo records generated from its own schemas. Makes three records for each schema of the production register, each valid against its schema, and lists them on the Application as `demoRecords`, which marks them as demo data. A schema with a required field no value can be made for (a relation, a file, a pattern) gets none and is named in `skipped`. Wired in `appinfo/routes.php` under name `appDemoRecords#fill`. `#[NoAdminRequired]`; only an owner or editor of the Application may call it. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "applications"
+                ],
+                "parameters": [
+                    {
+                        "name": "appUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "Application UUID (path param).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "created": {
+                                            "type": "integer",
+                                            "description": "Demo records made."
+                                        },
+                                        "skipped": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "Schemas no valid demo record could be made for."
+                                        },
+                                        "failed": {
+                                            "type": "integer",
+                                            "description": "Demo records the register refused."
+                                        },
+                                        "total": {
+                                            "type": "integer",
+                                            "description": "Demo records the app lists now."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "app-demo-records-remove",
+                "summary": "Remove the app's demo records",
+                "description": "Remove the app's demo records. Deletes exactly the records listed in `Application.demoRecords`; records a maker created are kept. A record that cannot be deleted stays listed. Wired in `appinfo/routes.php` under name `appDemoRecords#remove`. `#[NoAdminRequired]`; only an owner or editor of the Application may call it. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "applications"
+                ],
+                "parameters": [
+                    {
+                        "name": "appUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "Application UUID (path param).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "removed": {
+                                            "type": "integer",
+                                            "description": "Demo records deleted."
+                                        },
+                                        "failed": {
+                                            "type": "integer",
+                                            "description": "Demo records that could not be deleted and stay listed."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
         "/applications/{appUuid}/versions/{versionUuid}/health": {
             "get": {
                 "operationId": "app-health-show",
@@ -2234,6 +2609,76 @@
                     },
                     "503": {
                         "$ref": "#/components/responses/Problem503"
+                    }
+                }
+            }
+        },
+        "/applications/{slug}/manifest-base": {
+            "get": {
+                "operationId": "manifest-base-base",
+                "summary": "The base a version extends, for the designer of an owner or editor",
+                "description": "The base manifest the app's production version, or the version named by `?_version=`, extends through its `baseRef`, and the delta paths that target nothing in it. The page designer edits the delta merged over this base and saves its difference from it (app-delta-override D6). Only an owner or editor of the app gets it; anyone else, an unknown app and an unknown version get 404.",
+                "tags": [
+                    "applications"
+                ],
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The app slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "_version",
+                        "in": "query",
+                        "required": false,
+                        "description": "The version slug; production when absent.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The base, or no base for a version without one.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "base": {
+                                            "type": "object",
+                                            "nullable": true,
+                                            "description": "The manifest the version extends, or null when it extends none."
+                                        },
+                                        "orphanedDeltaPaths": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "Delta paths of the version that target nothing in the base."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
                     }
                 }
             }
@@ -3907,6 +4352,48 @@
                 }
             }
         },
+        "/rules/{ruleSetSlug}/export": {
+            "get": {
+                "operationId": "rules-export",
+                "summary": "Export a rule set as one JSON document",
+                "description": "Export a rule set as one JSON document: its metadata, decision tables, condition-action rules and test cases, without execution logs. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "rules"
+                ],
+                "parameters": [
+                    {
+                        "name": "ruleSetSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The RuleSet slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
         "/rules/{ruleSetSlug}/schema": {
             "get": {
                 "operationId": "rules-schema",
@@ -4558,6 +5045,472 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/applications/{appSlug}/tests": {
+            "get": {
+                "operationId": "application-tests-index",
+                "summary": "The app's record tests, owned rule sets and latest run per version",
+                "description": "The Tests tab's content: the app's record tests, the rule sets it owns and the latest test run of each version. Needs an owner, editor or viewer role on the app.",
+                "tags": [
+                    "application-tests"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/applications/{appSlug}/versions/{versionSlug}/tests": {
+            "post": {
+                "operationId": "application-tests-run",
+                "summary": "Run a version's test suite now and keep the run",
+                "description": "Runs the version's test suite (structure, rule-set and record checks) and stores the run as an app-test-run with trigger manual. Answers the run, failures included. Needs an owner or editor role.",
+                "tags": [
+                    "application-tests"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "versionSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "ApplicationVersion slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/applications/{appSlug}/record-tests": {
+            "post": {
+                "operationId": "application-tests-create-record-test",
+                "summary": "Add a record test to the app",
+                "description": "Adds a record test: a sample record a schema of the app should accept or refuse. Needs an owner or editor role.",
+                "tags": [
+                    "application-tests"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "schema",
+                                    "record",
+                                    "expect"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "What the test checks."
+                                    },
+                                    "schema": {
+                                        "type": "string",
+                                        "description": "The schema slug the record is checked against."
+                                    },
+                                    "record": {
+                                        "type": "object",
+                                        "description": "The sample record; checked, never saved."
+                                    },
+                                    "expect": {
+                                        "type": "string",
+                                        "enum": [
+                                            "accept",
+                                            "refuse"
+                                        ]
+                                    },
+                                    "expectedFields": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "description": "For a refusal: the fields it should be refused on."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The record test was added.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/applications/{appSlug}/record-tests/{id}": {
+            "put": {
+                "operationId": "application-tests-update-record-test",
+                "summary": "Change a record test of the app",
+                "description": "Changes one of the app's record tests; a test of another app answers 404. Needs an owner or editor role.",
+                "tags": [
+                    "application-tests"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "Record test uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "schema",
+                                    "record",
+                                    "expect"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "What the test checks."
+                                    },
+                                    "schema": {
+                                        "type": "string",
+                                        "description": "The schema slug the record is checked against."
+                                    },
+                                    "record": {
+                                        "type": "object",
+                                        "description": "The sample record; checked, never saved."
+                                    },
+                                    "expect": {
+                                        "type": "string",
+                                        "enum": [
+                                            "accept",
+                                            "refuse"
+                                        ]
+                                    },
+                                    "expectedFields": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "description": "For a refusal: the fields it should be refused on."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "application-tests-destroy-record-test",
+                "summary": "Remove a record test of the app",
+                "description": "Removes one of the app's record tests; a test of another app answers 404. Needs an owner or editor role.",
+                "tags": [
+                    "application-tests"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "Record test uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "The record test was removed.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/automations/manual": {
+            "get": {
+                "operationId": "automations-manual",
+                "summary": "The enabled manual automations of an app for a record schema",
+                "description": "The enabled manual automations of an app (`app`) whose trigger runs on a schema (`schema`), as uuid and name, for a caller with a role on the app (logic-automation-actions-that-run D8). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "automations"
+                ],
+                "parameters": [
+                    {
+                        "name": "app",
+                        "in": "query",
+                        "required": true,
+                        "description": "The app slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "schema",
+                        "in": "query",
+                        "required": true,
+                        "description": "The record's schema slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/Problem503"
+                    }
+                }
+            }
+        },
+        "/automations/{uuid}/run": {
+            "post": {
+                "operationId": "automations-run",
+                "summary": "Run a manual automation on one record",
+                "description": "Starts the automation's flow on the record named by `object`, as the caller (logic-automation-actions-that-run D8). Refused for a caller without a role on the app or who cannot read the record (403) and for an automation that is not manual and enabled (409). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "automations"
+                ],
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Automation object uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "object": {
+                                        "type": "string",
+                                        "description": "The record's uuid."
+                                    }
+                                },
+                                "required": [
+                                    "object"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "The run started.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/Problem503"
                     }
                 }
             }

@@ -208,7 +208,8 @@ export const ROUTE_PATTERN =
 	/^\/$|^(\/[A-Za-z0-9_-]+|\/:[A-Za-z_][A-Za-z0-9_]*(\(.*\))?)+$/
 
 const DEFAULT_CONFIGS = {
-	index: { register: '', schema: '', columns: [], actions: [] },
+	// REQ-BQCV-004: a new list page offers Export until the maker switches it off.
+	index: { register: '', schema: '', columns: [], actions: [], allowExport: true },
 	detail: { register: '', schema: '' },
 	dashboard: { widgets: [], layout: [] },
 	logs: { register: '', schema: '', columns: [] },

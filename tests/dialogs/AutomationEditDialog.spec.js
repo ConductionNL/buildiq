@@ -211,10 +211,12 @@ describe('AutomationEditDialog', () => {
 			{ type: 'approval', assigneeGroup: 'managers', onApprove: null, onReject: [] },
 			{ type: 'generateDocument', templateId: 'tpl-1', output: ['attach'] },
 			{ type: 'generateDocument', templateId: 'tpl-2', output: 'attach' },
-			{ type: 'webhook', url: 'https://hooks.test/a', payloadTemplateText: '{"b":2}' },
-			{ type: 'webhook', url: 'https://hooks.test/b', payloadTemplateText: '{}' },
+			{ type: 'webhook', source: 'planning', path: '/intake', payloadTemplateText: '{"b":2}' },
+			{ type: 'webhook', source: ' planning ', path: '', payloadTemplateText: '{}' },
 			{ type: 'webhook', url: 'https://hooks.test/c', payloadTemplateText: '{oops' },
-			{ type: 'something-else', url: 'https://hooks.test/d' },
+			{ type: 'something-else', source: 'crm', path: '/d' },
+			{ type: 'rule-decision', ruleSetSlug: 'leges-categorie', outputField: 'categorie', inputMappingText: '{"oppervlakte":"area"}' },
+			{ type: 'rule-decision', ruleSetSlug: 'leges-categorie', outputField: 'categorie', inputMappingText: '' },
 		]
 
 		expect(wrapper.vm.buildActions()).toEqual([
@@ -230,14 +232,17 @@ describe('AutomationEditDialog', () => {
 			{ type: 'approval', assigneeGroup: 'managers', onApprove: [], onReject: [] },
 			{ type: 'generateDocument', templateId: 'tpl-1', output: ['attach'] },
 			{ type: 'generateDocument', templateId: 'tpl-2', output: [] },
-			{ type: 'webhook', url: 'https://hooks.test/a', payloadTemplate: { b: 2 } },
-			{ type: 'webhook', url: 'https://hooks.test/b' },
-			{ type: 'webhook', url: 'https://hooks.test/c' },
-			{ type: 'webhook', url: 'https://hooks.test/d' },
+			{ type: 'webhook', source: 'planning', path: '/intake', payloadTemplate: { b: 2 } },
+			{ type: 'webhook', source: 'planning', path: '/' },
+			{ type: 'webhook', source: '', path: '/' },
+			{ type: 'webhook', source: 'crm', path: '/d' },
+			{ type: 'rule-decision', ruleSetSlug: 'leges-categorie', outputField: 'categorie', inputMapping: { oppervlakte: 'area' } },
+			{ type: 'rule-decision', ruleSetSlug: 'leges-categorie', outputField: 'categorie' },
 		])
 		const keys = wrapper.vm.buildActions().map((a) => Object.keys(a))
 		expect(keys[3]).toEqual(['type', 'operation', 'schema'])
-		expect(keys[13]).toEqual(['type', 'url'])
+		expect(keys[13]).toEqual(['type', 'source', 'path'])
+		expect(keys[17]).toEqual(['type', 'ruleSetSlug', 'outputField'])
 	})
 
 	it('REQ-AUTD-002 scenario 3: composes a manual automation with a condition + object-op', async () => {
@@ -281,11 +286,11 @@ describe('AutomationEditDialog', () => {
 		wrapper.vm.name = 'Bad automation'
 		wrapper.vm.triggerType = 'object-created'
 		wrapper.vm.triggerSchema = 'permit'
-		wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'webhook' })]
+		wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'run-synchronization' })]
 		await wrapper.vm.$nextTick()
 
 		expect(wrapper.vm.valid).toBe(false)
-		expect(wrapper.vm.actionBlockedReason('webhook')).not.toBe('')
+		expect(wrapper.vm.actionBlockedReason('run-synchronization')).not.toBe('')
 
 		await wrapper.vm.onSave()
 		expect(
@@ -293,10 +298,11 @@ describe('AutomationEditDialog', () => {
 		).toBeUndefined()
 	})
 
-	it('buildiq#923: a rule set is not offered as a gate that stops the actions', async () => {
-		// A rule-set condition compiles to a call-rule-set action ahead of the
-		// automation's own actions, and the actions run whatever the rule set
-		// decides. The picker must not sell it as a condition.
+	it('REQ-BQAR-004: a rule-set condition is offered as the gate it now is', async () => {
+		// buildiq#923 described a rule set that ran ahead of the actions and
+		// stopped nothing. A condition is offered only on a manual trigger,
+		// which now compiles to a flow where the rule set's outcome gates the
+		// actions (logic-automation-actions-that-run D6), so the text says so.
 		const wrapper = factory({
 			...baseAutomation(),
 			condition: { type: 'rule-set', ruleSetSlug: 'always-no' },
@@ -306,12 +312,12 @@ describe('AutomationEditDialog', () => {
 		const option = wrapper.vm.conditionKindOptions.find(
 			(o) => o.value === 'rule-set',
 		)
-		expect(option.label).toBe('Also run a rule set')
+		expect(option.label).toBe('Rule set decides')
 		expect(wrapper.vm.conditionKind).toBe('rule-set')
 
 		const note = wrapper.find('[data-testid="condition-rule-set-note"]')
 		expect(note.exists()).toBe(true)
-		expect(note.text()).toContain('The actions always run.')
+		expect(note.text()).toContain('The actions run only when its outcome is true.')
 	})
 
 	it('REQ-AUTD-003: blocks a condition on a schedule trigger', async () => {
@@ -597,6 +603,254 @@ describe('AutomationEditDialog', () => {
 		expect(wrapper.vm.valid).toBe(false)
 	})
 
+	describe('logic-automation-actions-that-run: flow steps', () => {
+		it('REQ-BQAR-003: lists the integriq sources and stores a source and a path, never a URL', async () => {
+			globalThis.OC = { appswebroots: { integriq: '/apps/integriq' } }
+			axios.get.mockImplementation((url) => {
+				if (url.includes('/objects/integriq/source')) {
+					return Promise.resolve({
+						data: { results: [{ uuid: 'src-1', slug: 'planning', name: 'Planning', password: 'secret' }] },
+					})
+				}
+				return Promise.resolve({ data: { results: [] } })
+			})
+
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.sourceOptions).toEqual([{ id: 'planning', label: 'Planning' }])
+			expect(wrapper.vm.sourcePickerAvailable).toBe(true)
+
+			wrapper.vm.name = 'Post intake'
+			wrapper.vm.triggerType = 'object-created'
+			wrapper.vm.triggerSchema = 'aanvraag'
+			wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'webhook' })]
+			wrapper.vm.updateAction(0, 'source', 'planning')
+			wrapper.vm.updateAction(0, 'path', '/intake')
+			await wrapper.vm.$nextTick()
+
+			expect(wrapper.vm.valid).toBe(true)
+			expect(wrapper.vm.buildActions()).toEqual([{ type: 'webhook', source: 'planning', path: '/intake' }])
+			delete globalThis.OC
+		})
+
+		it('REQ-BQAR-003: a webhook without a source is refused on save, a stored bare URL included', async () => {
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			wrapper.vm.name = 'Old webhook'
+			wrapper.vm.triggerType = 'manual'
+			wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'webhook', url: 'https://hooks.test/a' })]
+			await wrapper.vm.$nextTick()
+
+			expect(wrapper.find('[data-testid="webhook-bare-url"]').exists()).toBe(true)
+			expect(wrapper.vm.valid).toBe(false)
+			expect(wrapper.vm.validationMessage).toBe('Pick a source for this webhook.')
+
+			await wrapper.vm.onSave()
+			expect(axios.post.mock.calls.find(([url]) => url.includes('/automations'))).toBeUndefined()
+		})
+
+		it('REQ-BQAR-003: the webhook kind is disabled without integriq', async () => {
+			axios.get.mockImplementation((url) => {
+				if (String(url).includes('/apps/integriq/api')) {
+					const error = new Error('not found')
+					error.response = { status: 404 }
+					return Promise.reject(error)
+				}
+				return Promise.resolve({ data: { results: [] } })
+			})
+
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.integriqAvailable).toBe(false)
+			expect(wrapper.vm.actionBlockedReason('webhook')).toBe('Integriq is not installed, so a webhook step has no source to call.')
+			expect(axios.get.mock.calls.some(([url]) => String(url).includes('/source'))).toBe(false)
+		})
+
+		it('REQ-BQAR-005: offers only decision tables and composes "Decide with a rule set"', async () => {
+			axios.get.mockImplementation((url) => {
+				if (url.includes('/objects/buildiq/rule-set')) {
+					return Promise.resolve({
+						data: {
+							results: [
+								{ slug: 'leges-categorie', name: 'Leges categorie', ruleType: 'decision-table' },
+								{ slug: 'aut-notify', name: 'Notify', ruleType: 'condition-action' },
+							],
+						},
+					})
+				}
+				return Promise.resolve({ data: { results: [] } })
+			})
+
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.ruleSetOptions).toEqual([{ id: 'leges-categorie', label: 'Leges categorie' }])
+			expect(wrapper.vm.actionTypeOptions.map((o) => o.value)).toContain('rule-decision')
+
+			wrapper.vm.name = 'Decide the fee'
+			wrapper.vm.triggerType = 'object-created'
+			wrapper.vm.triggerSchema = 'aanvraag'
+			wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'rule-decision' })]
+			wrapper.vm.updateAction(0, 'ruleSetSlug', 'leges-categorie')
+			await wrapper.vm.$nextTick()
+
+			expect(wrapper.vm.valid).toBe(false)
+			expect(wrapper.vm.validationMessage).toBe('Pick a rule set and the field its decision is written to.')
+
+			wrapper.vm.updateAction(0, 'outputField', 'categorie')
+			wrapper.vm.updateAction(0, 'inputMappingText', '{"oppervlakte":"oppervlakte","type":"soort"}')
+			await wrapper.vm.$nextTick()
+
+			expect(wrapper.vm.valid).toBe(true)
+			expect(wrapper.vm.buildActions()).toEqual([{
+				type: 'rule-decision',
+				ruleSetSlug: 'leges-categorie',
+				outputField: 'categorie',
+				inputMapping: { oppervlakte: 'oppervlakte', type: 'soort' },
+			}])
+		})
+
+		it('REQ-BQAR-005: hydrates a stored rule decision into the editor', async () => {
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			const row = wrapper.vm.actionToEditor({ type: 'rule-decision', ruleSetSlug: 'leges-categorie', outputField: 'categorie', inputMapping: { type: 'soort' } })
+			expect(row).toMatchObject({ ruleSetSlug: 'leges-categorie', outputField: 'categorie' })
+			expect(JSON.parse(row.inputMappingText)).toEqual({ type: 'soort' })
+			expect(wrapper.vm.ruleSetOption('leges-categorie')).toEqual({ id: 'leges-categorie', label: 'leges-categorie' })
+		})
+	})
+
+	describe('logic-email-and-webhook-triggers: inbound triggers', () => {
+		function withMailboxes(rows) {
+			axios.get.mockImplementation((url, config) => {
+				if (url.includes('/objects/integriq/source') && config && config.params && config.params.type === 'mailbox') {
+					return Promise.resolve({ data: { results: rows } })
+				}
+				return Promise.resolve({ data: { results: [] } })
+			})
+		}
+
+		it('REQ-BQTR-001: offers both triggers and lists the mailboxes the maker can read', async () => {
+			globalThis.OC = { appswebroots: { integriq: '/apps/integriq' } }
+			withMailboxes([
+				{ uuid: 'mb-1', name: 'meldingen@gemeente.nl', type: 'mailbox' },
+				{ uuid: 'api-1', name: 'Planning API', type: 'api' },
+			])
+
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			const offered = wrapper.vm.triggerOptions.filter((o) => ['email-received', 'webhook-called'].includes(o.value))
+			expect(offered.map((o) => [o.value, o.label, o.disabled])).toEqual([
+				['email-received', 'Email received', false],
+				['webhook-called', 'Webhook called', false],
+			])
+			expect(wrapper.vm.mailboxOptions).toEqual([{ id: 'mb-1', label: 'meldingen@gemeente.nl' }])
+
+			wrapper.vm.triggerType = 'email-received'
+			await wrapper.vm.$nextTick()
+			expect(wrapper.find('[data-testid="mailbox-select"]').exists()).toBe(true)
+			expect(wrapper.find('[data-testid="inbound-input-fields"]').exists()).toBe(true)
+			expect(wrapper.vm.inboundFields).toEqual(['from', 'to', 'subject', 'receivedAt', 'bodyText', 'attachments'])
+			delete globalThis.OC
+		})
+
+		it('REQ-BQTR-002: stores the mailbox and its filters, and needs a mailbox to save', async () => {
+			withMailboxes([{ uuid: 'mb-1', name: 'meldingen@gemeente.nl', type: 'mailbox' }])
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			wrapper.vm.name = 'Meldingen per mail'
+			wrapper.vm.triggerType = 'email-received'
+			wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'send-notification' })]
+			wrapper.vm.actions[0].subjectEn = 'New report'
+			wrapper.vm.actions[0].subjectNl = 'Nieuwe melding'
+			await wrapper.vm.$nextTick()
+			expect(wrapper.vm.valid).toBe(false)
+
+			wrapper.vm.triggerSource = 'mb-1'
+			wrapper.vm.triggerFrom = ' burger@example.nl '
+			wrapper.vm.triggerSubjectContains = 'stoeptegel'
+			await wrapper.vm.$nextTick()
+
+			expect(wrapper.vm.valid).toBe(true)
+			expect(wrapper.vm.buildTrigger()).toEqual({
+				type: 'email-received',
+				source: 'mb-1',
+				from: 'burger@example.nl',
+				subjectContains: 'stoeptegel',
+			})
+		})
+
+		it('REQ-BQTR-003: shows the address and stores only the sign-in kind, never a secret', async () => {
+			const wrapper = factory({ ...baseAutomation(), provenance: { inbound: { consumer: 'c-1' } } })
+			await openDialog(wrapper)
+
+			wrapper.vm.name = 'Opdracht gereed'
+			wrapper.vm.triggerType = 'webhook-called'
+			wrapper.vm.triggerBodyExample = '{"opdracht": "42"}'
+			await wrapper.vm.$nextTick()
+
+			expect(wrapper.vm.webhookUrl).toBe(window.location.origin + '/apps/integriq/api/endpoint/buildiq/permit-tracker/opdracht-gereed')
+			expect(wrapper.find('[data-testid="webhook-address"]').text()).toContain('/api/endpoint/buildiq/permit-tracker/opdracht-gereed')
+			expect(wrapper.find('[data-testid="webhook-show-key"]').attributes('href')).toBe('/apps/integriq/consumers/c-1')
+			expect(wrapper.vm.inboundFields).toEqual(['opdracht'])
+			expect(wrapper.vm.buildTrigger()).toEqual({ type: 'webhook-called', authorization: 'api-key', bodyExample: '{"opdracht": "42"}' })
+
+			wrapper.vm.triggerBodyExample = '[1, 2]'
+			wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'send-notification' })]
+			wrapper.vm.actions[0].subjectEn = 'Done'
+			wrapper.vm.actions[0].subjectNl = 'Gereed'
+			await wrapper.vm.$nextTick()
+			expect(wrapper.vm.bodyExampleValid).toBe(false)
+			expect(wrapper.vm.valid).toBe(false)
+		})
+
+		it('REQ-BQTR-001: only flow steps are allowed on an inbound trigger', async () => {
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			wrapper.vm.name = 'Bad shape'
+			wrapper.vm.triggerType = 'webhook-called'
+			wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'approval' })]
+			await wrapper.vm.$nextTick()
+
+			expect(wrapper.vm.valid).toBe(false)
+			expect(wrapper.vm.actionBlockedReason('run-synchronization')).not.toBe('')
+		})
+
+		it('D6: both triggers are disabled with the reason without integriq', async () => {
+			axios.get.mockImplementation((url) => {
+				if (String(url).includes('/apps/integriq/api')) {
+					const error = new Error('not found')
+					error.response = { status: 404 }
+					return Promise.reject(error)
+				}
+				return Promise.resolve({ data: { results: [] } })
+			})
+
+			const wrapper = factory({ ...baseAutomation(), trigger: { type: 'email-received', source: 'mb-1' } })
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.integriqAvailable).toBe(false)
+			expect(wrapper.vm.triggerOptions.filter((o) => o.disabled).map((o) => o.value)).toEqual(['email-received', 'webhook-called'])
+			expect(wrapper.find('[data-testid="inbound-trigger-blocked"]').text()).toBe('Email and webhook triggers need the Integriq app.')
+			expect(wrapper.vm.valid).toBe(false)
+		})
+
+		it('D6: a mail trigger without a readable mailbox says so', async () => {
+			withMailboxes([])
+			const wrapper = factory({ ...baseAutomation(), trigger: { type: 'email-received' } })
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.inboundReason).toBe('There is no mailbox in Integriq that you can read.')
+		})
+	})
+
 	describe('schedule cadence', () => {
 		it('offers the six cadences with their labels', async () => {
 			const wrapper = factory()
@@ -704,5 +958,272 @@ describe('AutomationEditDialog Ask AI (ai-copilot-documents-and-code-help REQ-BQ
 		expect(wrapper.vm.actions[1].payloadTemplateText).toBe('{\n    "id": "{{ object.uuid }}"\n}')
 		expect(axios.post).not.toHaveBeenCalled()
 		expect(axios.put).not.toHaveBeenCalled()
+	})
+
+	describe('ai-llm-steps-and-computed-fields: the Ask AI step', () => {
+		/**
+		 * Answer the node catalogue, the hermiq agents and the melding schema.
+		 *
+		 * @param {boolean} withNode Whether the catalogue lists Hermiq's node.
+		 * @return {void}
+		 */
+		function serveAi(withNode) {
+			axios.get.mockImplementation((url) => {
+				const path = String(url)
+				if (path.includes('/flow/node-catalog')) {
+					const results = [{ id: 'openregister.object-write' }]
+					if (withNode) {
+						results.push({ id: 'hermiq.agent-step' })
+					}
+					return Promise.resolve({ data: { results } })
+				}
+				if (path.includes('/agent')) {
+					return Promise.resolve({
+						data: {
+							results: [
+								{ uuid: 'ag-1', name: 'Classifier', tools: [] },
+								{ uuid: 'ag-2', name: 'Actor', tools: ['openregister.objects.*'] },
+								{ uuid: 'ag-3', name: 'Retired', active: false },
+							],
+						},
+					})
+				}
+				if (path.includes('/schemas/melding')) {
+					return Promise.resolve({
+						data: {
+							properties: {
+								omschrijving: { type: 'string', title: 'Omschrijving' },
+								categorie: { type: 'string', enum: ['afval', 'verlichting', 'overig'] },
+							},
+						},
+					})
+				}
+				return Promise.resolve({ data: { results: [] } })
+			})
+		}
+
+		/**
+		 * The REQ-BQLS-001 classify automation, in the editor.
+		 *
+		 * @param {object} wrapper The mounted dialog.
+		 * @return {Promise<void>}
+		 */
+		async function composeClassify(wrapper) {
+			wrapper.vm.name = 'Categorise reports'
+			wrapper.vm.triggerType = 'object-created'
+			wrapper.vm.triggerSchema = 'melding'
+			wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'ai-step' })]
+			wrapper.vm.updateAction(0, 'preset', 'classify')
+			wrapper.vm.updateAction(0, 'agent', 'ag-1')
+			wrapper.vm.updateAction(0, 'sourceFields', ['omschrijving'])
+			wrapper.vm.updateAction(0, 'targetField', 'categorie')
+			wrapper.vm.updateAction(0, 'labels', ['afval', 'verlichting', 'overig'])
+			await flush()
+			await flush()
+		}
+
+		it('REQ-BQLS-001: a maker classifies incoming requests and sees which fields are sent', async () => {
+			serveAi(true)
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.actionTypeOption('ai-step')).toEqual({ value: 'ai-step', label: 'Ask AI', disabled: false })
+			expect(wrapper.vm.aiAgentOptions).toEqual([{ id: 'ag-1', label: 'Classifier' }])
+
+			await composeClassify(wrapper)
+
+			expect(wrapper.vm.aiFieldOptions).toEqual([
+				{ value: 'omschrijving', label: 'Omschrijving' },
+				{ value: 'categorie', label: 'categorie' },
+			])
+			expect(wrapper.find('[data-testid="ai-step-form"]').exists()).toBe(true)
+			expect(wrapper.find('[data-testid="ai-step-summary"]').text()).toBe('Sends omschrijving to the AI')
+			expect(wrapper.vm.valid).toBe(true)
+			expect(wrapper.vm.buildActions()).toEqual([
+				{
+					type: 'ai-step',
+					preset: 'classify',
+					agent: 'ag-1',
+					sourceFields: ['omschrijving'],
+					targetField: 'categorie',
+					labels: ['afval', 'verlichting', 'overig'],
+				},
+			])
+		})
+
+		it('REQ-BQLS-001: an incomplete step is refused on save with what it still needs', async () => {
+			serveAi(true)
+			const wrapper = factory()
+			await openDialog(wrapper)
+			await composeClassify(wrapper)
+
+			wrapper.vm.updateAction(0, 'targetField', 'omschrijving')
+			await wrapper.vm.$nextTick()
+			expect(wrapper.vm.valid).toBe(false)
+			expect(wrapper.vm.validationMessage).toBe('The AI step reads omschrijving, so it cannot also write its answer there.')
+
+			wrapper.vm.updateAction(0, 'preset', 'translate')
+			wrapper.vm.updateAction(0, 'targetField', 'categorie')
+			await wrapper.vm.$nextTick()
+			expect(wrapper.vm.validationMessage).toBe('Pick the language the AI step translates into.')
+
+			await wrapper.vm.onSave()
+			expect(axios.post.mock.calls.find(([url]) => url.includes('/automations'))).toBeUndefined()
+		})
+
+		it('REQ-BQLS-003: the compiler refusal is shown, not a generic error', async () => {
+			serveAi(true)
+			const error = new Error('unprocessable')
+			error.response = { status: 422, data: { error: 'unsupported_automation_combination', detail: 'Make categorie a choice list of your labels first.' } }
+			axios.post.mockImplementation((url) => (String(url).endsWith('/compile') ? Promise.reject(error) : Promise.resolve({ data: { id: 'aut-1' } })))
+			const wrapper = factory()
+			await openDialog(wrapper)
+			await composeClassify(wrapper)
+
+			await wrapper.vm.onSave()
+
+			expect(wrapper.vm.errorMessage).toBe('Make categorie a choice list of your labels first.')
+		})
+
+		it('REQ-BQLS-005: without Hermiq the kind is disabled with its reason and cannot be saved', async () => {
+			serveAi(false)
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			const option = wrapper.vm.actionTypeOptions.find((o) => o.value === 'ai-step')
+			expect(option.disabled).toBe(true)
+			expect(option.label).toContain('Install Hermiq to use AI steps.')
+			expect(wrapper.vm.aiAgentOptions).toEqual([])
+
+			await composeClassify(wrapper)
+
+			expect(wrapper.find('[data-testid="action-blocked"]').text()).toBe('Install Hermiq to use AI steps.')
+			expect(wrapper.vm.valid).toBe(false)
+		})
+	})
+
+	describe('logic-script-step: the Run a script step', () => {
+		/**
+		 * Answer the node catalogue, with or without OpenRegister's code step.
+		 *
+		 * @param {boolean} withRunner Whether the catalogue lists `openregister.code`.
+		 * @return {void}
+		 */
+		function serveCatalogue(withRunner) {
+			axios.get.mockImplementation((url) => {
+				if (String(url).includes('/flow/node-catalog')) {
+					const results = [{ id: 'openregister.object-write' }]
+					if (withRunner) {
+						results.push({ id: 'openregister.code' })
+					}
+					return Promise.resolve({ data: { results } })
+				}
+				return Promise.resolve({ data: { results: [] } })
+			})
+		}
+
+		/**
+		 * The REQ-BQSS-001 name-joining script on a manual trigger.
+		 *
+		 * @param {object} wrapper The mounted dialog.
+		 * @param {string} code The script.
+		 * @return {Promise<void>}
+		 */
+		async function composeScript(wrapper, code) {
+			wrapper.vm.name = 'Join names'
+			wrapper.vm.triggerType = 'manual'
+			wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'script-step' })]
+			wrapper.vm.updateAction(0, 'code', code)
+			wrapper.vm.updateAction(0, 'note', 'Joins voornaam and achternaam into naam')
+			await flush()
+		}
+
+		const JOIN = 'return items.map((item) => ({ ...item, json: { ...item.json, naam: item.json.voornaam + " " + item.json.achternaam } }))'
+
+		it('REQ-BQSS-001: an owner adds a script step and it is stored with its code, time limit and note', async () => {
+			serveCatalogue(true)
+			const wrapper = factory()
+			wrapper.vm.scriptSupport.allowed = true
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.actionTypeOption('script-step')).toEqual({ value: 'script-step', label: 'Run a script', disabled: false })
+
+			await composeScript(wrapper, JOIN)
+
+			expect(wrapper.find('[data-testid="script-step-form"]').exists()).toBe(true)
+			expect(wrapper.vm.valid).toBe(true)
+			expect(wrapper.vm.buildActions()).toEqual([
+				{ type: 'script-step', code: JOIN, timeoutSeconds: 10, note: 'Joins voornaam and achternaam into naam' },
+			])
+		})
+
+		it('REQ-BQSS-001: without the code runner the kind is disabled and says so', async () => {
+			serveCatalogue(false)
+			const wrapper = factory()
+			wrapper.vm.scriptSupport.allowed = true
+			await openDialog(wrapper)
+
+			const option = wrapper.vm.actionTypeOptions.find((o) => o.value === 'script-step')
+			expect(option.disabled).toBe(true)
+			expect(option.label).toContain('The code runner is not installed, so scripts cannot run.')
+
+			await composeScript(wrapper, JOIN)
+
+			expect(wrapper.find('[data-testid="action-blocked"]').text()).toBe('The code runner is not installed, so scripts cannot run.')
+			expect(wrapper.vm.valid).toBe(false)
+		})
+
+		it('REQ-BQSS-001: while scripts are off for the instance the kind says that first', async () => {
+			serveCatalogue(true)
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.scriptSupport.allowed).toBe(false)
+			const option = wrapper.vm.actionTypeOptions.find((o) => o.value === 'script-step')
+			expect(option.disabled).toBe(true)
+			expect(option.label).toContain('Script steps are turned off for this instance.')
+		})
+
+		it('REQ-BQSS-002: an editor cannot add a script step, reads a stored one, and can still save other changes', async () => {
+			serveCatalogue(true)
+			const stored = { ...baseAutomation(), triggerType: 'manual', trigger: { type: 'manual' }, actions: [{ type: 'script-step', code: JOIN, timeoutSeconds: 5 }] }
+			const wrapper = mount(AutomationEditDialog, {
+				propsData: { open: false, automation: stored, register: '', scriptsReadOnly: true },
+				stubs,
+			})
+			wrapper.vm.scriptSupport.allowed = true
+			await openDialog(wrapper)
+
+			const option = wrapper.vm.actionTypeOptions.find((o) => o.value === 'script-step')
+			expect(option.disabled).toBe(true)
+			expect(option.label).toContain('Only app owners can change a script step.')
+
+			wrapper.vm.name = 'Join names'
+			wrapper.vm.triggerType = 'manual'
+			wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'script-step', code: JOIN, timeoutSeconds: 5 })]
+			await flush()
+
+			expect(wrapper.findComponent({ name: 'ScriptStepForm' }).props('readOnly')).toBe(true)
+			expect(wrapper.find('[data-testid="action-blocked"]').exists()).toBe(false)
+			expect(wrapper.vm.valid).toBe(true)
+		})
+
+		it('REQ-BQSS-001: a script step without code, or with a time limit out of range, is not saved', async () => {
+			serveCatalogue(true)
+			const wrapper = factory()
+			wrapper.vm.scriptSupport.allowed = true
+			await openDialog(wrapper)
+			await composeScript(wrapper, '   ')
+
+			expect(wrapper.vm.validationMessage).toBe('Write the script before saving.')
+
+			wrapper.vm.updateAction(0, 'code', JOIN)
+			wrapper.vm.updateAction(0, 'timeoutSeconds', 45)
+			await wrapper.vm.$nextTick()
+			expect(wrapper.vm.validationMessage).toBe('A script may run between 1 and 30 seconds.')
+
+			await wrapper.vm.onSave()
+			expect(axios.post.mock.calls.find(([url]) => url.includes('/automations'))).toBeUndefined()
+		})
 	})
 })

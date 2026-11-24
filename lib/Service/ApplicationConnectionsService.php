@@ -23,7 +23,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
+ * @spec openspec/changes/archive/2026-11-20-built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Throwable;
 /**
  * Lists an app's sources and integrations with their health.
  *
- * @spec openspec/changes/built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
+ * @spec openspec/changes/archive/2026-11-20-built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
  */
 class ApplicationConnectionsService {
 
@@ -81,7 +81,7 @@ class ApplicationConnectionsService {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) FleetAppId is a pure lookup.
 	 *
-	 * @spec openspec/changes/built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
+	 * @spec openspec/changes/archive/2026-11-20-built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
 	 */
 	public function list(string $appSlug, array $manifest): array {
 		$paths = self::endpointPaths(manifest: $manifest);
@@ -113,7 +113,7 @@ class ApplicationConnectionsService {
 	 *
 	 * @return list<string> Distinct paths without leading or trailing slashes, sorted.
 	 *
-	 * @spec openspec/changes/built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
+	 * @spec openspec/changes/archive/2026-11-20-built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
 	 */
 	public static function endpointPaths(array $manifest): array {
 		$paths = [];

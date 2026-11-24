@@ -21,7 +21,10 @@
         "version": "0.9.0",
         "schemas": [
           "app-health-sample",
+          "app-record-test",
+          "app-test-run",
           "buildAgent",
+          "agent-plan",
           "agent-run",
           "built-app",
           "application-template",
@@ -41,6 +44,26 @@
     },
     "schemas": {
       "Application": {
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Find the virtual apps built with Buildiq in this organisation. Filter by status (draft, published, archived), by appType or by slug. Returns app metadata only: name, description, status and which version is in production.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": [
+                "status",
+                "appType",
+                "slug"
+              ]
+            },
+            "get": {
+              "description": "Read one Buildiq virtual app by id: its name, description, type, status, production version and linked GitHub repository.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-schema-org": "schema:SoftwareApplication",
         "x-openregister-demo-data": "buildiq's own register of the apps it has built. A generated app has no version with pages behind it, so it lists on the dashboard and never opens.",
         "slug": "built-app",
@@ -287,6 +310,26 @@
         }
       },
       "ApplicationTemplate": {
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Find the starter templates a new Buildiq app can be created from. Filter by category, useCase or slug.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": [
+                "category",
+                "useCase",
+                "slug"
+              ]
+            },
+            "get": {
+              "description": "Read one Buildiq app template by id: its title, description, use case, category and the manifest it starts from.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-schema-org": "schema:CreativeWork",
         "x-openregister-demo-data": "The store's starter packs. A generated template stands beside the real built-in ones and clones into an app with no pages.",
         "slug": "application-template",
@@ -489,6 +532,26 @@
         }
       },
       "ApplicationVersion": {
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Find the versions of Buildiq apps. Filter by application (the app uuid), status (for example draft or production) or semver, to see what is live and what is still a draft.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": [
+                "application",
+                "status",
+                "semver"
+              ]
+            },
+            "get": {
+              "description": "Read one version of a Buildiq app by id, including its manifest: the pages, widgets and menu that version renders.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-schema-org": "schema:SoftwareApplication",
         "x-openregister-demo-data": "Written by publish and promote. A generated version points at no application and carries a manifest with no pages, so the app it belongs to renders empty.",
         "x-openregister-notifications": {
@@ -535,7 +598,7 @@
         },
         "slug": "applicationVersion",
         "icon": "SourceBranch",
-        "version": "0.4.2",
+        "version": "0.4.3",
         "title": "Application Version",
         "description": "A deployable runtime for an Application (ADR-002). A VIRTUAL app's version carries a full `manifest` blob and owns its own per-version OpenRegister register so production and test data are physically isolated. A HYBRID app's version (unify-apps-with-app-type) instead carries a delta-only customization: `manifest` is an empty object `{}`, `baseRef.kind` is `fleet-app`, and `manifestDelta` holds the keyed structural diff served raw via GET /api/app-overrides/{appId} and merged client-side over the installed fleet app's bundled manifest (OpenBuild holds no fleet base). The admin-defined linear promotion chain reads via the optional `promotesTo` relation. Lifecycle (draft → published → archived) is per-version; the `draft → published` transition upserts the BuiltAppRoute slug index.",
         "authorization": {
@@ -576,10 +639,17 @@
             "maxLength": 48,
             "description": "URL-safe kebab-case slug for this version (e.g. `production`, `staging`, `development`)."
           },
+          "deviceFeatures": {
+            "title": "Device features",
+            "type": "array",
+            "items": {"type": "string", "enum": ["camera", "geolocation", "microphone"]},
+            "default": [],
+            "description": "Browser features the built app's pages use, derived from the manifest on every save (pages-qr-and-barcodes REQ-BQQR-004): `camera` when an index page scans or a form has a scan field, `microphone` for an audio form field, `geolocation` for a location field or a map showing the user. The pages allow these for the page itself only; never set by hand."
+          },
           "manifest": {
             "title": "App Manifest",
             "type": "object",
-            "description": "JSON manifest blob conforming to @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json (v1.4.0+). Per ADR-024, this is consumed by useAppManifest + CnAppRoot at runtime. Per ADR-002 the manifest now lives on ApplicationVersion (was on Application). For a HYBRID app's version this is an empty object `{}`: the customization lives in `manifestDelta` and is merged client-side over the installed fleet app's bundled manifest (unify-apps-with-app-type).",
+            "description": "JSON manifest blob conforming to @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json (v1.4.0+). Per ADR-024, this is consumed by useAppManifest + CnAppRoot at runtime. Per ADR-002 the manifest now lives on ApplicationVersion (was on Application). For a HYBRID app's version this is an empty object `{}`: the customization lives in `manifestDelta` and is merged client-side over the installed fleet app's bundled manifest (unify-apps-with-app-type). Backwards compatibility (app-delta-override): a version with this blob and no `baseRef` is a legacy or standalone app, and the blob IS its manifest, served unchanged.",
             "additionalProperties": true
           },
           "manifestDelta": {
@@ -596,17 +666,23 @@
               "kind": {
                 "title": "Base Kind",
                 "type": "string",
-                "description": "What kind of base the delta extends: `fleet-app` for a hybrid app's version."
+                "description": "What kind of base the delta extends: `template` (an ApplicationTemplate's manifest), `buildiq-app` (another Buildiq app's production manifest) or `fleet-app` (an installed Nextcloud app's bundled manifest; a hybrid app's version), or `application-version` (the admin version a user-layer delta sits on, layered-app-deltas).",
+                "enum": [
+                  "template",
+                  "buildiq-app",
+                  "fleet-app",
+                  "application-version"
+                ]
               },
               "id": {
                 "title": "Base Identifier",
                 "type": "string",
-                "description": "Identifier of the base: the installed Nextcloud app id for a hybrid app's version."
+                "description": "Identifier of the base: the template slug, the Buildiq app slug, the installed Nextcloud app id for a hybrid app's version, or the admin version's uuid for a user-layer delta."
               },
               "manifestVersion": {
                 "title": "Base Manifest Version",
                 "type": "string",
-                "description": "Optional version of the bundled base manifest the delta was authored against."
+                "description": "Optional pin: the version of the base manifest the delta was authored against. Absent follows the base's current manifest."
               }
             },
             "additionalProperties": false
@@ -748,6 +824,26 @@
         }
       },
       "exportJob": {
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Find export jobs of Buildiq apps (zip download or push to GitHub). Filter by status, target or applicationUuid, to see whether an export finished and, if it failed, why (errorMessage).",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": [
+                "status",
+                "target",
+                "applicationUuid"
+              ]
+            },
+            "get": {
+              "description": "Read one export job by id: its target, status, error message, log and the download or GitHub URL it produced. githubCredentialId is a reference to a broker credential, never a token.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-schema-org": "schema:Action",
         "x-openregister-demo-data": "Written by the export pipeline. A generated row reads as a finished export nobody ran.",
         "x-openregister-notifications": {

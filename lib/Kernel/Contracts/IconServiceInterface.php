@@ -43,8 +43,11 @@ interface IconServiceInterface {
 	 * Light chain:  icon.ref → /img/app.svg
 	 * Dark  chain:  iconDark.ref → icon.ref → /img/app-dark.svg → /img/app.svg
 	 *
-	 * @param string $slug The Application slug.
-	 * @param bool $dark True to apply the dark-icon fallback chain.
+	 * @param string        $slug     The Application slug.
+	 * @param bool          $dark     True to apply the dark-icon fallback chain.
+	 * @param \Closure|null $mayServe Given the Application, whether the caller may see it; an app
+	 *                                the caller may not see is served as an unknown one is,
+	 *                                with the built-in icon (operate-organisation-scoped-apps REQ-BQOS-002).
 	 *
 	 * @return array{stream: resource|null, mimeType: string} The stream and MIME type.
 	 *                                                        stream is null only when
@@ -53,7 +56,8 @@ interface IconServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
-	public function getIconStream(string $slug, bool $dark): array;
+	public function getIconStream(string $slug, bool $dark, ?\Closure $mayServe = null): array;
 }//end interface

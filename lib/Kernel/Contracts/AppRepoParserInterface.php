@@ -49,7 +49,7 @@ interface AppRepoParserInterface {
 	 *
 	 * @throws AppRepoParseException On any conforming-repo violation (all-or-nothing).
 	 *
-	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+	 * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
 	 */
 	public function parse(array $files, ?array $repo = null): array;
 }//end interface
