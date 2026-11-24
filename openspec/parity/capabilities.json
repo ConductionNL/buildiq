@@ -463,7 +463,7 @@
 			"area": "data",
 			"overlay": null,
 			"specs": [
-				"data-index-grid-and-saved-views",
+				"index-page-grid-and-views",
 				"page-editor-coverage",
 				"data-restore-record-version"
 			]
@@ -2038,23 +2038,24 @@
 			"area": "data",
 			"name": "Edit records inline in a spreadsheet-like grid.",
 			"source": "competitor",
-			"buildiq": "no",
+			"buildiq": "yes",
 			"nocobase": "yes",
 			"budibase": "yes",
 			"appsmith": "yes",
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "searched: grep -rln 'DataGrid|data-grid|AgGrid|NcTable|spreadsheet|grid-edit|CnDataMatrix' src/ -> no hits in buildiq (only FilesPageEditor.vue and ImportDataWizard.vue for unrelated terms), and grep 'Matrix|Grid|Table' in src/registry.js and src/runtimeRegistry.js has no component registration. nextcloud-vue v2.55.1 DOES ship a spreadsheet-like component (src/components/CnDataMatrix/CnDataMatrix.vue, click-to-edit cells with commitEdit/startEdit) but buildiq never imports or registers CnDataMatrix anywhere, and no buildiq page-editor type (src/components/page-editor/*) offers a grid view",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views: the page designer offers a \"Grid\" page (gridPageShape() in src/components/page-editor/PageListEditor.vue, GridPageEditor.vue for register, schema and editable columns), stored as a custom page with component record-grid; src/components/runtime/RecordGridPage.vue renders it over CnDataMatrix, saves one property per cell edit, restores the old value on a refused save and takes the object lock before a row's first edit; registered in src/runtimeRegistry.js. Vitest: tests/components/runtime/RecordGridPage.spec.js, tests/components/page-editor/GridPageEditor.spec.js, tests/components/page-editor/PageListEditor.spec.js. Playwright tests/e2e/record-grid.spec.ts is written and runs in the nightly. Before: searched: grep -rln 'DataGrid|data-grid|AgGrid|NcTable|spreadsheet|grid-edit|CnDataMatrix' src/ -> no hits in buildiq (only FilesPageEditor.vue and ImportDataWizard.vue for unrelated terms), and grep 'Matrix|Grid|Table' in src/registry.js and src/runtimeRegistry.js has no component registration. nextcloud-vue v2.55.1 DOES ship a spreadsheet-like component (src/components/CnDataMatrix/CnDataMatrix.vue, click-to-edit cells with commitEdit/startEdit) but buildiq never imports or registers CnDataMatrix anywhere, and no buildiq page-editor type (src/components/page-editor/*) offers a grid view",
 				"reachedOn": "",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/data-index-grid-and-saved-views (OpenSpec pass 2026-09-27).",
+				"note": "Specified in openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views (OpenSpec pass 2026-09-27).",
 				"change": "data-index-grid-and-saved-views",
 				"requirement": [
-					"openspec/changes/data-index-grid-and-saved-views/specs/index-page-grid-and-views :: A maker can build a grid page (REQ-BQIX-001)",
-					"openspec/changes/data-index-grid-and-saved-views/specs/index-page-grid-and-views :: A cell edit is saved to its record, or refused visibly (REQ-BQIX-002)"
-				]
+					"openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/specs/index-page-grid-and-views :: A maker can build a grid page (REQ-BQIX-001)",
+					"openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/specs/index-page-grid-and-views :: A cell edit is saved to its record, or refused visibly (REQ-BQIX-002)"
+				],
+				"spec": "openspec/specs/index-page-grid-and-views"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2398,20 +2399,21 @@
 			"area": "data",
 			"name": "Save a filtered and sorted view of records and share it with others.",
 			"source": "competitor",
-			"buildiq": "no",
+			"buildiq": "yes",
 			"nocobase": "no",
 			"budibase": "yes",
 			"appsmith": "no",
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "specified",
-				"evidence": "nextcloud-vue v2.55.1 CnIndexPage.vue ships CnSavedViewsControl (apply/save/delete OpenRegister saved-search views, lines ~104-118) gated by the allowSavedViews prop, default false, opt-in per page (CnIndexPage.vue:1650-1657: 'Defaults to false - an app must explicitly enable it per page'). grep -rn allowSavedViews src/ in buildiq returns no hits, and IndexPageEditor.vue exposes no checkbox for it, so no page a maker builds through buildiq can turn this on",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views: IndexPageEditor.vue offers the allowSavedViews switch and SavedViewsBuilder.vue lists views for everyone, stored in the page's config.defaultSavedViews, which nextcloud-vue lists read-only for every user of the page. Vitest: tests/components/page-editor/IndexPageEditor.savedViews.spec.js, tests/components/page-editor/SavedViewsBuilder.spec.js. Playwright tests/e2e/index-saved-views.spec.ts is written and runs in the nightly. Before: nextcloud-vue v2.55.1 CnIndexPage.vue ships CnSavedViewsControl (apply/save/delete OpenRegister saved-search views, lines ~104-118) gated by the allowSavedViews prop, default false, opt-in per page (CnIndexPage.vue:1650-1657: 'Defaults to false - an app must explicitly enable it per page'). grep -rn allowSavedViews src/ in buildiq returns no hits, and IndexPageEditor.vue exposes no checkbox for it, so no page a maker builds through buildiq can turn this on",
 				"reachedOn": "",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/data-index-grid-and-saved-views (OpenSpec pass 2026-09-27).",
+				"note": "Specified in openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views (OpenSpec pass 2026-09-27).",
 				"change": "data-index-grid-and-saved-views",
-				"requirement": "openspec/changes/data-index-grid-and-saved-views/specs/index-page-grid-and-views :: A maker switches on saved views and defines views for everyone (REQ-BQIX-003)"
+				"requirement": "openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/specs/index-page-grid-and-views :: A maker switches on saved views and defines views for everyone (REQ-BQIX-003)",
+				"spec": "openspec/specs/index-page-grid-and-views"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",

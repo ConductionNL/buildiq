@@ -18,7 +18,7 @@
  * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-004
  * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-4.3
  * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-004
- * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t03
+ * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t03
  */
 
 // Library page — the "Waiting to sync" page an app with offline forms gets
@@ -111,7 +111,7 @@ function actions(component) {
  * @param {string} note - ADR-049 `_note` justifying a custom page when no
  *   built-in page type expresses the surface.
  * @return {object} - the registry entry.
- * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t03
+ * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t03
  */
 function page(component, note) {
 	return { kind: 'page', component, _note: note }
