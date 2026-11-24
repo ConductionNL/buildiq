@@ -17,7 +17,7 @@
  * Runs as the suite's admin session (globalSetup storage state); the base URL
  * comes from tests/e2e/support/baseUrl.ts, never a hard-coded host.
  *
- * @spec openspec/changes/operate-report-download/specs/buildiq-reports/spec.md#requirement-a-report-can-be-downloaded-as-csv-req-bqrep-004
+ * @spec openspec/changes/archive/2026-11-24-operate-report-download/specs/buildiq-reports/spec.md#requirement-a-report-can-be-downloaded-as-csv-req-bqrep-004
  */
 
 import type { Page } from '@playwright/test'

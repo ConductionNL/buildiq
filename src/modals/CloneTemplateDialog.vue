@@ -421,7 +421,7 @@ export default {
 		 * @param {object} payload The new app `{name, slug}`.
 		 * @return {Promise<void>} Resolves once the request settles.
 		 * @spec openspec/specs/openbuild-remote-template-store/spec.md
-		 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-a-maker-installs-a-catalogue-template-req-bqrs-004
+		 * @spec openspec/changes/archive/2026-11-24-reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-a-maker-installs-a-catalogue-template-req-bqrs-004
 		 */
 		async installRemote(payload) {
 			try {

@@ -12,11 +12,9 @@ a template from it.
 
 The "Templates" view of the app store SHALL render a section "Shared catalogue"
 between "Built-in templates" and "Apps on GitHub" when `GET
-/api/store/templates` returns an outcome other than `not_configured`. The
-section SHALL carry the catalogue's host name as its lead line and SHALL render
-one card per returned template with its title, category, use case, description,
-version and a primary "Install" button. When the outcome is `not_configured`,
-the section SHALL NOT render and the page SHALL issue no further store request.
+/api/store/templates` returns an outcome other than `not_configured`, with the
+catalogue's host name as its lead line and one card per returned template, and
+SHALL NOT render when the outcome is `not_configured`.
 
 @e2e exclude no live remote catalogue in CI; covered by Vitest on SharedCatalogueSection with a mocked store response
 
@@ -29,11 +27,19 @@ the section SHALL NOT render and the page SHALL issue no further store request.
 - **AND** its lead line reads "From store.example.nl"
 - **AND** it shows both templates, each with an "Install" button
 
+#### Scenario: A catalogue card shows what a maker needs to choose
+
+- **GIVEN** the catalogue returns a template with a title, category, use case, description and version
+- **WHEN** a maker opens the app store
+- **THEN** its card shows the title, the category, the use case, the description and the version
+- **AND** a primary "Install" button
+
 #### Scenario: No catalogue configured
 
 - **GIVEN** no catalogue is configured
 - **WHEN** a maker opens the app store
 - **THEN** no "Shared catalogue" section renders
+- **AND** the page sends no further store request
 - **AND** the built-in templates and GitHub apps show as before
 
 ### Requirement: The shared catalogue can be searched and filtered (REQ-BQRS-002)

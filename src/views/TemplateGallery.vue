@@ -492,7 +492,7 @@ export default {
 		 * Nextcloud admin. The setup itself is admin-only on the server.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-admins-without-a-catalogue-are-pointed-to-the-setup-req-bqrs-005
+		 * @spec openspec/changes/archive/2026-11-24-reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-admins-without-a-catalogue-are-pointed-to-the-setup-req-bqrs-005
 		 */
 		showCatalogueSetupNote() {
 			if (this.catalogueConfigured !== false) {
@@ -660,7 +660,7 @@ export default {
 		 * `?setup=<stepId>` (nextcloud-vue setup-wizard-opens-at-a-step).
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-admins-without-a-catalogue-are-pointed-to-the-setup-req-bqrs-005
+		 * @spec openspec/changes/archive/2026-11-24-reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-admins-without-a-catalogue-are-pointed-to-the-setup-req-bqrs-005
 		 */
 		openCatalogueSetup() {
 			const query = { ...(this.$route?.query || {}), setup: 'store' }
@@ -891,7 +891,7 @@ export default {
 		 *
 		 * @param {object} card The catalogue card.
 		 * @return {void}
-		 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-a-maker-installs-a-catalogue-template-req-bqrs-004
+		 * @spec openspec/changes/archive/2026-11-24-reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-a-maker-installs-a-catalogue-template-req-bqrs-004
 		 */
 		openStoreInstall(card) {
 			this.cloneMode = 'store'
@@ -908,7 +908,7 @@ export default {
 		 * A template that left the catalogue: read the section again.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-a-maker-installs-a-catalogue-template-req-bqrs-004
+		 * @spec openspec/changes/archive/2026-11-24-reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-a-maker-installs-a-catalogue-template-req-bqrs-004
 		 */
 		onStaleStoreTemplate() {
 			this.$refs.sharedCatalogue?.reload()

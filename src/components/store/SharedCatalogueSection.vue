@@ -137,7 +137,7 @@ export default {
 		 * Whether the catalogue was configured but could not be read.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-store-errors-stay-inside-the-section-req-bqrs-003
+		 * @spec openspec/changes/archive/2026-11-24-reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-store-errors-stay-inside-the-section-req-bqrs-003
 		 */
 		unreachable() {
 			return UNREACHABLE_OUTCOMES.includes(this.outcome)
@@ -147,7 +147,7 @@ export default {
 		 * The cards after the view's category filter.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-the-shared-catalogue-can-be-searched-and-filtered-req-bqrs-002
+		 * @spec openspec/changes/archive/2026-11-24-reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-the-shared-catalogue-can-be-searched-and-filtered-req-bqrs-002
 		 */
 		visibleCards() {
 			if (!this.category) {
@@ -160,7 +160,7 @@ export default {
 	/**
 	 * Ask the catalogue once on mount.
 	 *
-	 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-the-app-store-shows-the-shared-catalogue-as-a-section-req-bqrs-001
+	 * @spec openspec/changes/archive/2026-11-24-reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-the-app-store-shows-the-shared-catalogue-as-a-section-req-bqrs-001
 	 */
 	mounted() {
 		this.load()
@@ -175,7 +175,7 @@ export default {
 		 * Read the catalogue, with the current search term.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-the-app-store-shows-the-shared-catalogue-as-a-section-req-bqrs-001
+		 * @spec openspec/changes/archive/2026-11-24-reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-the-app-store-shows-the-shared-catalogue-as-a-section-req-bqrs-001
 		 */
 		async load() {
 			this.loading = true
@@ -204,7 +204,7 @@ export default {
 		 *
 		 * @param {string} value The search term.
 		 * @return {void}
-		 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-the-shared-catalogue-can-be-searched-and-filtered-req-bqrs-002
+		 * @spec openspec/changes/archive/2026-11-24-reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-the-shared-catalogue-can-be-searched-and-filtered-req-bqrs-002
 		 */
 		onQuery(value) {
 			this.query = String(value || '')
@@ -216,7 +216,7 @@ export default {
 		 * Read the catalogue again, for a template that left it.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-a-maker-installs-a-catalogue-template-req-bqrs-004
+		 * @spec openspec/changes/archive/2026-11-24-reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-a-maker-installs-a-catalogue-template-req-bqrs-004
 		 */
 		reload() {
 			return this.load()
