@@ -2504,6 +2504,7 @@ OC.L10N.register(
         "Date axis start field": "Date axis start field",
         "Table": "Table",
         "The board needs a status field.": "The board needs a status field.",
+        "This card cannot move to that column.": "This card cannot move to that column.",
         "The calendar needs a date field.": "The calendar needs a date field.",
         "The date axis needs a start date field.": "The date axis needs a start date field.",
         "The date axis needs an end date field.": "The date axis needs an end date field.",

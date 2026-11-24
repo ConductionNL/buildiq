@@ -75,7 +75,13 @@ describe('IndexViewModesBuilder', () => {
 		const status = select(wrapper, 'board.statusField')
 		expect(status.props('options')).toEqual(['status'])
 		status.vm.$emit('update:modelValue', 'status')
-		expect(lastConfig(wrapper)).toEqual({ viewModes: ['table', 'board'], board: { statusField: 'status' } })
+		expect(lastConfig(wrapper)).toEqual({ viewModes: ['table', 'board'], board: { statusField: 'status', moveHandler: 'board-move' } })
+	})
+
+	it('names the board move handler only while a status field is set', async () => {
+		const wrapper = mountBuilder({ viewModes: ['table', 'board'], board: { statusField: 'status', swimlaneField: 'behandelaar', moveHandler: 'board-move' } })
+		select(wrapper, 'board.statusField').vm.$emit('update:modelValue', null)
+		expect(lastConfig(wrapper)).toEqual({ viewModes: ['table', 'board'], board: { swimlaneField: 'behandelaar' } })
 	})
 
 	it('date axis needs both dates, and clearing the last field drops the block', async () => {

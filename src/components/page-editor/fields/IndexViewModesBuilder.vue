@@ -44,6 +44,7 @@
 import { NcSelect } from '@nextcloud/vue'
 import InlineFieldMark from './InlineFieldMark.vue'
 import { resolveValidationMessage } from '../../../services/manifestValidation/connectorErrorMessages.js'
+import { BOARD_MOVE_HANDLER } from '../../../services/boardMove.js'
 import {
 	propertiesOfKind,
 	validateIndexViewConfig,
@@ -77,7 +78,7 @@ export default {
 		 * The view modes with their labels, in editor order.
 		 *
 		 * @return {Array<{id: string, label: string}>}
-		 * @spec openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-calendar-view-req-pec-008
+		 * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-calendar-view-req-pec-008
 		 */
 		modes() {
 			const labels = {
@@ -94,7 +95,7 @@ export default {
 		 * The modes the page offers now.
 		 *
 		 * @return {string[]}
-		 * @spec openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-calendar-view-req-pec-008
+		 * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-calendar-view-req-pec-008
 		 */
 		offered() {
 			return viewModesOf(this.config)
@@ -104,7 +105,7 @@ export default {
 		 * The offered modes that need fields.
 		 *
 		 * @return {string[]}
-		 * @spec openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-board-or-a-date-axis-view-req-pec-010
+		 * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-board-or-a-date-axis-view-req-pec-010
 		 */
 		fieldedModes() {
 			return this.offered.filter((mode) => VIEW_FIELDS[mode])
@@ -114,7 +115,7 @@ export default {
 		 * The findings for these settings, checked against the schema when it is loaded.
 		 *
 		 * @return {string[]}
-		 * @spec openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-board-or-a-date-axis-view-req-pec-010
+		 * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-board-or-a-date-axis-view-req-pec-010
 		 */
 		findings() {
 			const properties = Object.keys(this.schemaProperties || {}).length > 0 ? this.schemaProperties : null
@@ -128,7 +129,7 @@ export default {
 		 *
 		 * @param {string} mode - calendar, board or dateAxis.
 		 * @return {Array<{key: string, label: string, kind: string, required: boolean}>}
-		 * @spec openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-board-or-a-date-axis-view-req-pec-010
+		 * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-board-or-a-date-axis-view-req-pec-010
 		 */
 		fieldsOf(mode) {
 			const all = {
@@ -160,7 +161,7 @@ export default {
 		 *
 		 * @param {string} kind - date, status, text or any.
 		 * @return {string[]}
-		 * @spec openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-board-or-a-date-axis-view-req-pec-010
+		 * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-board-or-a-date-axis-view-req-pec-010
 		 */
 		optionsFor(kind) {
 			return propertiesOfKind(this.schemaProperties, kind)
@@ -172,7 +173,7 @@ export default {
 		 * @param {string} mode - the view mode.
 		 * @param {string} key - the field key.
 		 * @return {string|null}
-		 * @spec openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-board-or-a-date-axis-view-req-pec-010
+		 * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-board-or-a-date-axis-view-req-pec-010
 		 */
 		valueOf(mode, key) {
 			const block = this.config && this.config[mode]
@@ -185,7 +186,7 @@ export default {
 		 * @param {string} mode - the view mode.
 		 * @param {string} key - the field key.
 		 * @return {{hasError: boolean, message: string}}
-		 * @spec openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-calendar-view-req-pec-008
+		 * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-calendar-view-req-pec-008
 		 */
 		findingFor(mode, key) {
 			const prefix = `/${mode}/${key}: `
@@ -201,7 +202,7 @@ export default {
 		 *
 		 * @param {string} mode - the view mode.
 		 * @param {boolean} on - whether the page offers it.
-		 * @spec openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-calendar-view-req-pec-008
+		 * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-calendar-view-req-pec-008
 		 */
 		toggle(mode, on) {
 			if (mode === 'table') {
@@ -229,7 +230,7 @@ export default {
 		 * @param {string} mode - the view mode.
 		 * @param {string} key - the field key.
 		 * @param {string|null} value - the property name, or null to clear it.
-		 * @spec openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-board-or-a-date-axis-view-req-pec-010
+		 * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-board-or-a-date-axis-view-req-pec-010
 		 */
 		setField(mode, key, value) {
 			const next = { ...this.config }
@@ -238,6 +239,15 @@ export default {
 				block[key] = value
 			} else {
 				delete block[key]
+			}
+			if (mode === 'board') {
+				// A built app has no host transition of its own: name buildiq's
+				// handler so a dropped card is saved instead of the board being read-only.
+				if (block.statusField) {
+					block.moveHandler = BOARD_MOVE_HANDLER
+				} else {
+					delete block.moveHandler
+				}
 			}
 			if (Object.keys(block).length === 0) {
 				delete next[mode]

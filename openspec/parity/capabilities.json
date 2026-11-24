@@ -2849,24 +2849,24 @@
 			"area": "pages",
 			"name": "Show records on a kanban board and move them between columns.",
 			"source": "competitor",
-			"buildiq": "partial",
+			"buildiq": "yes",
 			"nocobase": "yes",
 			"budibase": "no",
 			"appsmith": "partial",
 			"mendix": "unknown",
 			"power-apps": "partial",
 			"built": {
-				"state": "specified",
-				"evidence": "Not built: buildiq's index page editor offers no 'board' view mode, so a maker cannot switch it on; the renderer half is in nextcloud-vue 2.56.0 (#1214). Plan: pages-index-calendar-and-manual-order T07 (REQ-PEC-010). Was: nextcloud-vue #1214 628f1d57d (in 2.56.0; buildiq locks 2.57.1): CnIndexPage board and dateAxis view modes (src/components/CnIndexPage/CnIndexPage.vue:538, :555 at nextcloud-vue development f2bc02c3). buildiq's index page editor does not offer the mode yet",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order: IndexViewModesBuilder.vue offers Board with the status and swimlane fields and names buildiq's board-move handler (src/services/boardMove.js, registered in src/runtimeRegistry.js), which saves a dropped card through OpenRegister; nextcloud-vue CnIndexPage draws the board (CnBoardView). Vitest: tests/services/boardMove.spec.js, tests/components/page-editor/IndexViewModesBuilder.spec.js. Playwright tests/e2e/index-views.spec.ts is written and runs in the nightly. Before: Not built: buildiq's index page editor offers no 'board' view mode, so a maker cannot switch it on; the renderer half is in nextcloud-vue 2.56.0 (#1214). Plan: pages-index-calendar-and-manual-order T07 (REQ-PEC-010). Was: nextcloud-vue #1214 628f1d57d (in 2.56.0; buildiq locks 2.57.1): CnIndexPage board and dateAxis view modes (src/components/CnIndexPage/CnIndexPage.vue:538, :555 at nextcloud-vue development f2bc02c3). buildiq's index page editor does not offer the mode yet",
 				"owner": "ConductionNL/nextcloud-vue",
 				"note": "Library half shipped in nextcloud-vue 2.56.0 (#1214); rated partial until buildiq's index page editor offers the mode, which is buildiq's half. Before: grep -ri 'kanban' across buildiq src/ and lib/: no hits. nextcloud-vue v2.55.1 src/components/CnPageRenderer/pageTypes.js defaultPageTypes has no 'kanban' entry (full list: index, detail, dashboard, logs, settings, chat, files, form, map, roadmap, reports, store, search, wiki, flow/flows/flow-detail) (OpenSpec pass 2026-09-27, corrected 2026-09-28).",
 				"change": "nextcloud-vue/status-board-and-date-axis",
 				"requirement": [
 					"nextcloud-vue:openspec/changes/status-board-and-date-axis/specs/index-page :: The index page offers a board bound to the status field",
 					"nextcloud-vue:openspec/changes/status-board-and-date-axis/specs/index-page :: Moving a card runs a transition and a refusal is shown",
-					"openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage :: An index page can offer a board or a date axis view (REQ-PEC-010)"
+					"openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage :: An index page can offer a board or a date axis view (REQ-PEC-010)"
 				],
-				"plan": "openspec/changes/pages-index-calendar-and-manual-order"
+				"plan": "openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2890,19 +2890,19 @@
 			"area": "pages",
 			"name": "Show records on a calendar by their date field.",
 			"source": "competitor",
-			"buildiq": "no",
+			"buildiq": "yes",
 			"nocobase": "yes",
 			"budibase": "yes",
 			"appsmith": "partial",
 			"mendix": "yes",
 			"power-apps": "partial",
 			"built": {
-				"state": "specified",
-				"evidence": "grep -ri 'calendar' across buildiq src/ and lib/: only hit is src/components/runtime/ProcestCaseStatusPanel.vue (unrelated, a case/status panel, not a records-by-date calendar view). No 'calendar' entry in nextcloud-vue v2.55.1 pageTypes.js (note: CnCalendarWidget exists as a dashboard widget per docs/components/_generated/CnCalendarWidget.md, but that is a small widget, not a page type showing records by date field).",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order: IndexViewModesBuilder.vue offers Calendar with the date, end date and title fields (config.viewModes, config.calendar), and src/services/manifestValidation/indexViews.js lists a missing or unknown date field; nextcloud-vue CnIndexPage draws the calendar. Vitest: tests/components/page-editor/IndexViewModesBuilder.spec.js, tests/services/indexViewsValidation.spec.js. Playwright tests/e2e/index-views.spec.ts is written and runs in the nightly. Before: grep -ri 'calendar' across buildiq src/ and lib/: only hit is src/components/runtime/ProcestCaseStatusPanel.vue (unrelated, a case/status panel, not a records-by-date calendar view). No 'calendar' entry in nextcloud-vue v2.55.1 pageTypes.js (note: CnCalendarWidget exists as a dashboard widget per docs/components/_generated/CnCalendarWidget.md, but that is a small widget, not a page type showing records by date field).",
 				"owner": "ConductionNL/nextcloud-vue",
 				"note": "Renderer half built: nextcloud-vue index-calendar-view-mode, CnIndexPage.vue:1080-1084 (development e7b3a09b6, only the e2e run open). buildiq half: IndexPageEditor.vue writes no viewModes; planned in pages-index-calendar-and-manual-order.",
 				"change": "pages-index-calendar-and-manual-order",
-				"requirement": "openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage :: An index page can offer a calendar view (REQ-PEC-008)"
+				"requirement": "openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage :: An index page can offer a calendar view (REQ-PEC-008)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2926,23 +2926,23 @@
 			"area": "pages",
 			"name": "Show records on a Gantt or timeline view.",
 			"source": "competitor",
-			"buildiq": "partial",
+			"buildiq": "yes",
 			"nocobase": "yes",
 			"budibase": "no",
 			"appsmith": "no",
 			"mendix": "unknown",
 			"power-apps": "unknown",
 			"built": {
-				"state": "specified",
-				"evidence": "Not built: buildiq's index page editor offers no 'dateAxis' view mode, so a maker cannot switch it on; the renderer half is in nextcloud-vue 2.56.0 (#1214). Plan: pages-index-calendar-and-manual-order T07 (REQ-PEC-010). Was: nextcloud-vue #1214 628f1d57d (in 2.56.0; buildiq locks 2.57.1): CnIndexPage board and dateAxis view modes (src/components/CnIndexPage/CnIndexPage.vue:538, :555 at nextcloud-vue development f2bc02c3). buildiq's index page editor does not offer the mode yet",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order: IndexViewModesBuilder.vue offers Date axis with start, end and lane fields (config.dateAxis), with findings in src/services/manifestValidation/indexViews.js; nextcloud-vue CnIndexPage draws it (CnDateAxisView). Vitest: tests/components/page-editor/IndexViewModesBuilder.spec.js, tests/services/indexViewsValidation.spec.js. Before: Not built: buildiq's index page editor offers no 'dateAxis' view mode, so a maker cannot switch it on; the renderer half is in nextcloud-vue 2.56.0 (#1214). Plan: pages-index-calendar-and-manual-order T07 (REQ-PEC-010). Was: nextcloud-vue #1214 628f1d57d (in 2.56.0; buildiq locks 2.57.1): CnIndexPage board and dateAxis view modes (src/components/CnIndexPage/CnIndexPage.vue:538, :555 at nextcloud-vue development f2bc02c3). buildiq's index page editor does not offer the mode yet",
 				"owner": "ConductionNL/nextcloud-vue",
 				"note": "Library half shipped in nextcloud-vue 2.56.0 (#1214); rated partial until buildiq's index page editor offers the mode, which is buildiq's half. Before: grep -ri 'gantt|timeline' across buildiq src/ and lib/: no hits at all. No 'gantt'/'timeline' entry in nextcloud-vue v2.55.1 pageTypes.js (OpenSpec pass 2026-09-27, corrected 2026-09-28).",
 				"change": "nextcloud-vue/status-board-and-date-axis",
 				"requirement": [
 					"nextcloud-vue:openspec/changes/status-board-and-date-axis/specs/index-page :: The date axis shows overlapping work and hides nothing",
-					"openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage :: An index page can offer a board or a date axis view (REQ-PEC-010)"
+					"openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage :: An index page can offer a board or a date axis view (REQ-PEC-010)"
 				],
-				"plan": "openspec/changes/pages-index-calendar-and-manual-order"
+				"plan": "openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -10585,20 +10585,20 @@
 			"source": "competitor",
 			"origin": "featureRequest",
 			"originUrl": "https://forum.nocobase.com/t/9180",
-			"buildiq": "no",
+			"buildiq": "yes",
 			"nocobase": "yes",
 			"budibase": "no",
 			"appsmith": "no",
 			"mendix": "unknown",
 			"power-apps": "unknown",
 			"built": {
-				"state": "specified",
-				"evidence": "Built index pages render nextcloud-vue v2.55.1 CnIndexPage and CnDataTable, which sort by column (CnDataTable.md:6 sortable) but have no drag handle to reorder rows (grep -iE 'draggable|reorder' in CnIndexPage and CnDataTable: no hits)",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order: IndexPageEditor.vue's \"Users can order rows by dragging\" switch writes manualOrder: true on the page; nextcloud-vue CnIndexPage keeps each user's order. Vitest in tests/components/page-editor. Playwright tests/e2e/index-views.spec.ts is written and runs in the nightly. Before: Built index pages render nextcloud-vue v2.55.1 CnIndexPage and CnDataTable, which sort by column (CnDataTable.md:6 sortable) but have no drag handle to reorder rows (grep -iE 'draggable|reorder' in CnIndexPage and CnDataTable: no hits)",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/nextcloud-vue",
 				"note": "Renderer half built: nextcloud-vue case-page-and-list-as-a-place, page.manualOrder read in CnPageRenderer.vue:1385 (default off). buildiq half planned in pages-index-calendar-and-manual-order.",
 				"change": "pages-index-calendar-and-manual-order",
-				"requirement": "openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage :: An index page can let users order rows by dragging (REQ-PEC-009)"
+				"requirement": "openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage :: An index page can let users order rows by dragging (REQ-PEC-009)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",

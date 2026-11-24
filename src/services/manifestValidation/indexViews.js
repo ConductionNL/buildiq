@@ -12,7 +12,7 @@
  * only; the page editor passes the schema's properties and also gets the
  * findings for fields the schema lacks.
  *
- * @spec openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md
+ * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md
  */
 
 import { translate as t } from '@nextcloud/l10n'
@@ -40,7 +40,7 @@ export const VIEW_FIELDS = {
  *
  * @param {object} config - the index page's config.
  * @return {string[]} The modes.
- * @spec openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-calendar-view-req-pec-008
+ * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-calendar-view-req-pec-008
  */
 export function viewModesOf(config) {
 	const declared = Array.isArray(config && config.viewModes) ? config.viewModes : []
@@ -54,7 +54,7 @@ export function viewModesOf(config) {
  * @param {string} pointer - JSON pointer of the config, e.g. `/pages/0/config`.
  * @param {object|null} [properties] - the schema's properties; null skips the "schema lacks it" check.
  * @return {string[]} `<pointer>: <code>` findings.
- * @spec openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-board-or-a-date-axis-view-req-pec-010
+ * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-board-or-a-date-axis-view-req-pec-010
  */
 export function validateIndexViewConfig(config, pointer, properties = null) {
 	const errors = []
@@ -87,7 +87,7 @@ export function validateIndexViewConfig(config, pointer, properties = null) {
  *
  * @param {object} manifest - the in-flight manifest.
  * @return {string[]} `<pointer>: <code>` findings.
- * @spec openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-calendar-view-req-pec-008
+ * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-calendar-view-req-pec-008
  */
 export function validateIndexViews(manifest) {
 	const pages = manifest && Array.isArray(manifest.pages) ? manifest.pages : []
@@ -103,7 +103,7 @@ export function validateIndexViews(manifest) {
  * One sentence per finding code.
  *
  * @return {Record<string, string>} Code to message.
- * @spec openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-calendar-view-req-pec-008
+ * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-calendar-view-req-pec-008
  */
 export function indexViewMessages() {
 	return {
@@ -131,7 +131,7 @@ function isDate(property) {
  * @param {object} properties - the schema's properties.
  * @param {'date'|'status'|'text'|'any'} kind - which properties suit the field.
  * @return {string[]} Property names, in schema order.
- * @spec openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-board-or-a-date-axis-view-req-pec-010
+ * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-board-or-a-date-axis-view-req-pec-010
  */
 export function propertiesOfKind(properties, kind) {
 	return Object.entries(properties || {})

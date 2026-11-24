@@ -2136,6 +2136,7 @@
         "Date axis start field": "Beginveld van de tijdlijn",
         "Table": "Tabel",
         "The board needs a status field.": "Het bord heeft een statusveld nodig.",
+        "This card cannot move to that column.": "Deze kaart kan niet naar die kolom.",
         "The calendar needs a date field.": "De kalender heeft een datumveld nodig.",
         "The date axis needs a start date field.": "De tijdlijn heeft een begindatumveld nodig.",
         "The date axis needs an end date field.": "De tijdlijn heeft een einddatumveld nodig.",

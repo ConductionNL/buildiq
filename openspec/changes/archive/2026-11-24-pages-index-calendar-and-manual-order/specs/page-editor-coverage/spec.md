@@ -31,7 +31,7 @@ The index page editor SHALL have a switch that writes `manualOrder: true` on the
 
 ### Requirement: An index page can offer a board or a date axis view (REQ-PEC-010)
 
-The index page editor SHALL offer `board` and `dateAxis` next to the other view modes in `config.viewModes`. With board chosen, the maker SHALL pick the status field (`config.board.statusField`, required) and may pick a swimlane field (`swimlaneField`). With date axis chosen, the maker SHALL pick a start and an end date field (`config.dateAxis.startField` and `endField`, both required) and may pick a lane field (`laneField`). A missing required field, or a field the schema lacks, SHALL be a designer finding. The board and the date axis themselves are drawn by the nextcloud-vue index page.
+The index page editor SHALL offer `board` and `dateAxis` next to the other view modes in `config.viewModes`. With board chosen, the maker SHALL pick the status field (`config.board.statusField`, required) and may pick a swimlane field (`swimlaneField`). With date axis chosen, the maker SHALL pick a start and an end date field (`config.dateAxis.startField` and `endField`, both required) and may pick a lane field (`laneField`). A missing required field, or a field the schema lacks, SHALL be a designer finding. The board and the date axis themselves are drawn by the nextcloud-vue index page. On a board, a dropped card SHALL save the column's value into the record's status field through OpenRegister, so the schema's guards decide, and a refusal SHALL return the card with OpenRegister's reason.
 
 **ID:** REQ-PEC-010
 
