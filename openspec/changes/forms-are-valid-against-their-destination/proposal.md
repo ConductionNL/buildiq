@@ -5,7 +5,7 @@ depends_on: []
 
 # Proposal: forms-are-valid-against-their-destination
 
-buildiq's half of decision 179 (Ruben, 10 October 2026): "when building a form we should know the destination object and the form should at least be valid against that." Cross-app change: `hydra/openspec/changes/form-submits-into-its-destination-object`, architecture in hydra ADR-117. Needs `openregister/form-destination-validator`.
+buildiq's half of decision 179 (Ruben, 10 October 2026): "when building a form we should know the destination object and the form should at least be valid against that." Cross-app change: `hydra/openspec/changes/form-submits-into-its-destination-object`, architecture in hydra ADR-117. Needs `openregister/form-destination-validator`. Scope of the `form-destination-authoring` delta: buildiq form pages, registration forms, external forms and the journey designer.
 
 ## Why
 

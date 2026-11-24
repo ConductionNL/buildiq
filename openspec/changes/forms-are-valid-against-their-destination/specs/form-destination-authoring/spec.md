@@ -1,13 +1,8 @@
-# form-destination-authoring Delta: forms-are-valid-against-their-destination
-
-**Status**: draft
-**Scope**: buildiq form pages, registration forms, external forms, journey designer. Implements hydra `form-submits-into-its-destination-object`.
-
 ## ADDED Requirements
 
 ### Requirement: Every buildiq form MUST be valid against its destination before it is published
 
-Saving a form page, a registration form, an external form or a journey SHALL call OpenRegister's form destination validator with the form's fields, presets and fixed values. The designer SHALL show each finding on its field. A form with findings SHALL NOT be published: publishing a registration form, publishing the app that carries a form page, and provisioning an external form each SHALL require zero findings. There SHALL be no report-only mode for publishing (decision 181). A form that names no destination, or whose destination cannot be read, or an OpenRegister without the validator, SHALL count as a finding (`destination-missing`, `destination-unchecked`), because a check that did not run is not a pass.
+Saving a form page, a registration form, an external form or a journey SHALL call OpenRegister's form destination validator with the form's fields, presets and fixed values, and the designer SHALL show each finding on its field. Publishing a registration form, publishing the app that carries a form page, and provisioning an external form SHALL each require zero findings, with no report-only mode (decision 181). A check that did not run SHALL count as a finding.
 
 #### Scenario: A registration form missing a required property cannot be published
 - **GIVEN** a registration form into dossiq `case` that sets no `caseType`
@@ -19,6 +14,12 @@ Saving a form page, a registration form, an external form or a journey SHALL cal
 - **WHEN** it is saved
 - **THEN** the validator reports no finding on `caseType`
 - @e2e exclude needs a destination with a free-text required property and a preset; covered by PHPUnit against the real validator (`RegistrationFormTargetWarningsTest::testTheSpecScenariosAgainstTheRealValidator`)
+
+#### Scenario: A check that did not run is a finding
+- **GIVEN** a form that names no destination, or whose destination cannot be read, or an OpenRegister without the form destination validator
+- **WHEN** it is saved
+- **THEN** the answer carries `destination-missing` or `destination-unchecked`
+- **AND** publishing it is refused
 
 #### Scenario: Every finding is shown when the publish is refused
 - **GIVEN** a form with two findings on different fields
@@ -33,7 +34,7 @@ Saving a form page, a registration form, an external form or a journey SHALL cal
 
 ### Requirement: A draft form saves with its findings
 
-A form in draft SHALL save while it has findings, and the save SHALL return every finding so the designer marks each on its field (decision 189). A registration form is a draft when its own `status` is `draft`; the form pages in the page designer are saved into the app's concept version, which is a draft until the app is published. Buildiq SHALL use the form's own `status` property and SHALL NOT use OpenRegister's `@self.status` draft (openregister#4566) for its forms: that status is left only through a form submit, and a form is published by its author, not submitted.
+A form in draft SHALL save while it has findings, and the save SHALL return every finding so the designer marks each on its field (decision 189). A registration form is a draft while its own `status` is `draft`; form pages are a draft while the app's concept version is unpublished. Buildiq SHALL NOT use OpenRegister's `@self.status` draft (openregister#4566) for its forms (see the proposal).
 
 #### Scenario: A half-built registration form is saved as a draft
 - **GIVEN** a registration form in status `draft` into dossiq `case` that sets no `caseType`

@@ -26,5 +26,6 @@
 
 ## 4. Verification
 
-- [ ] 4.1 `composer check:strict`, `npm run lint`, `openspec validate forms-are-valid-against-their-destination --strict`
+- [x] 4.1 `composer check:strict`, `npm run lint`, `openspec validate forms-are-valid-against-their-destination --strict`
+  - Run 24 Nov 2026 on development 7cf36ecf: `npm run lint` 0 errors; `composer check:strict` phpstan OK, PHPUnit 4238 tests with the same 7 `AppRecordsImporterTest` failures development has on its own, the 10 failing hydra gates all inherited (none in this change's files), psalm not run (needs PHP >= 8.3.16); `openspec validate forms-are-valid-against-their-destination --strict` valid after two requirement texts were shortened (the check-not-run clause became its own scenario, the `@self.status` reason points to the proposal) and the delta's preamble moved into proposal.md.
 - [ ] 4.2 Live: save a draft registration form with a missing `caseType`, see the finding; publish it, see 422; change the `case` schema so a published form breaks, see it back in draft (live pass, decision 139)
