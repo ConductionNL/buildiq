@@ -9,11 +9,9 @@
  * shape nextcloud-vue's CnSettingsPage renders. A field's `default` is what
  * CnSettingsPage shows before anything was saved.
  *
- * Not asserted here, because it is not built: CnSettingsPage PUTs a save to
- * `config.saveEndpoint` (free text, no buildiq endpoint behind it) and reads
- * its values only from the `initialValues` prop, which nothing loads; so a
- * user's saved reply period is not shown on the next visit. That gap is
- * reported on T11.
+ * The save and the next visit are BuildiqSettingsPage's, the running app's
+ * settings page, which keeps the values through buildiq's page-settings
+ * endpoint: see tests/components/runtime/BuildiqSettingsPage.spec.js.
  */
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'

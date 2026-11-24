@@ -41,6 +41,7 @@ import BackToVirtualApps, {
 	showBackToVirtualApps,
 } from './components/runtime/BackToVirtualApps.vue'
 import BuildiqFormPage from './components/runtime/BuildiqFormPage.vue'
+import BuildiqSettingsPage from './components/runtime/BuildiqSettingsPage.vue'
 import { registerScope, useRegisterPicker } from './composables/useRegisterPicker.js'
 import pinia from './pinia.js'
 import { registerDirectives } from './registerDirectives.js'
@@ -561,8 +562,9 @@ async function boot() {
 		// CnUnknownWidget on the published path.
 		registry: getRuntimeRegistry(),
 		// A form page gets buildiq's live values: calculated fields and the
-		// eligibility check (forms-live-values-and-checks).
-		pageTypes: { ...defaultPageTypes, form: BuildiqFormPage },
+		// eligibility check (forms-live-values-and-checks). A settings page
+		// keeps what its users save (REQ-BQCV-011).
+		pageTypes: { ...defaultPageTypes, form: BuildiqFormPage, settings: BuildiqSettingsPage },
 		// App registers/schemas so the Edit-pages modal offers Register /
 		// Schema / Columns dropdowns for index/detail pages. Re-run on every
 		// modal open, so schemas created after boot appear without a reload.
