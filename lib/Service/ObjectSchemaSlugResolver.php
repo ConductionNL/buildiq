@@ -94,6 +94,7 @@ class ObjectSchemaSlugResolver implements ObjectSchemaSlugResolverInterface {
 	 * @spec openspec/specs/openbuild-application-register/spec.md#requirement-application-carries-a-productionversion-relation
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
 	 */
+	#[\Override]
 	public function schemaSlug(object $entity): string {
 		$schemaId = $this->readAccessor(entity: $entity, accessor: 'getSchema');
 		if ($schemaId === null) {
@@ -116,6 +117,7 @@ class ObjectSchemaSlugResolver implements ObjectSchemaSlugResolverInterface {
 	 * @spec openspec/specs/openbuild-application-register/spec.md#requirement-application-carries-a-productionversion-relation
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
 	 */
+	#[\Override]
 	public function registerSlug(object $entity): string {
 		$registerId = $this->readAccessor(entity: $entity, accessor: 'getRegister');
 		if ($registerId === null) {
@@ -183,6 +185,7 @@ class ObjectSchemaSlugResolver implements ObjectSchemaSlugResolverInterface {
 	 *
 	 * @spec openspec/specs/data-scopes-authoring/spec.md
 	 */
+	#[\Override]
 	public function isBuildiqSchema(object $entity, string $schemaSlug): bool {
 		if ($this->schemaSlug(entity: $entity) !== $schemaSlug) {
 			return false;

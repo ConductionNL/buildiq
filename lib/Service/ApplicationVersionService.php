@@ -172,6 +172,7 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
 	 */
+	#[\Override]
 	public function hashManifest(array $manifest): string {
 		return hash(algo: 'sha256', data: $this->canonicaliseManifest(manifest: $manifest));
 	}//end hashManifest()
@@ -225,6 +226,7 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
 	 */
+	#[\Override]
 	public function onSave(?array $current, array $next): array {
 		$manifest = $next['manifest'] ?? null;
 		if (is_array($manifest) === false) {
@@ -280,6 +282,7 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-23
 	 */
+	#[\Override]
 	public function guardNoCycle(string $currentUuid, ?string $proposedTargetUuid): void {
 		if ($proposedTargetUuid === null || $proposedTargetUuid === '') {
 			return;
@@ -353,6 +356,7 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-31
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	public function guardProductionVersionOwnership(string $applicationUuid, string $proposedVersionUuid): void {
 		$version = $this->objectService->find(
 			id: $proposedVersionUuid,
@@ -426,6 +430,7 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	public function releaseVersion(string $applicationUuid, string $versionUuid, ?ReleaseOverride $override = null): array {
 		// 1. Back-reference integrity (REQ-OBV-105) — surfaced as 422 by the caller.
 		$this->guardProductionVersionOwnership(
@@ -624,6 +629,7 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	public function deleteVersion(string $versionUuid, string $strategy): void {
 		$this->assertValidStrategy(strategy: $strategy);
 

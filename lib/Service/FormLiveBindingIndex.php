@@ -95,6 +95,7 @@ class FormLiveBindingIndex implements FormLiveBindingIndexInterface {
 	 *
 	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
 	 */
+	#[\Override]
 	public function reindexVersion(string $versionId, array $version): void {
 		$all = $this->read();
 		$bindings = $this->extract(
@@ -127,6 +128,7 @@ class FormLiveBindingIndex implements FormLiveBindingIndexInterface {
 	 *
 	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
 	 */
+	#[\Override]
 	public function bindingsFor(array $registerKeys, array $schemaKeys): array {
 		$registerKeys = array_values(array_filter($registerKeys, static fn ($key): bool => $key !== ''));
 		$schemaKeys = array_values(array_filter($schemaKeys, static fn ($key): bool => $key !== ''));
@@ -151,6 +153,7 @@ class FormLiveBindingIndex implements FormLiveBindingIndexInterface {
 	 *
 	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
 	 */
+	#[\Override]
 	public function isEmpty(): bool {
 		return $this->read() === [];
 	}//end isEmpty()

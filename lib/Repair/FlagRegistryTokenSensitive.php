@@ -72,6 +72,7 @@ class FlagRegistryTokenSensitive implements IRepairStep {
 	 *
 	 * @return string
 	 */
+	#[\Override]
 	public function getName(): string {
 		return 'Flag the Buildiq registry token as sensitive';
 	}//end getName()
@@ -85,6 +86,7 @@ class FlagRegistryTokenSensitive implements IRepairStep {
 	 *
 	 * @spec openspec/changes/export-github-broker/tasks.md#task-6-registry-token-stored-sensitive
 	 */
+	#[\Override]
 	public function run(IOutput $output): void {
 		$token = $this->appConfig->getValueString(
 			AppIdentity::APP_ID,

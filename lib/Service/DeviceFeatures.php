@@ -90,6 +90,7 @@ class DeviceFeatures implements DeviceFeaturesInterface {
 	 *
 	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
+	#[\Override]
 	public function fromManifest(mixed $manifest): array {
 		$features = [];
 		foreach ($this->pagesOf(manifest: $manifest) as $page) {
@@ -108,6 +109,7 @@ class DeviceFeatures implements DeviceFeaturesInterface {
 	 *
 	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
+	#[\Override]
 	public function normalise(mixed $features): array {
 		if (is_array($features) === false) {
 			return [];
@@ -125,6 +127,7 @@ class DeviceFeatures implements DeviceFeaturesInterface {
 	 *
 	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
+	#[\Override]
 	public function policyFor(array $features): ?FeaturePolicy {
 		$features = $this->normalise(features: $features);
 		if ($features === []) {

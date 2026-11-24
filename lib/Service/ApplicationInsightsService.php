@@ -198,6 +198,7 @@ class ApplicationInsightsService implements ApplicationInsightsServiceInterface 
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
 	 */
+	#[\Override]
 	public function requireAuthorisedCaller(
 		string $appUuid,
 		string $versionUuid,
@@ -260,6 +261,7 @@ class ApplicationInsightsService implements ApplicationInsightsServiceInterface 
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-20
 	 */
+	#[\Override]
 	public function computeInsights(
 		string $appUuid,
 		string $versionUuid,

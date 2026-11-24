@@ -116,6 +116,7 @@ class RepairValidationViolations implements IRepairStep {
 	 *
 	 * @spec openspec/specs/unified-app-model/spec.md#requirement-application-carries-a-baseref-linking-a-hybrid-app-to-its-fleet-base
 	 */
+	#[\Override]
 	public function getName(): string {
 		return 'Repair Buildiq rows that break the register validations';
 	}//end getName()
@@ -131,6 +132,7 @@ class RepairValidationViolations implements IRepairStep {
 	 * @spec openspec/specs/application-versions/spec.md#requirement-cycle-prevention-on-the-promotesto-chain
 	 * @spec openspec/specs/layered-app-deltas/spec.md#requirement-applicationversion-carries-a-scope-discriminator-and-owner
 	 */
+	#[\Override]
 	public function run(IOutput $output): void {
 		$this->counts = self::NO_COUNTS;
 		$this->ownerless = [];

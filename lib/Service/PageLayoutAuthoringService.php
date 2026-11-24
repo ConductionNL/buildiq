@@ -121,6 +121,7 @@ class PageLayoutAuthoringService implements PageLayoutAuthoringServiceInterface 
 	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-001)
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002)
 	 */
+	#[\Override]
 	public function save(array $layout, string $author): array {
 		$register = (string)($layout['register'] ?? '');
 		$schema = (string)($layout['schema'] ?? '');
@@ -211,6 +212,7 @@ class PageLayoutAuthoringService implements PageLayoutAuthoringServiceInterface 
 	 *
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-003)
 	 */
+	#[\Override]
 	public function recut(string $layoutId): array {
 		$override = $this->byId(layoutId: $layoutId);
 		if ($override === null) {
@@ -254,6 +256,7 @@ class PageLayoutAuthoringService implements PageLayoutAuthoringServiceInterface 
 	 *
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-003)
 	 */
+	#[\Override]
 	public function listFor(string $register, string $schema): array {
 		$out = [];
 		foreach ($this->storedFor(register: $register, schema: $schema, exceptId: '') as $layout) {

@@ -43,6 +43,7 @@ class PromoteVersionHandler extends AbstractToolHandler {
 	 *
 	 * @return array<string, mixed>
 	 */
+	#[\Override]
 	public function handle(array $args): array {
 		$validation = $this->validateArgs(args: $args);
 		if (isset($validation['error']) === true) {

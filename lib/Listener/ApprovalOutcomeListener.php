@@ -169,6 +169,7 @@ class ApprovalOutcomeListener implements IEventListener {
 	 *
 	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#2.1
 	 */
+	#[\Override]
 	public function handle(Event $event): void {
 		// APPROVE: the sequence completing IS the approval concluding, so the
 		// chain key and anchor come straight off it.

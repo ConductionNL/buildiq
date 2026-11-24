@@ -150,6 +150,7 @@ class AppVisibilityResolver implements AppVisibilityResolverInterface {
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
 	 */
+	#[\Override]
 	public function isPlacementVisibleToUser(
 		array $appPrincipals,
 		array $roles,

@@ -169,6 +169,7 @@ class RuleEngineService implements RuleEngineServiceInterface {
 	 *
 	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-live-evaluation-leaves-no-log-trail-req-bqlv-004
 	 */
+	#[\Override]
 	public function evaluate(
 		string $ruleSetSlug,
 		array $payload,
@@ -198,6 +199,7 @@ class RuleEngineService implements RuleEngineServiceInterface {
 	 *
 	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-another-app-evaluates-a-rule-set-through-a-typed-command-req-bqrx-002
 	 */
+	#[\Override]
 	public function resolveForApp(string $app, string $slug): array {
 		if (trim($slug) === '') {
 			return ['status' => 'unknown-rule-set', 'ruleSet' => null];
@@ -245,6 +247,7 @@ class RuleEngineService implements RuleEngineServiceInterface {
 	 *
 	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-another-app-evaluates-a-rule-set-through-a-typed-command-req-bqrx-002
 	 */
+	#[\Override]
 	public function evaluateForApp(string $app, array $ruleSet, array $payload): array {
 		$options = new RuleEvaluationOptions(dryRun: true, callerApp: $app);
 		$evaluation = new RuleSetEvaluation(ruleSetSlug: (string)($ruleSet['slug'] ?? ''), payload: $payload, options: $options);
@@ -479,7 +482,7 @@ class RuleEngineService implements RuleEngineServiceInterface {
 	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>}
 	 */
 	private function timedOutcome(array $answer, float $startedAt): array {
-		$durationMs = (int)round((microtime(true) - $startedAt) * 1000);
+		$durationMs = (int)round((microtime(true) - $startedAt) * 1000.0);
 
 		$errors = $answer['errors'];
 		if ($durationMs > self::TIMEOUT_MS) {

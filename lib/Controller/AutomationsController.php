@@ -381,7 +381,7 @@ class AutomationsController extends Controller {
 					return $this->error(code: 'dry_run_failed', detail: 'Dry-run evaluation failed', status: Http::STATUS_UNPROCESSABLE_ENTITY);
 				}
 
-				$durationMs = (int)round((microtime(true) - $startedAt) * 1000);
+				$durationMs = (int)round((microtime(true) - $startedAt) * 1000.0);
 
 				// Automation-approval-steps REQ-AUTD-007: an automation
 				// carrying an `approval` action reports its live aggregate

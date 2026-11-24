@@ -167,6 +167,7 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 *
 	 * @return string The id.
 	 */
+	#[\Override]
 	public function getId(): string {
 		return self::LEAF_ID;
 	}//end getId()
@@ -176,6 +177,7 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 *
 	 * @return string The label.
 	 */
+	#[\Override]
 	public function getLabel(): string {
 		return 'Page layout';
 	}//end getLabel()
@@ -185,6 +187,7 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 *
 	 * @return string The icon.
 	 */
+	#[\Override]
 	public function getIcon(): string {
 		return 'ViewDashboardOutline';
 	}//end getIcon()
@@ -194,6 +197,7 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 *
 	 * @return string The group.
 	 */
+	#[\Override]
 	public function getGroup(): string {
 		return 'Design';
 	}//end getGroup()
@@ -210,6 +214,7 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 *
 	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003, REQ-OBPL-006)
 	 */
+	#[\Override]
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
 		// The host object comes with the call when the consumer already has it,
 		// and is read here only when it does not: this path runs on every detail
@@ -410,6 +415,7 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 *
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002)
 	 */
+	#[\Override]
 	public function baseForOverride(array $override): array {
 		$published = $this->publishedLayoutsFor(
 			register: (string)($override['register'] ?? ''),
@@ -498,6 +504,7 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 *
 	 * @throws RuntimeException When that layout does not apply here.
 	 */
+	#[\Override]
 	public function get(string $register, string $schema, string $objectId, string $entityId): array {
 		$listed = $this->list(register: $register, schema: $schema, objectId: $objectId);
 		foreach ($listed['items'] as $layout) {
@@ -527,6 +534,7 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 *   IntegrationProvider interface; this method refuses the call, and a provider that
 	 *   dropped them could not be registered as a leaf at all.
 	 */
+	#[\Override]
 	public function create(string $register, string $schema, string $objectId, array $payload): array {
 		throw new RuntimeException('A page layout is authored in buildiq; this leaf reads and never appends.');
 	}//end create()
@@ -548,6 +556,7 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 *   IntegrationProvider interface; this method refuses the call, and a provider that
 	 *   dropped them could not be registered as a leaf at all.
 	 */
+	#[\Override]
 	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
 		throw new RuntimeException('A page layout is edited in buildiq, where the rules that validate it live.');
 	}//end update()
@@ -568,6 +577,7 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 *   IntegrationProvider interface; this method refuses the call, and a provider that
 	 *   dropped them could not be registered as a leaf at all.
 	 */
+	#[\Override]
 	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
 		throw new RuntimeException('A page layout is retired in buildiq, not deleted from a consuming app.');
 	}//end delete()
@@ -577,6 +587,7 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 *
 	 * @return array<string, mixed> The health report.
 	 */
+	#[\Override]
 	public function health(): array {
 		return ['status' => 'ok', 'leaf' => self::LEAF_ID];
 	}//end health()

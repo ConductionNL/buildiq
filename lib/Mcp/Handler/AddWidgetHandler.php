@@ -91,6 +91,7 @@ class AddWidgetHandler extends AbstractToolHandler {
 	 *
 	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
+	#[\Override]
 	public function handle(array $args): array {
 		$validation = $this->validateArgs(args: $args);
 		if (isset($validation['error']) === true) {

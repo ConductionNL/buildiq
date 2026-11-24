@@ -104,6 +104,7 @@ class StoredDecisionTables implements StoredDecisionTablesInterface {
 	 *
 	 * @spec openspec/changes/decision-tables-live-in-openregister/specs/business-rules-engine/spec.md
 	 */
+	#[\Override]
 	public function keyOfRuleSet(array $ruleSet): string {
 		$self = [];
 		if (is_array($ruleSet['@self'] ?? null) === true) {
@@ -185,6 +186,7 @@ class StoredDecisionTables implements StoredDecisionTablesInterface {
 	 *
 	 * @spec openspec/changes/decision-tables-live-in-openregister/specs/business-rules-engine/spec.md
 	 */
+	#[\Override]
 	public function save(array $ruleSet, array $table): array {
 		$slug = (string)($ruleSet['slug'] ?? '');
 		$name = trim((string)($ruleSet['name'] ?? ''));
@@ -229,6 +231,7 @@ class StoredDecisionTables implements StoredDecisionTablesInterface {
 	 *
 	 * @spec openspec/changes/decision-tables-live-in-openregister/specs/business-rules-engine/spec.md
 	 */
+	#[\Override]
 	public function exists(string $key): bool {
 		return $this->existingUuid(key: $key) !== null;
 
@@ -279,6 +282,7 @@ class StoredDecisionTables implements StoredDecisionTablesInterface {
 	 *
 	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-another-app-evaluates-a-rule-set-through-a-typed-command-req-bqrx-002
 	 */
+	#[\Override]
 	public function checkedInputs(array $ruleSet, array $inputs): ?array {
 		$tables  = $this->forRuleSet(ruleSet: $ruleSet);
 		$columns = RuleSetColumns::fromTable(table: (array)($tables[0] ?? []));

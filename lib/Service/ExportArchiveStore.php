@@ -125,6 +125,7 @@ class ExportArchiveStore implements ExportArchiveStoreInterface {
 	 *
 	 * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-010
 	 */
+	#[\Override]
 	public function read(string $jobUuid): ?string {
 		$name = self::fileName(jobUuid: $jobUuid);
 		if ($name === null) {
@@ -151,6 +152,7 @@ class ExportArchiveStore implements ExportArchiveStoreInterface {
 	 *
 	 * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-010
 	 */
+	#[\Override]
 	public function purgeOlderThan(int $now, int $window): int {
 		try {
 			$files = $this->appData->getFolder(self::FOLDER)->getDirectoryListing();

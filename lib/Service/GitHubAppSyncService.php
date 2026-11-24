@@ -178,6 +178,7 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 	 *
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
 	 */
+	#[\Override]
 	public function isBrokerAvailable(): bool {
 		return class_exists(self::BROKER_CLASS) === true;
 	}//end isBrokerAvailable()
@@ -192,6 +193,7 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	public function loadApplicationBySlug(string $slug): ?array {
 		try {
 			$registerId = $this->registerMapper->find(self::REGISTER_SLUG, _multitenancy: false)->getId();
@@ -231,6 +233,7 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 	 *
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
 	 */
+	#[\Override]
 	public function push(array $application, AppPushRequest $request): array {
 		if ($this->isBrokerAvailable() === false) {
 			return ['outcome' => self::OUTCOME_BROKER_UNAVAILABLE];
@@ -280,6 +283,7 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 	 *
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
 	 */
+	#[\Override]
 	public function publishTemplate(array $template, BrokeredRepo $repo): array {
 		if ($this->isBrokerAvailable() === false) {
 			return ['outcome' => self::OUTCOME_BROKER_UNAVAILABLE];
@@ -414,6 +418,7 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 	 *
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
 	 */
+	#[\Override]
 	public function link(array $application, BrokeredRepo $repo): array {
 		$branch = $this->resolveDefaultBranch(repo: $repo);
 		$linkage = ['owner' => $repo->target->org, 'name' => $repo->target->repo];
@@ -443,6 +448,7 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	public function pull(
 		array $application,
 		string $ref,

@@ -112,6 +112,7 @@ class ManifestFormDestinations implements ManifestFormDestinationsInterface {
 	 *
 	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
 	 */
+	#[\Override]
 	public function findings(array $manifest): array {
 		$public = $this->publicPageIds(manifest: $manifest);
 		$findings = [];

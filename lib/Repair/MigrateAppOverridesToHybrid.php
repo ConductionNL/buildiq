@@ -95,6 +95,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 	 *
 	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
+	#[\Override]
 	public function getName(): string {
 		return 'Migrate Buildiq AppOverride records to hybrid Applications';
 	}//end getName()
@@ -108,6 +109,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 	 *
 	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
+	#[\Override]
 	public function run(IOutput $output): void {
 		$schemaId = $this->resolveLegacySchemaId();
 		if ($schemaId === null) {

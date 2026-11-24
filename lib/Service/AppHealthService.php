@@ -75,6 +75,7 @@ class AppHealthService implements AppHealthServiceInterface {
 	 *
 	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
 	 */
+	#[\Override]
 	public function record(string $applicationUuid, string $versionUuid, mixed $pages): int {
 		$windowStart = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM);
 		$stored = 0;
@@ -107,6 +108,7 @@ class AppHealthService implements AppHealthServiceInterface {
 	 *
 	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
 	 */
+	#[\Override]
 	public function computeHealth(string $applicationUuid, string $versionUuid, string $window, ?DateTimeImmutable $now = null): ?array {
 		if (isset(self::WINDOW_DAYS[$window]) === false) {
 			return null;
@@ -155,6 +157,7 @@ class AppHealthService implements AppHealthServiceInterface {
 	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	public function normalise(mixed $object): array {
 		return ObjectRecord::serialised(object: $object);
 	}//end normalise()

@@ -101,6 +101,7 @@ class RenameAgentSchemaSlug implements IRepairStep {
 	 *
 	 * @spec exclude No canonical spec covers the cross-app slug namespacing pass.
 	 */
+	#[\Override]
 	public function getName(): string {
 		return 'Namespace the buildiq agent schema slug so it stops colliding with hermiq';
 	}//end getName()
@@ -114,6 +115,7 @@ class RenameAgentSchemaSlug implements IRepairStep {
 	 *
 	 * @spec exclude No canonical spec covers the cross-app slug namespacing pass.
 	 */
+	#[\Override]
 	public function run(IOutput $output): void {
 		$old = $this->schemaIds(slug: self::OLD_SLUG);
 		$new = $this->schemaIds(slug: self::NEW_SLUG);

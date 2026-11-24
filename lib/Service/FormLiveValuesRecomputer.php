@@ -70,6 +70,7 @@ class FormLiveValuesRecomputer implements FormLiveValuesRecomputerInterface {
 	 *
 	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
 	 */
+	#[\Override]
 	public function recompute(array $object, array $bindings): array {
 		$changes = [];
 		foreach ($bindings as $binding) {

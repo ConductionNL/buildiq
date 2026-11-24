@@ -44,6 +44,7 @@ class CreateAppHandler extends AbstractToolHandler {
 	 *
 	 * @return array<string, mixed>
 	 */
+	#[\Override]
 	public function handle(array $args): array {
 		$slug = (string)($args['slug'] ?? '');
 		$name = (string)($args['name'] ?? '');

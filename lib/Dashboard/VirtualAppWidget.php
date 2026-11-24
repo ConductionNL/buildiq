@@ -89,6 +89,7 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-widget-identity-is-frozen-to-the-application-uuid
 	 */
+	#[\Override]
 	public function getId(): string {
 		return $this->descriptor->id;
 	}//end getId()
@@ -100,6 +101,7 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
 	 */
+	#[\Override]
 	public function getTitle(): string {
 		return $this->descriptor->title;
 	}//end getTitle()
@@ -114,6 +116,7 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
 	 */
+	#[\Override]
 	public function getOrder(): int {
 		return $this->descriptor->order;
 	}//end getOrder()
@@ -125,6 +128,7 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
 	 */
+	#[\Override]
 	public function getIconClass(): string {
 		return 'icon-buildiq-widget';
 	}//end getIconClass()
@@ -136,6 +140,7 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
 	 */
+	#[\Override]
 	public function getIconUrl(): string {
 		return $this->context->urlGenerator->linkToRouteAbsolute(
 			'buildiq.icon.iconLight',
@@ -150,6 +155,7 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
 	 */
+	#[\Override]
 	public function getUrl(): ?string {
 		if ($this->descriptor->link !== '') {
 			return $this->descriptor->link;
@@ -173,6 +179,7 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
 	 */
+	#[\Override]
 	public function isEnabled(): bool {
 		return $this->context->isVisible(descriptor: $this->descriptor);
 	}//end isEnabled()
@@ -186,6 +193,7 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
 	 */
+	#[\Override]
 	public function load(): void {
 		$this->context->initialState->provideInitialState(
 			'ncDashboardWidgets',
@@ -208,6 +216,7 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-clients-that-cannot-run-the-widget-receive-projected-items
 	 */
+	#[\Override]
 	public function getItemsV2(string $userId, ?string $since = null, int $limit = 7): WidgetItems {
 		return $this->context->projector->project(
 			descriptor: $this->descriptor,

@@ -88,6 +88,7 @@ class AppHealthSampleCleanup extends TimedJob {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
+	#[\Override]
 	protected function run($argument): void {
 		unset($argument);
 		$this->purge(now: $this->time->getTime());

@@ -229,6 +229,7 @@ class CopilotService implements CopilotServiceInterface {
 	 *
 	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
+	#[\Override]
 	public function health(): array {
 		if (interface_exists('OCP\\TaskProcessing\\IManager') === false) {
 			return ['available' => false, 'reason' => 'unsupported_server'];
@@ -261,6 +262,7 @@ class CopilotService implements CopilotServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base/spec.md#requirement-a-maker-attaches-knowledge-files-to-an-agent-req-bqag-001
 	 */
+	#[\Override]
 	public function knowledgeRetrieval(): bool {
 		return $this->knowledgeReader->retrievalAvailable();
 	}//end knowledgeRetrieval()
@@ -297,6 +299,7 @@ class CopilotService implements CopilotServiceInterface {
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
 	 */
+	#[\Override]
 	public function plan(
 		string $brief,
 		?string $appSlug,
@@ -564,6 +567,7 @@ class CopilotService implements CopilotServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
 	 */
+	#[\Override]
 	public function discard(string $agentId, string $userId, string $prompt, array $plan, ?string $traceId = null): array {
 		$agent = $this->requireAgent(agentId: $agentId);
 		$appSlug = (string)($agent['applicationSlug'] ?? '');
@@ -1086,6 +1090,7 @@ class CopilotService implements CopilotServiceInterface {
 	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
+	#[\Override]
 	public function execute(array $plan, string $userId, ?string $agentId = null, string $prompt = '', ?string $traceId = null): array {
 		// The server never trusts the client's review, so it re-normalises for
 		// the same reason it re-validates: a plan posted straight at this

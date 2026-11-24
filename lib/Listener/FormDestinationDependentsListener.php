@@ -93,6 +93,7 @@ final class FormDestinationDependentsListener implements IEventListener {
 	 *
 	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
 	 */
+	#[\Override]
 	public function handle(Event $event): void {
 		if ($event instanceof FormDestinationDependentsEvent === false) {
 			return;

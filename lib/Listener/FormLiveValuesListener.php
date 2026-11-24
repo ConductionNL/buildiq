@@ -100,6 +100,7 @@ class FormLiveValuesListener implements IEventListener {
 	 *
 	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
 	 */
+	#[\Override]
 	public function handle(Event $event): void {
 		if ($this->running === true
 			|| ($event instanceof ObjectCreatingEvent || $event instanceof ObjectUpdatingEvent) === false

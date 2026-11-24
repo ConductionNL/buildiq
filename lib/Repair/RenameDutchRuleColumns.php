@@ -139,6 +139,7 @@ class RenameDutchRuleColumns implements IRepairStep {
 	 *
 	 * @spec openspec/specs/business-rules-engine/spec.md
 	 */
+	#[\Override]
 	public function getName(): string {
 		return 'Move business-rules data from the Dutch columns to the English ones';
 	}//end getName()
@@ -152,6 +153,7 @@ class RenameDutchRuleColumns implements IRepairStep {
 	 *
 	 * @spec openspec/specs/business-rules-engine/spec.md
 	 */
+	#[\Override]
 	public function run(IOutput $output): void {
 		$tables = $this->shardTables();
 		if ($tables === []) {

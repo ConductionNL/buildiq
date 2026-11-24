@@ -86,6 +86,7 @@ class RuleEvaluationListener implements IEventListener {
 	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-another-app-evaluates-a-rule-set-through-a-typed-command-req-bqrx-002
 	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-a-refused-call-is-answered-never-thrown-req-bqrx-003
 	 */
+	#[\Override]
 	public function handle(Event $event): void {
 		if (($event instanceof RuleEvaluationRequestedEvent) === false || $event->isAnswered() === true) {
 			return;

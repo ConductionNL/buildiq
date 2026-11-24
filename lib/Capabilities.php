@@ -73,6 +73,7 @@ class Capabilities implements ICapability {
 	 *
 	 * @spec openspec/changes/openbuild-inline-edit-persistence/specs/openbuild-capability/spec.md
 	 */
+	#[\Override]
 	public function getCapabilities(): array {
 		return [
 			'buildiq' => [

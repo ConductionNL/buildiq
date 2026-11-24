@@ -161,6 +161,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
 	 */
+	#[\Override]
 	public function createApplication(array $payload): string {
 		// M2: Acquire a per-slug advisory lock before the slug-uniqueness check so
 		// the check and the saveObject are atomic with respect to concurrent callers

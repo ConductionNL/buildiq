@@ -69,6 +69,7 @@ class DeviceFeaturesListener implements IEventListener {
 	 *
 	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
+	#[\Override]
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectCreatingEvent || $event instanceof ObjectUpdatingEvent) === false) {
 			return;

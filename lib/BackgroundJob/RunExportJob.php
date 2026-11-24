@@ -94,6 +94,7 @@ class RunExportJob extends QueuedJob {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
 	 */
+	#[\Override]
 	protected function run($argument): void {
 		$jobUuid = $this->extractJobUuid(argument: $argument);
 		if ($jobUuid === '') {

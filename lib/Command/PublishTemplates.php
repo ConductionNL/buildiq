@@ -86,6 +86,7 @@ class PublishTemplates extends Command {
 	 *
 	 * @spec openspec/specs/github-app-repo-format/spec.md
 	 */
+	#[\Override]
 	protected function configure(): void {
 		$this->setName(name: 'buildiq:templates:publish')
 			->setDescription(description: 'Publish seeded Buildiq application-templates to GitHub as buildiq-app repos.')
@@ -107,6 +108,7 @@ class PublishTemplates extends Command {
 	 *
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
 	 */
+	#[\Override]
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$credentialId = trim((string)$input->getOption('credential'));
 		if ($credentialId === '') {

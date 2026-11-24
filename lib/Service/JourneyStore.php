@@ -81,6 +81,7 @@ class JourneyStore implements JourneyStoreInterface {
 	 *
 	 * @spec openspec/changes/journey-designer/specs/journey-designer/spec.md#requirement-the-designer-must-author-steps-over-existing-form-objects
 	 */
+	#[\Override]
 	public function save(array $journey): array {
 		$id  = trim((string)($journey['id'] ?? ''));
 		$row = $this->storedShape(journey: $journey);

@@ -67,6 +67,7 @@ class AppDelete extends Command {
 	 *
 	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-delete-an-app-from-the-command-line-req-bqic-007
 	 */
+	#[\Override]
 	protected function configure(): void {
 		$this->setName(name: 'buildiq:app:delete')
 			->setDescription(description: 'Delete a buildiq app and its versions; its registers and records stay unless asked.')
@@ -85,6 +86,7 @@ class AppDelete extends Command {
 	 *
 	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-delete-an-app-from-the-command-line-req-bqic-007
 	 */
+	#[\Override]
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$slug = (string)$input->getArgument('slug');
 		$app = $this->catalogue->app(slug: $slug);

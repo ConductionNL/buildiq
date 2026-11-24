@@ -169,6 +169,7 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
 	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.1
 	 */
+	#[\Override]
 	public function resolve(string $appSlug, ?string $versionSlug, ?IUser $caller): ?array {
 		return $this->resolveWith(
 			appSlug: $appSlug,
@@ -192,6 +193,7 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 *
 	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
 	 */
+	#[\Override]
 	public function resolveServed(string $appSlug, ?string $versionSlug, ?IUser $caller): ?array {
 		return $this->resolveWith(
 			appSlug: $appSlug,
@@ -272,6 +274,7 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 *
 	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.2
 	 */
+	#[\Override]
 	public function servedManifest(array $version, ?IUser $caller): mixed {
 		return ($this->baseResolver?->manifestOf(
 			version: $version,
@@ -371,6 +374,7 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 *
 	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-a-draft-form-saves-with-its-findings
 	 */
+	#[\Override]
 	public function findApplication(string $appSlug): ?array {
 		return $this->findApplicationBySlug(appSlug: $appSlug);
 	}//end findApplication()
@@ -390,6 +394,7 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 *
 	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
 	 */
+	#[\Override]
 	public function resolveVersionForCaller(string $appSlug, ?string $versionSlug, ?IUser $caller): ?array {
 		if ($caller === null) {
 			return null;
@@ -585,9 +590,8 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 				}
 			}
 
-			// Fallback: fetch all versions for this app and match slug in PHP.
-			// Required when OR's compound-filter on a relation UUID is not yet
-			// stable on this installation (apply-notes workaround).
+			// Fallback: fetch this app's versions and match the slug in PHP, for when
+			// OR's compound filter on a relation UUID is unstable here.
 			return $this->findVersionBySlugFallback(applicationUuid: $applicationUuid, versionSlug: $versionSlug);
 		} catch (Throwable $e) {
 			$this->logger->error(
@@ -796,6 +800,7 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-a-group-scoped-dashboard-may-be-the-landing-page-for-its-group
 	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
 	 */
+	#[\Override]
 	public function filterManifestForCaller(array $manifest, array $application, ?IUser $caller): array {
 		if ($caller !== null && $this->permissionResolver->isAdmin($caller) === true) {
 			return $manifest;
@@ -846,6 +851,7 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 *
 	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-user-s-group-context
 	 */
+	#[\Override]
 	public function resolveCallerPermissionsForDisplay(array $application, ?IUser $caller): array {
 		if ($caller === null) {
 			return [];
@@ -979,8 +985,6 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 			}
 		}
 
-		// `$filtered` is only ever appended to with `[]=`, so it is already a
-		// list — the array_values() this replaces was a no-op.
 		return $filtered;
 	}//end filterEntriesByPermission()
 

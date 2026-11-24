@@ -67,6 +67,7 @@ class AppExport extends Command {
 	 *
 	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-export-an-app-to-a-file-req-bqic-005
 	 */
+	#[\Override]
 	protected function configure(): void {
 		$this->setName(name: 'buildiq:app:export')
 			->setDescription(description: 'Export a buildiq app to an archive file, the same archive the export dialog produces.')
@@ -87,6 +88,7 @@ class AppExport extends Command {
 	 *
 	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-export-an-app-to-a-file-req-bqic-005
 	 */
+	#[\Override]
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$slug = (string)$input->getArgument('slug');
 		$target = trim((string)$input->getOption('output'));

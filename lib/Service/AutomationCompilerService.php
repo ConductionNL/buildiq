@@ -357,6 +357,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.1
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
 	 */
+	#[\Override]
 	public function compile(array $automation): array {
 		$input = new CompileInput(automation: $automation);
 
@@ -527,6 +528,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
 	 *
 	 */
+	#[\Override]
 	public function apply(array $automation, array $plan, array $priorProvenance = []): array {
 		$this->assertFlowNodesPresent(plan: $plan);
 
@@ -715,6 +717,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
 	 */
+	#[\Override]
 	public function remove(array $automation, array $provenance): void {
 		$this->applyNotifications(planned: [], priorKeys: $this->orArray(value: $provenance['notificationKeys'] ?? null));
 		$this->applyLifecycleActions(
@@ -795,6 +798,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
 	 */
+	#[\Override]
 	public function status(array $automation, array $provenance): array {
 		$expectedHash = (string)($provenance['compiledHash'] ?? '');
 		if ($expectedHash === '') {
@@ -862,6 +866,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#5.1
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-dry-run-test-panel-evaluates-an-automation-without-side-effects-req-autd-007
 	 */
+	#[\Override]
 	public function approvalState(array $automation, array $provenance): string {
 		$chainName = (string)($provenance['approvalChainName'] ?? '');
 		if ($chainName === '') {
@@ -1319,6 +1324,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#3.1
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-dry-run-test-panel-evaluates-an-automation-without-side-effects-req-autd-007
 	 */
+	#[\Override]
 	public function compileDryRunRule(array $automation): array {
 		$condition = ($automation['condition'] ?? null);
 		$actions = array_values($this->orArray(value: $automation['actions'] ?? null));
@@ -1392,6 +1398,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#2.1
 	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
 	 */
+	#[\Override]
 	public function mapActionToRuleAction(array $action): array {
 		$type = (string)($action['type'] ?? '');
 
@@ -1522,7 +1529,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @return string Canonical JSON.
 	 */
 	private function canonicalise(mixed $value): string {
-		return json_encode($this->canonicaliseValue(value: $value), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+		return json_encode($this->canonicaliseValue(value: $value), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
 	}//end canonicalise()
 
 	/**

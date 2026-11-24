@@ -117,6 +117,7 @@ class VirtualAppCredentialRegistrar implements VirtualAppCredentialRegistrarInte
 	 *
 	 * @spec openspec/specs/app-channel-application/spec.md
 	 */
+	#[\Override]
 	public function onPublish(string $slug, ?IUser $caller): void {
 		try {
 			$manifest = $this->manifestResolver->resolve(appSlug: $slug, versionSlug: null, caller: $caller);

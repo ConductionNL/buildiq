@@ -75,6 +75,7 @@ class ListenerSlugContract implements ListenerSlugContractInterface {
 	 *
 	 * @return bool True when the contract is enabled for this instance.
 	 */
+	#[\Override]
 	public function isEnabled(): bool {
 		return $this->appConfig->getValueBool(self::APP_ID, self::CONFIG_KEY, false);
 	}//end isEnabled()

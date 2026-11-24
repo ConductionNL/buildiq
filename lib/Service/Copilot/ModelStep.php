@@ -170,7 +170,7 @@ final class ModelStep {
 			'attempt'         => $this->attempt,
 			'kind'            => $kind,
 			'startedAt'       => $this->startedAt->format(DATE_ATOM),
-			'durationMs'      => max(0, (int)round((microtime(true) - $this->clock) * 1000)),
+			'durationMs'      => max(0, (int)round((microtime(true) - $this->clock) * 1000.0)),
 			'status'          => $status,
 			'taskType'        => self::TASK_TYPE,
 			'promptChars'     => mb_strlen($this->prompt),

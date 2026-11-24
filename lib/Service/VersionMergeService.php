@@ -164,6 +164,8 @@ class VersionMergeService {
 		try {
 			$manifest = $this->mergeManifest(sides: $this->part(sides: $sides, part: 'manifest'));
 			$schemas = $this->mergeSchemas(sides: $this->part(sides: $sides, part: 'schemas'));
+			// phpcs:ignore Squiz.Commenting.InlineComment.DocBlock -- psalm narrows the property to [] after the reset above.
+			/** @var array<int, array<string, mixed>> $conflicts */
 			$conflicts = $this->conflicts;
 		} finally {
 			$this->choices = [];

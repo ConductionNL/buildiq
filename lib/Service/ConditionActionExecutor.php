@@ -98,6 +98,7 @@ class ConditionActionExecutor implements ConditionActionExecutorInterface {
 	 *
 	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#4.1
 	 */
+	#[\Override]
 	public function execute(array $rules, array $payload, bool $dryRun = false, ?callable $dispatcher = null): array {
 		$ordered = $this->sortRules(rules: $rules);
 

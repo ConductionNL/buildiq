@@ -137,6 +137,7 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 	 *
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-008
 	 */
+	#[\Override]
 	public function requestBody(IRequest $request): array {
 		$params = $request->getParams();
 
@@ -182,6 +183,7 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	public function create(array $payload, array $roles): JSONResponse {
 		return $this->withApplication(
 			applicationSlug: (string)($payload['applicationSlug'] ?? ''),
@@ -227,6 +229,7 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	public function update(string $uuid, array $payload, array $automation): JSONResponse {
 		$payload['applicationSlug'] = ($automation['applicationSlug'] ?? null);
 		$payload['versionUuid'] = ($automation['versionUuid'] ?? null);
@@ -270,6 +273,7 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 	 *
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-008
 	 */
+	#[\Override]
 	public function destroy(string $uuid, array $automation): JSONResponse {
 		$this->compiler->remove(
 			automation: $automation,
@@ -306,6 +310,7 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-008
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	public function saveCompiled(array $automation, string $uuid): array {
 		return ObjectRecord::toArray(object: $this->saveAuthorised(automation: $automation, uuid: $uuid));
 	}//end saveCompiled()
@@ -454,6 +459,7 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-008
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	public function loadAutomation(string $uuid): ?array {
 		try {
 			$entity = $this->objectService->find(id: $uuid, options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::AUTOMATION_SCHEMA));
@@ -479,6 +485,7 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	public function loadApplication(string $slug): ?array {
 		if ($slug === '') {
 			return null;
@@ -568,6 +575,7 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 	 *
 	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
 	 */
+	#[\Override]
 	public function compileRefusal(array $automation): ?JSONResponse {
 		if (ScriptSteps::holds(automation: $automation) === false) {
 			return null;

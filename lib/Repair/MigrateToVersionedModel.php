@@ -130,6 +130,7 @@ class MigrateToVersionedModel implements IRepairStep {
 	 *
 	 * @return string
 	 */
+	#[\Override]
 	public function getName(): string {
 		return 'Migrate Buildiq to versioned app model (DESTRUCTIVE)';
 	}//end getName()
@@ -159,6 +160,7 @@ class MigrateToVersionedModel implements IRepairStep {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-26
 	 */
+	#[\Override]
 	public function run(IOutput $output): void {
 		if ($this->skipForRecordedState(output: $output) === true) {
 			return;

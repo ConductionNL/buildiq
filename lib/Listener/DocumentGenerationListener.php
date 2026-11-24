@@ -103,6 +103,7 @@ class DocumentGenerationListener implements IEventListener {
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-004
 	 * @SuppressWarnings(PHPMD.StaticAccess) FiredAutomationTrigger is a pure value read off the event.
 	 */
+	#[\Override]
 	public function handle(Event $event): void {
 		$fired = FiredAutomationTrigger::fromEvent(event: $event);
 		if ($fired === null || $fired->isAddressable() === false) {

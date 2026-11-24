@@ -68,6 +68,7 @@ class PublishedApplicationCacheListener implements IEventListener {
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-published-applications-are-read-once-per-request
 	 */
+	#[\Override]
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectCreatedEvent) === false
 			&& ($event instanceof ObjectUpdatedEvent) === false

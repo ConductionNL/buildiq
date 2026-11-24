@@ -329,6 +329,7 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 	 *
 	 * @return string
 	 */
+	#[\Override]
 	public function getAppId(): string {
 		return 'buildiq';
 	}//end getAppId()
@@ -340,6 +341,7 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) AgentPlanSteps is pure step logic with no collaborators.
 	 */
+	#[\Override]
 	public function getTools(): array {
 		$tools = [];
 		foreach (self::TOOL_DESCRIPTORS as $tool) {
@@ -374,6 +376,7 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 	 *
 	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
+	#[\Override]
 	public function getToolDescriptors(): array {
 		return self::TOOL_DESCRIPTORS;
 	}//end getToolDescriptors()
@@ -395,6 +398,7 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) AgentPlanSteps is pure step logic with no collaborators.
 	 */
+	#[\Override]
 	public function invokeTool(string $toolId, array $arguments): array {
 		if (AgentPlanSteps::isWriteTool(toolId: $toolId) === false) {
 			return $this->dispatch(toolId: $toolId, arguments: $arguments);
@@ -424,6 +428,7 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) AgentPlanSteps is pure step logic with no collaborators.
 	 */
+	#[\Override]
 	public function invokeApprovedTool(string $toolId, array $arguments): array {
 		return $this->dispatch(toolId: $toolId, arguments: AgentPlanSteps::withoutPlanId(arguments: $arguments));
 	}//end invokeApprovedTool()

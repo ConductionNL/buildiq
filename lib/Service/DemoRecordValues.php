@@ -205,7 +205,7 @@ final class DemoRecordValues {
 
 		$exclusiveMinimum = ($property['exclusiveMinimum'] ?? null);
 		if (is_numeric($exclusiveMinimum) === true && $value <= $exclusiveMinimum) {
-			$value = ($exclusiveMinimum + 1);
+			$value = $this->justAbove(number: (+$exclusiveMinimum));
 		}
 
 		$maximum = ($property['maximum'] ?? null);
@@ -215,6 +215,21 @@ final class DemoRecordValues {
 
 		return $value;
 	}//end bounded()
+
+	/**
+	 * The smallest step above an exclusive minimum, keeping an int an int.
+	 *
+	 * @param int|float $number The exclusive minimum.
+	 *
+	 * @return int|float
+	 */
+	private function justAbove(int|float $number): int|float {
+		if (is_int($number) === true) {
+			return ($number + 1);
+		}
+
+		return ($number + 1.0);
+	}//end justAbove()
 
 	/**
 	 * A list value: as many items as the property needs, else none.

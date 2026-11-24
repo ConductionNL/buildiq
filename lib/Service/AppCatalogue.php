@@ -84,6 +84,7 @@ class AppCatalogue implements AppCatalogueInterface {
 	 *
 	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-list-apps-from-the-command-line-req-bqic-004
 	 */
+	#[\Override]
 	public function apps(?string $slug = null): array {
 		$filters = [];
 		if ($slug !== null) {
@@ -111,6 +112,7 @@ class AppCatalogue implements AppCatalogueInterface {
 	 *
 	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-delete-an-app-from-the-command-line-req-bqic-007
 	 */
+	#[\Override]
 	public function app(string $slug): ?array {
 		return ($this->apps(slug: $slug)[0] ?? null);
 	}//end app()
@@ -124,6 +126,7 @@ class AppCatalogue implements AppCatalogueInterface {
 	 *
 	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-list-apps-from-the-command-line-req-bqic-004
 	 */
+	#[\Override]
 	public function versions(string $appUuid): array {
 		$versions = [];
 		foreach ($this->search(schema: self::VERSION_SCHEMA, filters: ['application' => $appUuid]) as $version) {

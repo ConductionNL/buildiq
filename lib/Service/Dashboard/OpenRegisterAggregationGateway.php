@@ -77,6 +77,7 @@ class OpenRegisterAggregationGateway implements AggregationGateway {
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-each-openregister-endpoint-is-queried-in-its-own-filter-grammar
 	 */
+	#[\Override]
 	public function value(string $register, string $schema, array $requestParams): int|float|null {
 		$runnerClass = self::RUNNER_CLASS;
 		$queryClass = self::QUERY_CLASS;
@@ -136,7 +137,7 @@ class OpenRegisterAggregationGateway implements AggregationGateway {
 		}
 
 		if (is_numeric($value) === true) {
-			return ($value + 0);
+			return (+$value);
 		}
 
 		return null;

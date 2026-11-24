@@ -56,6 +56,7 @@ class AppTemplateCapture implements AppTemplateCaptureInterface {
 	 *
 	 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
 	 */
+	#[\Override]
 	public function capture(array $application, array $schemas, array $manifest): array {
 		$appSlug = (string)($application['slug'] ?? '');
 		$map = [];

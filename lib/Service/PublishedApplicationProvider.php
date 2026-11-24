@@ -135,6 +135,7 @@ class PublishedApplicationProvider implements PublishedApplicationProviderInterf
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-published-applications-are-read-once-per-request
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	public function getPublishedApplications(): array {
 		if ($this->cachedApplications !== null) {
 			return $this->cachedApplications;
@@ -182,6 +183,7 @@ class PublishedApplicationProvider implements PublishedApplicationProviderInterf
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-published-applications-are-read-once-per-request
 	 */
+	#[\Override]
 	public function invalidate(): void {
 		$this->cachedApplications = null;
 		$this->cache?->remove(self::CACHE_KEY);

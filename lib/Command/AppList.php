@@ -60,6 +60,7 @@ class AppList extends Command {
 	 *
 	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-list-apps-from-the-command-line-req-bqic-004
 	 */
+	#[\Override]
 	protected function configure(): void {
 		$this->setName(name: 'buildiq:app:list')
 			->setDescription(description: 'List every buildiq app with its slug, name and versions with their status.')
@@ -76,6 +77,7 @@ class AppList extends Command {
 	 *
 	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-list-apps-from-the-command-line-req-bqic-004
 	 */
+	#[\Override]
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$rows = [];
 		foreach ($this->catalogue->apps() as $app) {

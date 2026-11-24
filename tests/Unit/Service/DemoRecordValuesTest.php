@@ -125,6 +125,25 @@ final class DemoRecordValuesTest extends TestCase {
 	}//end testTheValuesFollowTheProperty()
 
 	/**
+	 * A value at or under an exclusive minimum lands one step above it, for an
+	 * int, a float and a numeric-string minimum alike.
+	 *
+	 * @return void
+	 */
+	public function testAnExclusiveMinimumIsSteppedOver(): void {
+		$properties = [
+			'count'  => ['type' => 'integer', 'exclusiveMinimum' => 4],
+			'ratio'  => ['type' => 'number', 'exclusiveMinimum' => 2.5],
+			'amount' => ['type' => 'number', 'exclusiveMinimum' => '7'],
+		];
+		$record = (array)(new DemoRecordValues(n: 1))->record(properties: $properties, required: ['count', 'ratio', 'amount']);
+
+		$this->assertSame(expected: 5, actual: $record['count']);
+		$this->assertSame(expected: 3.5, actual: $record['ratio']);
+		$this->assertSame(expected: 8.0, actual: $record['amount']);
+	}//end testAnExclusiveMinimumIsSteppedOver()
+
+	/**
 	 * An optional property no value can be made for is left out.
 	 *
 	 * @return void

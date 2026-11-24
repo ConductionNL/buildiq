@@ -131,6 +131,7 @@ class MigrateRegisterSlug implements IRepairStep {
 	 *  register-slug migration. Pointing this at an existing spec would report
 	 *  conformance to a requirement that says nothing about it.
 	 */
+	#[\Override]
 	public function getName(): string {
 		return 'Rename Buildiq register slugs';
 	}//end getName()
@@ -146,6 +147,7 @@ class MigrateRegisterSlug implements IRepairStep {
 	 *  register-slug migration. Pointing this at an existing spec would report
 	 *  conformance to a requirement that says nothing about it.
 	 */
+	#[\Override]
 	public function run(IOutput $output): void {
 		$existing = $this->existingSlugs();
 		$plan = $this->decisions->plan(map: self::SLUG_MAP, existing: $existing);

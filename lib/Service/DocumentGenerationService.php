@@ -233,6 +233,7 @@ class DocumentGenerationService implements DocumentGenerationServiceInterface {
 	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.2
 	 * @spec openspec/specs/automation-document-action/spec.md
 	 */
+	#[\Override]
 	public function generate(array $automation, array $action, string $schemaSlug, string $objectUuid): bool {
 		$templateId = (string)($action['templateId'] ?? '');
 		$outputModes = $this->normaliseOutputModes(raw: $action['output'] ?? null);

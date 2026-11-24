@@ -99,6 +99,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 	 *
 	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
+	#[\Override]
 	public function findByAppId(string $appId): ?array {
 		$version = $this->findHybridProductionVersion(appId: $appId);
 		if ($version === null) {
@@ -136,6 +137,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 	 *
 	 * @spec openspec/specs/layered-app-deltas/spec.md
 	 */
+	#[\Override]
 	public function resolveLayeredDelta(string $appId, ?string $uid): ?array {
 		$application = $this->findHybridApplication(appId: $appId);
 		if ($application === null) {
@@ -205,6 +207,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 	 *
 	 * @spec openspec/specs/layered-app-deltas/spec.md
 	 */
+	#[\Override]
 	public function getUserDelta(string $appId, string $uid): array {
 		$application = $this->findHybridApplication(appId: $appId);
 		if ($application === null) {
@@ -261,6 +264,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 	 * @spec openspec/changes/openbuild-inline-edit-persistence/specs/app-override-persistence/spec.md#requirement-write-endpoint-upserts-the-delta-and-records-who-saved
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	public function upsertUserDelta(string $appId, array $delta, string $uid): array {
 		if ($uid === '') {
 			throw new RuntimeException('A user delta requires an authenticated owner.');
@@ -364,6 +368,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 	 *
 	 * @spec openspec/specs/layered-app-deltas/spec.md
 	 */
+	#[\Override]
 	public function deleteUserDelta(string $appId, string $uid): void {
 		if ($uid === '') {
 			return;
@@ -403,6 +408,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 	 * @spec openspec/specs/application-delta-layers-ui/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	public function listUserDeltas(string $appId): array {
 		$application = $this->findHybridApplication(appId: $appId);
 		if ($application === null) {
@@ -484,6 +490,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 	 * @spec openspec/specs/app-override-persistence/spec.md
 	 * @spec openspec/changes/openbuild-inline-edit-persistence/specs/app-override-persistence/spec.md#requirement-write-endpoint-upserts-the-delta-and-records-who-saved
 	 */
+	#[\Override]
 	public function upsert(string $appId, array $delta, ?string $baseRef, string $updatedBy, bool $systemContext = false): array {
 		$now = date(DATE_ATOM);
 		$application = $this->findHybridApplication(appId: $appId);
@@ -536,6 +543,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 	 *
 	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
+	#[\Override]
 	public function delete(string $appId): void {
 		$application = $this->findHybridApplication(appId: $appId);
 		if ($application === null) {
@@ -568,6 +576,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 	 *
 	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
+	#[\Override]
 	public function validateDeltaShape(array $delta): array {
 		return $this->deltaValidator->validateDeltaShape(delta: $delta);
 	}//end validateDeltaShape()
@@ -582,6 +591,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 	 *
 	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
+	#[\Override]
 	public function wouldBlankApp(array $delta): bool {
 		return $this->deltaValidator->wouldBlankApp(delta: $delta);
 	}//end wouldBlankApp()
@@ -599,6 +609,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 	 * @spec openspec/specs/app-override-persistence/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	public function findHybridApplication(string $appId): ?array {
 		try {
 			$results = $this->objectService->searchObjectsBySlug(

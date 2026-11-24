@@ -193,6 +193,7 @@ class VersionPromotionService implements VersionPromotionServiceInterface {
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
 	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 	 */
+	#[\Override]
 	public function promote(array $source, string $strategy, ?ReleaseOverride $override = null): array {
 		$this->assertValidStrategy(strategy: $strategy);
 

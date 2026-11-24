@@ -43,6 +43,7 @@ abstract class AppLocalLeafProvider implements IntegrationProvider {
 	 *
 	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
 	 */
+	#[\Override]
 	public function getRequiredApp(): string {
 		return 'buildiq';
 	}//end getRequiredApp()
@@ -54,6 +55,7 @@ abstract class AppLocalLeafProvider implements IntegrationProvider {
 	 *
 	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
 	 */
+	#[\Override]
 	public function getStorageStrategy(): string {
 		return 'app-local';
 	}//end getStorageStrategy()
@@ -65,6 +67,7 @@ abstract class AppLocalLeafProvider implements IntegrationProvider {
 	 *
 	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
 	 */
+	#[\Override]
 	public function getOpenConnectorSource(): ?string {
 		return null;
 	}//end getOpenConnectorSource()
@@ -76,6 +79,7 @@ abstract class AppLocalLeafProvider implements IntegrationProvider {
 	 *
 	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
 	 */
+	#[\Override]
 	public function isEnabled(): bool {
 		return true;
 	}//end isEnabled()
@@ -89,6 +93,7 @@ abstract class AppLocalLeafProvider implements IntegrationProvider {
 	 *
 	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
 	 */
+	#[\Override]
 	public function requiresPermission(): ?string {
 		return null;
 	}//end requiresPermission()
@@ -100,6 +105,7 @@ abstract class AppLocalLeafProvider implements IntegrationProvider {
 	 *
 	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
 	 */
+	#[\Override]
 	public function authRequirements(): array {
 		return [];
 	}//end authRequirements()

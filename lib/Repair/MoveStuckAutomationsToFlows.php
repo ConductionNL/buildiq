@@ -94,6 +94,7 @@ class MoveStuckAutomationsToFlows implements IRepairStep {
 	 *
 	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-stuck-automations-are-moved-or-disabled-with-a-reason-req-bqar-007
 	 */
+	#[\Override]
 	public function getName(): string {
 		return 'Move buildiq automations that never ran onto OpenRegister flows';
 	}//end getName()
@@ -109,6 +110,7 @@ class MoveStuckAutomationsToFlows implements IRepairStep {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) AutomationRecords is a pure coercion with no collaborators.
 	 */
+	#[\Override]
 	public function run(IOutput $output): void {
 		try {
 			$automations = AutomationRecords::all(objectService: $this->objectService);

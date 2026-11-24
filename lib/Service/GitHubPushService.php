@@ -149,6 +149,7 @@ class GitHubPushService implements GitHubPushServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
 	 */
+	#[\Override]
 	public function push(string $jobUuid, string $treeDir, BrokerAccess $access, PushTarget $target): array {
 		$org = $target->org;
 		$repo = $target->repo;

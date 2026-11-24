@@ -79,6 +79,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 	 *
 	 * @return string
 	 */
+	#[\Override]
 	public function getName(): string {
 		return 'Populate permissions on pre-existing Buildiq Applications';
 	}//end getName()
@@ -92,6 +93,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
 	 */
+	#[\Override]
 	public function run(IOutput $output): void {
 		$output->info('Populating permissions on pre-existing Applications...');
 
