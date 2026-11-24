@@ -11,7 +11,7 @@
  * buttons of openbuild-icon-button-accessible-names and any icon-only
  * button added to these files later.
  *
- * @spec openspec/changes/openbuild-icon-button-accessible-names/tasks.md#4-verification
+ * @spec openspec/changes/archive/2026-11-24-openbuild-icon-button-accessible-names/tasks.md#4-verification
  */
 
 import { parse } from '@vue/compiler-sfc'

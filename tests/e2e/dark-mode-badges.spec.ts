@@ -12,7 +12,7 @@
  * role chip reaches WCAG AA contrast (4.5:1) between its text and the
  * background it is painted on, a translucent badge composited over the page.
  *
- * @spec openspec/changes/openbuild-nc-color-variables/tasks.md#5-verification
+ * @spec openspec/changes/archive/2026-11-24-openbuild-nc-color-variables/tasks.md#5-verification
  */
 
 import type { Page } from '@playwright/test'
