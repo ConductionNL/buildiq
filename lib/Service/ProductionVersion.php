@@ -48,12 +48,12 @@ final class ProductionVersion {
 	 *
 	 * @spec openspec/changes/capability-requirements-backfill/specs/version-lifecycle-ui/spec.md#requirement-a-change-goes-live-only-when-an-owner-releases-it-req-bqcv-027
 	 */
-	public static function is(array $application, mixed $version): bool {
+	public static function isProduction(array $application, mixed $version): bool {
 		$production = self::uuidOf(reference: ($application['productionVersion'] ?? null));
 		$candidate  = self::uuidOf(reference: $version);
 
 		return $production !== '' && $production === $candidate;
-	}//end is()
+	}//end isProduction()
 
 	/**
 	 * The uuid of a relation as OpenRegister serves it.

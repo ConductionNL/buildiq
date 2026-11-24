@@ -38,8 +38,8 @@ final class ProductionVersionTest extends TestCase {
 	 * @return void
 	 */
 	public function testAUuidOrAnExpandedObjectIsRead(): void {
-		self::assertTrue(condition: ProductionVersion::is(application: ['productionVersion' => 'u-prod'], version: 'u-prod'));
-		self::assertTrue(condition: ProductionVersion::is(application: ['productionVersion' => ['id' => 'u-prod']], version: ['uuid' => 'u-prod']));
+		self::assertTrue(condition: ProductionVersion::isProduction(application: ['productionVersion' => 'u-prod'], version: 'u-prod'));
+		self::assertTrue(condition: ProductionVersion::isProduction(application: ['productionVersion' => ['id' => 'u-prod']], version: ['uuid' => 'u-prod']));
 	}//end testAUuidOrAnExpandedObjectIsRead()
 
 	/**
@@ -48,9 +48,9 @@ final class ProductionVersionTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnythingElseIsNotProduction(): void {
-		self::assertFalse(condition: ProductionVersion::is(application: ['productionVersion' => 'u-prod'], version: 'u-draft'));
-		self::assertFalse(condition: ProductionVersion::is(application: [], version: 'u-prod'));
-		self::assertFalse(condition: ProductionVersion::is(application: ['productionVersion' => ''], version: ''));
-		self::assertFalse(condition: ProductionVersion::is(application: ['productionVersion' => 'u-prod'], version: null));
+		self::assertFalse(condition: ProductionVersion::isProduction(application: ['productionVersion' => 'u-prod'], version: 'u-draft'));
+		self::assertFalse(condition: ProductionVersion::isProduction(application: [], version: 'u-prod'));
+		self::assertFalse(condition: ProductionVersion::isProduction(application: ['productionVersion' => ''], version: ''));
+		self::assertFalse(condition: ProductionVersion::isProduction(application: ['productionVersion' => 'u-prod'], version: null));
 	}//end testAnythingElseIsNotProduction()
 }//end class
