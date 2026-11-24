@@ -48,6 +48,7 @@ use OCA\Buildiq\Exception\ReleaseTestsFailedException;
 use OCA\Buildiq\Exception\VersionLockedException;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
+use OCA\Buildiq\Service\ProductionVersion;
 use OCA\Buildiq\Kernel\Contracts\VersionPromotionServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\Buildiq\Support\ReleaseOverride;
@@ -119,8 +120,9 @@ class VersionPromotionController extends Controller {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-65
+	 * @spec openspec/changes/capability-requirements-backfill/specs/version-lifecycle-ui/spec.md#requirement-a-change-goes-live-only-when-an-owner-releases-it-req-bqcv-027
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ReleaseOverride::fromRequest() is a pure value-object factory.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ReleaseOverride::fromRequest() and ProductionVersion::isProduction() are pure.
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 5, period: 60)]
@@ -161,12 +163,21 @@ class VersionPromotionController extends Controller {
 			// RBAC check (spec REQ-OBVP-007) — owners + editors only;
 			// NC admins NOT auto-granted.
 			$this->assertEditorOrOwner(application: $application, user: $user);
+			// Only an owner changes what is live: promoting onto production is a release (REQ-BQCV-027).
+			$byOwner = $this->isOwner(application: $application, user: $user);
+			if ($byOwner === false && ProductionVersion::isProduction(application: $application, version: ($source['promotesTo'] ?? null)) === true) {
+				return $this->errorResponse(
+					code: 'buildiq.rbac.owner_required',
+					detail: 'Only an owner of the app releases a version to production.',
+					status: Http::STATUS_FORBIDDEN
+				);
+			}
 
 			$strategy = (string)$this->request->getParam('strategy', '');
 			$override = ReleaseOverride::fromRequest(
 				param: $this->request->getParam('override'),
 				userId: $user->getUID(),
-				byOwner: $this->isOwner(application: $application, user: $user)
+				byOwner: $byOwner
 			);
 
 			$updated = $this->promotionService->promote(source: $source, strategy: $strategy, override: $override);
