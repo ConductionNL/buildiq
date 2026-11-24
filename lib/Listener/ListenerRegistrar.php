@@ -132,6 +132,17 @@ final class ListenerRegistrar {
 			event: ObjectUpdatingEvent::class,
 			listener: DeviceFeaturesListener::class
 		);
+		// Version saves (capability-requirements-backfill REQ-BQCV-015): after
+		// every ApplicationVersion save, whatever wrote it, keep its manifest so
+		// the version history can roll the version back to an earlier save.
+		$context->registerEventListener(
+			event: ObjectCreatedEvent::class,
+			listener: VersionSaveListener::class
+		);
+		$context->registerEventListener(
+			event: ObjectUpdatedEvent::class,
+			listener: VersionSaveListener::class
+		);
 	}//end registerObjectGuardListeners()
 
 	/**
