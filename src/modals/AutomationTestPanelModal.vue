@@ -127,7 +127,7 @@ export default {
 		 * "asks for 2 fields: bedrag, motivering" (logic-approval-task-form).
 		 *
 		 * @return {Array<string>}
-		 * @spec openspec/changes/logic-approval-task-form/design.md
+		 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/design.md
 		 */
 		approvalFormLines() {
 			const actions = Array.isArray(this.automation.actions) ? this.automation.actions : []

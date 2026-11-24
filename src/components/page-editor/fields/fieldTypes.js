@@ -6,7 +6,7 @@
  * `accept`, `maxSize` in bytes, `multiple`, `capture`; the child-records
  * table: `schema`, `parentField`, `columns`). buildiq adds no vocabulary.
  *
- * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md
+ * @spec openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md
  */
 
 import { translate as t } from '@nextcloud/l10n'
@@ -14,7 +14,7 @@ import { translate as t } from '@nextcloud/l10n'
 /**
  * The field types both form builders offer, in palette order.
  *
- * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-file-field-with-its-limits-req-bqfk-001
+ * @spec openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-file-field-with-its-limits-req-bqfk-001
  */
 export const FIELD_TYPES = Object.freeze([
 	'string',
@@ -53,7 +53,7 @@ const TYPE_META = Object.freeze({
  *
  * @param {string} type - the field type.
  * @return {string}
- * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-builds-a-form-by-dragging-field-types-from-a-palette-req-bqfk-005
+ * @spec openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-builds-a-form-by-dragging-field-types-from-a-palette-req-bqfk-005
  */
 export function fieldTypeLabel(type) {
 	return TYPE_META[type] ? TYPE_META[type].label() : String(type)
@@ -64,7 +64,7 @@ export function fieldTypeLabel(type) {
  *
  * @param {string} type - the field type.
  * @return {string}
- * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-builds-a-form-by-dragging-field-types-from-a-palette-req-bqfk-005
+ * @spec openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-builds-a-form-by-dragging-field-types-from-a-palette-req-bqfk-005
  */
 export function fieldTypeIcon(type) {
 	return TYPE_META[type] ? TYPE_META[type].icon : '?'
@@ -82,7 +82,7 @@ export const BYTES_PER_MB = 1024 * 1024
  *
  * @param {string|number} megabytes - the typed size.
  * @return {number|null}
- * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-file-field-with-its-limits-req-bqfk-001
+ * @spec openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-file-field-with-its-limits-req-bqfk-001
  */
 export function megabytesToBytes(megabytes) {
 	if (megabytes === '' || megabytes === null || megabytes === undefined) {
@@ -100,7 +100,7 @@ export function megabytesToBytes(megabytes) {
  *
  * @param {unknown} bytes - the stored `maxSize`.
  * @return {string} '' when unset.
- * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-file-field-with-its-limits-req-bqfk-001
+ * @spec openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-file-field-with-its-limits-req-bqfk-001
  */
 export function bytesToMegabytes(bytes) {
 	if (typeof bytes !== 'number' || !Number.isFinite(bytes) || bytes <= 0) {
@@ -150,7 +150,7 @@ function schemaIdentifiers(schema) {
  * @param {object|null} childSchema - the child schema with its `properties`.
  * @param {object|null} parentSchema - the form's own schema.
  * @return {string[]} the property names, in declaration order.
- * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-table-of-child-records-req-bqfk-003
+ * @spec openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-table-of-child-records-req-bqfk-003
  */
 export function parentReferenceFields(childSchema, parentSchema) {
 	const ids = schemaIdentifiers(parentSchema)
@@ -183,7 +183,7 @@ export function schemaPropertyNames(schema) {
  * @param {number} index - the drop position.
  * @param {unknown} item - the item to insert.
  * @return {Array}
- * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-builds-a-form-by-dragging-field-types-from-a-palette-req-bqfk-005
+ * @spec openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-builds-a-form-by-dragging-field-types-from-a-palette-req-bqfk-005
  */
 export function insertAt(list, index, item) {
 	const next = list.slice()
@@ -200,7 +200,7 @@ export function insertAt(list, index, item) {
  * @param {number} from - the index of the moved item.
  * @param {number} to - the drop slot.
  * @return {Array}
- * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-builds-a-form-by-dragging-field-types-from-a-palette-req-bqfk-005
+ * @spec openspec/changes/archive/2026-11-24-forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-builds-a-form-by-dragging-field-types-from-a-palette-req-bqfk-005
  */
 export function moveToSlot(list, from, to) {
 	if (from < 0 || from >= list.length) {

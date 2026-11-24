@@ -2051,7 +2051,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 *
 	 * @return array<string,mixed> `{order, role}` plus `form`.
 	 *
-	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
 	 */
 	private static function approvalStep(array $planned): array {
 		$step = ['order' => 1, 'role' => (string)($planned['assigneeGroup'] ?? '')];
@@ -2070,7 +2070,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 *
 	 * @return array<string,mixed> `{role}` plus `form`.
 	 *
-	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
 	 */
 	private static function approverEntry(string $role, array $step): array {
 		$entry = ['role' => $role];
@@ -2436,7 +2436,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 *
 	 * @return array<string,mixed>|null The form, or null when the position has none.
 	 *
-	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 * @spec openspec/changes/archive/2026-11-24-logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
 	 */
 	private static function liveApprovalForm(array $spec): ?array {
 		$first = ($spec['approvers'][0] ?? null);
