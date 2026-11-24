@@ -3062,6 +3062,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
 	 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-exports-its-records-to-csv-or-excel-req-bqcv-004
+	 * @SuppressWarnings(PHPMD.StaticAccess) SchemaExportFlag is a pure coercion with no collaborators.
 	 */
 	private function cloneCompanionSchemas(
 		array $companions,

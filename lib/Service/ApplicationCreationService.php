@@ -1090,8 +1090,6 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	 * @param array<string,mixed> $version The version plan (`appSlug`, `slug`, `schemas`).
 	 *
 	 * @return array<int,mixed> The created schemas' ids.
-	 *
-	 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-exports-its-records-to-csv-or-excel-req-bqcv-004
 	 */
 	private function seedVersionSchemas(array $version): array {
 		$slugPrefix = $version['appSlug'] . '-' . $version['slug'] . '-';
@@ -1103,7 +1101,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 				$blob['slug'] = $slugPrefix . $originalSlug;
 			}
 
-			$schema = $this->store->schemaMapper->createFromArray(object: SchemaExportFlag::mark(blob: $blob));
+			$schema = $this->store->schemaMapper->createFromArray(object: $blob);
 			$createdIds[] = $schema->getId();
 		}
 

@@ -86,6 +86,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -98,9 +101,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -245,6 +245,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -257,9 +260,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -307,6 +307,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -319,9 +322,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -483,6 +483,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -495,9 +498,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -545,6 +545,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -557,9 +560,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -607,6 +607,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -619,9 +622,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -800,6 +800,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -812,9 +815,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -862,6 +862,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -874,9 +877,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -1038,6 +1038,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -1050,9 +1053,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -1812,6 +1812,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -1824,9 +1827,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -2123,6 +2123,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -2135,9 +2138,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -2331,6 +2331,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -2343,9 +2346,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -2393,6 +2393,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -2405,9 +2408,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -2455,6 +2455,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -2467,9 +2470,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -2670,6 +2670,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -2682,9 +2685,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -2732,6 +2732,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -2744,9 +2747,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -2794,6 +2794,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -2806,9 +2809,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -3026,6 +3026,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -3038,9 +3041,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -3088,6 +3088,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -3100,9 +3103,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -3307,6 +3307,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -3319,9 +3322,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -3369,6 +3369,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -3381,9 +3384,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -3588,6 +3588,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -3600,9 +3603,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -3760,6 +3760,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -3772,9 +3775,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -3822,6 +3822,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -3834,9 +3837,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
@@ -4063,6 +4063,9 @@
                         "title": "Hello Message",
                         "description": "Default message schema seeded into every wizard-provisioned per-version register.",
                         "type": "object",
+                        "configuration": {
+                            "exportable": true
+                        },
                         "required": [
                             "body"
                         ],
@@ -4075,9 +4078,6 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
-                        },
-                        "configuration": {
-                            "exportable": true
                         }
                     }
                 }
