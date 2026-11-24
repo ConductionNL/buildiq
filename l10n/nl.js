@@ -3134,7 +3134,17 @@ OC.L10N.register(
         "e.g. permits": "bijv. vergunningen",
         "message": "bericht",
         "Write a message": "Schrijf een bericht",
-        "The conversation could not be loaded.": "Het gesprek kon niet worden geladen."
+        "The conversation could not be loaded.": "Het gesprek kon niet worden geladen.",
+        "Choose a CSV, XLS or XLSX file.": "Kies een CSV-, XLS- of XLSX-bestand.",
+        "Choose a file to continue.": "Kies een bestand om verder te gaan.",
+        "Chosen: {name}": "Gekozen: {name}",
+        "Spreadsheet (CSV, XLS or XLSX)": "Spreadsheet (CSV, XLS of XLSX)",
+        "Start from a spreadsheet": "Beginnen met een spreadsheet",
+        "The file could not be read.": "Het bestand kon niet worden gelezen.",
+        "The file is empty.": "Het bestand is leeg.",
+        "The file is larger than 10 MB.": "Het bestand is groter dan 10 MB.",
+        "The first row holds the column names. Each column becomes a field, each row a record, and the app opens on a list of them.": "De eerste rij bevat de kolomnamen. Elke kolom wordt een veld, elke rij een record, en de app opent op een lijst daarvan.",
+        "Turn off \"Start from a database\" to start from a spreadsheet.": "Zet \"Beginnen met een database\" uit om met een spreadsheet te beginnen."
     },
     "nplurals=2; plural=(n != 1);"
 )

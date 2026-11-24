@@ -132,6 +132,11 @@
 			:payload="payload"
 			@update:payload="(partial) => $emit('update:payload', partial)" />
 
+		<!-- Start from a spreadsheet (capability-requirements-backfill REQ-BQCV-001). -->
+		<StartFromSpreadsheet
+			:payload="payload"
+			@update:payload="(partial) => $emit('update:payload', partial)" />
+
 		<!-- App icon (optional) — pick a Material or OpenGemeenten glyph, or
 		     upload your own SVG. A single pick yields a correct light/dark pair
 		     (white glyph for the dark app header, dark glyph for light bg);
@@ -233,6 +238,7 @@ import { generateUrl } from '@nextcloud/router'
 import { NcButton } from '@nextcloud/vue'
 import CopilotGenerateDialog from '../CopilotGenerateDialog.vue'
 import StartFromDatabase from './StartFromDatabase.vue'
+import StartFromSpreadsheet from './StartFromSpreadsheet.vue'
 import { useCopilot } from '../../composables/useCopilot.js'
 import {
 	buildIconCatalogues,
@@ -249,6 +255,7 @@ export default {
 		NcButton,
 		CopilotGenerateDialog,
 		StartFromDatabase,
+		StartFromSpreadsheet,
 	},
 
 	props: {
@@ -364,6 +371,7 @@ export default {
 				&& (this.payload.slug || '').trim() !== ''
 				&& this.slugError === null
 				&& this.databaseChoiceComplete
+				&& this.fileChoiceComplete
 			)
 		},
 
@@ -379,6 +387,20 @@ export default {
 				return true
 			}
 			return (choice.register || '') !== '' && Array.isArray(choice.schemas) && choice.schemas.length > 0
+		},
+
+		/**
+		 * Whether "Start from a spreadsheet" is off, or has a readable file and no database beside it.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
+		 */
+		fileChoiceComplete() {
+			const choice = this.payload.fromFile
+			if (!choice) {
+				return true
+			}
+			return !this.payload.fromDatabase && (choice.content || '') !== ''
 		},
 	},
 

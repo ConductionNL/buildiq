@@ -34,6 +34,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Exception\WizardCreationException;
 use OCA\Buildiq\Service\ApplicationCreationService;
+use OCA\Buildiq\Service\AppStartSources;
 use OCA\Buildiq\Service\ConnectedDatabaseReader;
 use OCA\Buildiq\Service\DatabaseManifestBuilder;
 use OCA\Buildiq\Service\RegisterStore;
@@ -622,8 +623,10 @@ class ApplicationCreationServiceTest extends TestCase {
 			registerService: $this->registerService,
 			userSession: $this->userSession,
 			slugValidator: $this->slugValidator,
-			databases: new ConnectedDatabaseReader(registers: $this->registerMapper, schemas: $this->schemaMapper, sources: $sources),
-			databaseManifests: new DatabaseManifestBuilder(),
+			sources: new AppStartSources(
+				databases: new ConnectedDatabaseReader(registers: $this->registerMapper, schemas: $this->schemaMapper, sources: $sources),
+				databaseManifests: new DatabaseManifestBuilder(),
+			),
 		);
 	}//end serviceWithDatabases()
 

@@ -3050,7 +3050,17 @@ OC.L10N.register(
         "e.g. permits": "e.g. permits",
         "message": "message",
         "Write a message": "Write a message",
-        "The conversation could not be loaded.": "The conversation could not be loaded."
+        "The conversation could not be loaded.": "The conversation could not be loaded.",
+        "Choose a CSV, XLS or XLSX file.": "Choose a CSV, XLS or XLSX file.",
+        "Choose a file to continue.": "Choose a file to continue.",
+        "Chosen: {name}": "Chosen: {name}",
+        "Spreadsheet (CSV, XLS or XLSX)": "Spreadsheet (CSV, XLS or XLSX)",
+        "Start from a spreadsheet": "Start from a spreadsheet",
+        "The file could not be read.": "The file could not be read.",
+        "The file is empty.": "The file is empty.",
+        "The file is larger than 10 MB.": "The file is larger than 10 MB.",
+        "The first row holds the column names. Each column becomes a field, each row a record, and the app opens on a list of them.": "The first row holds the column names. Each column becomes a field, each row a record, and the app opens on a list of them.",
+        "Turn off \"Start from a database\" to start from a spreadsheet.": "Turn off \"Start from a database\" to start from a spreadsheet."
     },
     "nplurals=2; plural=(n != 1);"
 )

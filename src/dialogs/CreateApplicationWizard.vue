@@ -172,6 +172,7 @@ export default {
 		 *
 		 * @return {object}
 		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+		 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
 		 */
 		defaults() {
 			return {
@@ -183,6 +184,7 @@ export default {
 				preset: '',
 				versions: [],
 				fromDatabase: null,
+				fromFile: null,
 				demoRecords: false,
 				_step1Valid: false,
 				_step2Valid: false,
@@ -256,6 +258,7 @@ export default {
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/application-creation-wizard/spec.md
+		 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
 		 */
 		async onSubmit(stepData) {
 			const body = {
@@ -270,6 +273,14 @@ export default {
 				body.fromDatabase = {
 					register: stepData.fromDatabase.register,
 					schemas: stepData.fromDatabase.schemas || [],
+				}
+			}
+			// REQ-BQCV-001: the server reads and imports the file, and rolls back on failure.
+			if (stepData.fromFile && stepData.fromFile.content) {
+				body.fromFile = {
+					name: stepData.fromFile.name,
+					mime: stepData.fromFile.mime,
+					content: stepData.fromFile.content,
 				}
 			}
 
