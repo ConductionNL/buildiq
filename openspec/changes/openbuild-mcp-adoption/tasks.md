@@ -40,7 +40,8 @@
   - GIVEN `Automation` WHEN declared THEN `search` + `get` only, filters `applicationSlug`, `enabled`, `trigger`
   - GIVEN overlays `20-data-registers.json` and `31-export-job-broker-credential.json` re-declare `Application` and `exportJob` WHEN the register is imported THEN the `x-openregister-mcp` block MUST survive the union merge on both — assert against the live imported schema, do not assume
 - [x] Implement
-- [ ] Test
+- [x] Test
+  > `tests/Unit/Settings/McpReadDialectTest.php::testTheOverlaysKeepTheDialect` asserts the union merge in memory; `tests/e2e/mcp-read-dialect.spec.ts` asserts the dialect on the five imported schemas (written, runs in nightly, 24 Nov 2026).
 
 ### Task 5: Assert the catalog shape
 - **spec_ref**: `openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-outside-agents-shall-build-apps-through-the-eight-builder-tools`
