@@ -2409,6 +2409,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 *
 	 * @spec openspec/specs/openbuild-remote-template-store/spec.md
 	 */
+	#[\Override]
 	public function installFromTemplateArray(
 		array $template,
 		string $name,
