@@ -196,8 +196,8 @@ import NcNoteCard from '@nextcloud/vue/components/NcNoteCard'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import UserDeltaEditModal from '../modals/UserDeltaEditModal.vue'
-import { fetchDeltaBase } from '../services/deltaEditing.js'
 import VersionHistory from './VersionHistory.vue'
+import { fetchDeltaBase } from '../services/deltaEditing.js'
 import {
 	userDeltaState,
 	userOverridesUrl,
@@ -380,7 +380,7 @@ export default {
 			try {
 				const { orphanedDeltaPaths } = await fetchDeltaBase(this.appSlug, '')
 				this.orphanedDeltaPaths = orphanedDeltaPaths
-			} catch (e) {
+			} catch {
 				this.orphanedDeltaPaths = []
 			}
 		},

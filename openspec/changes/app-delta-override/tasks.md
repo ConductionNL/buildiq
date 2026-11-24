@@ -62,7 +62,8 @@
 
 ## 8. Verify
 
-- [ ] 8.1 Run `composer check:strict` and the relevant hydra mechanical gates (spec-coverage, route-auth, no-admin-idor) green on the diff.
+- [x] 8.1 Run `composer check:strict` and the relevant hydra mechanical gates (spec-coverage, route-auth, no-admin-idor) green on the diff.
+  > Run 24 Nov on the 5.3 PR: no new gate findings against development (route-auth, no-admin-idor and the rest report the same set), the same PHPUnit failures as development, lint 0 errors, vitest green.
 - [ ] 8.2 Manual: clone-from-template app stores `baseRef` + delta; edit one page; add a page to the base; confirm the derived app inherits it on next manifest fetch.
 - [x] 8.3 `openspec validate "app-delta-override"` passes and `openspec status` shows 4/4 complete before archiving.
   > Run 22 Nov 2026: `openspec validate app-delta-override --strict` is valid after the long texts of four requirements moved into scenarios (the delta shape, every consumer getting a merged manifest, the route, the organisation scope, the permissions gate, the slug lookup, the name injection); `openspec status` shows 4/4.
