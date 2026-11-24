@@ -46,6 +46,14 @@
 							: t('buildiq', 'The built app manifest. Read-only.')
 					}}
 				</p>
+				<!-- app-delta-override D5: base drift is shown to the app's maintainers, never blocking. -->
+				<NcNoteCard
+					v-if="orphanedDeltaPaths.length > 0"
+					type="warning"
+					data-testid="orphaned-delta-paths">
+					{{ t('buildiq', 'Some changes of this version no longer match the app it extends, and are skipped:') }}
+					<code>{{ orphanedDeltaPaths.join(', ') }}</code>
+				</NcNoteCard>
 			</article>
 
 			<!-- Admin (shared) delta -->
@@ -184,9 +192,11 @@ import axios from '@nextcloud/axios'
 import { showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import NcButton from '@nextcloud/vue/components/NcButton'
+import NcNoteCard from '@nextcloud/vue/components/NcNoteCard'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import UserDeltaEditModal from '../modals/UserDeltaEditModal.vue'
+import { fetchDeltaBase } from '../services/deltaEditing.js'
 import VersionHistory from './VersionHistory.vue'
 import {
 	userDeltaState,
@@ -196,7 +206,7 @@ import {
 
 export default {
 	name: 'ManifestLayersDetail',
-	components: { NcButton, ArrowLeft, Plus, VersionHistory, UserDeltaEditModal },
+	components: { NcButton, NcNoteCard, ArrowLeft, Plus, VersionHistory, UserDeltaEditModal },
 	props: {
 		// The app UUID, forwarded from the route param by CnPageRenderer.
 		objectId: { type: String, default: '' },
@@ -220,6 +230,8 @@ export default {
 			// Maintainer view of ALL users' overrides (403 → not a maintainer → hidden).
 			userOverrides: [],
 			canViewUserOverrides: false,
+			// Delta paths of the production version that match nothing in its base (base drift).
+			orphanedDeltaPaths: [],
 		}
 	},
 
@@ -347,7 +359,30 @@ export default {
 				this.loadAdminVersion(),
 				this.loadUserDelta(),
 				this.loadUserOverrides(),
+				this.loadOrphanedDeltaPaths(),
 			])
+		},
+
+		/**
+		 * Load the production version's orphaned delta paths: changes that no
+		 * longer match the app it extends and are skipped when it is served.
+		 * The endpoint answers only the app's owners and editors; for anyone
+		 * else, a version without a base, or any error, nothing is shown.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/app-delta-override/tasks.md#task-5.3
+		 */
+		async loadOrphanedDeltaPaths() {
+			this.orphanedDeltaPaths = []
+			if (!this.appSlug) {
+				return
+			}
+			try {
+				const { orphanedDeltaPaths } = await fetchDeltaBase(this.appSlug, '')
+				this.orphanedDeltaPaths = orphanedDeltaPaths
+			} catch (e) {
+				this.orphanedDeltaPaths = []
+			}
 		},
 
 		/**
