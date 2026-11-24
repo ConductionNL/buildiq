@@ -172,17 +172,14 @@ rows in the shape the widget shows and you want that widget's own look. Use
 the last good data when the endpoint fails" behaviour.
 
 **KPI strips.** A `stats-block` entry counts over one register and schema
-(`metric`, `field`, `filter`, `hideWhenZero`). Up to nextcloud-vue 2.211 that
-was its only source: an endpoint needs its own response mapping per entry, which
-the manifest schema did not offer, so an endpoint-backed KPI had to be a separate
-`stat` or `delta` widget with `props.content.endpointSource`. From nextcloud-vue
-2.212.0 (`stats-block-entry-endpoint`) an entry can carry an `endpointSource`
-and a `valueField`, the dot-path of its value in the response; entries naming the
-same endpoint share one request, so one summary endpoint feeds the whole strip.
-Buildiq itself still pins nextcloud-vue 2.210 and its connector widget runtime
-spec (REQ-CWR-003) keeps the strip register-bound, so in Buildiq apps use `stat`
-or `delta` widgets for endpoint KPIs until that requirement is revised and the
-pin moves. The support lives in the shared widget library, not in a local patch.
+(`metric`, `field`, `filter`, `hideWhenZero`), or reads its value from an app
+endpoint: give the entry an `endpointSource` and a `valueField`, the dot-path of
+its value in the response (nextcloud-vue 2.212.0, `stats-block-entry-endpoint`).
+Entries naming the same endpoint share one request, so one summary endpoint feeds
+the whole strip. Any other key on an entry is refused by the manifest schema;
+Buildiq does not patch that schema or inject endpoint data into the entries. For
+a single endpoint KPI with its own card, a `stat` or `delta` widget with
+`props.content.endpointSource` still works.
 
 `connector-data` can't fill a dashboard page on its own as one full-width
 widget; place it next to another widget, or narrower than full width.

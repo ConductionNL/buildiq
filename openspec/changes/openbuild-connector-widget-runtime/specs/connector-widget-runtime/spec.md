@@ -57,25 +57,29 @@ Buildiq SHALL treat the following as the closed, normative set of ways a widget 
 - **WHEN** manifest validation runs
 - **THEN** the manifest is rejected with an error naming the widget and stating that exactly one data binding is allowed
 
-### Requirement: REQ-CWR-003 `stats-block` remains register-bound, with a stated rationale
+### Requirement: REQ-CWR-003 `stats-block` entries take an endpoint only through the library's entry mapping
 
-The `stats-block` widget key MUST NOT accept an endpoint binding, and Buildiq MUST NOT work around this by patching the vendored manifest schema or by injecting endpoint data into `props.entries[]`. Its entries validate against `$defs.statsBlockEntry`, which declares `additionalProperties: false` and requires `register` and `schema`, so an `endpointSource` key inside an entry is a schema violation rather than an omission. Endpoint parity for `stats-block` SHALL be recorded as an upstream `@conduction/nextcloud-vue` concern together with the reason it is a design and not a key addition — each entry is a per-schema object count (`metric`, `field`, `filter`, `hideWhenZero`) and would need its own per-entry response mapping. Authors needing endpoint-backed KPIs SHALL be directed to individual `stat` or `delta` widgets, which do accept `props.content.endpointSource`.
+A `stats-block` entry SHALL count over its `register` and `schema`, or read an app endpoint through the library's `endpointSource` and `valueField` on the entry (nextcloud-vue 2.212.0). Buildiq MUST NOT patch the manifest schema or inject endpoint data into `props.entries[]`; any other key on an entry is a schema violation.
 
-@e2e exclude a schema rule with no runtime surface: the rejected entry and the stat/delta alternative are asserted against the vendored schema in Vitest `tests/services/endpointBindingMatrix.spec.js`
+@e2e exclude schema rule, asserted in Vitest `tests/services/endpointBindingMatrix.spec.js`
 
-#### Scenario: An endpoint-bound stats-block entry is rejected
+#### Scenario: An endpoint-bound stats-block entry validates
 
-- **GIVEN** a manifest whose `stats-block` widget declares `props.entries[0].endpointSource`
+- **GIVEN** a manifest whose `stats-block` widget declares `props.entries[0]` with `endpointSource: { url: "/apps/example/api/kpi" }` and `valueField: "open"`
 - **WHEN** the manifest is validated against the canonical v2 schema
-- **THEN** validation fails because `$defs.statsBlockEntry` forbids additional properties
-- **AND** the app cannot be published with that widget
+- **THEN** the entry has no errors
 
-#### Scenario: Author is directed to the supported alternative
+#### Scenario: An unknown key on an entry is rejected
 
-- **GIVEN** an author who needs an endpoint-backed KPI tile
-- **WHEN** they consult the endpoint-binding guidance
-- **THEN** they are directed to a `stat` or `delta` widget with `props.content.endpointSource`
-- **AND** the reason `stats-block` is register-only is stated rather than left implicit
+- **GIVEN** a `stats-block` whose `props.entries[1]` carries a key the schema does not declare
+- **WHEN** the manifest is validated
+- **THEN** validation fails naming `/props/entries/1` and the key
+
+#### Scenario: An entry without a source is rejected
+
+- **GIVEN** a `stats-block` entry with neither `register` and `schema` nor `endpointSource`
+- **WHEN** the manifest is validated
+- **THEN** validation fails for that entry
 
 ### Requirement: REQ-CWR-004 Published-path proof obligation
 

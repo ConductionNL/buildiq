@@ -52,6 +52,7 @@ Acceptance criteria:
 
 - [x] 3.4 Raise the `stats-block` endpoint-parity item upstream against `@conduction/nextcloud-vue`, referencing the per-entry response-mapping design it needs.
   > Built upstream 24 Nov (UNBLOCK: build the dependency): nextcloud-vue `stats-block-entry-endpoint` (#2320, in the 2.212.0 release, manifest schema 2.194.0; 2.211.0 was cut just before it) gives a stats-block entry `endpointSource` and `valueField`, read per entry from one shared response. No change to the vendored schema inside Buildiq, and the pin stays at `^2.210.0`: REQ-CWR-003 still keeps the strip register-bound, and `tests/services/endpointBindingMatrix.spec.js` (task 3.2) asserts that against the installed library's schema. Moving the pin to 2.212 needs REQ-CWR-003 revised first. `docs/widgets.md` says from which version the library supports it.
+  > Pin moved 24 Nov: `@conduction/nextcloud-vue` `^2.212.0`, and REQ-CWR-003 revised (decision in the PR): a stats-block entry counts over its register and schema or reads an endpoint through the library's `endpointSource` + `valueField`; the entry stays closed to any other key. `tests/services/endpointBindingMatrix.spec.js` asserts the accepted endpoint entry, the rejected unknown key naming the entry, and the rejected entry without a source.
 
 Acceptance criteria:
 - No change is made to the vendored schema inside Buildiq.
