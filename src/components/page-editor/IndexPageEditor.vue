@@ -304,7 +304,7 @@ export default {
 		 * The page's scan block, or an empty one.
 		 *
 		 * @return {object}
-		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001
+		 * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001
 		 */
 		scan() {
 			const scan = this.config.scan
@@ -315,7 +315,7 @@ export default {
 		 * Whether the page scans to find a record.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001
+		 * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001
 		 */
 		scanEnabled() {
 			return this.scan.enabled === true
@@ -326,7 +326,7 @@ export default {
 		 * even when the schema has not loaded yet.
 		 *
 		 * @return {Array<string>}
-		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001
+		 * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001
 		 */
 		scanFieldOptions() {
 			const names = Object.keys(this.schemaProperties || {}).sort()
@@ -486,7 +486,7 @@ export default {
 		 * opening the one matching record, keeping a field chosen before.
 		 *
 		 * @param {boolean} enabled - the checkbox's new state.
-		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001
+		 * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001
 		 */
 		onScanToggle(enabled) {
 			const next = { ...this.config }
@@ -507,7 +507,7 @@ export default {
 		 *
 		 * @param {string} key - `field` or `onMatch`.
 		 * @param {string} value - the chosen value.
-		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001
+		 * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001
 		 */
 		updateScan(key, value) {
 			const next = { ...this.config }

@@ -235,7 +235,7 @@ class JourneyWritesCheck implements JourneyWritesCheckInterface {
 	 *
 	 * @return array<int, array<string, mixed>> The findings.
 	 *
-	 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
+	 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
 	 */
 	private function destinationFindings(array $write, array $mapping, array $options): array {
 		$targets = $write['targets'] ?? null;
@@ -287,7 +287,7 @@ class JourneyWritesCheck implements JourneyWritesCheckInterface {
 	 *
 	 * @return array<int, array<string, string>> The refusals.
 	 *
-	 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
+	 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
 	 */
 	private function repeatRefusals(array $write): array {
 		$refusals = [];
@@ -315,7 +315,7 @@ class JourneyWritesCheck implements JourneyWritesCheckInterface {
 	 *
 	 * @return array<int, array<string, string>> The refusals.
 	 *
-	 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
+	 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
 	 */
 	private static function targetRefusals(array $write, bool $repeats): array {
 		$refusals   = [];

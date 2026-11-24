@@ -10,7 +10,7 @@
  * speech bitrate (Opus at 32 kbit/s, 4000 bytes a second) plus the base64
  * overhead of a `data:` URL.
  *
- * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-forms-offer-signature-audio-and-location-fields-req-bqsa-001
+ * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-forms-offer-signature-audio-and-location-fields-req-bqsa-001
  */
 
 /** The device field types the form field builder offers. */
@@ -35,7 +35,7 @@ export const AUDIO_BYTES_PER_SECOND = 4000
  *
  * @param {number} seconds - the clip length.
  * @return {number} bytes.
- * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+ * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
  */
 export function audioClipBytes(seconds) {
 	return Math.ceil((seconds * AUDIO_BYTES_PER_SECOND * 4) / 3)
@@ -46,7 +46,7 @@ export function audioClipBytes(seconds) {
  *
  * @param {number} [cap] - the cap in bytes; the renderer's default when absent.
  * @return {number}
- * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+ * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
  */
 export function longestAudioSeconds(cap = INLINE_FILE_CAP) {
 	return Math.floor((cap * 3) / (4 * AUDIO_BYTES_PER_SECOND))
@@ -57,7 +57,7 @@ export function longestAudioSeconds(cap = INLINE_FILE_CAP) {
  *
  * @param {object} field - the form field.
  * @return {number}
- * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+ * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
  */
 export function inlineCapOf(field) {
 	return Number.isFinite(field?.maxSize) && field.maxSize > 0 ? field.maxSize : INLINE_FILE_CAP
@@ -68,7 +68,7 @@ export function inlineCapOf(field) {
  *
  * @param {object} field - the form field.
  * @return {number} the stored length; a malformed value is returned as stored.
- * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+ * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
  */
 export function audioSecondsOf(field) {
 	return field?.maxSeconds === undefined ? AUDIO_DEFAULT_SECONDS : field.maxSeconds
@@ -87,7 +87,7 @@ const OPTION_PROBLEMS = Object.freeze({
  * @param {object} field - the form field.
  * @param {string} mode - the form's mode (`public`, `create`, `edit`).
  * @return {Array<string>} codes such as `audio-length-too-long`.
- * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+ * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
  */
 export function deviceFieldProblems(field, mode) {
 	const type = field?.type
@@ -155,7 +155,7 @@ function locationProblems(field) {
  *
  * @param {object} field - the form field.
  * @return {{[name: string]: {type: string}}}
- * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+ * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
  */
 export function deviceFieldTargets(field) {
 	const type = field?.type
@@ -194,7 +194,7 @@ function locationTargets(field) {
  * @param {object} field - the form field.
  * @param {?object} properties - the target schema's properties; null when unknown.
  * @return {{[name: string]: {type: string}}} the properties to add, empty when none or unknown.
- * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+ * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
  */
 export function missingDeviceTargets(field, properties) {
 	if (!properties || typeof properties !== 'object') {

@@ -115,7 +115,7 @@ export default {
 		 * The code components of the manifest.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
 		 */
 		components() {
 			return codeComponentsOf(this.manifest)
@@ -125,7 +125,7 @@ export default {
 		 * The expressions of the manifest.
 		 *
 		 * @return {Array<{key: string, expression: string}>}
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
 		 */
 		expressions() {
 			return expressionsOf(this.manifest)
@@ -135,7 +135,7 @@ export default {
 		 * What the code is: a change here reruns it.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
 		 */
 		codeSignature() {
 			return JSON.stringify(this.components.map((item) => [item.key, item.code]))
@@ -145,7 +145,7 @@ export default {
 		 * What the expressions are: a change here re-evaluates them.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
 		 */
 		expressionSignature() {
 			return JSON.stringify(this.expressions)
@@ -155,7 +155,7 @@ export default {
 		 * The expressions that failed, with their message.
 		 *
 		 * @return {Array<{key: string, expression: string, error: string}>}
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
 		 */
 		expressionErrors() {
 			return this.expressions
@@ -168,7 +168,7 @@ export default {
 		 * The preview frames then show the server's placeholder themselves.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
 		 */
 		disabled() {
 			return this.evaluatorDisabled
@@ -177,7 +177,7 @@ export default {
 
 	watch: {
 		/**
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
 		 */
 		codeSignature() {
 			this.schedule('_codeTimer', () => {
@@ -187,7 +187,7 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
 		 */
 		expressionSignature() {
 			this.schedule('_expressionTimer', () => this.evaluateAll())
@@ -195,7 +195,7 @@ export default {
 	},
 
 	/**
-	 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+	 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
 	 */
 	created() {
 		this._frames = new Map()
@@ -209,7 +209,7 @@ export default {
 	},
 
 	/**
-	 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+	 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
 	 */
 	beforeUnmount() {
 		window.removeEventListener('message', this.onFrameMessage)
@@ -227,7 +227,7 @@ export default {
 		 *
 		 * @param {string} timer - the instance field holding the timer.
 		 * @param {() => void} run - what to run.
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
 		 */
 		schedule(timer, run) {
 			clearTimeout(this[timer])
@@ -238,7 +238,7 @@ export default {
 		 * The signed-in user, as a code component or expression sees it.
 		 *
 		 * @return {{id: string, name: string}}
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
 		 */
 		currentUser() {
 			const user = getCurrentUser()
@@ -250,7 +250,7 @@ export default {
 		 *
 		 * @param {object} item - one entry of `components`.
 		 * @param {HTMLIFrameElement} frame - its frame.
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
 		 */
 		renderInto(item, frame) {
 			const target = frame && frame.contentWindow
@@ -266,7 +266,7 @@ export default {
 		 * window, and any other message type, are ignored.
 		 *
 		 * @param {MessageEvent} event - the message.
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
 		 */
 		onFrameMessage(event) {
 			const key = this._frames.get(event.source)
@@ -280,7 +280,7 @@ export default {
 
 		/** Evaluate once the evaluator frame has loaded. */
 		/**
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
 		 */
 		evaluatorLoaded() {
 			this.evaluateAll()
@@ -290,7 +290,7 @@ export default {
 		 * Evaluate every expression over an empty sample scope.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
 		 */
 		async evaluateAll() {
 			const scope = { row: {}, values: {}, user: this.currentUser(), route: {} }
@@ -306,7 +306,7 @@ export default {
 		 *
 		 * @param {string} error - the evaluator's error.
 		 * @return {string}
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t07
 		 */
 		errorText(error) {
 			if (error === 'timeout') {

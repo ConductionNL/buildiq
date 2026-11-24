@@ -634,7 +634,7 @@ export default {
 		 * when it is not known (no schema picked, or the list not loaded).
 		 *
 		 * @return {?object}
-		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
 		 */
 		targetSchemaEntry() {
 			if (!this.parentSchema) {
@@ -712,7 +712,7 @@ export default {
 		 *
 		 * @param {number} index - the field's row.
 		 * @param {string} type - the new type.
-		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-forms-can-fill-a-field-from-a-scan-req-bqqr-002
+		 * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-forms-can-fill-a-field-from-a-scan-req-bqqr-002
 		 */
 		changeType(index, type) {
 			const next = this.localFields.slice()
@@ -733,7 +733,7 @@ export default {
 		 * @param {number} index - the field's row.
 		 * @param {string} format - `qr`, `code128` or `ean13`.
 		 * @param {boolean} checked - whether the format is now accepted.
-		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-forms-can-fill-a-field-from-a-scan-req-bqqr-002
+		 * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-forms-can-fill-a-field-from-a-scan-req-bqqr-002
 		 */
 		toggleFormat(index, format, checked) {
 			const next = this.localFields.slice()
@@ -848,7 +848,7 @@ export default {
 		 *
 		 * @param {object} field - the field entry.
 		 * @return {boolean}
-		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
 		 */
 		hasExpressionDefault(field) {
 			return !!field && typeof field.expressionDefault === 'string'
@@ -862,7 +862,7 @@ export default {
 		 * @param {number} index - the field index.
 		 * @param {object} field - the field entry.
 		 * @return {void}
-		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
 		 */
 		toggleExpressionDefault(index, field) {
 			this.updateLive(index, 'expressionDefault', this.hasExpressionDefault(field) ? null : '')
@@ -930,7 +930,7 @@ export default {
 		 *
 		 * @param {string} type - the type.
 		 * @return {object}
-		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
+		 * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
 		 */
 		newField(type) {
 			// A product list starts as the sub-objects widget with its product column.
@@ -1096,7 +1096,7 @@ export default {
 		 * @param {string} key - the option key.
 		 * @param {boolean|number|string|null} value - the value, or null to delete.
 		 * @return {void}
-		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-forms-offer-signature-audio-and-location-fields-req-bqsa-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-forms-offer-signature-audio-and-location-fields-req-bqsa-001
 		 */
 		updateOption(index, key, value) {
 			const next = this.localFields.slice()
@@ -1115,7 +1115,7 @@ export default {
 		 *
 		 * @param {object} field - the field entry.
 		 * @return {boolean}
-		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-forms-offer-signature-audio-and-location-fields-req-bqsa-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-forms-offer-signature-audio-and-location-fields-req-bqsa-001
 		 */
 		isDeviceField(field) {
 			return !!field && DEVICE_FIELD_TYPES.includes(field.type)
@@ -1126,7 +1126,7 @@ export default {
 		 *
 		 * @param {object} field - the audio field.
 		 * @return {number} the stored length, as stored.
-		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-forms-offer-signature-audio-and-location-fields-req-bqsa-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-forms-offer-signature-audio-and-location-fields-req-bqsa-001
 		 */
 		audioSeconds(field) {
 			return audioSecondsOf(field)
@@ -1138,7 +1138,7 @@ export default {
 		 *
 		 * @param {object} field - the audio field.
 		 * @return {string}
-		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
 		 */
 		audioSizeHint(field) {
 			const seconds = audioSecondsOf(field)
@@ -1159,7 +1159,7 @@ export default {
 		 *
 		 * @param {object} field - the field entry.
 		 * @return {{[name: string]: {type: string}}}
-		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
 		 */
 		missingTargets(field) {
 			const schema = this.targetSchemaEntry
@@ -1172,7 +1172,7 @@ export default {
 		 *
 		 * @param {object} field - the field entry.
 		 * @return {void}
-		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+		 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
 		 */
 		offerProperties(field) {
 			const additions = this.missingTargets(field)
@@ -1188,7 +1188,7 @@ export default {
 		 *
 		 * @param {object} field - the field entry.
 		 * @return {Array<string>}
-		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+		 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 		 */
 		deviceProblemMarks(field) {
 			return deviceFieldProblems(field, this.formMode)

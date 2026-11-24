@@ -5,7 +5,7 @@
  * creationFlows (forms-multi-product-request D5): which flows start on the
  * creation of a record in a product's target.
  *
- * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
+ * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
  */
 
 import { describe, expect, it, vi } from 'vitest'

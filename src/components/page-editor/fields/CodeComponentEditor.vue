@@ -61,7 +61,7 @@ export default {
 		 * The three text parts, in the order a maker writes them.
 		 *
 		 * @return {Array<{key: string, label: string, language: string}>}
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t04
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t04
 		 */
 		parts() {
 			return [
@@ -75,7 +75,7 @@ export default {
 		 * The inputs a code component may ask for, labelled.
 		 *
 		 * @return {Array<{key: string, label: string}>}
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t04
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t04
 		 */
 		inputOptions() {
 			const labels = {
@@ -94,7 +94,7 @@ export default {
 		 *
 		 * @param {string} key - `html`, `css` or `js`.
 		 * @return {string}
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t04
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t04
 		 */
 		valueOf(key) {
 			const value = this.modelValue ? this.modelValue[key] : undefined
@@ -106,7 +106,7 @@ export default {
 		 *
 		 * @param {string} key - `html`, `css` or `js`.
 		 * @param {string} value - the new text.
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t04
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t04
 		 */
 		setPart(key, value) {
 			const next = { ...(this.modelValue || {}) }
@@ -123,7 +123,7 @@ export default {
 		 *
 		 * @param {string} key - one of CODE_INPUTS.
 		 * @return {boolean}
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t04
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t04
 		 */
 		hasInput(key) {
 			const inputs = this.modelValue && Array.isArray(this.modelValue.inputs) ? this.modelValue.inputs : []
@@ -136,7 +136,7 @@ export default {
 		 *
 		 * @param {string} key - one of CODE_INPUTS.
 		 * @param {boolean} on - whether it is now ticked.
-		 * @spec openspec/changes/pages-custom-code/tasks.md#t04
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t04
 		 */
 		toggleInput(key, on) {
 			const current = this.modelValue && Array.isArray(this.modelValue.inputs) ? this.modelValue.inputs : []

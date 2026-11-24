@@ -562,7 +562,7 @@ export default {
 		 * Write the page's widget list; an empty list deletes `config.widgets`.
 		 *
 		 * @param {Array<object>} widgets - the whole widget list.
-		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-detail-pages-can-show-a-code-req-bqqr-003
+		 * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-detail-pages-can-show-a-code-req-bqqr-003
 		 */
 		updateWidgets(widgets) {
 			const next = { ...this.config }

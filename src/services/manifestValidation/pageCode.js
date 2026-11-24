@@ -17,7 +17,7 @@
  * `schedules.js` and `formLogic.js`, so the path-prefix inline marks light up
  * the offending editor section. Codes are `buildiq.pageCode.error.*`.
  *
- * @spec openspec/changes/pages-custom-code/specs
+ * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs
  */
 
 /** What a code component may ask the page to hand in (D1). */
@@ -42,7 +42,7 @@ function isPlainObject(value) {
  * @param {*} code - the `config.code` value.
  * @param {string} path - its pointer.
  * @return {string[]} - `<pointer>: <code>` error strings.
- * @spec openspec/changes/pages-custom-code/specs
+ * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs
  */
 export function codeBlockErrors(code, path) {
 	if (!isPlainObject(code)) {
@@ -98,7 +98,7 @@ function codeInputsErrors(inputs, path) {
  * @param {*} expression - the expression value.
  * @param {string} path - its pointer.
  * @return {string[]} - zero or one `<pointer>: <code>` string.
- * @spec openspec/changes/pages-custom-code/specs
+ * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs
  */
 export function expressionErrors(expression, path) {
 	if (expression === undefined) {
@@ -140,7 +140,7 @@ function codeConfigErrors(config, path) {
  *
  * @param {object} manifest - the in-flight manifest.
  * @return {string[]} - `<pointer>: <code>` error strings.
- * @spec openspec/changes/pages-custom-code/specs
+ * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs
  */
 export function validatePageCode(manifest) {
 	const pages = manifest && Array.isArray(manifest.pages) ? manifest.pages : []

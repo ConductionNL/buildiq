@@ -616,7 +616,7 @@ class ApplicationVersionsController extends Controller {
 	 *
 	 * @return JSONResponse|null The 403, or null when the write may proceed.
 	 *
-	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+	 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
 	 */
 	private function refuseCodeChange(array $application, array|null $before, array $after): JSONResponse|null {
 		if ($this->codeGuard->changesCode(before: $before, after: $after) === false) {

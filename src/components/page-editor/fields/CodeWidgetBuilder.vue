@@ -80,7 +80,7 @@
 /**
  * Edits the `code` widgets inside a detail page's `config.widgets`.
  *
- * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-detail-pages-can-show-a-code-req-bqqr-003
+ * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-detail-pages-can-show-a-code-req-bqqr-003
  */
 export default {
 	name: 'CodeWidgetBuilder',
@@ -98,7 +98,7 @@ export default {
 		 * The code widgets with their place in the whole list.
 		 *
 		 * @return {Array<{index: number, widget: object}>}
-		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-detail-pages-can-show-a-code-req-bqqr-003
+		 * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-detail-pages-can-show-a-code-req-bqqr-003
 		 */
 		codeWidgets() {
 			return (Array.isArray(this.modelValue) ? this.modelValue : [])
@@ -111,7 +111,7 @@ export default {
 		/**
 		 * Add a QR code of the record's address, the one source every format allows.
 		 *
-		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-detail-pages-can-show-a-code-req-bqqr-003
+		 * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-detail-pages-can-show-a-code-req-bqqr-003
 		 */
 		addWidget() {
 			const widgets = Array.isArray(this.modelValue) ? this.modelValue.slice() : []
@@ -129,7 +129,7 @@ export default {
 		 *
 		 * @param {number} index - the widget's place in the whole list.
 		 * @param {object} change - the keys to set.
-		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-detail-pages-can-show-a-code-req-bqqr-003
+		 * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-detail-pages-can-show-a-code-req-bqqr-003
 		 */
 		updateWidget(index, change) {
 			const widgets = this.modelValue.slice()
@@ -145,7 +145,7 @@ export default {
 		 * Remove one code widget.
 		 *
 		 * @param {number} index - the widget's place in the whole list.
-		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-detail-pages-can-show-a-code-req-bqqr-003
+		 * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-detail-pages-can-show-a-code-req-bqqr-003
 		 */
 		removeWidget(index) {
 			this.$emit('update:modelValue', this.modelValue.filter((widget, at) => at !== index))

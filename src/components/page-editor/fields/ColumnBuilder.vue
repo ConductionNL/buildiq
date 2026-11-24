@@ -243,7 +243,7 @@ export default {
 		 *
 		 * @param {string|object} col - one entry of `config.columns`.
 		 * @return {boolean}
-		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
 		 */
 		isComputed(col) {
 			return !!col && typeof col === 'object' && typeof col.expression === 'string'
@@ -256,7 +256,7 @@ export default {
 		 * is left.
 		 *
 		 * @param {number} index - position of the column.
-		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
 		 */
 		toggleExpression(index) {
 			const next = this.localColumns.slice()
@@ -270,7 +270,7 @@ export default {
 		 *
 		 * @param {string|object} existing - the column entry.
 		 * @return {object}
-		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
 		 */
 		withExpression(existing) {
 			const column = typeof existing === 'object' && existing ? { ...existing } : { key: this.rowKey(existing) }
@@ -282,7 +282,7 @@ export default {
 		 *
 		 * @param {number} index - position of the column.
 		 * @param {string} value - the typed expression.
-		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
 		 */
 		onExpressionInput(index, value) {
 			const next = this.localColumns.slice()

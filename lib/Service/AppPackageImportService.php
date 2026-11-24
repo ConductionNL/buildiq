@@ -210,7 +210,7 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 	 *
 	 * @return array{status:int,data:array<string,mixed>}|null The 403, or null when the import may proceed.
 	 *
-	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+	 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
 	 */
 	private function refuseCode(array $template): array|null {
 		$manifest = ($template['manifest'] ?? null);

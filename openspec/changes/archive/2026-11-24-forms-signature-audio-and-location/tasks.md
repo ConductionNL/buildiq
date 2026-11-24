@@ -13,7 +13,9 @@
   and accuracy, so a missing or wrongly typed property is a finding on that field.
 - [x] **T04**: Add "Show my position" and "Center on my position" to `src/components/page-editor/MapPageEditor.vue` (REQ-BQSA-003). Verify: vitest case in `tests/components/page-editor/MapPageEditor.spec.js`.
 - [x] **T05**: Derive `deviceFeatures[]` on manifest save and store it on `ApplicationVersion`; set a `FeaturePolicy` in `DashboardController::builder()`, `builderSlash()` and `builderPath()` that adds `'self'` for those features only (REQ-BQSA-004). Verify: PHPUnit cases for the derivation and for the response policy with and without features.
-- [ ] **T06**: File the renderer half with nextcloud-vue: the three form field types in `cnFormFieldRenderer.js`, the manifest schema values, and `showUserLocation` and `centerOnUser` on `CnMapPage`, with this spec as the contract. Verify: the nextcloud-vue change exists and cites REQ-BQSA-001 and REQ-BQSA-003.
-- [ ] **T07**: Playwright `tests/e2e/form-device-fields.spec.ts` with a granted geolocation and a fake microphone: a signature, a clip and a position land on a record (REQ-BQSA-001, REQ-BQSA-002, REQ-BQSA-004).
+- [x] **T06**: File the renderer half with nextcloud-vue: the three form field types in `cnFormFieldRenderer.js`, the manifest schema values, and `showUserLocation` and `centerOnUser` on `CnMapPage`, with this spec as the contract. Verify: the nextcloud-vue change exists and cites REQ-BQSA-001 and REQ-BQSA-003.
+  - Done (24 Nov): nextcloud-vue change `form-signature-audio-location-fields` exists and cites REQ-BQSA-001 and REQ-BQSA-003; its renderer is in buildiq's pinned `@conduction/nextcloud-vue` ^2.203.0.
+- [x] **T07**: Playwright `tests/e2e/form-device-fields.spec.ts` with a granted geolocation and a fake microphone: a signature, a clip and a position land on a record (REQ-BQSA-001, REQ-BQSA-002, REQ-BQSA-004).
+  - Written, runs in nightly (not verified on a live instance): `tests/e2e/form-device-fields.spec.ts`.
 - [x] **T08**: Strings and docs: English and Dutch for the field types, options, the property offer and the refusals (`l10n/en.json`, `l10n/nl.json`), and a section in `docs/` on signatures, spoken notes and positions in forms.
 - [x] **T09**: Run `openspec validate forms-signature-audio-and-location --strict`. Valid.

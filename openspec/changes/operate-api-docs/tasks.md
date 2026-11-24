@@ -7,6 +7,7 @@
 - [x] **T03**: Register `ApplicationApiTab` with `tab()` in `src/registry.js` and add an `api` entry to the `VirtualAppDetail` `sidebarTabs` in `src/manifest.json` (REQ-BQAD-001). Verify: Playwright `tests/e2e/app-api-docs.spec.ts` opens an app's API tab, finds the `permit` schema's list call, and downloads a file that parses as OpenAPI 3. (written, runs in nightly: the spec sits in tests/e2e and is not verified against a live instance)
   > Done in code: `ApplicationApiTab` is registered in `src/registry.js`, the `api` tab is in `VirtualAppDetail`'s `sidebarTabs` (order 65), and its `Api` icon is in `src/icons.js`. Left: the Playwright test, which needs a running instance.
 - [ ] **T04**: Ask nextcloud-vue for the OpenAPI reference component (sibling half) and record the change name here; switch the tab to it when buildiq's pin carries it.
+  - Change name (24 Nov): nextcloud-vue `openapi-reference-component` (cites REQ-BQAD), whose `CnApiReference` is in the pinned ^2.203.0; switching the tab to it is the remaining step.
 - [x] **T05**: English and Dutch strings for the tab (`l10n/en.json`, `l10n/nl.json`), and a page in `docs/integrator-guide.md` on reading an app's API.
   > The tab's strings are in `l10n/en.json` and `l10n/nl.json` (and the built `.js`); the page is "Reading an app's API" in `docs/integrator-guide.md`.
 - [x] **T06**: Run `openspec validate operate-api-docs --strict`.

@@ -703,7 +703,7 @@ abstract class AbstractToolHandler {
 	 *
 	 * @return array{0: array<mixed>, 1: string|null}
 	 *
-	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+	 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
 	 */
 	protected function withoutCode(array $config): array {
 		[$cleaned, $removed] = (new PageCodeGuard())->stripConfig(config: $config);

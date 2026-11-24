@@ -7,7 +7,7 @@
  * its name is typed rather than picked, the label survives the switch both
  * ways, and switching off drops the expression.
  *
- * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
+ * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
  */
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'

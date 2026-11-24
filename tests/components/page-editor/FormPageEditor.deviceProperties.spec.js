@@ -6,7 +6,7 @@
  * schema and puts the stored schema back in its list
  * (forms-signature-audio-and-location, REQ-BQSA-002).
  *
- * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+ * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
  */
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'

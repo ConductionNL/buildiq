@@ -277,7 +277,7 @@ export default {
 		 *
 		 * @param {object} widget - a widget definition.
 		 * @return {boolean}
-		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
 		 */
 		hasCode(widget) {
 			const config = widget ? widget.config : undefined
@@ -289,7 +289,7 @@ export default {
 		 *
 		 * @param {object} widget - the widget.
 		 * @return {object}
-		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
 		 */
 		configOf(widget) {
 			return (widget.config && typeof widget.config === 'object') ? widget.config : {}
@@ -302,7 +302,7 @@ export default {
 		 *
 		 * @param {number} index - position of the widget in the `widgets` array.
 		 * @param {boolean} on - whether the widget is now written by hand.
-		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
 		 */
 		setCodeMode(index, on) {
 			const current = this.localWidgets[index] || {}
@@ -325,7 +325,7 @@ export default {
 		 *
 		 * @param {number} index - position of the widget in the `widgets` array.
 		 * @param {object} code - the code block CodeComponentEditor emitted.
-		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
 		 */
 		updateCode(index, code) {
 			const current = this.localWidgets[index] || {}
@@ -337,7 +337,7 @@ export default {
 		 *
 		 * @param {number} index - position of the widget in the `widgets` array.
 		 * @param {object} config - the new config.
-		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
 		 */
 		writeConfig(index, config) {
 			const next = this.localWidgets.slice()

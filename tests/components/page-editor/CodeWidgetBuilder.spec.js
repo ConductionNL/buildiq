@@ -5,7 +5,7 @@
  * CodeWidgetBuilder (pages-qr-and-barcodes, REQ-BQQR-003): code widgets of a
  * detail page, edited in place while other widgets stay as they are.
  *
- * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-detail-pages-can-show-a-code-req-bqqr-003
+ * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-detail-pages-can-show-a-code-req-bqqr-003
  */
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'

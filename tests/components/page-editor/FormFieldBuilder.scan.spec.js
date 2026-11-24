@@ -6,7 +6,7 @@
  * REQ-BQQR-002): picking it accepts every code format, the formats can be
  * narrowed, and leaving the type drops them.
  *
- * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-forms-can-fill-a-field-from-a-scan-req-bqqr-002
+ * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-forms-can-fill-a-field-from-a-scan-req-bqqr-002
  */
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'

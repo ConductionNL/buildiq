@@ -21,7 +21,7 @@
  * @conduction/nextcloud-vue (task T06); until it ships this spec is red there,
  * which is what it is for.
  *
- * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md
+ * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md
  * @e2e pages-qr-and-barcodes/requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001/a-technician-opens-a-device-by-its-label
  * @e2e pages-qr-and-barcodes/requirement-index-pages-can-scan-to-find-a-record-req-bqqr-001/no-match-is-said-plainly
  * @e2e pages-qr-and-barcodes/requirement-detail-pages-can-show-a-code-req-bqqr-003/a-maker-puts-a-qr-code-on-the-asset-page

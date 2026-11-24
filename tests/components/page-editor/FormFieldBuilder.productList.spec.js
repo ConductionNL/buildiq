@@ -4,7 +4,7 @@
  * T03, D4): the sub-objects widget with a product column, detail columns and a
  * maximum number of rows of at most 25.
  *
- * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
+ * @spec openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
  */
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'

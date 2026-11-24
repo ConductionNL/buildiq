@@ -512,7 +512,7 @@
 				"builder-undo-redo",
 				"openbuild-runtime",
 				"pages-action-buttons",
-				"pages-custom-code",
+				"page-custom-code",
 				"copy-app-page-and-form",
 				"page-designer-ui"
 			]
@@ -548,8 +548,8 @@
 			"overlay": null,
 			"specs": [
 				"pages-installable-offline-and-mobile",
-				"pages-qr-and-barcodes",
-				"forms-signature-audio-and-location"
+				"page-codes",
+				"form-device-fields"
 			]
 		},
 		{
@@ -561,9 +561,9 @@
 			"specs": [
 				"form-editor-logic",
 				"form-live-values",
-				"forms-signature-audio-and-location",
+				"form-device-fields",
 				"registration-form-builder",
-				"forms-multi-product-request"
+				"journey-designer"
 			]
 		},
 		{
@@ -3371,20 +3371,20 @@
 			"area": "pages",
 			"name": "Drop in a custom component written in code when the built-in ones are not enough.",
 			"source": "competitor",
-			"buildiq": "partial",
+			"buildiq": "yes",
 			"nocobase": "yes",
 			"budibase": "yes",
 			"appsmith": "yes",
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "src/components/page-editor/CustomPageEditor.vue authors {component, props} for type:\"custom\" -- 'component' is a free-text input (with datalist suggestions when a registry list is available) naming a key in the CONSUMING APP's pre-registered customComponents map (CustomPageEditor.vue:3-18 comment); 'props' is a raw-JSON textarea. There is no code editor anywhere in buildiq for writing a new component's implementation.",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-24-pages-custom-code: the buildiq half (designer, validation, server) with its unit tests, and the renderer half in nextcloud-vue (sandboxed-code-frame) inside the pinned @conduction/nextcloud-vue ^2.203.0. Playwright tests/e2e/page-custom-code.spec.ts is written and runs in the nightly. Before: src/components/page-editor/CustomPageEditor.vue authors {component, props} for type:\"custom\" -- 'component' is a free-text input (with datalist suggestions when a registry list is available) naming a key in the CONSUMING APP's pre-registered customComponents map (CustomPageEditor.vue:3-18 comment); 'props' is a raw-JSON textarea. There is no code editor anywhere in buildiq for writing a new component's implementation.",
 				"reachedOn": "any built app page authored as type custom",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/pages-custom-code (OpenSpec pass 2026-09-27).",
+				"note": "Specified in openspec/changes/archive/2026-11-24-pages-custom-code (OpenSpec pass 2026-09-27).",
 				"change": "pages-custom-code",
-				"requirement": "openspec/changes/pages-custom-code/specs/page-custom-code :: An owner writes a code component (REQ-BQCC-001)"
+				"requirement": "openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code :: An owner writes a code component (REQ-BQCC-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3412,19 +3412,19 @@
 			"area": "pages",
 			"name": "Write JavaScript expressions to bind or transform values on a page.",
 			"source": "competitor",
-			"buildiq": "no",
+			"buildiq": "yes",
 			"nocobase": "yes",
 			"budibase": "yes",
 			"appsmith": "yes",
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "specified",
-				"evidence": "searched for 'expression'/'jsExpr'/'customJs'/'bindingExpression'/'Function(' across src/components/page-editor/ and src/services/: no hits. The only conditional-value mechanism found is visibleWhen ({field, op, value} with a fixed op enum eq/neq/gt/gte/lt/lte, VisibleWhenBuilder.vue:69-73) -- a declarative predicate, not a JavaScript expression language. No formula/computed-value field editor exists.",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-24-pages-custom-code: the buildiq half (designer, validation, server) with its unit tests, and the renderer half in nextcloud-vue (sandboxed-code-frame) inside the pinned @conduction/nextcloud-vue ^2.203.0. Playwright tests/e2e/page-custom-code.spec.ts is written and runs in the nightly. Before: searched for 'expression'/'jsExpr'/'customJs'/'bindingExpression'/'Function(' across src/components/page-editor/ and src/services/: no hits. The only conditional-value mechanism found is visibleWhen ({field, op, value} with a fixed op enum eq/neq/gt/gte/lt/lte, VisibleWhenBuilder.vue:69-73) -- a declarative predicate, not a JavaScript expression language. No formula/computed-value field editor exists.",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/pages-custom-code (OpenSpec pass 2026-09-27).",
+				"note": "Specified in openspec/changes/archive/2026-11-24-pages-custom-code (OpenSpec pass 2026-09-27).",
 				"change": "pages-custom-code",
-				"requirement": "openspec/changes/pages-custom-code/specs/page-custom-code :: An owner writes expressions for columns and form fields (REQ-BQCC-002)"
+				"requirement": "openspec/changes/archive/2026-11-24-pages-custom-code/specs/page-custom-code :: An owner writes expressions for columns and form fields (REQ-BQCC-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3947,20 +3947,20 @@
 			"area": "forms",
 			"name": "Collect a signature in a form.",
 			"source": "competitor",
-			"buildiq": "no",
+			"buildiq": "yes",
 			"nocobase": "partial",
 			"budibase": "yes",
 			"appsmith": "no",
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "grep -rli 'signature|CnSignatureCapture' src lib: hits are only app-signature/version-signature code (src/builder.js, useApplicationVersion.js, ApplicationsController.php), no form field. nextcloud-vue v2.55.1 ships src/components/CnSignatureCapture/CnSignatureCapture.vue but it is not a formField type (cnFormFieldRenderer.js:127) and buildiq never imports or registers it (src/registry.js, src/runtimeRegistry.js)",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-24-forms-signature-audio-and-location: the buildiq half (designer, validation, server) with its unit tests, and the renderer half in nextcloud-vue (form-signature-audio-location-fields) inside the pinned @conduction/nextcloud-vue ^2.203.0. Playwright tests/e2e/form-device-fields.spec.ts is written and runs in the nightly. Before: grep -rli 'signature|CnSignatureCapture' src lib: hits are only app-signature/version-signature code (src/builder.js, useApplicationVersion.js, ApplicationsController.php), no form field. nextcloud-vue v2.55.1 ships src/components/CnSignatureCapture/CnSignatureCapture.vue but it is not a formField type (cnFormFieldRenderer.js:127) and buildiq never imports or registers it (src/registry.js, src/runtimeRegistry.js)",
 				"reachedOn": "",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/forms-signature-audio-and-location (OpenSpec pass 2026-09-27).",
+				"note": "Specified in openspec/changes/archive/2026-11-24-forms-signature-audio-and-location (OpenSpec pass 2026-09-27).",
 				"change": "forms-signature-audio-and-location",
-				"requirement": "openspec/changes/forms-signature-audio-and-location/specs/form-device-fields :: Forms offer signature, audio and location fields (REQ-BQSA-001)"
+				"requirement": "openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields :: Forms offer signature, audio and location fields (REQ-BQSA-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -9784,22 +9784,22 @@
 			"source": "competitor",
 			"origin": "tender",
 			"originUrl": "https://www.tenderned.nl/aankondigingen/overzicht/234319",
-			"buildiq": "no",
+			"buildiq": "yes",
 			"nocobase": "partial",
 			"budibase": "partial",
 			"appsmith": "no",
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "specified",
-				"evidence": "A registration form targets one register, schema and type value (src/components/page-editor/DetailPageEditor.vue:151-156, fields/RegistrationFormEditor.vue:42-82); nothing splits one submission into several records or processes",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-24-forms-multi-product-request: the buildiq half (designer, validation, server) with its unit tests, and the renderer half in nextcloud-vue (journey-repeating-item-review and form-widgets-duration-and-subobject-table) inside the pinned @conduction/nextcloud-vue ^2.203.0. Playwright tests/e2e/journey-multi-product.spec.ts is written and runs in the nightly. Before: A registration form targets one register, schema and type value (src/components/page-editor/DetailPageEditor.vue:151-156, fields/RegistrationFormEditor.vue:42-82); nothing splits one submission into several records or processes",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/forms-multi-product-request (OpenSpec pass 2026-09-27).",
+				"note": "Specified in openspec/changes/archive/2026-11-24-forms-multi-product-request (OpenSpec pass 2026-09-27).",
 				"change": "forms-multi-product-request",
 				"requirement": [
-					"openspec/changes/forms-multi-product-request/specs/journey-designer :: A write can repeat per list item (REQ-BQMP-001)",
-					"openspec/changes/forms-multi-product-request/specs/journey-designer :: Each item goes to its product's target (REQ-BQMP-002)"
+					"openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer :: A write can repeat per list item (REQ-BQMP-001)",
+					"openspec/changes/archive/2026-11-24-forms-multi-product-request/specs/journey-designer :: Each item goes to its product's target (REQ-BQMP-002)"
 				]
 			},
 			"provider": "buildiq",
@@ -10756,20 +10756,20 @@
 			"source": "competitor",
 			"origin": "competitor-derived",
 			"originUrl": "https://github.com/nocobase/nocobase/blob/v2.2.18/packages/plugins/@nocobase/plugin-block-workbench/src/client-v2/models/actions/ActionPanelScanActionModel.tsx#L135",
-			"buildiq": "no",
+			"buildiq": "yes",
 			"nocobase": "yes",
 			"budibase": "yes",
 			"appsmith": "yes",
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "Searched: grep -iE 'qr|barcode|camera' over src/ and nextcloud-vue v2.55.1 page components: no scan action; the hits in src/ are the word scan in comments",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-24-pages-qr-and-barcodes: the buildiq half (designer, validation, server) with its unit tests, and the renderer half in nextcloud-vue (scan-and-generate-codes) inside the pinned @conduction/nextcloud-vue ^2.203.0. Playwright tests/e2e/page-codes.spec.ts is written and runs in the nightly. Before: Searched: grep -iE 'qr|barcode|camera' over src/ and nextcloud-vue v2.55.1 page components: no scan action; the hits in src/ are the word scan in comments",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/pages-qr-and-barcodes (OpenSpec pass 2026-09-27).",
+				"note": "Specified in openspec/changes/archive/2026-11-24-pages-qr-and-barcodes (OpenSpec pass 2026-09-27).",
 				"change": "pages-qr-and-barcodes",
-				"requirement": "openspec/changes/pages-qr-and-barcodes/specs/page-codes :: Index pages can scan to find a record (REQ-BQQR-001)"
+				"requirement": "openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes :: Index pages can scan to find a record (REQ-BQQR-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -11072,20 +11072,20 @@
 			"source": "competitor",
 			"origin": "competitor-derived",
 			"originUrl": "https://github.com/Budibase/budibase/blob/v3.46.0/packages/client/manifest.json#L5247",
-			"buildiq": "no",
+			"buildiq": "yes",
 			"nocobase": "no",
 			"budibase": "yes",
 			"appsmith": "no",
 			"mendix": "yes",
 			"power-apps": "unknown",
 			"built": {
-				"state": "specified",
-				"evidence": "Searched: grep -iE 'qr|barcode' over src/ and the nextcloud-vue v2.55.1 widget set offers no code generator widget",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-24-pages-qr-and-barcodes: the buildiq half (designer, validation, server) with its unit tests, and the renderer half in nextcloud-vue (scan-and-generate-codes) inside the pinned @conduction/nextcloud-vue ^2.203.0. Playwright tests/e2e/page-codes.spec.ts is written and runs in the nightly. Before: Searched: grep -iE 'qr|barcode' over src/ and the nextcloud-vue v2.55.1 widget set offers no code generator widget",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/pages-qr-and-barcodes (OpenSpec pass 2026-09-27).",
+				"note": "Specified in openspec/changes/archive/2026-11-24-pages-qr-and-barcodes (OpenSpec pass 2026-09-27).",
 				"change": "pages-qr-and-barcodes",
-				"requirement": "openspec/changes/pages-qr-and-barcodes/specs/page-codes :: Detail pages can show a code (REQ-BQQR-003)"
+				"requirement": "openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes :: Detail pages can show a code (REQ-BQQR-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -11266,22 +11266,22 @@
 			"source": "competitor",
 			"origin": "competitor-derived",
 			"originUrl": "https://github.com/appsmithorg/appsmith/blob/v2.4.2/app/client/src/components/editorComponents/ActionCreator/constants.ts#L21-L22",
-			"buildiq": "no",
+			"buildiq": "yes",
 			"nocobase": "no",
 			"budibase": "partial",
 			"appsmith": "yes",
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "grep -iE 'geolocation' over src/: no hits; the map page (pg-map) plots records, not the user's position",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-24-forms-signature-audio-and-location: the buildiq half (designer, validation, server) with its unit tests, and the renderer half in nextcloud-vue (form-signature-audio-location-fields) inside the pinned @conduction/nextcloud-vue ^2.203.0. Playwright tests/e2e/form-device-fields.spec.ts is written and runs in the nightly. Before: grep -iE 'geolocation' over src/: no hits; the map page (pg-map) plots records, not the user's position",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/forms-signature-audio-and-location (OpenSpec pass 2026-09-27).",
+				"note": "Specified in openspec/changes/archive/2026-11-24-forms-signature-audio-and-location (OpenSpec pass 2026-09-27).",
 				"change": "forms-signature-audio-and-location",
 				"requirement": [
-					"openspec/changes/forms-signature-audio-and-location/specs/form-device-fields :: Forms offer signature, audio and location fields (REQ-BQSA-001)",
-					"openspec/changes/forms-signature-audio-and-location/specs/form-device-fields :: Map pages show the user's position (REQ-BQSA-003)"
+					"openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields :: Forms offer signature, audio and location fields (REQ-BQSA-001)",
+					"openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields :: Map pages show the user's position (REQ-BQSA-003)"
 				]
 			},
 			"provider": "buildiq",
@@ -11335,22 +11335,22 @@
 			"source": "competitor",
 			"origin": "competitor-derived",
 			"originUrl": "https://github.com/appsmithorg/appsmith/blob/v2.4.2/app/client/src/widgets/index.ts#L275",
-			"buildiq": "no",
+			"buildiq": "yes",
 			"nocobase": "no",
 			"budibase": "no",
 			"appsmith": "yes",
 			"mendix": "unknown",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "grep -iE 'MediaRecorder|audio' over src/ and nextcloud-vue v2.55.1 CnFormPage: no recorder field",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-24-forms-signature-audio-and-location: the buildiq half (designer, validation, server) with its unit tests, and the renderer half in nextcloud-vue (form-signature-audio-location-fields) inside the pinned @conduction/nextcloud-vue ^2.203.0. Playwright tests/e2e/form-device-fields.spec.ts is written and runs in the nightly. Before: grep -iE 'MediaRecorder|audio' over src/ and nextcloud-vue v2.55.1 CnFormPage: no recorder field",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/forms-signature-audio-and-location (OpenSpec pass 2026-09-27).",
+				"note": "Specified in openspec/changes/archive/2026-11-24-forms-signature-audio-and-location (OpenSpec pass 2026-09-27).",
 				"change": "forms-signature-audio-and-location",
 				"requirement": [
-					"openspec/changes/forms-signature-audio-and-location/specs/form-device-fields :: Forms offer signature, audio and location fields (REQ-BQSA-001)",
-					"openspec/changes/forms-signature-audio-and-location/specs/form-device-fields :: The value lands in a matching property (REQ-BQSA-002)"
+					"openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields :: Forms offer signature, audio and location fields (REQ-BQSA-001)",
+					"openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields :: The value lands in a matching property (REQ-BQSA-002)"
 				]
 			},
 			"provider": "buildiq",
