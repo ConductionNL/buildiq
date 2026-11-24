@@ -40,8 +40,8 @@ import BackToVirtualApps, {
 	declaresPrimaryAction,
 	showBackToVirtualApps,
 } from './components/runtime/BackToVirtualApps.vue'
-import BuildiqFormPage from './components/runtime/BuildiqFormPage.vue'
 import BuildiqChatPage from './components/runtime/BuildiqChatPage.vue'
+import BuildiqFormPage from './components/runtime/BuildiqFormPage.vue'
 import BuildiqLogsPage from './components/runtime/BuildiqLogsPage.vue'
 import BuildiqSettingsPage from './components/runtime/BuildiqSettingsPage.vue'
 import { registerScope, useRegisterPicker } from './composables/useRegisterPicker.js'
