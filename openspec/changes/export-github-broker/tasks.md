@@ -59,7 +59,8 @@
 - [x] 7.1 PHPUnit (585), PHPCS (0 errors), Psalm (0 errors), PHPStan (0 errors),
       vitest (1177), webpack build — all green in a PHP 8.4 container.
 - [x] 7.2 Hydra gates: no new failure attributable to this change.
-- [ ] 7.3 Playwright: the export dialog renders the credential picker and no token field.
+- [x] 7.3 Playwright: the export dialog renders the credential picker and no token field.
+  > Written, runs in nightly (24 Nov 2026): `tests/e2e/export-github-credential.spec.ts` switches the target to "Push to GitHub" and asserts the "GitHub credential" picker, no password input and no field labelled token. Not verified against a live instance from this lane.
 
 ## Task 9: Fix the unpersistable export job
 

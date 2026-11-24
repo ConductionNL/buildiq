@@ -4,7 +4,8 @@
 - [x] **T02**: Add the "Formaat" select to `src/components/page-editor/fields/FieldValidationBuilder.vue`, disable the pattern when a format is set, and show an inherited format per design D2 (REQ-BQDF-001). Verify: vitest for the stored `format`, the disabled pattern and the inherited case; gate `nc-input-labels` passes.
 - [x] **T03**: Add the Dutch entries to the schema field editor's "Formaat" list under "Nederlandse formaten" (REQ-BQDF-001). Verify: vitest for the stored property `format`.
 - [x] **T04**: Add `lib/Service/DutchFormatValidator.php` reading the same rule data, and call it from the form save listener for fields with a Dutch `format`; normalise licence plate and postcode (REQ-BQDF-002). Verify: PHPUnit with the same samples as T01, and a constructed save event that is refused on a bad IBAN.
-- [ ] **T05**: Playwright `tests/e2e/form-dutch-formats.spec.ts`: a maker sets IBAN on a field, publishes, and a colleague's wrong IBAN is refused with the message (REQ-BQDF-001, REQ-BQDF-002).
+- [x] **T05**: Playwright `tests/e2e/form-dutch-formats.spec.ts`: a maker sets IBAN on a field, publishes, and a colleague's wrong IBAN is refused with the message (REQ-BQDF-001, REQ-BQDF-002).
+  > Written, runs in nightly (24 Nov 2026): the spec is in the repo and runs against the CI and nightly instance; it has not been verified against a live instance from this lane.
 - [x] **T06**: English and Dutch strings, and a section in `docs/form-logic-authoring.md`. Verify: `npm run lint` passes on the touched files.
 - [x] **T07**: Run `openspec validate form-dutch-field-formats --strict`.
 

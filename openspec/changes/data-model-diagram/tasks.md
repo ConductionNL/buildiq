@@ -5,7 +5,8 @@
 - [x] **T03**: Add `src/components/schema-editor/DataModelDiagram.vue`: `CnGraphCanvas` with `readOnly`, a `#node-schema` slot showing the title and up to twelve fields, folding to titles above 50 schemas, Enter or click calling the `open` event (REQ-BQMD-001, REQ-BQMD-003). Verify: vitest `tests/components/schema-editor/DataModelDiagram.spec.js` for the node slot, the fold threshold and the open event on Enter.
 - [x] **T04**: Add the relation table under the canvas with an "Open" button per row (REQ-BQMD-004). Verify: cases in `tests/components/schema-editor/DataModelDiagram.spec.js` that every edge and every unlinked schema has a row, and that each row's button is reachable by Tab.
 - [x] **T05**: In `src/views/SchemaDesigner.vue` list mode, add the "List | Diagram" switch kept in `?view=diagram`, and a register switch listing the version's register and the app's `dataRegisters` (REQ-BQMD-001, REQ-BQMD-005). Verify: extend `tests/views/SchemaDesigner.spec.js` for the switch, the query key and the register list.
-- [ ] **T06**: Playwright `tests/e2e/data-model-diagram.spec.ts`: open an app's schemas, switch to Diagram, open a schema from its box, and pass an axe check on the view (REQ-BQMD-001, REQ-BQMD-003, REQ-BQMD-004).
+- [x] **T06**: Playwright `tests/e2e/data-model-diagram.spec.ts`: open an app's schemas, switch to Diagram, open a schema from its box, and pass an axe check on the view (REQ-BQMD-001, REQ-BQMD-003, REQ-BQMD-004).
+  > Written, runs in nightly (24 Nov 2026): the spec is in the repo and runs against the CI and nightly instance; it has not been verified against a live instance from this lane.
 - [x] **T07**: English and Dutch strings for the switch, the table and the empty state (`l10n/en.json`, `l10n/nl.json`), and a section in `docs/user-guide/` on reading an app's data model as a diagram.
 - [x] **T08**: Run `openspec validate data-model-diagram --strict`.
 
