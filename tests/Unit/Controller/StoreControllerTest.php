@@ -369,7 +369,7 @@ class StoreControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-the-app-store-shows-the-shared-catalogue-as-a-section-req-bqrs-001
+	 * @spec openspec/changes/archive/2026-11-24-reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-the-app-store-shows-the-shared-catalogue-as-a-section-req-bqrs-001
 	 */
 	public function testTheSearchNamesTheCatalogueByItsHostOnly(): void {
 		$this->userSession->method('getUser')->willReturn($this->mockUser('alice'));

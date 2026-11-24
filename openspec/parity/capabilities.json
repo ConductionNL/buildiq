@@ -792,7 +792,6 @@
 			"specs": [
 				"openbuild-remote-template-store",
 				"reuse-gallery-categories-and-form-library",
-				"reuse-remote-store-section",
 				"github-shop-catalogue",
 				"save-as-template",
 				"openbuild-template-catalogue",
@@ -832,8 +831,7 @@
 			"overlay": "application-insights",
 			"specs": [
 				"application-insights",
-				"buildiq-reports",
-				"operate-report-download"
+				"buildiq-reports"
 			]
 		},
 		{
@@ -7364,20 +7362,20 @@
 			"area": "reuse",
 			"name": "Install templates from a shared remote catalogue.",
 			"source": "own-code",
-			"buildiq": "no",
+			"buildiq": "yes",
 			"nocobase": "no",
 			"budibase": "partial",
 			"appsmith": "yes",
 			"mendix": "partial",
 			"power-apps": "yes",
 			"built": {
-				"state": "building",
-				"evidence": "Backend exists: routes.php:289-290 store#search GET /api/store/templates and store#install POST /api/store/templates/{slug}/install -> lib/Controller/StoreController.php:161 search(), :259 install(), delegating to OpenRegister's OCA\\OpenRegister\\AppHost\\Service\\GenericStoreService (present on openregister origin/development lib/AppHost/Service/GenericStoreService.php) with descriptor schema application-template (:121-137). No page reaches it: _lane/api-paths.txt has no frontend reference to /api/store/templates (search); the only install caller is src/modals/CloneTemplateDialog.vue:297-303 installRemote(), used only when the 'remote' prop (:65) is true, and the sole parent src/views/TemplateGallery.vue:304-305 passes only :github, never :remote (grep ':remote' in src: no hits).",
-				"owner": "ConductionNL/openregister",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-24-reuse-remote-store-section: src/components/store/SharedCatalogueSection.vue lists, searches and filters the shared catalogue between the built-in templates and GitHub on the app store (TemplateGallery.vue), installs through CloneTemplateDialog in store mode, keeps store errors inside the section, and points an admin without a catalogue to the setup step store (?setup=store, nextcloud-vue 2.210.0). Vitest: tests/components/store/SharedCatalogueSection.spec.js, tests/views/TemplateGallery.categories.spec.js, tests/modals/CloneTemplateDialog.spec.js; PHPUnit tests/Unit/Controller/StoreControllerTest.php. Before: Backend exists: routes.php:289-290 store#search GET /api/store/templates and store#install POST /api/store/templates/{slug}/install -> lib/Controller/StoreController.php:161 search(), :259 install(), delegating to OpenRegister's OCA\\OpenRegister\\AppHost\\Service\\GenericStoreService (present on openregister origin/development lib/AppHost/Service/GenericStoreService.php) with descriptor schema application-template (:121-137). No page reaches it: _lane/api-paths.txt has no frontend reference to /api/store/templates (search); the only install caller is src/modals/CloneTemplateDialog.vue:297-303 installRemote(), used only when the 'remote' prop (:65) is true, and the sole parent src/views/TemplateGallery.vue:304-305 passes only :github, never :remote (grep ':remote' in src: no hits).",
+				"owner": "ConductionNL/buildiq",
 				"change": "reuse-remote-store-section",
 				"requirement": [
-					"openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui :: The app store shows the shared catalogue as a section (REQ-BQRS-001)",
-					"openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui :: A maker installs a catalogue template (REQ-BQRS-004)"
+					"openspec/changes/archive/2026-11-24-reuse-remote-store-section/specs/template-catalogue-ui :: The app store shows the shared catalogue as a section (REQ-BQRS-001)",
+					"openspec/changes/archive/2026-11-24-reuse-remote-store-section/specs/template-catalogue-ui :: A maker installs a catalogue template (REQ-BQRS-004)"
 				]
 			},
 			"provider": "openregister",
@@ -10876,15 +10874,15 @@
 			"area": "operate",
 			"name": "See reports across all apps: apps by status and type, versions and exports.",
 			"source": "spec-round-2026-10-08",
-			"buildiq": "partial",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
 			"built": {
-				"state": "building",
-				"evidence": "Building in openspec/changes/operate-report-download (T02 ticked): src/manifest.json sets download and downloadName on ApplicationsReport and DeliveryReport. Open: the Download button in nextcloud-vue CnDashboardPage (T01) and the Playwright run (T03). Before: src/manifest.json:361-367 menu \"Reports\" (settings section); 634-664 Reports card page (type reports); 666 ApplicationsReport (Published/Draft/Archived counts, donuts by status, by appType, templates by category, table Most recent) and 903 DeliveryReport (versions published, exports succeeded/failed, donuts by status, scope, target, table Most recent exports), all declarative over register buildiq (commit 37ad4814b). Every figure on the board is there. Missing: the board's \"Downloaden\" button; nextcloud-vue CnDashboardPage has no download.",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-24-operate-report-download: src/manifest.json sets download and downloadName on ApplicationsReport and DeliveryReport, and nextcloud-vue 2.210.0 CnDashboardPage draws the header Download that saves widget,label,value as CSV (dashboard-download-csv, nextcloud-vue #2315). Playwright tests/e2e/reports-download.spec.ts is written and runs in the nightly. Before: Building in openspec/changes/archive/2026-11-24-operate-report-download (T02 ticked): src/manifest.json sets download and downloadName on ApplicationsReport and DeliveryReport. Open: the Download button in nextcloud-vue CnDashboardPage (T01) and the Playwright run (T03). Before: src/manifest.json:361-367 menu \"Reports\" (settings section); 634-664 Reports card page (type reports); 666 ApplicationsReport (Published/Draft/Archived counts, donuts by status, by appType, templates by category, table Most recent) and 903 DeliveryReport (versions published, exports succeeded/failed, donuts by status, scope, target, table Most recent exports), all declarative over register buildiq (commit 37ad4814b). Every figure on the board is there. Missing: the board's \"Downloaden\" button; nextcloud-vue CnDashboardPage has no download.",
 				"change": "operate-report-download",
 				"spec": "openspec/specs/buildiq-reports",
 				"note": "Added by decision 99 (8 Oct): board without a row. Main spec buildiq-reports written after the fact for the built part.",

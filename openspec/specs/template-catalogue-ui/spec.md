@@ -94,37 +94,6 @@ In local mode (neither `remote` nor `github`) the dialog SHALL also show an opti
 - **WHEN** the dialog opens for a GitHub app
 - **THEN** it shows no Description field
 
-### Requirement: Templates page renders the remote store as its primary surface
-
-`TemplateGallery` SHALL render the remote **store as the page's primary surface**
-when a registry is configured (`storeConfigured` is true) — a search box and a
-grid of remote result cards as the main content — and SHALL render the
-locally-seeded templates in a **secondary "Built-in templates" section** below
-(kept, not removed). The search box SHALL call `GET /api/store/templates?q=…`
-(debounced) and render the returned remote cards (`title`, `useCase`,
-`description`, `category`, `version`, optional screenshot). Each remote card
-SHALL expose an "Install" action that opens the existing `CloneTemplateDialog`.
-The local built-in templates SHALL keep working (install via the local
-from-template path) as the secondary section.
-
-@e2e exclude retrofit component-contract spec — the marketplace search-renders-results
-and install-opens-dialog behaviours are `TemplateGallery` component-state
-contracts verified by Vitest; the end-to-end install flow is covered by the
-buildiq-template-catalogue Playwright tests.
-
-#### Scenario: Search renders remote results
-
-- **WHEN** a registry is configured and the user types a query in the store
-  search box that matches remote templates
-- **THEN** the gallery renders the returned remote template cards in the store
-  section
-
-#### Scenario: Install opens the clone dialog
-
-- **WHEN** the user clicks "Install" on a remote template card
-- **THEN** the gallery opens `CloneTemplateDialog` seeded with that remote
-  template
-
 ### Requirement: Install through CloneTemplateDialog calls the store endpoint
 
 `CloneTemplateDialog` SHALL route installs of a remote marketplace card to the store
@@ -305,3 +274,122 @@ indistinguishable from "no repositories matched".
   credential
 - **THEN** the tab shows a pointer to add a github credential to raise the limit
 - **AND** the tab still allows anonymous browsing
+
+### Requirement: The app store shows the shared catalogue as a section (REQ-BQRS-001)
+
+The "Templates" view of the app store SHALL render a section "Shared catalogue"
+between "Built-in templates" and "Apps on GitHub" when `GET
+/api/store/templates` returns an outcome other than `not_configured`, with the
+catalogue's host name as its lead line and one card per returned template, and
+SHALL NOT render when the outcome is `not_configured`.
+
+@e2e exclude no live remote catalogue in CI; covered by Vitest on SharedCatalogueSection with a mocked store response
+
+#### Scenario: A configured catalogue shows its templates
+
+- **GIVEN** an admin connected the catalogue `store.example.nl` in the Buildiq setup
+- **AND** the catalogue holds the templates "Vergunningen volgen" and "Meldingen openbare ruimte"
+- **WHEN** a maker opens the app store
+- **THEN** a section "Shared catalogue" shows between "Built-in templates" and "Apps on GitHub"
+- **AND** its lead line reads "From store.example.nl"
+- **AND** it shows both templates, each with an "Install" button
+
+#### Scenario: A catalogue card shows what a maker needs to choose
+
+- **GIVEN** the catalogue returns a template with a title, category, use case, description and version
+- **WHEN** a maker opens the app store
+- **THEN** its card shows the title, the category, the use case, the description and the version
+- **AND** a primary "Install" button
+
+#### Scenario: No catalogue configured
+
+- **GIVEN** no catalogue is configured
+- **WHEN** a maker opens the app store
+- **THEN** no "Shared catalogue" section renders
+- **AND** the page sends no further store request
+- **AND** the built-in templates and GitHub apps show as before
+
+### Requirement: The shared catalogue can be searched and filtered (REQ-BQRS-002)
+
+The section SHALL offer a labelled search field "Search the catalogue" that
+calls `GET /api/store/templates?q=<term>` after a 300 ms pause in typing. The
+category filter of the "Templates" view SHALL narrow the catalogue cards by
+their `category`, as it narrows the GitHub cards. An empty result SHALL show
+"No templates in the catalogue match your search".
+
+@e2e exclude no live remote catalogue in CI; covered by Vitest on SharedCatalogueSection with a mocked store response
+
+#### Scenario: A maker searches the catalogue
+
+- **GIVEN** a configured catalogue with a template "Vergunningen volgen"
+- **WHEN** a maker types "vergunning" in "Search the catalogue"
+- **THEN** the page calls the marketplace search with `q=vergunning`
+- **AND** the section shows "Vergunningen volgen"
+
+#### Scenario: The category filter narrows the catalogue
+
+- **GIVEN** catalogue templates in the categories "Field work" and "Citizen engagement"
+- **WHEN** a maker picks "Field work" in the category filter
+- **THEN** the section shows only the field work templates
+
+### Requirement: Store errors stay inside the section (REQ-BQRS-003)
+
+When the marketplace search returns `store_unreachable` or `store_invalid_response`,
+the section SHALL show a warning note "The shared catalogue could not be
+reached. Try again later." and SHALL NOT show the registry URL, the token or
+the underlying error. The built-in and GitHub sections SHALL keep working.
+
+@e2e exclude no live remote catalogue in CI; covered by Vitest on SharedCatalogueSection with a mocked store response
+
+#### Scenario: The catalogue is down
+
+- **GIVEN** a configured catalogue that does not answer
+- **WHEN** a maker opens the app store
+- **THEN** the "Shared catalogue" section shows the warning note
+- **AND** the built-in templates can still be used
+
+### Requirement: A maker installs a catalogue template (REQ-BQRS-004)
+
+"Install" on a catalogue card SHALL open `CloneTemplateDialog` in store mode
+with that template, so a valid submit calls `POST
+/api/store/templates/{slug}/install` and redirects to the new app. A
+`template_not_found` answer SHALL show "This template is no longer in the
+catalogue." in the dialog and SHALL refresh the section.
+
+@e2e exclude no live remote catalogue in CI; covered by Vitest on CloneTemplateDialog store mode and PHPUnit on StoreController::install
+
+#### Scenario: A maker installs a template from the catalogue
+
+- **GIVEN** a catalogue card "Vergunningen volgen"
+- **WHEN** a maker clicks "Install", names the app "Vergunningen Zuiddrecht" and confirms
+- **THEN** the store install endpoint is called for slug `vergunningen-volgen`
+- **AND** the maker lands on the new app
+
+#### Scenario: The template was removed from the catalogue
+
+- **GIVEN** a catalogue card whose template was removed from the catalogue since the page loaded
+- **WHEN** a maker installs it
+- **THEN** the dialog shows "This template is no longer in the catalogue."
+- **AND** the section reloads without that card
+
+### Requirement: Admins without a catalogue are pointed to the setup (REQ-BQRS-005)
+
+When the marketplace search returns `not_configured` and the user is a Nextcloud
+admin, the built-in section SHALL show one note "Connect a shared template
+catalogue in the Buildiq setup." with a button that opens the setup wizard at
+the step `store`. Non-admin users SHALL NOT see the note.
+
+@e2e exclude covered by Vitest on TemplateGallery with an admin and a non-admin initial state
+
+#### Scenario: An admin sees the setup hint
+
+- **GIVEN** no catalogue is configured
+- **WHEN** an admin opens the app store
+- **THEN** the note "Connect a shared template catalogue in the Buildiq setup." shows
+- **AND** its button opens the setup wizard at "Remote template marketplace"
+
+#### Scenario: A maker does not see the setup hint
+
+- **GIVEN** no catalogue is configured
+- **WHEN** a maker who is not an admin opens the app store
+- **THEN** no setup note shows
