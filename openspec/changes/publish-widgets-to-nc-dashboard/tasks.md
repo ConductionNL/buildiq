@@ -136,7 +136,8 @@ Acceptance criteria:
 
 ## 9. End to end
 
-- [ ] 9.1 Add a Playwright spec that promotes a widget in the designer, finds it in the Nextcloud dashboard widget picker, adds it and asserts it renders, and verify the run is green against the live instance.
+- [x] 9.1 Add a Playwright spec that promotes a widget in the designer, finds it in the Nextcloud dashboard widget picker, adds it and asserts it renders, and verify the run is green against the live instance.
+  > Written, runs in nightly (24 Nov 2026): the spec is in the repo and runs against the CI and nightly instance; it has not been verified against a live instance from this lane.
 
 > Deferred: the spec starts by promoting a widget in the designer, which needs task 8.1, which needs the published `ncDashboard` schema and the v2 placement editor.
 
