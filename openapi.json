@@ -154,6 +154,10 @@
         {
             "name": "application-history",
             "description": "The change history of an app and its versions."
+        },
+        {
+            "name": "app-page-settings",
+            "description": "Controller serving and saving the options users saved on a settings page of a virtual app."
         }
     ],
     "paths": {
@@ -1163,6 +1167,151 @@
                                 }
                             }
                         }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/applications/{appSlug}/page-settings/{pageId}": {
+            "get": {
+                "operationId": "app-page-settings-show",
+                "summary": "The saved options of a settings page (REQ-BQCV-011)",
+                "description": "What users saved on a settings page of the app, and whether the caller may save. Needs a signed-in Nextcloud user with a role (owner, editor or viewer) on the app.",
+                "tags": [
+                    "app-page-settings"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "pageId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The settings page id from the app manifest.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "values": {
+                                            "type": "object",
+                                            "additionalProperties": true,
+                                            "description": "The saved values keyed by option key."
+                                        },
+                                        "canSave": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "app-page-settings-update",
+                "summary": "Save the options of a settings page (REQ-BQCV-011)",
+                "description": "Replaces the saved options of the page with the request body, an object keyed by option key (at most 64 KiB as JSON). Owners and editors only; every user of the app then sees the new values.",
+                "tags": [
+                    "app-page-settings"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "pageId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The settings page id from the app manifest.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true,
+                                "description": "The saved values keyed by option key."
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "values": {
+                                            "type": "object",
+                                            "additionalProperties": true,
+                                            "description": "The saved values keyed by option key."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
                     },
                     "401": {
                         "$ref": "#/components/responses/Problem401"
