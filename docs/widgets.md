@@ -172,11 +172,11 @@ rows in the shape the widget shows and you want that widget's own look. Use
 the last good data when the endpoint fails" behaviour.
 
 **KPI strips.** A `stats-block` entry counts over one register and schema
-(`metric`, `field`, `filter`, `hideWhenZero`). Up to nextcloud-vue 2.210 that
+(`metric`, `field`, `filter`, `hideWhenZero`). Up to nextcloud-vue 2.211 that
 was its only source: an endpoint needs its own response mapping per entry, which
 the manifest schema did not offer, so an endpoint-backed KPI had to be a separate
 `stat` or `delta` widget with `props.content.endpointSource`. From nextcloud-vue
-2.211.0 (`stats-block-entry-endpoint`) an entry can carry an `endpointSource`
+2.212.0 (`stats-block-entry-endpoint`) an entry can carry an `endpointSource`
 and a `valueField`, the dot-path of its value in the response; entries naming the
 same endpoint share one request, so one summary endpoint feeds the whole strip.
 Buildiq itself still pins nextcloud-vue 2.210 and its connector widget runtime
