@@ -1,0 +1,7 @@
+{
+	"app": "buildiq",
+	"pages": [
+		{ "name": "Dashboard", "path": "/index.php/apps/buildiq/" },
+		{ "name": "Apps", "path": "/index.php/apps/buildiq/applications" }
+	]
+}
