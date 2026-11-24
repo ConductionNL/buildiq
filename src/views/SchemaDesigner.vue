@@ -325,6 +325,7 @@ import {
 	sourceRefusalsByField,
 } from '../services/propertySources.js'
 import { describeBreakingChanges } from '../services/schemaChanges.js'
+import { exportableConfiguration } from '../services/schemaExportable.js'
 import { registerSlugForApp, useSchemasStore } from '../store/schemas.js'
 import { isEditableTarget } from '../utils/isEditableTarget.js'
 import { mirrorVersionLoad } from '../utils/mirrorVersionLoad.js'
@@ -1601,6 +1602,7 @@ export default {
 		 * Create a new schema via the store, surfacing duplicate-slug errors.
 		 *
 		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-exports-its-records-to-csv-or-excel-req-bqcv-004
 		 * @param {object} payload New schema payload.
 		 * @return {Promise<void>}
 		 */
@@ -1620,6 +1622,8 @@ export default {
 				version: payload.version,
 				type: 'object',
 				properties: {},
+				// REQ-BQCV-004: a list page's Export switch decides; the schema allows it.
+				configuration: exportableConfiguration(null),
 			}
 			// No `id` field on the payload — store treats this as a POST.
 			const data = await this.store.saveObject(SCHEMA_TYPE, body)
@@ -1860,6 +1864,7 @@ export default {
 		 * to match the change instead of keeping the old number.
 		 *
 		 * @spec openspec/specs/schema-designer-ui/spec.md
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-exports-its-records-to-csv-or-excel-req-bqcv-004
 		 * @param {object} staged Staged editor model.
 		 * @param {boolean} acknowledgeBreaking Whether the author confirmed a breaking change.
 		 * @return {object} Request body.
@@ -1873,6 +1878,14 @@ export default {
 			}
 			if (acknowledgeBreaking) {
 				body.acknowledgeBreaking = true
+			}
+			// REQ-BQCV-004: mark a stored schema exportable on its next save,
+			// keeping its other configuration keys; a flag already set stays.
+			const configuration = this.persisted
+				? exportableConfiguration(this.persisted)
+				: null
+			if (configuration) {
+				body.configuration = configuration
 			}
 			return body
 		},

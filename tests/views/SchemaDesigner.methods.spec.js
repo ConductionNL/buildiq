@@ -660,3 +660,44 @@ describe('SchemaDesigner body, create fallback and lifecycle hooks', () => {
 		remove.mockRestore()
 	})
 })
+
+/**
+ * REQ-BQCV-004: buildiq marks the schemas it writes as exportable, so a list
+ * page's Export switch alone decides whether CnIndexPage offers Export.
+ *
+ * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-exports-its-records-to-csv-or-excel-req-bqcv-004
+ */
+describe('SchemaDesigner marks its schemas exportable', () => {
+	it('a new schema is created with configuration.exportable true', async () => {
+		const wrapper = await mountDesigner()
+		storeMocks.saveObject.mockResolvedValue({ id: 7, slug: 'buildiq-hello-world-pets' })
+		vi.spyOn(wrapper.vm, 'attachSchemaToRegister').mockResolvedValue()
+
+		await wrapper.vm.addSchema({ slug: 'pets', title: 'Pets', version: '0.1.0' })
+
+		const body = storeMocks.saveObject.mock.calls[0][1]
+		expect(body.configuration).toEqual({ exportable: true })
+		expect('id' in body).toBe(false)
+	})
+
+	it('a save of a stored schema without the flag adds it and keeps its other configuration keys', async () => {
+		const wrapper = await mountDesigner()
+		wrapper.vm.persisted = { id: 3, slug: 'permit', version: '0.1.0', configuration: { objectNameField: 'title' } }
+		const body = wrapper.vm.writeBody(stagedModel(wrapper, 'permit'), false)
+		expect(body.configuration).toEqual({ objectNameField: 'title', exportable: true })
+	})
+
+	it('a stored schema whose owner switched export off keeps it off, and nothing is written over it', async () => {
+		const wrapper = await mountDesigner()
+		wrapper.vm.persisted = { id: 3, slug: 'permit', version: '0.1.0', configuration: { exportable: false, objectNameField: 'title' } }
+		const body = wrapper.vm.writeBody(stagedModel(wrapper, 'permit'), false)
+		expect('configuration' in body).toBe(false)
+	})
+
+	it('without a stored schema the save sends no configuration block', async () => {
+		const wrapper = await mountDesigner()
+		wrapper.vm.persisted = null
+		const body = wrapper.vm.writeBody(stagedModel(wrapper, 'permit'), false)
+		expect('configuration' in body).toBe(false)
+	})
+})
