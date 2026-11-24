@@ -98,6 +98,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -254,6 +257,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -313,6 +319,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -486,6 +495,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -545,6 +557,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -604,6 +619,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -794,6 +812,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -853,6 +874,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -1026,6 +1050,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -1797,6 +1824,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -2105,6 +2135,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -2310,6 +2343,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -2369,6 +2405,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -2428,6 +2467,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -2640,6 +2682,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -2699,6 +2744,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -2758,6 +2806,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -2987,6 +3038,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -3046,6 +3100,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -3262,6 +3319,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -3321,6 +3381,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -3537,6 +3600,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -3706,6 +3772,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -3765,6 +3834,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
@@ -4003,6 +4075,9 @@
                                 "type": "string",
                                 "description": "Message body content."
                             }
+                        },
+                        "configuration": {
+                            "exportable": true
                         }
                     }
                 }
