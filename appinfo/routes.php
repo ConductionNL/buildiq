@@ -110,6 +110,8 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // application by the version slug (e.g. "production") and 404. Using a
         // distinct placeholder name avoids that body/route collision (NC32).
         ['name' => 'applicationVersions#index',   'url' => '/api/applications/{appSlug}/versions',                'verb' => 'GET',    'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        // Change history (capability-requirements-backfill REQ-BQCV-014): the saves of the app and its versions from the audit trail, read roles only.
+        ['name' => 'applicationVersions#history', 'url' => '/api/applications/{appSlug}/history',                 'verb' => 'GET',    'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'applicationVersions#create',  'url' => '/api/applications/{appSlug}/versions',                'verb' => 'POST',   'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'applicationVersions#show',    'url' => '/api/applications/{appSlug}/versions/{versionSlug}',  'verb' => 'GET',    'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'applicationVersions#update',  'url' => '/api/applications/{appSlug}/versions/{versionSlug}',  'verb' => 'PUT',    'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
