@@ -145,6 +145,13 @@ export default {
 	watch: {
 		open: {
 			immediate: true,
+			/**
+			 * Read the history each time the dialog opens.
+			 *
+			 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-rbac/spec.md#requirement-an-owner-sees-who-changed-an-apps-design-and-when-req-bqcv-014
+			 * @param {boolean} isOpen Whether the dialog is open.
+			 * @return {Promise<void>}
+			 */
 			async handler(isOpen) {
 				if (isOpen === true) {
 					await this.load()
