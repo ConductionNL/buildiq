@@ -52,7 +52,6 @@ use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\VersionMergeRunnerInterface;
 use OCA\Buildiq\Service\Branch\VersionBranchRefused;
 use OCA\Buildiq\Service\PageCodeGuard;
-use OCA\Buildiq\Service\AppChangeHistory;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\Buildiq\Support\ReleaseOverride;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -144,7 +143,6 @@ class ApplicationVersionsController extends Controller {
 	 * @param VersionMergeRunnerInterface|null $merges Starts a branch, previews and applies a merge (lifecycle-git-branches)
 	 * @param IAppConfig|null $appConfig Reads the instance setting "Allow code on pages"; without it code stays refused
 	 * @param PageCodeGuard $codeGuard Finds the code-bearing keys of a manifest (pages-custom-code D6)
-	 * @param AppChangeHistory $changeHistory Reads the saves of an app and its versions from the audit trail (REQ-BQCV-014)
 	 *
 	 * @return void
 	 */
@@ -161,7 +159,6 @@ class ApplicationVersionsController extends Controller {
 		private readonly ?VersionMergeRunnerInterface $merges = null,
 		private readonly ?IAppConfig $appConfig = null,
 		private readonly PageCodeGuard $codeGuard = new PageCodeGuard(),
-		private readonly AppChangeHistory $changeHistory = new AppChangeHistory(),
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -203,51 +200,6 @@ class ApplicationVersionsController extends Controller {
 			return $this->errorResponse(code: 'internal_error', detail: 'Failed to load versions');
 		}//end try
 	}//end index()
-
-	/**
-	 * The change history of an app: every save of the Application and of its
-	 * versions, newest first, read from the OpenRegister audit trail
-	 * (REQ-BQCV-014). Only a user with a role on the app reads it; anyone
-	 * else is refused before anything is read.
-	 *
-	 * @param string $appSlug Parent Application slug
-	 *
-	 * @return JSONResponse `{entries: [...]}` on 200, error envelope otherwise
-	 *
-	 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-rbac/spec.md#requirement-an-owner-sees-who-changed-an-apps-design-and-when-req-bqcv-014
-	 */
-	#[NoAdminRequired]
-	public function history(string $appSlug): JSONResponse {
-		$authError = $this->requireRole(slug: $appSlug, roles: self::READ_ROLES);
-		if ($authError !== null) {
-			return $authError;
-		}
-
-		try {
-			$application = $this->loadApplication(slug: $appSlug);
-			$versions    = null;
-			if ($application !== null) {
-				$versions = $this->versionRowsOf(application: $application);
-			}
-
-			if ($application === null || $versions === null) {
-				return $this->errorResponse(code: 'not_found', detail: 'Application ' . $appSlug . ' not found', status: Http::STATUS_NOT_FOUND);
-			}
-
-			if ($this->auditTrailMapper === null) {
-				return $this->errorResponse(code: 'audit_unavailable', detail: 'The audit trail cannot be read', status: Http::STATUS_SERVICE_UNAVAILABLE);
-			}
-
-			$entries = $this->changeHistory->entries(application: $application, versions: $versions, trails: $this->auditTrailMapper);
-			return new JSONResponse(data: ['entries' => $entries], statusCode: Http::STATUS_OK);
-		} catch (Throwable $e) {
-			$this->logger->error(
-				'Buildiq: ApplicationVersionsController::history failed for slug ' . $appSlug . ': ' . $e->getMessage(),
-				['exception' => $e]
-			);
-			return $this->errorResponse(code: 'internal_error', detail: 'Failed to load the change history', status: Http::STATUS_INTERNAL_SERVER_ERROR);
-		}//end try
-	}//end history()
 
 	/**
 	 * Fetch a single ApplicationVersion by version slug (spec REQ-OBV-107).

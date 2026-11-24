@@ -1,8 +1,8 @@
 <?php
 
 /**
- * Tests for ApplicationVersionsController::history(): an app's change history
- * is read only by a user with a role on the app (REQ-BQCV-014).
+ * Tests for ApplicationHistoryController: an app's change history is read
+ * only by a user with a role on the app (REQ-BQCV-014).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -24,8 +24,9 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use DateTime;
-use OCA\Buildiq\Controller\ApplicationVersionsController;
-use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Controller\ApplicationHistoryController;
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
+use OCA\Buildiq\Service\AppChangeHistory;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -33,7 +34,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -44,10 +44,10 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests for the change history endpoint.
  *
- * @covers \OCA\Buildiq\Controller\ApplicationVersionsController
+ * @covers \OCA\Buildiq\Controller\ApplicationHistoryController
  * @uses   \OCA\Buildiq\Service\AppChangeHistory
  */
-final class ApplicationVersionsHistoryTest extends TestCase {
+final class ApplicationHistoryControllerTest extends TestCase {
 	/**
 	 * Audit trail double.
 	 *
@@ -56,12 +56,20 @@ final class ApplicationVersionsHistoryTest extends TestCase {
 	private AuditTrailMapper&MockObject $trails;
 
 	/**
+	 * The role arguments the resolver was asked with.
+	 *
+	 * @var array<int,array<string,mixed>>
+	 */
+	private array $asked = [];
+
+	/**
 	 * Set up the audit trail double.
 	 *
 	 * @return void
 	 */
 	protected function setUp(): void {
 		$this->trails = $this->createMock(AuditTrailMapper::class);
+		$this->asked  = [];
 	}//end setUp()
 
 	/**
@@ -79,7 +87,7 @@ final class ApplicationVersionsHistoryTest extends TestCase {
 			static fn (?int $limit=null, ?int $offset=null, ?array $filters=[]): array => ($filters['object_uuid'] ?? '') === 'v-dev' ? [$save] : []
 		);
 
-		$response = $this->controller(uid: 'olaf')->history(appSlug: 'permits');
+		$response = $this->controller(uid: 'olaf')->index(appSlug: 'permits');
 
 		self::assertSame(expected: 200, actual: $response->getStatus());
 		$entries = $response->getData()['entries'];
@@ -87,6 +95,10 @@ final class ApplicationVersionsHistoryTest extends TestCase {
 		self::assertSame(
 			expected: ['sanne', '2026-11-24T10:15:00+00:00', 'development'],
 			actual: [$entries[0]['user'], $entries[0]['at'], $entries[0]['version']]
+		);
+		self::assertSame(
+			expected: [['owners', 'editors', 'viewers'], false, ['owners' => ['user:olaf']]],
+			actual: [$this->asked[0]['roles'], $this->asked[0]['allowAdminBypass'], $this->asked[0]['permissions']]
 		);
 	}//end testAnOwnerReadsTheDesignHistory()
 
@@ -98,20 +110,44 @@ final class ApplicationVersionsHistoryTest extends TestCase {
 	public function testAUserWithoutARoleIsRefused(): void {
 		$this->trails->expects($this->never())->method('findAll');
 
-		$response = $this->controller(uid: 'mallory')->history(appSlug: 'permits');
+		$response = $this->controller(uid: 'mallory')->index(appSlug: 'permits');
 
-		self::assertSame(expected: 403, actual: $response->getStatus());
-		self::assertSame(expected: 'buildiq.rbac.no_role', actual: $response->getData()['error']);
+		self::assertSame(expected: [403, ['error' => 'buildiq.rbac.no_role']], actual: [$response->getStatus(), $response->getData()]);
 	}//end testAUserWithoutARoleIsRefused()
 
 	/**
-	 * Build the controller with the given user signed in; olaf owns the app.
+	 * Another organisation's scoped app answers like an unknown one.
 	 *
-	 * @param string $uid The signed-in user.
-	 *
-	 * @return ApplicationVersionsController
+	 * @return void
 	 */
-	private function controller(string $uid): ApplicationVersionsController {
+	public function testAnAppTheCallerCannotSeeIsNotFound(): void {
+		$this->trails->expects($this->never())->method('findAll');
+
+		$response = $this->controller(uid: 'olaf', sees: false)->index(appSlug: 'permits');
+
+		self::assertSame(expected: 404, actual: $response->getStatus());
+	}//end testAnAppTheCallerCannotSeeIsNotFound()
+
+	/**
+	 * Nobody signed in is 401.
+	 *
+	 * @return void
+	 */
+	public function testNobodySignedInIsUnauthorised(): void {
+		$response = $this->controller(uid: null)->index(appSlug: 'permits');
+
+		self::assertSame(expected: 401, actual: $response->getStatus());
+	}//end testNobodySignedInIsUnauthorised()
+
+	/**
+	 * Build the controller; olaf owns the app, and the resolver grants only him.
+	 *
+	 * @param string|null $uid  The signed-in user, or null for nobody.
+	 * @param bool        $sees Whether the caller's organisation sees the app.
+	 *
+	 * @return ApplicationHistoryController
+	 */
+	private function controller(?string $uid, bool $sees=true): ApplicationHistoryController {
 		$application = ['id' => 'app-uuid', 'slug' => 'permits', 'permissions' => ['owners' => ['user:olaf']]];
 		$versions    = [
 			['id' => 'v-dev', 'slug' => 'development', 'application' => 'app-uuid'],
@@ -131,24 +167,31 @@ final class ApplicationVersionsHistoryTest extends TestCase {
 		$schemas = $this->createMock(SchemaMapper::class);
 		$schemas->method('find')->willReturn($schema);
 
-		$user = $this->createMock(IUser::class);
-		$user->method('getUID')->willReturn($uid);
 		$session = $this->createMock(IUserSession::class);
-		$session->method('getUser')->willReturn($user);
-		$groups = $this->createMock(IGroupManager::class);
-		$groups->method('getUserGroups')->willReturn([]);
-		$groups->method('isInGroup')->willReturn(false);
+		$user    = null;
+		if ($uid !== null) {
+			$user = $this->createMock(IUser::class);
+			$user->method('getUID')->willReturn($uid);
+		}
 
-		return new ApplicationVersionsController(
+		$session->method('getUser')->willReturn($user);
+
+		$resolver = $this->createMock(PermissionResolverInterface::class);
+		$resolver->method('seesApplication')->willReturn($sees);
+		$resolver->method('resolveUserGroups')->willReturn([]);
+		$resolver->method('matchesCaller')->willReturnCallback(
+			function (array $permissions, IUser $caller, array $userGroups, ?bool $allowAdminBypass, array $roles): bool {
+				$this->asked[] = ['permissions' => $permissions, 'allowAdminBypass' => $allowAdminBypass, 'roles' => $roles];
+				return $caller->getUID() === 'olaf';
+			}
+		);
+
+		return new ApplicationHistoryController(
 			request: $this->createMock(IRequest::class),
-			logger: $this->createMock(LoggerInterface::class),
-			objectService: $objects,
-			registerMapper: $registers,
-			schemaMapper: $schemas,
 			userSession: $session,
-			groupManager: $groups,
-			versionService: $this->createMock(ApplicationVersionService::class),
-			auditTrailMapper: $this->trails,
+			permissionResolver: $resolver,
+			history: new AppChangeHistory(objectService: $objects, registerMapper: $registers, schemaMapper: $schemas, trails: $this->trails),
+			logger: $this->createMock(LoggerInterface::class),
 		);
 	}//end controller()
 }//end class

@@ -150,6 +150,10 @@
         {
             "name": "application-tests",
             "description": "An app's test suite: the Tests tab's record tests, owned rule sets and latest runs, a manual run, and record-test writes (lifecycle-release-test-gate)."
+        },
+        {
+            "name": "application-history",
+            "description": "The change history of an app and its versions."
         }
     ],
     "paths": {
@@ -1080,6 +1084,94 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            }
+        },
+        "/applications/{appSlug}/history": {
+            "get": {
+                "operationId": "application-history-index",
+                "summary": "The change history of an app and its versions (REQ-BQCV-014)",
+                "description": "Every save of the Application and of its ApplicationVersions, newest first, read from the OpenRegister audit trail, with the user, the time and the version. Needs a signed-in Nextcloud user with a role (owner, editor or viewer) on the app; anyone else is refused.",
+                "tags": [
+                    "application-history"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entries": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "nullable": true
+                                                    },
+                                                    "user": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "userName": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "action": {
+                                                        "type": "string"
+                                                    },
+                                                    "object": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "application",
+                                                            "version"
+                                                        ]
+                                                    },
+                                                    "version": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "versionName": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
                     }
                 }
             }

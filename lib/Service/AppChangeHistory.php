@@ -28,7 +28,13 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use DateTimeInterface;
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Support\ObjectRecord;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
+use Throwable;
 
 /**
  * Builds an app's change history from the audit trail of its records.
@@ -38,7 +44,9 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
  * one of those objects; reads and named events (an id with a dot, such as
  * `rbac.admin_bypass`) are not saves and are left out. Each entry names the
  * user, the time and, for a version, which version changed. Authorising the
- * caller is the controller's job; this class only reads.
+ * caller is the controller's job; this class only reads. Versions are kept
+ * by their `application` back-reference in PHP, as the version listing does,
+ * because OpenRegister's relation filter is unreliable on some installs.
  *
  * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-rbac/spec.md#requirement-an-owner-sees-who-changed-an-apps-design-and-when-req-bqcv-014
  */
@@ -56,17 +64,93 @@ final class AppChangeHistory {
 	private const NOT_SAVES = ['read'];
 
 	/**
+	 * Constructor.
+	 *
+	 * @param ObjectServiceInterface $objectService  Reads the Application and its versions.
+	 * @param RegisterMapper         $registerMapper Resolves buildiq's register.
+	 * @param SchemaMapper           $schemaMapper   Resolves the Application and version schemas.
+	 * @param AuditTrailMapper|null  $trails         The OpenRegister audit trail, null until OpenRegister is loaded.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly ObjectServiceInterface $objectService,
+		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly ?AuditTrailMapper $trails=null,
+	) {
+	}//end __construct()
+
+	/**
+	 * Whether the audit trail can be read.
+	 *
+	 * @return bool True when OpenRegister's audit trail is available.
+	 *
+	 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-rbac/spec.md#requirement-an-owner-sees-who-changed-an-apps-design-and-when-req-bqcv-014
+	 */
+	public function available(): bool {
+		return $this->trails !== null;
+	}//end available()
+
+	/**
+	 * The Application with this slug, or null when there is none.
+	 *
+	 * @param string $slug The Application slug.
+	 *
+	 * @return array<string,mixed>|null The Application record.
+	 *
+	 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-rbac/spec.md#requirement-an-owner-sees-who-changed-an-apps-design-and-when-req-bqcv-014
+	 */
+	public function application(string $slug): ?array {
+		$rows = $this->rowsOf(schemaSlug: ApplicationVersionServiceInterface::APPLICATION_SCHEMA, filters: ['slug' => $slug]);
+		if ($rows === null || $rows === []) {
+			return null;
+		}
+
+		return $rows[0];
+	}//end application()
+
+	/**
+	 * The ApplicationVersions of an Application, or null when they cannot be read.
+	 *
+	 * @param array<string,mixed> $application The Application record.
+	 *
+	 * @return array<int,array<string,mixed>>|null The versions.
+	 *
+	 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-rbac/spec.md#requirement-an-owner-sees-who-changed-an-apps-design-and-when-req-bqcv-014
+	 */
+	public function versions(array $application): ?array {
+		$rows = $this->rowsOf(schemaSlug: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA, filters: []);
+		if ($rows === null) {
+			return null;
+		}
+
+		$appUuid = $this->uuidOf(record: $application);
+		return array_values(
+			array_filter(
+				$rows,
+				static fn (array $version): bool => (string)($version['application'] ?? '') === $appUuid
+			)
+		);
+	}//end versions()
+
+	/**
 	 * The change history of an app, newest first.
 	 *
 	 * @param array<string,mixed>            $application The Application record.
 	 * @param array<int,array<string,mixed>> $versions    Its ApplicationVersion records.
-	 * @param AuditTrailMapper               $trails      The OpenRegister audit trail.
 	 *
-	 * @return array<int,array<string,string|null>> The entries: `at`, `user`, `userName`, `action`, `object`, `version`, `versionName`.
+	 * @return array<int,array<string,string|null>> The entries (`at`, `user`, `userName`, `action`,
+	 *                                               `object`, `version`, `versionName`); none without a trail.
 	 *
 	 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-rbac/spec.md#requirement-an-owner-sees-who-changed-an-apps-design-and-when-req-bqcv-014
 	 */
-	public function entries(array $application, array $versions, AuditTrailMapper $trails): array {
+	public function entries(array $application, array $versions): array {
+		$trails = $this->trails;
+		if ($trails === null) {
+			return [];
+		}
+
 		$entries = [];
 		foreach ($this->subjects(application: $application, versions: $versions) as $uuid => $subject) {
 			$rows = $trails->findAll(
@@ -163,6 +247,36 @@ final class AppChangeHistory {
 			'versionName' => $subject['versionName'],
 		];
 	}//end entry()
+
+	/**
+	 * The objects of one of buildiq's schemas matching the filters, or null
+	 * when the register or the schema cannot be resolved.
+	 *
+	 * @param string               $schemaSlug The schema.
+	 * @param array<string,string> $filters    Property filters.
+	 *
+	 * @return array<int,array<string,mixed>>|null The records.
+	 *
+	 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-rbac/spec.md#requirement-an-owner-sees-who-changed-an-apps-design-and-when-req-bqcv-014
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function rowsOf(string $schemaSlug, array $filters): ?array {
+		try {
+			$registerId = $this->registerMapper->find(ApplicationVersionServiceInterface::REGISTER_SLUG, _multitenancy: false)->getId();
+			$schemaId   = $this->schemaMapper->find($schemaSlug, _multitenancy: false)->getId();
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		$rows = $this->objectService->searchObjects(
+			query: ['@self' => ['register' => $registerId, 'schema' => $schemaId]] + $filters
+		);
+		if (is_array($rows) === false) {
+			return [];
+		}
+
+		return array_map(static fn (mixed $row): array => ObjectRecord::toArray(object: $row), array_values($rows));
+	}//end rowsOf()
 
 	/**
 	 * The uuid of a record as buildiq normalises it (`id`, else `uuid`).

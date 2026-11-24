@@ -26,7 +26,12 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 use DateTime;
 use OCA\Buildiq\Service\AppChangeHistory;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -54,6 +59,29 @@ final class AppChangeHistoryTest extends TestCase {
 		$row->setUserName($userName);
 		return $row;
 	}//end row()
+
+	/**
+	 * The service over this trail, with an object service answering these records.
+	 *
+	 * @param AuditTrailMapper|null          $trails   The trail, or null when OpenRegister is not loaded.
+	 * @param array<int,array<string,mixed>> $records  What a search answers.
+	 *
+	 * @return AppChangeHistory The service.
+	 */
+	private function history(?AuditTrailMapper $trails, array $records=[]): AppChangeHistory {
+		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects->method('searchObjects')->willReturn($records);
+		$register = new Register();
+		$register->setId(1);
+		$registers = $this->createMock(RegisterMapper::class);
+		$registers->method('find')->willReturn($register);
+		$schema = new Schema();
+		$schema->setId(2);
+		$schemas = $this->createMock(SchemaMapper::class);
+		$schemas->method('find')->willReturn($schema);
+
+		return new AppChangeHistory(objectService: $objects, registerMapper: $registers, schemaMapper: $schemas, trails: $trails);
+	}//end history()
 
 	/**
 	 * A trail answering these rows per object uuid, recording the filters asked.
@@ -92,13 +120,12 @@ final class AppChangeHistoryTest extends TestCase {
 			asked: $asked
 		);
 
-		$entries = (new AppChangeHistory())->entries(
+		$entries = $this->history(trails: $trails)->entries(
 			application: ['id' => 'app-uuid', 'slug' => 'permits'],
 			versions: [
 				['id' => 'v-dev', 'slug' => 'development', 'name' => 'Development'],
 				['id' => 'v-prod', 'slug' => 'production'],
-			],
-			trails: $trails
+			]
 		);
 
 		self::assertSame(
@@ -139,7 +166,7 @@ final class AppChangeHistoryTest extends TestCase {
 			]
 		);
 
-		$entries = (new AppChangeHistory())->entries(application: ['id' => 'app-uuid'], versions: [], trails: $trails);
+		$entries = $this->history(trails: $trails)->entries(application: ['id' => 'app-uuid'], versions: []);
 
 		self::assertCount(expectedCount: 1, haystack: $entries);
 		self::assertSame(expected: ['delete', 'ruben', 'ruben'], actual: [$entries[0]['action'], $entries[0]['user'], $entries[0]['userName']]);
@@ -154,8 +181,38 @@ final class AppChangeHistoryTest extends TestCase {
 		$asked  = [];
 		$trails = $this->trails(byUuid: [], asked: $asked);
 
-		$entries = (new AppChangeHistory())->entries(application: [], versions: [['slug' => 'development']], trails: $trails);
+		$entries = $this->history(trails: $trails)->entries(application: [], versions: [['slug' => 'development']]);
 
 		self::assertSame(expected: [[], []], actual: [$entries, $asked]);
 	}//end testRecordsWithoutAUuidAreNotRead()
+
+	/**
+	 * Without OpenRegister's audit trail the service says so and lists nothing.
+	 *
+	 * @return void
+	 */
+	public function testWithoutTheTrailNothingIsListed(): void {
+		$history = $this->history(trails: null);
+
+		self::assertFalse(condition: $history->available());
+		self::assertSame(expected: [], actual: $history->entries(application: ['id' => 'app-uuid'], versions: []));
+	}//end testWithoutTheTrailNothingIsListed()
+
+	/**
+	 * The app is found by slug, and only its own versions are kept.
+	 *
+	 * @return void
+	 */
+	public function testTheAppAndOnlyItsOwnVersionsAreRead(): void {
+		$history = $this->history(
+			trails: null,
+			records: [
+				['id' => 'v-1', 'slug' => 'development', 'application' => 'app-uuid'],
+				['id' => 'v-2', 'slug' => 'development', 'application' => 'other-uuid'],
+			]
+		);
+
+		self::assertSame(expected: 'v-1', actual: $history->application(slug: 'permits')['id']);
+		self::assertSame(expected: ['v-1'], actual: array_column($history->versions(application: ['id' => 'app-uuid']), 'id'));
+	}//end testTheAppAndOnlyItsOwnVersionsAreRead()
 }//end class
