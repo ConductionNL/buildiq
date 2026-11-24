@@ -503,7 +503,7 @@ export default {
 		 * `history`, or null when the page has none.
 		 *
 		 * @return {object|null} The tab.
-		 * @spec openspec/changes/data-restore-record-version/specs/record-history-restore/spec.md
+		 * @spec openspec/changes/archive/2026-11-24-data-restore-record-version/specs/record-history-restore/spec.md
 		 */
 		historyTab() {
 			const sidebar = this.config.sidebar
@@ -515,7 +515,7 @@ export default {
 		 * Whether the page shows its record history.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/data-restore-record-version/specs/record-history-restore/spec.md
+		 * @spec openspec/changes/archive/2026-11-24-data-restore-record-version/specs/record-history-restore/spec.md
 		 */
 		showHistory() {
 			return this.historyTab !== null
@@ -526,7 +526,7 @@ export default {
 		 * prop of the history tab's audit widget, off unless set to true.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/data-restore-record-version/specs/record-history-restore/spec.md
+		 * @spec openspec/changes/archive/2026-11-24-data-restore-record-version/specs/record-history-restore/spec.md
 		 */
 		allowRestore() {
 			const widget = auditWidget(this.historyTab)
@@ -639,7 +639,7 @@ export default {
 		 * removing it leaves every other tab as it was.
 		 *
 		 * @param {boolean} on - whether the page shows its record history.
-		 * @spec openspec/changes/data-restore-record-version/specs/record-history-restore/spec.md
+		 * @spec openspec/changes/archive/2026-11-24-data-restore-record-version/specs/record-history-restore/spec.md
 		 */
 		setShowHistory(on) {
 			const sidebar = this.config.sidebar
@@ -663,7 +663,7 @@ export default {
 		 * the tab's other keys and widgets.
 		 *
 		 * @param {boolean} on - whether app users may restore an earlier version.
-		 * @spec openspec/changes/data-restore-record-version/specs/record-history-restore/spec.md
+		 * @spec openspec/changes/archive/2026-11-24-data-restore-record-version/specs/record-history-restore/spec.md
 		 */
 		setAllowRestore(on) {
 			if (!this.showHistory) {
