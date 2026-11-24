@@ -3190,7 +3190,20 @@
         "The file is empty.": "Het bestand is leeg.",
         "The file is larger than 10 MB.": "Het bestand is groter dan 10 MB.",
         "The first row holds the column names. Each column becomes a field, each row a record, and the app opens on a list of them.": "De eerste rij bevat de kolomnamen. Elke kolom wordt een veld, elke rij een record, en de app opent op een lijst daarvan.",
-        "Turn off \"Start from a database\" to start from a spreadsheet.": "Zet \"Beginnen met een database\" uit om met een spreadsheet te beginnen."
+        "Turn off \"Start from a database\" to start from a spreadsheet.": "Zet \"Beginnen met een database\" uit om met een spreadsheet te beginnen.",
+        "Each save of this version from now on is kept here, so you can roll back to it.": "Elke opslag van deze versie wordt vanaf nu hier bewaard, zodat je ernaar kunt terugdraaien.",
+        "Loading saves…": "Opslagmomenten laden…",
+        "no pages": "geen pagina's",
+        "No saves kept yet": "Nog geen opslagmomenten bewaard",
+        "Pages: {pages}": "Pagina's: {pages}",
+        "Replace this version's pages with this save?": "De pagina's van deze versie vervangen door dit opslagmoment?",
+        "Roll back to this save": "Terugdraaien naar dit opslagmoment",
+        "Saves": "Opslagmomenten",
+        "Saves of {version}": "Opslagmomenten van {version}",
+        "The rollback failed. The version is unchanged.": "Terugdraaien is mislukt. De versie is ongewijzigd.",
+        "The saves could not be loaded.": "De opslagmomenten konden niet worden geladen.",
+        "You need a role on this app to see its saves.": "Je hebt een rol in deze app nodig om de opslagmomenten te zien.",
+        "You need to be an owner or editor of this app to roll it back.": "Je moet eigenaar of bewerker van deze app zijn om terug te draaien."
     },
     "plurals": null,
     "pluralForm": "nplurals=2; plural=(n != 1);"

@@ -5755,6 +5755,158 @@
                     }
                 }
             }
+        },
+        "/applications/{appSlug}/versions/{versionSlug}/saves": {
+            "get": {
+                "operationId": "version-saves-index",
+                "summary": "The saves of a version, newest first (REQ-BQCV-015)",
+                "description": "Every kept save of the version's manifest, newest first (at most 50), with its time, the user and its page ids. Needs a signed-in Nextcloud user with a role (owner, editor or viewer) on the app, without an admin bypass; another organisation's scoped app answers 404.",
+                "tags": [
+                    "application-versions"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "versionSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Version slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "saves": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "savedAt": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    },
+                                                    "user": {
+                                                        "type": "string"
+                                                    },
+                                                    "pages": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "string"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/applications/{appSlug}/versions/{versionSlug}/saves/{saveId}": {
+            "get": {
+                "operationId": "version-saves-show",
+                "summary": "The manifest of one save of a version (REQ-BQCV-015)",
+                "description": "The whole manifest as it was saved, to roll the version back to it by writing it through PUT /applications/{appSlug}/versions/{versionSlug}. Same roles as the list of saves.",
+                "tags": [
+                    "application-versions"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "versionSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Version slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "saveId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The save's id from the list of saves.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "manifest": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
         }
     },
     "components": {

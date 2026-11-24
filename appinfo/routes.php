@@ -130,6 +130,23 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         ['name' => 'applicationVersions#show',    'url' => '/api/applications/{appSlug}/versions/{versionSlug}',  'verb' => 'GET',    'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'applicationVersions#update',  'url' => '/api/applications/{appSlug}/versions/{versionSlug}',  'verb' => 'PUT',    'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'applicationVersions#destroy', 'url' => '/api/applications/{appSlug}/versions/{versionSlug}',  'verb' => 'DELETE', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        // Saves of a version (capability-requirements-backfill REQ-BQCV-015): the version history rolls a version back to one.
+        [
+            'name' => 'versionSaves#index',
+            'url' => '/api/applications/{appSlug}/versions/{versionSlug}/saves',
+            'verb' => 'GET',
+            'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]'],
+        ],
+        [
+            'name' => 'versionSaves#show',
+            'url' => '/api/applications/{appSlug}/versions/{versionSlug}/saves/{saveId}',
+            'verb' => 'GET',
+            'requirements' => [
+                'appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]',
+                'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]',
+                'saveId' => '[A-Za-z0-9-]{1,64}',
+            ],
+        ],
         // Owner-only release: set-as-production + publish + demote previous production
         // (`application-versions` REQ-OBV-110). Single-production invariant; NO admin bypass.
         // lifecycle-git-branches: start a branch from a version, and preview / apply a merge into a draft version.
