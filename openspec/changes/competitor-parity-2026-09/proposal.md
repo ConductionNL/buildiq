@@ -104,6 +104,13 @@ Splitting them would specify the layering twice.
 - **D6 was answered relevance-led.** Every `must` candidate enters the corpus
   as a row, whatever its passer count. That admits C-tasks-and-phases-33, a
   `must` with one driven passer, Valtimo.
+- **Two consolidated candidates are split between buildiq and the renderers.**
+  C-tasks-and-phases-33 and C-access-and-privacy-37 each count once, but their
+  halves land in different places: buildiq stores the case type's layout and
+  serves it on the `buildiq-page-layout` leaf (`case-page-layout-per-case-type`),
+  and clusters 53 (tasks and phases) and 58 (access and privacy) render it on
+  the case page and keep the record halves. Neither is counted as built until
+  both halves are.
 - **D21 admits documented candidates, labelled.** D-casetype-21, D-casetype-22
   and D-casetype-26 come from the depth study's second read, which names a
   passer and does not rate dossiq. They are cited as such, and never counted

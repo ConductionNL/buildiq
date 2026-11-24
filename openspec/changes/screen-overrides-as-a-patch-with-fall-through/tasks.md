@@ -37,4 +37,5 @@
 
 - [ ] 5.1 Tell the dossiq lane which audience to ask with on the desk channel, and open its change
 - [ ] 5.2 Tell the portaliq lane to ask with the `portal` audience for a public visitor
-- [ ] 5.3 Ask the `app-delta-override` lane whether its fail-soft orphan skip should become loud too
+- [x] 5.3 Ask the `app-delta-override` lane whether its fail-soft orphan skip should become loud too
+  > Answered 24 Nov: no withholding there; the orphaned paths stay skipped in what is served and are shown to the maintainers in the designer and on the Manifest layers page (#1858). The reason is in competitor-parity-2026-09 task 5.4.
