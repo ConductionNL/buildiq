@@ -42,8 +42,13 @@ test.describe('Buildiq GitHub export credential picker', () => {
 		const dialog = page.locator('.export-dialog')
 		await expect(dialog).toBeVisible({ timeout: 20_000 })
 
-		// Switch the target from the default ZIP download to GitHub.
-		await dialog.getByText('ZIP download').first().click()
+		// Switch the target from the default ZIP download to GitHub. The select
+		// splits its selected label over two spans ("ZIP do" + "wnload"), so it
+		// is found by its combobox name, not by that text, and opened from the
+		// keyboard: a click on the field leaves its list closed.
+		const target = dialog.getByRole('combobox', { name: 'Target' })
+		await target.focus()
+		await target.press('ArrowDown')
 		await page.getByRole('option', { name: /Push to GitHub/i }).first().click()
 
 		await expect(
