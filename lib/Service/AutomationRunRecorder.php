@@ -161,21 +161,39 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 	 * @param string                                                       $outcome The outcome.
 	 * @param array<int, array{action: string, outcome: string, message?: string}> $steps The steps to add.
 	 * @param string|null                                                  $reason  Why, for failed.
-	 * @param int|null $durationMs How long the run took; measured from startedAt when null.
 	 *
 	 * @return bool
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	#[\Override]
-	public function complete(string $runUuid, string $outcome, array $steps, ?string $reason = null, ?int $durationMs = null): bool {
+	public function complete(string $runUuid, string $outcome, array $steps, ?string $reason = null): bool {
+		return $this->completeFromFlowRun(
+			runUuid: $runUuid,
+			result: ['outcome' => $outcome, 'reason' => $reason, 'durationMs' => null, 'steps' => $steps]
+		);
+	}//end complete()
+
+	/**
+	 * Complete a waiting run from the flow run that executed it: its outcome,
+	 * reason, steps and the flow run's own duration (FlowRunOutcome).
+	 *
+	 * @param string               $runUuid The waiting run.
+	 * @param array<string, mixed> $result  {outcome, reason, durationMs, steps}.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 */
+	#[\Override]
+	public function completeFromFlowRun(string $runUuid, array $result): bool {
 		$run = $this->read(uuid: $runUuid);
 		if ($run === null || ($run['outcome'] ?? null) !== 'waiting') {
 			$this->logger->warning('Buildiq: no waiting automation run ' . $runUuid . ' to complete');
 			return false;
 		}
 
-		foreach ($steps as $step) {
+		foreach ((array)($result['steps'] ?? []) as $step) {
 			$run = $this->step(
 				run: $run,
 				action: (string)($step['action'] ?? ''),
@@ -184,14 +202,19 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 			);
 		}
 
-		$run['outcome']    = $outcome;
-		$run['durationMs'] = $durationMs ?? $this->durationSince(startedAt: (string)($run['startedAt'] ?? ''));
-		if ($reason !== null && $reason !== '') {
+		$run['outcome']    = (string)($result['outcome'] ?? 'failed');
+		$run['durationMs'] = $this->durationSince(startedAt: (string)($run['startedAt'] ?? ''));
+		if (is_int($result['durationMs'] ?? null) === true) {
+			$run['durationMs'] = $result['durationMs'];
+		}
+
+		$reason = (string)($result['reason'] ?? '');
+		if ($reason !== '') {
 			$run['reason'] = $reason;
 		}
 
 		return $this->write(record: $run, uuid: $runUuid) !== null;
-	}//end complete()
+	}//end completeFromFlowRun()
 
 	/**
 	 * The waiting runs of one automation that an OpenRegister flow run will

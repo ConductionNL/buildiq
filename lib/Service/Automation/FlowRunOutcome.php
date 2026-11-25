@@ -71,7 +71,7 @@ final class FlowRunOutcome {
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
-	public static function of(string $status, ?string $error, array $log, array $actions): array {
+	public static function fromFlowRun(string $status, ?string $error, array $log, array $actions): array {
 		$succeeded = in_array($status, self::SUCCEEDED, true);
 		$reason    = null;
 		if ($succeeded === false) {
@@ -80,19 +80,26 @@ final class FlowRunOutcome {
 
 		$steps = [];
 		foreach (array_values($actions) as $index => $action) {
-			$steps[] = self::stepOf(
-				action: (string)(is_array($action) === true ? ($action['type'] ?? '') : ''),
-				entries: self::entriesOf(log: $log, nodeId: 'step-' . ($index + 1))
-			);
+			$type = '';
+			if (is_array($action) === true) {
+				$type = (string)($action['type'] ?? '');
+			}
+
+			$steps[] = self::stepOf(action: $type, entries: self::entriesOf(log: $log, nodeId: 'step-' . ($index + 1)));
+		}
+
+		$outcome = 'failed';
+		if ($succeeded === true) {
+			$outcome = 'succeeded';
 		}
 
 		return [
-			'outcome' => $succeeded === true ? 'succeeded' : 'failed',
+			'outcome' => $outcome,
 			'reason' => $reason,
 			'durationMs' => self::durationOf(log: $log),
 			'steps' => $steps,
 		];
-	}//end of()
+	}//end fromFlowRun()
 
 	/**
 	 * How long the run's nodes took together: the sum of their `durationMs`.

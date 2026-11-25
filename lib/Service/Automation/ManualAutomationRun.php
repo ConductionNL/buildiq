@@ -66,6 +66,7 @@ class ManualAutomationRun {
 	 * @param ContainerInterface                  $container     Resolves OpenRegister's flow service when a run starts.
 	 * @param ObjectServiceInterface              $objectService Reads the record as the caller, and the app's automations.
 	 * @param AutomationRunRecorderInterface|null $runs          Writes the waiting run its flow run completes (logic-automation-run-log).
+	 * @param ManualRunReconciler|null            $reconciler    Completes those waiting runs once their flow runs have ended.
 	 *
 	 * @return void
 	 */
@@ -73,6 +74,7 @@ class ManualAutomationRun {
 		private readonly ContainerInterface $container,
 		private readonly ObjectServiceInterface $objectService,
 		private readonly ?AutomationRunRecorderInterface $runs = null,
+		private readonly ?ManualRunReconciler $reconciler = null,
 	) {
 	}//end __construct()
 
@@ -209,6 +211,20 @@ class ManualAutomationRun {
 
 		return ['flowUuid' => $flowUuid, 'run' => $runUuid];
 	}//end start()
+
+	/**
+	 * Complete the waiting manual runs of one automation whose flow runs have
+	 * ended, before its run log is read (ManualRunReconciler).
+	 *
+	 * @param string $automationUuid The automation.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 */
+	public function reconcile(string $automationUuid): void {
+		$this->reconciler?->reconcile(automationUuid: $automationUuid);
+	}//end reconcile()
 
 	/**
 	 * Write the waiting run of a queued flow run. A failure to write is the

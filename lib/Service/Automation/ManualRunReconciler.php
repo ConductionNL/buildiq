@@ -108,18 +108,16 @@ class ManualRunReconciler {
 		$actions   = null;
 		$completed = 0;
 		foreach ($waiting as $run) {
-			$result = $this->resultOf(flowRunUuid: (string)$run['flowRun'], actions: $actions, automationUuid: $automationUuid);
+			$result = $this->resultOf(
+				flowRunUuid: (string)$run['flowRun'],
+				actions: $actions,
+				automationUuid: $automationUuid
+			);
 			if ($result === null) {
 				continue;
 			}
 
-			$done = $this->runs->complete(
-				runUuid: (string)$run['id'],
-				outcome: $result['outcome'],
-				steps: $result['steps'],
-				reason: $result['reason'],
-				durationMs: $result['durationMs']
-			);
+			$done = $this->runs->completeFromFlowRun(runUuid: (string)$run['id'], result: $result);
 			if ($done === true) {
 				$completed++;
 			}
@@ -135,7 +133,7 @@ class ManualRunReconciler {
 	 * @param array<int, array<string, mixed>>|null $actions        The automation's actions, read once on first need.
 	 * @param string                                $automationUuid The automation.
 	 *
-	 * @return array{outcome: string, reason: string|null, durationMs: int|null, steps: list<array{action: string, outcome: string, message: string}>}|null
+	 * @return array{outcome: string, reason: string|null, durationMs: int|null, steps: list<array<string, string>>}|null
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) FlowRunOutcome is a pure mapping with no collaborators.
 	 */
@@ -162,7 +160,7 @@ class ManualRunReconciler {
 			$actions = $this->actionsOf(automationUuid: $automationUuid);
 		}
 
-		return FlowRunOutcome::of(
+		return FlowRunOutcome::fromFlowRun(
 			status: $status,
 			error: $flowRun->getError(),
 			log: (array)($flowRun->getLog() ?? []),

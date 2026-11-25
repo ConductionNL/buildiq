@@ -121,7 +121,7 @@ final class AutomationsControllerManualRunTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->userSession   = $this->createMock(IUserSession::class);
 		$this->flows         = $this->createMock(FlowService::class);
-		$this->recorder      = $this->createMock(AutomationRunRecorderInterface::class);
+		$this->recorder      = $this->createMock(originalClassName: AutomationRunRecorderInterface::class);
 		$groupManager        = $this->createMock(IGroupManager::class);
 		$groupManager->method('getUserGroups')->willReturn([]);
 		$groupManager->method('isAdmin')->willReturn(false);
@@ -252,7 +252,7 @@ final class AutomationsControllerManualRunTest extends TestCase {
 	public function testAStartedRunIsRecordedWaitingWithItsFlowRun(): void {
 		$this->signIn(uid: 'clerk');
 		$this->wireObjects(automation: self::AUTOMATION, record: $this->record(schema: 'vergunning'));
-		$run = $this->createMock(FlowRun::class);
+		$run = $this->createMock(originalClassName: FlowRun::class);
 		$run->method('jsonSerialize')->willReturn(['uuid' => 'run-5']);
 		$this->flows->method('runForAction')->willReturn($run);
 		$this->recorder->expects($this->once())->method('start')
@@ -262,7 +262,7 @@ final class AutomationsControllerManualRunTest extends TestCase {
 			->with(['automation' => 'aut-1', 'trigger' => 'manual', 'flowRun' => 'run-5'], 'waiting')
 			->willReturn('ar-1');
 
-		$this->assertSame(Http::STATUS_ACCEPTED, $this->controller->run(uuid: 'aut-1')->getStatus());
+		$this->assertSame(expected: Http::STATUS_ACCEPTED, actual: $this->controller->run(uuid: 'aut-1')->getStatus());
 	}//end testAStartedRunIsRecordedWaitingWithItsFlowRun()
 
 	/**
@@ -276,7 +276,7 @@ final class AutomationsControllerManualRunTest extends TestCase {
 		$this->recorder->expects($this->never())->method('start');
 		$this->recorder->expects($this->never())->method('finish');
 
-		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller->run(uuid: 'aut-1')->getStatus());
+		$this->assertSame(expected: Http::STATUS_FORBIDDEN, actual: $this->controller->run(uuid: 'aut-1')->getStatus());
 	}//end testARefusedRunRecordsNothing()
 
 	/**

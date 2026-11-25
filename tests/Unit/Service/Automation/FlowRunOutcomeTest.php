@@ -53,7 +53,7 @@ final class FlowRunOutcomeTest extends TestCase {
 		];
 
 		$this->assertSame(
-			[
+			expected: [
 				'outcome' => 'succeeded',
 				'reason' => null,
 				'durationMs' => 336,
@@ -63,7 +63,7 @@ final class FlowRunOutcomeTest extends TestCase {
 					['action' => 'webhook', 'outcome' => 'succeeded', 'message' => ''],
 				],
 			],
-			FlowRunOutcome::of(status: 'completed', error: null, log: $log, actions: self::ACTIONS)
+			actual: FlowRunOutcome::fromFlowRun(status: 'completed', error: null, log: $log, actions: self::ACTIONS)
 		);
 	}//end testACompletedRunSucceedsWithOneStepPerAction()
 
@@ -81,17 +81,17 @@ final class FlowRunOutcomeTest extends TestCase {
 			['transition' => 'step-2-write', 'status' => 'failed', 'error' => 'An update matched no object.', 'durationMs' => 8],
 		];
 
-		$result = FlowRunOutcome::of(status: 'failed', error: 'An update matched no object.', log: $log, actions: self::ACTIONS);
+		$result = FlowRunOutcome::fromFlowRun(status: 'failed', error: 'An update matched no object.', log: $log, actions: self::ACTIONS);
 
-		$this->assertSame('failed', $result['outcome']);
-		$this->assertSame('An update matched no object.', $result['reason']);
+		$this->assertSame(expected: 'failed', actual: $result['outcome']);
+		$this->assertSame(expected: 'An update matched no object.', actual: $result['reason']);
 		$this->assertSame(
-			[
+			expected: [
 				['action' => 'object-op', 'outcome' => 'succeeded', 'message' => ''],
 				['action' => 'ai-step', 'outcome' => 'failed', 'message' => 'An update matched no object.'],
 				['action' => 'webhook', 'outcome' => 'skipped', 'message' => FlowRunOutcome::NOT_REACHED],
 			],
-			$result['steps']
+			actual: $result['steps']
 		);
 	}//end testAFailingNodeFailsItsStepAndTheRest()
 
@@ -102,16 +102,16 @@ final class FlowRunOutcomeTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFailedRunAlwaysHasAReason(): void {
-		$fromNode = FlowRunOutcome::of(
+		$fromNode = FlowRunOutcome::fromFlowRun(
 			status: 'dead_letter',
 			error: ' ',
 			log: [['transition' => 'step-10', 'status' => 'failed', 'error' => 'Webhook answered 500'], 'not an entry'],
 			actions: [['type' => 'object-op']]
 		);
-		$this->assertSame('Webhook answered 500', $fromNode['reason']);
-		$this->assertSame('skipped', $fromNode['steps'][0]['outcome']);
+		$this->assertSame(expected: 'Webhook answered 500', actual: $fromNode['reason']);
+		$this->assertSame(expected: 'skipped', actual: $fromNode['steps'][0]['outcome']);
 
-		$none = FlowRunOutcome::of(status: 'stopped', error: null, log: [], actions: []);
-		$this->assertSame(['outcome' => 'failed', 'reason' => FlowRunOutcome::NO_REASON, 'durationMs' => 0, 'steps' => []], $none);
+		$none = FlowRunOutcome::fromFlowRun(status: 'stopped', error: null, log: [], actions: []);
+		$this->assertSame(expected: ['outcome' => 'failed', 'reason' => FlowRunOutcome::NO_REASON, 'durationMs' => 0, 'steps' => []], actual: $none);
 	}//end testAFailedRunAlwaysHasAReason()
 }//end class

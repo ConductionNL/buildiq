@@ -325,8 +325,8 @@ final class AutomationRunRecorderTest extends TestCase {
 
 		$waiting = $this->recorder()->waitingOnFlowRuns(automationUuid: 'aut-1');
 
-		$this->assertSame(['r1'], array_column($waiting, 'id'));
-		$this->assertSame('fr-1', $waiting[0]['flowRun']);
+		$this->assertSame(expected: ['r1'], actual: array_column($waiting, 'id'));
+		$this->assertSame(expected: 'fr-1', actual: $waiting[0]['flowRun']);
 	}//end testWaitingOnFlowRunsListsOnlyWaitingRunsWithAFlowRun()
 
 	/**
@@ -335,7 +335,7 @@ final class AutomationRunRecorderTest extends TestCase {
 	 * @return void
 	 */
 	public function testACompletedRunTakesTheGivenDuration(): void {
-		$this->objects->method('find')->willReturn($this->entity([
+		$this->objects->method('find')->willReturn($this->entity(payload: [
 			'@self' => ['id' => 'run-4'],
 			'automation' => 'aut-1',
 			'startedAt' => '2026-11-14T09:00:00+00:00',
@@ -345,11 +345,12 @@ final class AutomationRunRecorderTest extends TestCase {
 		$calls = [];
 		$this->objects->method('saveObject')->willReturnCallback(function (...$arguments) use (&$calls): ObjectEntity {
 			$calls[] = LegacyObjectArgs::positional(method: 'saveObject', args: $arguments);
-			return $this->entity(['@self' => ['id' => 'run-4']]);
+			return $this->entity(payload: ['@self' => ['id' => 'run-4']]);
 		});
 
-		$this->assertTrue($this->recorder()->complete(runUuid: 'run-4', outcome: 'succeeded', steps: [], durationMs: 336));
-		$this->assertSame(336, $calls[0][0]['durationMs']);
-		$this->assertSame('fr-4', $calls[0][0]['flowRun']);
+		$result = ['outcome' => 'succeeded', 'reason' => null, 'durationMs' => 336, 'steps' => []];
+		$this->assertTrue(condition: $this->recorder()->completeFromFlowRun(runUuid: 'run-4', result: $result));
+		$this->assertSame(expected: 336, actual: $calls[0][0]['durationMs']);
+		$this->assertSame(expected: 'fr-4', actual: $calls[0][0]['flowRun']);
 	}//end testACompletedRunTakesTheGivenDuration()
 }//end class

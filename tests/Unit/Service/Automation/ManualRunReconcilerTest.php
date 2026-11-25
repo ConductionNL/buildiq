@@ -74,10 +74,10 @@ final class ManualRunReconcilerTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->runs     = $this->createMock(AutomationRunRecorderInterface::class);
-		$this->objects  = $this->createMock(ObjectServiceInterface::class);
-		$this->flowRuns = $this->createMock(FlowRunMapper::class);
-		$this->logger   = $this->createMock(LoggerInterface::class);
+		$this->runs     = $this->createMock(originalClassName: AutomationRunRecorderInterface::class);
+		$this->objects  = $this->createMock(originalClassName: ObjectServiceInterface::class);
+		$this->flowRuns = $this->createMock(originalClassName: FlowRunMapper::class);
+		$this->logger   = $this->createMock(originalClassName: LoggerInterface::class);
 	}//end setUp()
 
 	/**
@@ -86,7 +86,7 @@ final class ManualRunReconcilerTest extends TestCase {
 	 * @return ManualRunReconciler
 	 */
 	private function reconciler(): ManualRunReconciler {
-		$container = $this->createMock(ContainerInterface::class);
+		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$container->method('get')->with(FlowRunMapper::class)->willReturn($this->flowRuns);
 		return new ManualRunReconciler(container: $container, runs: $this->runs, objectService: $this->objects, logger: $this->logger);
 	}//end reconciler()
@@ -115,8 +115,18 @@ final class ManualRunReconcilerTest extends TestCase {
 	 */
 	private function automation(): ObjectEntity {
 		$entity = new class() extends ObjectEntity {
+			/**
+			 * What the entity serialises to.
+			 *
+			 * @var array<string, mixed>
+			 */
 			public array $payload = [];
 
+			/**
+			 * The payload.
+			 *
+			 * @return array<string, mixed>
+			 */
 			public function jsonSerialize(): array {
 				return $this->payload;
 			}
@@ -141,17 +151,19 @@ final class ManualRunReconcilerTest extends TestCase {
 			['fr-2', self::flowRun(status: 'running')],
 		]);
 		$this->objects->expects($this->once())->method('find')->willReturn($this->automation());
-		$this->runs->expects($this->once())->method('complete')
+		$this->runs->expects($this->once())->method('completeFromFlowRun')
 			->with(
 				'run-1',
-				'succeeded',
-				[['action' => 'object-op', 'outcome' => 'succeeded', 'message' => '']],
-				null,
-				336
+				[
+					'outcome' => 'succeeded',
+					'reason' => null,
+					'durationMs' => 336,
+					'steps' => [['action' => 'object-op', 'outcome' => 'succeeded', 'message' => '']],
+				]
 			)
 			->willReturn(true);
 
-		$this->assertSame(1, $this->reconciler()->reconcile(automationUuid: 'aut-1'));
+		$this->assertSame(expected: 1, actual: $this->reconciler()->reconcile(automationUuid: 'aut-1'));
 	}//end testAFinishedFlowRunCompletesItsWaitingRun()
 
 	/**
@@ -167,20 +179,30 @@ final class ManualRunReconcilerTest extends TestCase {
 		]);
 		$this->flowRuns->method('findByUuid')->willReturnCallback(
 			static fn (string $uuid): FlowRun => match ($uuid) {
-				'fr-1' => self::flowRun(status: 'failed', error: 'An update matched no object.', log: [['transition' => 'step-1', 'status' => 'failed', 'error' => 'An update matched no object.']]),
+				'fr-1' => self::flowRun(
+					status: 'failed',
+					error: 'An update matched no object.',
+					log: [['transition' => 'step-1', 'status' => 'failed', 'error' => 'An update matched no object.']]
+				),
 				default => throw new DoesNotExistException('gone'),
 			}
 		);
 		$this->objects->method('find')->willReturn($this->automation());
 		$completed = [];
-		$this->runs->method('complete')->willReturnCallback(function (...$arguments) use (&$completed): bool {
+		$this->runs->method('completeFromFlowRun')->willReturnCallback(function (...$arguments) use (&$completed): bool {
 			$completed[] = $arguments;
 			return true;
 		});
 
-		$this->assertSame(2, $this->reconciler()->reconcile(automationUuid: 'aut-1'));
-		$this->assertSame(['run-1', 'failed', [['action' => 'object-op', 'outcome' => 'failed', 'message' => 'An update matched no object.']], 'An update matched no object.'], array_slice($completed[0], 0, 4));
-		$this->assertSame(['run-2', 'failed', [], ManualRunReconciler::GONE, null], $completed[1]);
+		$this->assertSame(expected: 2, actual: $this->reconciler()->reconcile(automationUuid: 'aut-1'));
+		$failed = ['action' => 'object-op', 'outcome' => 'failed', 'message' => 'An update matched no object.'];
+		$this->assertSame(expected: 'run-1', actual: $completed[0][0]);
+		$this->assertSame(expected: 'An update matched no object.', actual: $completed[0][1]['reason']);
+		$this->assertSame(expected: [$failed], actual: $completed[0][1]['steps']);
+		$this->assertSame(
+			expected: ['run-2', ['outcome' => 'failed', 'reason' => ManualRunReconciler::GONE, 'durationMs' => null, 'steps' => []]],
+			actual: $completed[1]
+		);
 	}//end testAFailedOrVanishedFlowRunIsRecordedFailed()
 
 	/**
@@ -192,16 +214,16 @@ final class ManualRunReconcilerTest extends TestCase {
 	public function testNothingWaitingOrUnreadableCompletesNothing(): void {
 		$this->runs->method('waitingOnFlowRuns')->willReturnOnConsecutiveCalls(
 			[],
-			$this->throwException(new RuntimeException('down')),
+			$this->throwException(exception: new RuntimeException('down')),
 			[['id' => 'run-1', 'flowRun' => 'fr-1']]
 		);
 		$this->flowRuns->expects($this->once())->method('findByUuid')->willThrowException(new RuntimeException('db'));
-		$this->runs->expects($this->never())->method('complete');
-		$this->logger->expects($this->exactly(2))->method('error');
+		$this->runs->expects($this->never())->method('completeFromFlowRun');
+		$this->logger->expects($this->exactly(count: 2))->method('error');
 
 		$reconciler = $this->reconciler();
-		$this->assertSame(0, $reconciler->reconcile(automationUuid: 'aut-1'));
-		$this->assertSame(0, $reconciler->reconcile(automationUuid: 'aut-1'));
-		$this->assertSame(0, $reconciler->reconcile(automationUuid: 'aut-1'));
+		$this->assertSame(expected: 0, actual: $reconciler->reconcile(automationUuid: 'aut-1'));
+		$this->assertSame(expected: 0, actual: $reconciler->reconcile(automationUuid: 'aut-1'));
+		$this->assertSame(expected: 0, actual: $reconciler->reconcile(automationUuid: 'aut-1'));
 	}//end testNothingWaitingOrUnreadableCompletesNothing()
 }//end class
