@@ -32,6 +32,7 @@
       Saves the scenario's form through the builder's route as a draft, publishes it, reads it back (one form, both
       phase labels, the `visibleWhen` rule intact) and checks that a caller with no account cannot publish. The
       publish skips with the destination's reason on a stack without dossiq. Written, not run here (no live stack).
-- [ ] 4.3 Dutch and English strings; docs with screenshots
+- [x] 4.3 Dutch and English strings; docs with screenshots
+  > 25 Nov 2026: `npm run test:l10n` (every used key in `l10n/en.json`) and `npm run test:l10n:parity` (nl at full parity) both pass. `docs/registration-form-builder.md` now shows the Applies to panel, the "Forms for this case type" list and an open form (`docs/static/screenshots/registration-form-builder/`). Taken in Chromium at 2x from a live Nextcloud 34 with OpenRegister main, on a demo app `case-intake` whose detail page targets a `case` schema; no real data.
 - [x] 4.4 Hand the leaf id and the `{form, drafts}` shape to dossiq for `friendly-case-create-form`
   > Done 25 Nov: dossiq ConductionNL/dossiq#6918 (competitor-parity-2026-09 task 15, shapes in buildiq-consumer-halves.md), task 15.4: leaf id `buildiq-registration-form` and the `{items, total, nextCursor, drafts}` envelope with an example form, for `friendly-case-create-form`.
