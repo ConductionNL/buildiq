@@ -277,11 +277,15 @@ class FlowBindingWrapperServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testAKeptDraftWrapperIsRepublished(): void {
-		$first = $this->service()->sync(applicationUuid: self::APP, application: self::app(runOn: [['schema' => 'vergunning', 'event' => 'object.updated']]), register: 'r');
+		$first = $this->service()->sync(
+			applicationUuid: self::APP,
+			application: self::app(runOn: [['schema' => 'vergunning', 'event' => 'object.updated']]),
+			register: 'r'
+		);
 		$this->saved = [];
 		$this->applications = [];
 		$this->versions->expects($this->once())->method('publish')
-			->with($this->callback(static fn (Flow $flow): bool => $flow->getUuid() === 'wrapper-1'));
+			->with($this->callback(callback: static fn (Flow $flow): bool => $flow->getUuid() === 'wrapper-1'));
 
 		$again = $this->service()->sync(applicationUuid: self::APP, application: ['slug' => 'permits', 'flows' => $first['flows']], register: 'r');
 
