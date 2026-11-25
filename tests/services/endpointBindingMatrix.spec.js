@@ -20,8 +20,8 @@
  * a schema-declared `endpointSource` key and is covered by
  * runtimeRegistryParity.spec.js instead.
  *
- * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-002-normative-endpoint-binding-matrix-for-the-published-path
- * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-003-stats-block-entries-take-an-endpoint-only-through-the-librarys-entry-mapping
+ * @spec openspec/changes/archive/2026-11-25-openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-002-normative-endpoint-binding-matrix-for-the-published-path
+ * @spec openspec/changes/archive/2026-11-25-openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-003-stats-block-entries-take-an-endpoint-only-through-the-librarys-entry-mapping
  */
 import Ajv from 'ajv/dist/2020.js'
 import { readFileSync } from 'node:fs'

@@ -30,7 +30,7 @@ function escapeForPattern(value) {
  * @param {string} slug The app's slug.
  * @return {string} The base, without a trailing slash.
  *
- * @spec openspec/changes/openbuild-connector-widget-runtime/tasks.md#5.3
+ * @spec openspec/changes/archive/2026-11-25-openbuild-connector-widget-runtime/tasks.md#5.3
  */
 export function builderRouterBase(pathname, slug) {
 	const fallback = generateUrl(`/apps/buildiq/builder/${slug}`)

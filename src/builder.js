@@ -431,7 +431,7 @@ function navSlots(manifest, router) {
 /**
  * Fetch the app manifest, build its router, and mount the standalone shell.
  *
- * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-001-single-runtime-registry-seam-for-every-virtual-app-host
+ * @spec openspec/changes/archive/2026-11-25-openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-001-single-runtime-registry-seam-for-every-virtual-app-host
  * @return {Promise<void>}
  */
 /**

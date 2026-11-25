@@ -183,7 +183,7 @@ export const runtimeRegistry = {
  * wiring it by hand, so the set of keys a virtual app can render is identical
  * on the published and the preview path.
  *
- * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-001-single-runtime-registry-seam-for-every-virtual-app-host
+ * @spec openspec/changes/archive/2026-11-25-openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-001-single-runtime-registry-seam-for-every-virtual-app-host
  * @spec openspec/changes/archive/2026-11-24-integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-preview-and-published-app-render-the-same-pages-req-bqcb-004
  * @return {object} the full runtime registry, keyed by widget key.
  */
