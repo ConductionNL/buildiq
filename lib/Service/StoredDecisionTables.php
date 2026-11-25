@@ -47,6 +47,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
+use OCA\Buildiq\Support\SlugSearch;
 
 /**
  * Reads and writes a rule set's decision table in OpenRegister's register.
@@ -246,12 +247,11 @@ class StoredDecisionTables implements StoredDecisionTablesInterface {
 	 */
 	private function existingUuid(string $key): ?string {
 		try {
-			$rows = $this->objects->searchObjectsBySlug(
-				registerSlug: DecisionTableStore::REGISTER,
-				schemaSlug: DecisionTableStore::SCHEMA,
+			$rows = (new SlugSearch(register: DecisionTableStore::REGISTER, schema: DecisionTableStore::SCHEMA))->run(
+				objectService: $this->objects,
 				filters: [],
-				_rbac: false,
-				_multitenancy: false
+				rbac: false,
+				multitenancy: false
 			);
 		} catch (Throwable $e) {
 			throw new RuntimeException('The decision-table register could not be read: ' . $e->getMessage(), 0, $e);
