@@ -9,7 +9,7 @@
   - Order is changed with move buttons rather than by dragging, so a keyboard
   - and a screen reader can do it as well as a mouse (WCAG 2.5.7).
   -
-  - @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-004 to REQ-OBPL-009)
+  - @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-004 to REQ-OBPL-009)
   -->
 <template>
 	<div class="layout-body">
@@ -590,7 +590,7 @@ const EMPTY_TAB_REFERENCES = new Map([
 /**
  * Add a tab of a kind with the empty reference its kind needs.
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
+ * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
  * @param {Array<object>} tabs The tabs.
  * @param {string} kind The kind.
  * @return {Array<object>} The new tabs.
@@ -605,7 +605,7 @@ export function addTab(tabs, kind) {
 /**
  * Move one item and renumber the order.
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
+ * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
  * @param {Array<object>} items The items.
  * @param {number} index The item to move.
  * @param {number} delta How far, negative is up.
@@ -632,7 +632,7 @@ const MISSING_REFERENCE = {
 /**
  * The reference a tab's kind needs and does not have, or an empty string.
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
+ * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
  * @param {object} tab The tab.
  * @return {string} The missing key.
  */
@@ -647,7 +647,7 @@ export function missingReference(tab) {
 /**
  * Break widgets into the rows a four-unit grid draws, in their order.
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-widget-tab-holds-a-grid-each-widget-with-a-width-and-an-order-req-obpl-005
+ * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-widget-tab-holds-a-grid-each-widget-with-a-width-and-an-order-req-obpl-005
  * @param {Array<object>} widgets The widgets.
  * @return {Array<Array<object>>} The rows.
  */
@@ -682,7 +682,7 @@ function placeWidget(grid, widget) {
 /**
  * The hidden upload fields that have no default.
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-document-upload-fields-req-obpl-009
+ * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-document-upload-fields-req-obpl-009
  * @param {Array<object>} fields The upload fields.
  * @return {Array<string>} Their field names.
  */
@@ -695,7 +695,7 @@ export function hiddenWithoutDefault(fields) {
 /**
  * Whether a layout body has something the server will refuse.
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-document-upload-fields-req-obpl-009
+ * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-document-upload-fields-req-obpl-009
  * @param {object} layout The layout.
  * @return {boolean} True when it is blocked.
  */
@@ -737,7 +737,7 @@ export default {
 		/**
 		 * The tabs in their order.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
 		 * @return {Array<object>} The tabs.
 		 */
 		tabs() {
@@ -749,7 +749,7 @@ export default {
 		/**
 		 * The header block.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-the-header-is-its-own-slot-with-fields-and-chips-per-case-type-req-obpl-007
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-the-header-is-its-own-slot-with-fields-and-chips-per-case-type-req-obpl-007
 		 * @return {object} The header.
 		 */
 		header() {
@@ -759,7 +759,7 @@ export default {
 		/**
 		 * The task-list block.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-task-list-columns-and-search-fields-req-obpl-008
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-task-list-columns-and-search-fields-req-obpl-008
 		 * @return {object} The task list.
 		 */
 		taskList() {
@@ -794,7 +794,7 @@ export default {
 		/**
 		 * The upload fields.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-document-upload-fields-req-obpl-009
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-document-upload-fields-req-obpl-009
 		 * @return {Array<object>} The fields.
 		 */
 		uploadFields() {
@@ -804,7 +804,7 @@ export default {
 		/**
 		 * Whether the layout holds something the server will refuse.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-document-upload-fields-req-obpl-009
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-document-upload-fields-req-obpl-009
 		 * @return {boolean} True when blocked.
 		 */
 		blocked() {
@@ -820,7 +820,7 @@ export default {
 		/**
 		 * Emit the layout with some keys replaced.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
 		 * @param {object} patch The keys to replace.
 		 * @return {void}
 		 */
@@ -833,7 +833,7 @@ export default {
 		 *
 		 * @param {string} text The text.
 		 * @return {Array<string>} The items.
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-task-list-columns-and-search-fields-req-obpl-008
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-task-list-columns-and-search-fields-req-obpl-008
 		 */
 		splitList(text) {
 			return String(text || '')
@@ -847,7 +847,7 @@ export default {
 		 *
 		 * @param {string} kind The kind.
 		 * @return {string} The label.
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
 		 */
 		kindLabel(kind) {
 			return (
@@ -865,7 +865,7 @@ export default {
 		 *
 		 * @param {string} width The width.
 		 * @return {string} The label.
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-widget-tab-holds-a-grid-each-widget-with-a-width-and-an-order-req-obpl-005
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-widget-tab-holds-a-grid-each-widget-with-a-width-and-an-order-req-obpl-005
 		 */
 		widthLabel(width) {
 			return (
@@ -883,7 +883,7 @@ export default {
 		 *
 		 * @param {string} width The width.
 		 * @return {number} Units out of four.
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-widget-tab-holds-a-grid-each-widget-with-a-width-and-an-order-req-obpl-005
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-widget-tab-holds-a-grid-each-widget-with-a-width-and-an-order-req-obpl-005
 		 */
 		widthUnits(width) {
 			return UNITS[width] || UNITS.medium
@@ -894,7 +894,7 @@ export default {
 		 *
 		 * @param {string} op The operator.
 		 * @return {string} The label.
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-widget-carries-display-conditions-and-a-high-contrast-flag-req-obpl-006
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-widget-carries-display-conditions-and-a-high-contrast-flag-req-obpl-006
 		 */
 		operatorLabel(op) {
 			return (
@@ -913,7 +913,7 @@ export default {
 		 *
 		 * @param {object} tab The tab.
 		 * @return {string} The message.
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
 		 */
 		missingText(tab) {
 			return {
@@ -938,7 +938,7 @@ export default {
 		/**
 		 * Add a tab of the chosen kind.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
 		 * @return {void}
 		 */
 		onAddTab() {
@@ -948,7 +948,7 @@ export default {
 		/**
 		 * Move a tab.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
 		 * @param {number} index The tab.
 		 * @param {number} delta How far.
 		 * @return {void}
@@ -960,7 +960,7 @@ export default {
 		/**
 		 * Remove a tab.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
 		 * @param {number} index The tab.
 		 * @return {void}
 		 */
@@ -973,7 +973,7 @@ export default {
 		/**
 		 * Change one key of a tab.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
 		 * @param {number} index The tab.
 		 * @param {string} key The key.
 		 * @param {unknown} value The value.
@@ -1000,7 +1000,7 @@ export default {
 		/**
 		 * Add a widget to a widget tab.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-widget-tab-holds-a-grid-each-widget-with-a-width-and-an-order-req-obpl-005
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-widget-tab-holds-a-grid-each-widget-with-a-width-and-an-order-req-obpl-005
 		 * @param {number} tabIndex The tab.
 		 * @return {void}
 		 */
@@ -1021,7 +1021,7 @@ export default {
 		/**
 		 * Move a widget.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-widget-tab-holds-a-grid-each-widget-with-a-width-and-an-order-req-obpl-005
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-widget-tab-holds-a-grid-each-widget-with-a-width-and-an-order-req-obpl-005
 		 * @param {number} tabIndex The tab.
 		 * @param {number} index The widget.
 		 * @param {number} delta How far.
@@ -1037,7 +1037,7 @@ export default {
 		/**
 		 * Remove a widget.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-widget-tab-holds-a-grid-each-widget-with-a-width-and-an-order-req-obpl-005
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-widget-tab-holds-a-grid-each-widget-with-a-width-and-an-order-req-obpl-005
 		 * @param {number} tabIndex The tab.
 		 * @param {number} index The widget.
 		 * @return {void}
@@ -1052,7 +1052,7 @@ export default {
 		/**
 		 * Change one key of a widget.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-widget-carries-display-conditions-and-a-high-contrast-flag-req-obpl-006
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-widget-carries-display-conditions-and-a-high-contrast-flag-req-obpl-006
 		 * @param {number} tabIndex The tab.
 		 * @param {number} index The widget.
 		 * @param {string} key The key.
@@ -1069,7 +1069,7 @@ export default {
 		/**
 		 * Add a display condition to a widget.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-widget-carries-display-conditions-and-a-high-contrast-flag-req-obpl-006
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-widget-carries-display-conditions-and-a-high-contrast-flag-req-obpl-006
 		 * @param {number} tabIndex The tab.
 		 * @param {number} index The widget.
 		 * @return {void}
@@ -1085,7 +1085,7 @@ export default {
 		/**
 		 * Replace one display condition.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-widget-carries-display-conditions-and-a-high-contrast-flag-req-obpl-006
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-widget-carries-display-conditions-and-a-high-contrast-flag-req-obpl-006
 		 * @param {number} tabIndex The tab.
 		 * @param {number} index The widget.
 		 * @param {number} conditionIndex The condition.
@@ -1103,7 +1103,7 @@ export default {
 		/**
 		 * Remove one display condition.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-widget-carries-display-conditions-and-a-high-contrast-flag-req-obpl-006
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-widget-carries-display-conditions-and-a-high-contrast-flag-req-obpl-006
 		 * @param {number} tabIndex The tab.
 		 * @param {number} index The widget.
 		 * @param {number} conditionIndex The condition.
@@ -1122,7 +1122,7 @@ export default {
 		/**
 		 * Change one key of the header.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-the-header-is-its-own-slot-with-fields-and-chips-per-case-type-req-obpl-007
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-the-header-is-its-own-slot-with-fields-and-chips-per-case-type-req-obpl-007
 		 * @param {string} key The key.
 		 * @param {unknown} value The value.
 		 * @return {void}
@@ -1134,7 +1134,7 @@ export default {
 		/**
 		 * Add a field to the header.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-the-header-is-its-own-slot-with-fields-and-chips-per-case-type-req-obpl-007
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-the-header-is-its-own-slot-with-fields-and-chips-per-case-type-req-obpl-007
 		 * @param {string} field The field.
 		 * @return {void}
 		 */
@@ -1150,7 +1150,7 @@ export default {
 		/**
 		 * Move a header field.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-the-header-is-its-own-slot-with-fields-and-chips-per-case-type-req-obpl-007
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-the-header-is-its-own-slot-with-fields-and-chips-per-case-type-req-obpl-007
 		 * @param {number} index The field.
 		 * @param {number} delta How far.
 		 * @return {void}
@@ -1162,7 +1162,7 @@ export default {
 		/**
 		 * Remove a header field.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-the-header-is-its-own-slot-with-fields-and-chips-per-case-type-req-obpl-007
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-the-header-is-its-own-slot-with-fields-and-chips-per-case-type-req-obpl-007
 		 * @param {number} index The field.
 		 * @return {void}
 		 */
@@ -1245,7 +1245,7 @@ export default {
 		/**
 		 * Add a task-list column.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-task-list-columns-and-search-fields-req-obpl-008
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-task-list-columns-and-search-fields-req-obpl-008
 		 * @param {string} field The field.
 		 * @return {void}
 		 */
@@ -1266,7 +1266,7 @@ export default {
 		/**
 		 * Remove a task-list column.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-task-list-columns-and-search-fields-req-obpl-008
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-task-list-columns-and-search-fields-req-obpl-008
 		 * @param {number} index The column.
 		 * @return {void}
 		 */
@@ -1284,7 +1284,7 @@ export default {
 		/**
 		 * Add a task-list search field.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-task-list-columns-and-search-fields-req-obpl-008
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-task-list-columns-and-search-fields-req-obpl-008
 		 * @param {string} field The field.
 		 * @return {void}
 		 */
@@ -1304,7 +1304,7 @@ export default {
 		/**
 		 * Remove a task-list search field.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-task-list-columns-and-search-fields-req-obpl-008
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-task-list-columns-and-search-fields-req-obpl-008
 		 * @param {number} index The search field.
 		 * @return {void}
 		 */
@@ -1322,7 +1322,7 @@ export default {
 		/**
 		 * Add an upload field.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-document-upload-fields-req-obpl-009
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-document-upload-fields-req-obpl-009
 		 * @param {string} field The field.
 		 * @return {void}
 		 */
@@ -1344,7 +1344,7 @@ export default {
 		/**
 		 * Change one key of an upload field.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-document-upload-fields-req-obpl-009
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-document-upload-fields-req-obpl-009
 		 * @param {number} index The field.
 		 * @param {string} key The key.
 		 * @param {unknown} value The value.
@@ -1361,7 +1361,7 @@ export default {
 		/**
 		 * Remove an upload field.
 		 *
-		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-document-upload-fields-req-obpl-009
+		 * @spec openspec/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-document-upload-fields-req-obpl-009
 		 * @param {number} index The field.
 		 * @return {void}
 		 */

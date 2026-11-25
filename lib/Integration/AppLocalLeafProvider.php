@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
+ * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
  * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-006)
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
@@ -33,7 +33,7 @@ use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 /**
  * The shared descriptor of a leaf whose objects live in buildiq's own register.
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
+ * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
  */
 abstract class AppLocalLeafProvider implements IntegrationProvider {
 	/**
@@ -41,7 +41,7 @@ abstract class AppLocalLeafProvider implements IntegrationProvider {
 	 *
 	 * @return string The app id.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
 	 */
 	#[\Override]
 	public function getRequiredApp(): string {
@@ -53,7 +53,7 @@ abstract class AppLocalLeafProvider implements IntegrationProvider {
 	 *
 	 * @return string The storage strategy.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
 	 */
 	#[\Override]
 	public function getStorageStrategy(): string {
@@ -65,7 +65,7 @@ abstract class AppLocalLeafProvider implements IntegrationProvider {
 	 *
 	 * @return string|null The source.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
 	 */
 	#[\Override]
 	public function getOpenConnectorSource(): ?string {
@@ -77,7 +77,7 @@ abstract class AppLocalLeafProvider implements IntegrationProvider {
 	 *
 	 * @return bool True.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
 	 */
 	#[\Override]
 	public function isEnabled(): bool {
@@ -91,7 +91,7 @@ abstract class AppLocalLeafProvider implements IntegrationProvider {
 	 *
 	 * @return string|null Null.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
 	 */
 	#[\Override]
 	public function requiresPermission(): ?string {
@@ -103,7 +103,7 @@ abstract class AppLocalLeafProvider implements IntegrationProvider {
 	 *
 	 * @return array<string, mixed> The requirements.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
 	 */
 	#[\Override]
 	public function authRequirements(): array {

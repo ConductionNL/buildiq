@@ -32,7 +32,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-001, REQ-OBPL-004, REQ-OBPL-005, REQ-OBPL-009)
+ * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-001, REQ-OBPL-004, REQ-OBPL-005, REQ-OBPL-009)
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use InvalidArgumentException;
 /**
  * Validates a page layout before it is saved.
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-001)
+ * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-001)
  */
 final class PageLayoutValidator {
 	/**
@@ -84,7 +84,7 @@ final class PageLayoutValidator {
 	 *
 	 * @throws InvalidArgumentException When a rule refuses the layout.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-001, REQ-OBPL-004, REQ-OBPL-005, REQ-OBPL-009)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-001, REQ-OBPL-004, REQ-OBPL-005, REQ-OBPL-009)
 	 */
 	public function validate(array $layout, array $existing = [], ?array $knownLeafIds = null): array {
 		$this->assertAudience(layout: $layout);

@@ -96,7 +96,7 @@ interface PageLayoutLayerStackInterface {
 	 *
 	 * @return array<string, mixed>|null The schema-wide layer.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-007)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-007)
 	 */
 	public function schemaWideOf(array $layers): ?array;
 }//end interface

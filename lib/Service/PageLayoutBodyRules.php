@@ -30,7 +30,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-004, REQ-OBPL-005, REQ-OBPL-009)
+ * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-004, REQ-OBPL-005, REQ-OBPL-009)
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use InvalidArgumentException;
 /**
  * Refuses a layout body that cannot render.
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-004)
+ * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-004)
  */
 final class PageLayoutBodyRules {
 	/**
@@ -91,7 +91,7 @@ final class PageLayoutBodyRules {
 	 *
 	 * @throws InvalidArgumentException When a tab is not renderable.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-004)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-004)
 	 */
 	public function assertTabs(array $layout): void {
 		foreach (($layout['tabs'] ?? []) as $tab) {
@@ -116,7 +116,7 @@ final class PageLayoutBodyRules {
 	 *
 	 * @throws InvalidArgumentException When the tab is not renderable.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-004)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-004)
 	 */
 	private function assertTabKind(array $tab, string $label): void {
 		$kind = (string)($tab['kind'] ?? '');
@@ -141,7 +141,7 @@ final class PageLayoutBodyRules {
 	 *
 	 * @throws InvalidArgumentException When the reference is missing.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-004)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-004)
 	 */
 	private function assertTabReference(array $tab, string $kind, string $label): void {
 		if ($kind === 'leaf' && (string)($tab['ref'] ?? '') === '') {
@@ -172,7 +172,7 @@ final class PageLayoutBodyRules {
 	 *
 	 * @throws InvalidArgumentException When a widget is not renderable.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-005)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-005)
 	 */
 	public function assertWidgets(array $layout): void {
 		$this->assertWidgetList(widgets: ($layout['widgets'] ?? []), where: 'the page');
@@ -189,7 +189,7 @@ final class PageLayoutBodyRules {
 	 *
 	 * @throws InvalidArgumentException When a widget is not renderable.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-005, REQ-OBPL-006)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-005, REQ-OBPL-006)
 	 */
 	public function assertWidgetList(mixed $widgets, string $where): void {
 		if (is_array($widgets) === false) {
@@ -245,7 +245,7 @@ final class PageLayoutBodyRules {
 	 *
 	 * @throws InvalidArgumentException When such a field exists.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-009)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-009)
 	 */
 	public function assertUploadFields(array $layout): void {
 		foreach (($layout['uploadFields'] ?? []) as $field) {

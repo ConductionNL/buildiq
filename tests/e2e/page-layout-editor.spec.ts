@@ -14,7 +14,7 @@
  * (targetApp, register, schema, typeProperty, typeValue) never meets an
  * earlier run.
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md
+ * @spec openspec/specs/page-layout-per-type/spec.md
  * @e2e page-layout-per-type/requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004/a-case-type-gets-its-own-three-tabs
  * @e2e page-layout-per-type/requirement-a-widget-tab-holds-a-grid-each-widget-with-a-width-and-an-order-req-obpl-005/two-widgets-sit-side-by-side-and-a-third-fills-the-row
  * @e2e page-layout-per-type/requirement-the-header-is-its-own-slot-with-fields-and-chips-per-case-type-req-obpl-007/the-building-permit-header-shows-the-address-and-the-term
