@@ -120,7 +120,7 @@ final class AutomationFlowBuilderTest extends TestCase {
 					'register' => 'buildiq-permits-v1',
 					'schema' => 'inspectie',
 					'operation' => 'create',
-					'fields' => ['permit' => '{{json.id}}', 'status' => 'open'],
+					'fields' => ['permit' => '{{id}}', 'status' => 'open'],
 				],
 				'exit' => true,
 			],
@@ -128,6 +128,42 @@ final class AutomationFlowBuilderTest extends TestCase {
 		);
 		self::assertSame([['id' => 'e1', 'from' => ['trigger'], 'to' => ['step-1']]], $flow['edges']);
 	}//end testANewPermitCreatesAnInspectionRecord()
+
+	/**
+	 * An object-write template reads the item's record itself: `{{uuid}}`
+	 * compiles to the record's `id` (OpenRegister renders the uuid there), a
+	 * `json.` prefix is dropped, and every other placeholder keeps its name.
+	 *
+	 * @return void
+	 */
+	public function testTheRecordUuidPlaceholderReadsTheItemId(): void {
+		$step = [
+			'type' => 'object-op',
+			'operation' => 'update',
+			'schema' => 'permit',
+			'fieldMapping' => [
+				'note' => 'Checked {{ uuid }} for {{applicant}}',
+				'ref' => '{{json.uuid}}',
+				'legacy' => '{{json.applicant}}',
+				'uuidCopy' => '{{uuidCopy}}',
+				'fixed' => 'checked',
+			],
+			'match' => ['uuid' => '{{ uuid }}'],
+		];
+		$flow = $this->builder()->build(self::input(['type' => 'manual'], [$step]), 'reg', ['permit']);
+
+		self::assertSame(['uuid' => '{{id}}'], $flow['nodes'][1]['config']['match']);
+		self::assertSame(
+			[
+				'fixed' => 'checked',
+				'legacy' => '{{applicant}}',
+				'note' => 'Checked {{id}} for {{applicant}}',
+				'ref' => '{{id}}',
+				'uuidCopy' => '{{uuidCopy}}',
+			],
+			$flow['nodes'][1]['config']['fields']
+		);
+	}//end testTheRecordUuidPlaceholderReadsTheItemId()
 
 	/**
 	 * An update names the record it changes; without it, it is refused.
@@ -138,7 +174,7 @@ final class AutomationFlowBuilderTest extends TestCase {
 		$step = ['type' => 'object-op', 'operation' => 'update', 'schema' => 'permit', 'fieldMapping' => ['status' => 'checked'], 'match' => ['uuid' => '{{uuid}}']];
 		$flow = $this->builder()->build(self::input(['type' => 'manual'], [$step]), 'reg', ['permit']);
 
-		self::assertSame(['uuid' => '{{json.uuid}}'], $flow['nodes'][1]['config']['match']);
+		self::assertSame(['uuid' => '{{id}}'], $flow['nodes'][1]['config']['match']);
 		self::assertSame('openregister.trigger-manual', $flow['nodes'][0]['type']);
 
 		unset($step['match']);
@@ -296,8 +332,8 @@ final class AutomationFlowBuilderTest extends TestCase {
 						'register' => 'openbuild-leges-main',
 						'schema' => 'aanvraag',
 						'operation' => 'update',
-						'match' => ['uuid' => '{{json.uuid}}'],
-						'fields' => ['categorie' => '{{json.categorie}}'],
+						'match' => ['uuid' => '{{id}}'],
+						'fields' => ['categorie' => '{{categorie}}'],
 					],
 					'exit' => true,
 				],
@@ -346,7 +382,7 @@ final class AutomationFlowBuilderTest extends TestCase {
 		$flow = $this->builder()->build(self::input(['type' => 'object-updated', 'schema' => 'aanvraag'], [$action]), 'r', ['aanvraag'], self::ruleSets());
 
 		self::assertSame(['a' => 'fieldA', 'b' => 'fieldB'], $flow['nodes'][1]['config']['outputMapping']);
-		self::assertSame(['fieldA' => '{{json.fieldA}}', 'fieldB' => '{{json.fieldB}}'], $flow['nodes'][2]['config']['fields']);
+		self::assertSame(['fieldA' => '{{fieldA}}', 'fieldB' => '{{fieldB}}'], $flow['nodes'][2]['config']['fields']);
 	}//end testARuleDecisionWithAnOutputMapping()
 
 	/**

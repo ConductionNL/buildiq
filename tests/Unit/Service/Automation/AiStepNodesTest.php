@@ -107,8 +107,8 @@ final class AiStepNodesTest extends TestCase {
 					'register' => 'meldingen',
 					'schema' => 'melding',
 					'operation' => 'update',
-					'match' => ['uuid' => '{{json.uuid}}'],
-					'fields' => ['categorie' => '{{json.aiAnswer.label}}'],
+					'match' => ['uuid' => '{{id}}'],
+					'fields' => ['categorie' => '{{aiAnswer.label}}'],
 				],
 			],
 			$nodes[1]
@@ -149,7 +149,7 @@ final class AiStepNodesTest extends TestCase {
 		$this->assertFalse($nodes[0]['config']['expectJson']);
 		$this->assertStringStartsWith($instruction, $nodes[0]['config']['prompt']);
 		$this->assertStringEndsWith("omschrijving:\n{{omschrijving}}\n\nlocatie:\n{{locatie}}", $nodes[0]['config']['prompt']);
-		$this->assertSame(['samenvatting' => '{{json.aiAnswer}}'], $nodes[1]['config']['fields']);
+		$this->assertSame(['samenvatting' => '{{aiAnswer}}'], $nodes[1]['config']['fields']);
 	}//end testTextPresetsWriteThePlainAnswer()
 
 	/**
@@ -165,7 +165,7 @@ final class AiStepNodesTest extends TestCase {
 		$this->assertTrue($nodes[0]['config']['expectJson']);
 		$this->assertStringStartsWith('Extract these fields from the text below: straat, huisnummer.', $nodes[0]['config']['prompt']);
 		$this->assertSame(
-			['huisnummer' => '{{json.aiAnswer.huisnummer}}', 'straat' => '{{json.aiAnswer.straat}}'],
+			['huisnummer' => '{{aiAnswer.huisnummer}}', 'straat' => '{{aiAnswer.straat}}'],
 			$nodes[1]['config']['fields']
 		);
 	}//end testExtractWritesEachField()
