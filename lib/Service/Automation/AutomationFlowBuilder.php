@@ -211,12 +211,11 @@ final class AutomationFlowBuilder {
 			$edges[] = ['id' => 'e' . $i, 'from' => [$nodes[($i - 1)]['id']], 'to' => [$nodes[$i]['id']]];
 		}
 
-		// The last step ends the automation on purpose. OpenRegister refuses to
+		// The last node ends the automation on purpose. OpenRegister refuses to
 		// publish a node with no outgoing edge that is not a terminal step type
-		// ("a node a token cannot leave") unless it says `exit: true`.
-		if ($count > 1) {
-			$nodes[($count - 1)]['exit'] = true;
-		}
+		// ("a node a token cannot leave") unless it says `exit: true`. There is
+		// always at least the trigger.
+		$nodes[($count - 1)]['exit'] = true;
 
 		// An AI field also follows edits of its source fields: a second trigger
 		// into the same steps (ai-llm-steps-and-computed-fields REQ-BQLS-004).

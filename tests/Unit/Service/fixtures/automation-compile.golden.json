@@ -10191,12 +10191,13 @@
                     {
                         "id": "trigger",
                         "type": "openregister.trigger-manual",
-                        "config": []
+                        "config": [],
+                        "exit": true
                     }
                 ],
                 "edges": []
             },
-            "hash": "sha256:4e7c909ef1fcdb0e74092a3870e3cd34f33f4a5e591bf753642d90cc137c4921",
+            "hash": "sha256:052950365b458707d11a32c189e62f78074ed5c990861c28ef934837b79960f8",
             "ruleSetVersions": []
         }
     },
@@ -10214,12 +10215,13 @@
                     {
                         "id": "trigger",
                         "type": "openregister.trigger-manual",
-                        "config": []
+                        "config": [],
+                        "exit": true
                     }
                 ],
                 "edges": []
             },
-            "hash": "sha256:4e7c909ef1fcdb0e74092a3870e3cd34f33f4a5e591bf753642d90cc137c4921",
+            "hash": "sha256:052950365b458707d11a32c189e62f78074ed5c990861c28ef934837b79960f8",
             "ruleSetVersions": []
         }
     },
@@ -10237,12 +10239,13 @@
                     {
                         "id": "trigger",
                         "type": "openregister.trigger-manual",
-                        "config": []
+                        "config": [],
+                        "exit": true
                     }
                 ],
                 "edges": []
             },
-            "hash": "sha256:4d5c97640e82708b45834acbd11de7a89310934b73d3a3066ce85c62cbe66733",
+            "hash": "sha256:9c50f14555baab909755e24e0fa75a4a22b8c60940144c07433aabf1c14c38fb",
             "ruleSetVersions": []
         }
     },
@@ -10260,12 +10263,13 @@
                     {
                         "id": "trigger",
                         "type": "openregister.trigger-manual",
-                        "config": []
+                        "config": [],
+                        "exit": true
                     }
                 ],
                 "edges": []
             },
-            "hash": "sha256:4d5c97640e82708b45834acbd11de7a89310934b73d3a3066ce85c62cbe66733",
+            "hash": "sha256:9c50f14555baab909755e24e0fa75a4a22b8c60940144c07433aabf1c14c38fb",
             "ruleSetVersions": []
         }
     },
@@ -10283,12 +10287,13 @@
                     {
                         "id": "trigger",
                         "type": "openregister.trigger-manual",
-                        "config": []
+                        "config": [],
+                        "exit": true
                     }
                 ],
                 "edges": []
             },
-            "hash": "sha256:95714b03947935077f8a4cb340ac6a9b7e3a489cdb1d97f1293b77d81519e858",
+            "hash": "sha256:2a64a74a52c216c10709427c488b91bd91507a19861d35dbbef0ceec9764f6f5",
             "ruleSetVersions": []
         }
     },
@@ -10306,12 +10311,13 @@
                     {
                         "id": "trigger",
                         "type": "openregister.trigger-manual",
-                        "config": []
+                        "config": [],
+                        "exit": true
                     }
                 ],
                 "edges": []
             },
-            "hash": "sha256:95714b03947935077f8a4cb340ac6a9b7e3a489cdb1d97f1293b77d81519e858",
+            "hash": "sha256:2a64a74a52c216c10709427c488b91bd91507a19861d35dbbef0ceec9764f6f5",
             "ruleSetVersions": []
         }
     },
@@ -10329,12 +10335,13 @@
                     {
                         "id": "trigger",
                         "type": "openregister.trigger-manual",
-                        "config": []
+                        "config": [],
+                        "exit": true
                     }
                 ],
                 "edges": []
             },
-            "hash": "sha256:4e7c909ef1fcdb0e74092a3870e3cd34f33f4a5e591bf753642d90cc137c4921",
+            "hash": "sha256:052950365b458707d11a32c189e62f78074ed5c990861c28ef934837b79960f8",
             "ruleSetVersions": []
         }
     },
@@ -10352,12 +10359,13 @@
                     {
                         "id": "trigger",
                         "type": "openregister.trigger-manual",
-                        "config": []
+                        "config": [],
+                        "exit": true
                     }
                 ],
                 "edges": []
             },
-            "hash": "sha256:4e7c909ef1fcdb0e74092a3870e3cd34f33f4a5e591bf753642d90cc137c4921",
+            "hash": "sha256:052950365b458707d11a32c189e62f78074ed5c990861c28ef934837b79960f8",
             "ruleSetVersions": []
         }
     },
@@ -10375,12 +10383,13 @@
                     {
                         "id": "trigger",
                         "type": "openregister.trigger-manual",
-                        "config": []
+                        "config": [],
+                        "exit": true
                     }
                 ],
                 "edges": []
             },
-            "hash": "sha256:4d5c97640e82708b45834acbd11de7a89310934b73d3a3066ce85c62cbe66733",
+            "hash": "sha256:9c50f14555baab909755e24e0fa75a4a22b8c60940144c07433aabf1c14c38fb",
             "ruleSetVersions": []
         }
     },
@@ -10398,12 +10407,13 @@
                     {
                         "id": "trigger",
                         "type": "openregister.trigger-manual",
-                        "config": []
+                        "config": [],
+                        "exit": true
                     }
                 ],
                 "edges": []
             },
-            "hash": "sha256:4d5c97640e82708b45834acbd11de7a89310934b73d3a3066ce85c62cbe66733",
+            "hash": "sha256:9c50f14555baab909755e24e0fa75a4a22b8c60940144c07433aabf1c14c38fb",
             "ruleSetVersions": []
         }
     },
@@ -10421,12 +10431,13 @@
                     {
                         "id": "trigger",
                         "type": "openregister.trigger-manual",
-                        "config": []
+                        "config": [],
+                        "exit": true
                     }
                 ],
                 "edges": []
             },
-            "hash": "sha256:95714b03947935077f8a4cb340ac6a9b7e3a489cdb1d97f1293b77d81519e858",
+            "hash": "sha256:2a64a74a52c216c10709427c488b91bd91507a19861d35dbbef0ceec9764f6f5",
             "ruleSetVersions": []
         }
     },
@@ -10444,12 +10455,13 @@
                     {
                         "id": "trigger",
                         "type": "openregister.trigger-manual",
-                        "config": []
+                        "config": [],
+                        "exit": true
                     }
                 ],
                 "edges": []
             },
-            "hash": "sha256:95714b03947935077f8a4cb340ac6a9b7e3a489cdb1d97f1293b77d81519e858",
+            "hash": "sha256:2a64a74a52c216c10709427c488b91bd91507a19861d35dbbef0ceec9764f6f5",
             "ruleSetVersions": []
         }
     },
@@ -11931,12 +11943,13 @@
                     {
                         "id": "trigger",
                         "type": "openregister.trigger-manual",
-                        "config": []
+                        "config": [],
+                        "exit": true
                     }
                 ],
                 "edges": []
             },
-            "hash": "sha256:4e7c909ef1fcdb0e74092a3870e3cd34f33f4a5e591bf753642d90cc137c4921",
+            "hash": "sha256:052950365b458707d11a32c189e62f78074ed5c990861c28ef934837b79960f8",
             "ruleSetVersions": []
         }
     },
@@ -12008,12 +12021,13 @@
                     {
                         "id": "trigger",
                         "type": "openregister.trigger-manual",
-                        "config": []
+                        "config": [],
+                        "exit": true
                     }
                 ],
                 "edges": []
             },
-            "hash": "sha256:4e7c909ef1fcdb0e74092a3870e3cd34f33f4a5e591bf753642d90cc137c4921",
+            "hash": "sha256:052950365b458707d11a32c189e62f78074ed5c990861c28ef934837b79960f8",
             "ruleSetVersions": []
         }
     },
