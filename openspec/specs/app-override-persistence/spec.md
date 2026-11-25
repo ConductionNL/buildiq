@@ -12,7 +12,7 @@ repoints storage to a hybrid `Application` + delta-only `ApplicationVersion` and
 the three endpoints as compatibility shims so live fleet apps stay byte-for-byte
 compatible.
 
-**OpenSpec changes**: [layered-versioned-app-deltas](../../changes/layered-versioned-app-deltas/), [buildiq-inline-edit-persistence](../../changes/buildiq-inline-edit-persistence/), [unify-apps-with-app-type](../../changes/archive/2026-06-20-unify-apps-with-app-type/) _(archived 2026-06-20)_
+**OpenSpec changes**: [layered-versioned-app-deltas](../../changes/layered-versioned-app-deltas/), [openbuild-inline-edit-persistence](../../changes/archive/2026-11-25-openbuild-inline-edit-persistence/) _(archived 2026-11-25)_, [unify-apps-with-app-type](../../changes/archive/2026-06-20-unify-apps-with-app-type/) _(archived 2026-06-20)_
 
 **Status**: in-progress
 
@@ -143,3 +143,49 @@ callers SHALL be rejected. A user SHALL never write another user's delta.
 - **WHEN** an authenticated user PUTs a user delta whose `owner` is a different
   UID
 - **THEN** the request is rejected fail-closed
+
+### Requirement: Delta-shape validation rejects malformed or app-blanking deltas
+
+The system SHALL validate, before persisting, that the request body is a keyed delta, and SHALL reject a malformed delta, or one that would resolve to a manifest with no renderable pages or menu (an app-blanking delta), with a `422` without persisting it. A stored delta SHALL NOT cause the read endpoint to error.
+
+#### Scenario: Malformed body is rejected with 422
+
+- **WHEN** a PUT body is not a keyed delta (e.g. a whole manifest, or `null`)
+- **THEN** the endpoint SHALL respond `422` and SHALL NOT persist an `AppOverride`
+
+#### Scenario: A keyed delta has the contract's ids and markers
+
+- **WHEN** a PUT body is a plain object whose page and widget entries carry the ids the contract requires, whose `$op` values are the known deletion marker, and whose `__order` value, when present, is an array of ids
+- **THEN** the shape check SHALL accept it
+- **AND** a body whose `$op` is an unknown value, or whose `__order` is not an array of ids, SHALL be answered `422`
+
+#### Scenario: App-blanking delta is rejected
+
+- **WHEN** a PUT body is a delta that removes every page and leaves no menu
+- **THEN** the endpoint SHALL respond `422` and SHALL NOT persist it
+
+#### Scenario: A stored delta against a drifted base still reads
+
+- **WHEN** a stored delta patches a page the fleet app's bundled manifest no longer has, and an authenticated user GETs its override
+- **THEN** the read endpoint SHALL return the stored delta without error
+- **AND** the orphaned patch SHALL be surfaced client-side by the loader's `orphanedDeltaPaths`, not by failing the read
+
+### Requirement: Override writes require Buildiq access, not an admin role
+
+The system SHALL gate the write and delete endpoints on the caller having Buildiq access (the Buildiq app is enabled and the caller is within its Nextcloud app group-restriction) rather than on per-object ownership, because an `AppOverride` is a per-instance shared customization with no per-object owner.
+
+#### Scenario: User with Buildiq access may write
+
+- **WHEN** a logged-in user who can reach the enabled Buildiq app saves a valid delta
+- **THEN** the write SHALL be permitted
+
+#### Scenario: Logged-in user outside Buildiq scope is forbidden
+
+- **WHEN** a logged-in user who is NOT within Buildiq's app group-restriction PUTs a delta
+- **THEN** the endpoint SHALL respond forbidden and SHALL NOT persist the override
+
+#### Scenario: The routes need a login, not an admin role
+
+- **WHEN** the write and delete methods of the override controller are read
+- **THEN** each SHALL be declared `#[NoAdminRequired]` (login required, not admin-only)
+- **AND** each SHALL carry the Buildiq-access guard in its method body, so a non-admin user with Buildiq access may write and a logged-in user outside Buildiq's scope is forbidden
