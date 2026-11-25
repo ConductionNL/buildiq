@@ -117,6 +117,7 @@ export default {
 			type: String,
 			default: 'custom',
 		},
+
 		/**
 		 * The keys of the registry the live preview resolves custom pages
 		 * against, passed by PageDesigner while its preview pane is mounted
