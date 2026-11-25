@@ -85,10 +85,8 @@ namespace OCA\Buildiq\Tests\Unit\Support {
 				}
 			};
 
-			$result = SlugSearch::run(
+			$result = (new SlugSearch(register: 'buildiq', schema: 'built-app'))->run(
 				objectService: $service,
-				register: 'buildiq',
-				schema: 'built-app',
 				filters: ['slug' => 'crm'],
 				rbac: false,
 				multitenancy: false
@@ -135,7 +133,7 @@ namespace OCA\Buildiq\Tests\Unit\Support {
 				}
 			};
 
-			$result = SlugSearch::run(objectService: $service, register: 'buildiq', schema: 'applicationVersion');
+			$result = (new SlugSearch(register: 'buildiq', schema: 'applicationVersion'))->run(objectService: $service);
 
 			self::assertSame(expected: 3, actual: $result);
 			self::assertSame(expected: [['buildiq', 'applicationVersion', [], true, true]], actual: $service->calls);
@@ -162,7 +160,7 @@ namespace OCA\Buildiq\Tests\Unit\Support {
 				}
 			}
 
-			self::assertSame(expected: [], actual: $callers, message: 'Call OpenRegister\'s slug search through SlugSearch::run().');
+			self::assertSame(expected: [], actual: $callers, message: 'Call OpenRegister\'s slug search through SlugSearch.');
 		}
 	}
 }

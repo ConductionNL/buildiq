@@ -247,10 +247,8 @@ class StoredDecisionTables implements StoredDecisionTablesInterface {
 	 */
 	private function existingUuid(string $key): ?string {
 		try {
-			$rows = SlugSearch::run(
+			$rows = (new SlugSearch(register: DecisionTableStore::REGISTER, schema: DecisionTableStore::SCHEMA))->run(
 				objectService: $this->objects,
-				register: DecisionTableStore::REGISTER,
-				schema: DecisionTableStore::SCHEMA,
 				filters: [],
 				rbac: false,
 				multitenancy: false

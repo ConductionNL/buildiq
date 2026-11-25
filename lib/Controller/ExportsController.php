@@ -265,7 +265,7 @@ class ExportsController extends Controller {
 			return [];
 		}
 
-		$apps = SlugSearch::run(objectService: $service, register: $registerSlug, schema: 'built-app', filters: ['slug' => $applicationSlug]);
+		$apps = (new SlugSearch(register: $registerSlug, schema: 'built-app'))->run(objectService: $service, filters: ['slug' => $applicationSlug]);
 		if (is_array($apps) === false || $apps === []) {
 			return [];
 		}
@@ -475,7 +475,10 @@ class ExportsController extends Controller {
 				return '';
 			}
 
-			$apps = SlugSearch::run(objectService: $service, register: $registerSlug, schema: 'built-app', filters: ['slug' => $applicationSlug]);
+			$apps = (new SlugSearch(register: $registerSlug, schema: 'built-app'))->run(
+				objectService: $service,
+				filters: ['slug' => $applicationSlug]
+			);
 			if (is_array($apps) === false || $apps === []) {
 				return '';
 			}

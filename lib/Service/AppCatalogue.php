@@ -156,10 +156,8 @@ class AppCatalogue implements AppCatalogueInterface {
 	 */
 	private function search(string $schema, array $filters): array {
 		// System context: the command line reads every app, not one user's.
-		$results = SlugSearch::run(
+		$results = (new SlugSearch(register: self::REGISTER_SLUG, schema: $schema))->run(
 			objectService: $this->objectService,
-			register: self::REGISTER_SLUG,
-			schema: $schema,
 			filters: $filters,
 			rbac: false,
 			multitenancy: false

@@ -1442,10 +1442,8 @@ class CopilotService implements CopilotServiceInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveApplicationBySlug(string $appSlug): ?array {
-		$apps = SlugSearch::run(
+		$apps = (new SlugSearch(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA))->run(
 			objectService: $this->objectService,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_SCHEMA,
 			filters: ['slug' => $appSlug],
 			rbac: true,
 			multitenancy: false
@@ -1943,10 +1941,8 @@ class CopilotService implements CopilotServiceInterface {
 		}
 
 		$appUuid = $this->extractUuid(item: $app);
-		$versions = SlugSearch::run(
+		$versions = (new SlugSearch(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA))->run(
 			objectService: $this->objectService,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA,
 			filters: ['application' => $appUuid, 'slug' => $versionSlug],
 			rbac: true,
 			multitenancy: false

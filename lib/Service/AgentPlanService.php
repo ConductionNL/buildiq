@@ -360,10 +360,8 @@ class AgentPlanService {
 	 */
 	private function mayDecide(string $appSlug, IUser $caller): bool {
 		try {
-			$apps = SlugSearch::run(
+			$apps = (new SlugSearch(register: self::REGISTER_SLUG, schema: self::APP_SCHEMA))->run(
 				objectService: $this->objectService,
-				register: self::REGISTER_SLUG,
-				schema: self::APP_SCHEMA,
 				filters: ['slug' => $appSlug],
 				rbac: true,
 				multitenancy: false

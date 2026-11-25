@@ -70,10 +70,8 @@ class RegisterRecordLookup {
 	 */
 	public function first(string $schema, array $filters): ?array {
 		try {
-			$rows = SlugSearch::run(
+			$rows = (new SlugSearch(register: self::REGISTER, schema: $schema))->run(
 				objectService: $this->objectService,
-				register: self::REGISTER,
-				schema: $schema,
 				filters: $filters,
 				rbac: false,
 				multitenancy: false

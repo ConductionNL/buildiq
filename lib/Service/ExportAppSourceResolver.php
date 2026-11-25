@@ -143,10 +143,8 @@ class ExportAppSourceResolver {
 		}
 
 		try {
-			$results = SlugSearch::run(
+			$results = (new SlugSearch(register: (string)$resolution->slug, schema: 'applicationVersion'))->run(
 				objectService: $this->objectService,
-				register: (string)$resolution->slug,
-				schema: 'applicationVersion',
 				filters: ['_limit' => 1000],
 				rbac: false,
 				multitenancy: false

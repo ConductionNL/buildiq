@@ -243,10 +243,8 @@ class PublishTemplates extends Command {
 		try {
 			// System context (occ command): seeded templates are Conduction-
 			// curated store content, not per-user data.
-			$results = SlugSearch::run(
+			$results = (new SlugSearch(register: self::REGISTER_SLUG, schema: self::TEMPLATE_SCHEMA))->run(
 				objectService: $this->objectService,
-				register: self::REGISTER_SLUG,
-				schema: self::TEMPLATE_SCHEMA,
 				filters: $filters,
 				rbac: false,
 				multitenancy: false

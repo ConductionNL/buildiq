@@ -79,10 +79,8 @@ class ListAppsHandler extends AbstractToolHandler {
 			$filters['status'] = $validation['statusFilter'];
 		}
 
-		$rawApps = SlugSearch::run(
+		$rawApps = (new SlugSearch(register: self::REGISTER_SLUG, schema: 'built-app'))->run(
 			objectService: $objectService,
-			register: self::REGISTER_SLUG,
-			schema: 'built-app',
 			filters: $filters,
 			rbac: true,
 			multitenancy: false

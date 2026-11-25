@@ -61,6 +61,10 @@ use OCA\Buildiq\Support\SlugSearch;
  * the delta shape and refuses an app-blanking delta (design D4).
  *
  * @spec openspec/specs/app-override-persistence/spec.md
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) SlugSearch is a call adapter over
+ *   OpenRegister's slug search (one published method, two signatures), not a
+ *   collaborator of its own; it took this class from 12 to 13.
  */
 class AppOverrideService implements AppOverrideServiceInterface {
 
@@ -422,10 +426,8 @@ class AppOverrideService implements AppOverrideServiceInterface {
 		}
 
 		try {
-			$results = SlugSearch::run(
+			$results = (new SlugSearch(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA))->run(
 				objectService: $this->objectService,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA,
 				filters: ['scope' => 'user']
 			);
 		} catch (Throwable $e) {
@@ -614,10 +616,8 @@ class AppOverrideService implements AppOverrideServiceInterface {
 	#[\Override]
 	public function findHybridApplication(string $appId): ?array {
 		try {
-			$results = SlugSearch::run(
+			$results = (new SlugSearch(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA))->run(
 				objectService: $this->objectService,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_SCHEMA,
 				filters: [
 					'slug' => $appId,
 					'appType' => 'hybrid',
@@ -891,10 +891,8 @@ class AppOverrideService implements AppOverrideServiceInterface {
 		}
 
 		try {
-			$results = SlugSearch::run(
+			$results = (new SlugSearch(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA))->run(
 				objectService: $this->objectService,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA,
 				filters: [
 					'scope' => 'user',
 					'owner' => $uid,

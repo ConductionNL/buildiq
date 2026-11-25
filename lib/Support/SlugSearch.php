@@ -62,38 +62,46 @@ final class SlugSearch {
 	private static array $takesTarget = [];
 
 	/**
-	 * Search the objects of one register/schema pair, both named by slug.
+	 * The register/schema pair to search, both named by slug.
+	 *
+	 * @param string $register The register slug.
+	 * @param string $schema   The schema slug.
+	 *
+	 * @spec exclude call adapter for OpenRegister's slug search across its two published signatures, no behaviour of its own
+	 */
+	public function __construct(
+		private readonly string $register,
+		private readonly string $schema,
+	) {
+	}//end __construct()
+
+	/**
+	 * Search the pair's objects through the service.
 	 *
 	 * @param object               $objectService OpenRegister's ObjectService (or a test double of it).
-	 * @param string               $register      The register slug.
-	 * @param string               $schema        The schema slug.
 	 * @param array<string, mixed> $filters       Equality filters, as searchObjectsBySlug() takes them.
 	 * @param bool                 $rbac          Apply register RBAC.
 	 * @param bool                 $multitenancy  Apply organisation scoping.
 	 *
 	 * @return mixed The matching objects (an array) or a count, as OpenRegister answers.
 	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The two flags are OpenRegister's own
+	 *   `$_rbac` / `$_multitenancy`, passed through unchanged.
+	 *
 	 * @spec exclude call adapter for OpenRegister's slug search across its two published signatures, no behaviour of its own
 	 */
-	public static function run(
-		object $objectService,
-		string $register,
-		string $schema,
-		array $filters=[],
-		bool $rbac=true,
-		bool $multitenancy=true
-	): mixed {
+	public function run(object $objectService, array $filters=[], bool $rbac=true, bool $multitenancy=true): mixed {
 		if (self::takesTarget(objectService: $objectService) === true) {
 			$targetClass = self::TARGET_CLASS;
 			return $objectService->searchObjectsBySlug(
-				new $targetClass($register, $schema),
+				new $targetClass($this->register, $this->schema),
 				$filters,
 				$rbac,
 				$multitenancy
 			);
 		}
 
-		return $objectService->searchObjectsBySlug($register, $schema, $filters, $rbac, $multitenancy);
+		return $objectService->searchObjectsBySlug($this->register, $this->schema, $filters, $rbac, $multitenancy);
 	}//end run()
 
 	/**

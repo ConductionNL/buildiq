@@ -136,10 +136,8 @@ class GetAppManifestHandler extends AbstractToolHandler {
 	 * @return array{application?: array<string, mixed>, error?: string, message?: string}
 	 */
 	private function resolveApplicationBySlug(object $objectService, string $slug): array {
-		$routeResults = SlugSearch::run(
+		$routeResults = (new SlugSearch(register: self::REGISTER_SLUG, schema: 'built-app-route'))->run(
 			objectService: $objectService,
-			register: self::REGISTER_SLUG,
-			schema: 'built-app-route',
 			filters: ['slug' => $slug],
 			rbac: true,
 			multitenancy: false
