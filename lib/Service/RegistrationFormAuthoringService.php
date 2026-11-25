@@ -38,7 +38,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005)
+ * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005)
  */
 
 declare(strict_types=1);
@@ -57,7 +57,7 @@ use OCP\IAppConfig;
 /**
  * Saves the registration forms a case type carries.
  *
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+ * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
  */
 class RegistrationFormAuthoringService implements RegistrationFormAuthoringServiceInterface {
 	/**
@@ -111,7 +111,7 @@ class RegistrationFormAuthoringService implements RegistrationFormAuthoringServi
 	 * @throws InvalidArgumentException When a rule or the schema refuses it.
 	 * @throws FormDestinationRefusedException When a form that is not a draft has findings.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
 	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-a-draft-form-saves-with-its-findings
 	 */
@@ -167,7 +167,7 @@ class RegistrationFormAuthoringService implements RegistrationFormAuthoringServi
 	 *
 	 * @return array<int, array<string, mixed>> The forms.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 	 */
 	#[\Override]
 	public function listFor(string $register, string $schema): array {
@@ -187,7 +187,7 @@ class RegistrationFormAuthoringService implements RegistrationFormAuthoringServi
 	 *
 	 * @return array{properties: array<int, string>|null, channels: array<int, string>|null, note: string|null} What it declares.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-007)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-007)
 	 */
 	#[\Override]
 	public function targetFor(string $register, string $schema, string $channelProperty = ''): array {

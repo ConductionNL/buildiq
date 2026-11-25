@@ -53,7 +53,7 @@ final class UnexpectedFailureAnswer {
 	 * @return JSONResponse The 500.
 	 *
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002, REQ-OBSO-003)
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005)
 	 */
 	public function answer(string $what, Throwable $e): JSONResponse {
 		$this->logger->error('Buildiq: ' . $what . ' failed: ' . $e->getMessage(), ['exception' => $e]);

@@ -18,7 +18,7 @@
  * @link https://conduction.nl
  *
  * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-006)
+ * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-006)
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2

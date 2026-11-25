@@ -3840,8 +3840,8 @@
 				"owner": "ConductionNL/buildiq",
 				"change": "registration-form-builder",
 				"requirement": [
-					"openspec/changes/forms-per-case-type/specs/registration-form-builder :: Several forms per type value, one default per audience (REQ-OBRF-004)",
-					"openspec/changes/forms-per-case-type/specs/registration-form-builder :: A form declares the intake channel it serves (REQ-OBRF-007)"
+					"openspec/changes/archive/2026-11-25-forms-per-case-type/specs/registration-form-builder :: Several forms per type value, one default per audience (REQ-OBRF-004)",
+					"openspec/changes/archive/2026-11-25-forms-per-case-type/specs/registration-form-builder :: A form declares the intake channel it serves (REQ-OBRF-007)"
 				],
 				"plan": "openspec/changes/competitor-parity-2026-09"
 			},
@@ -3993,7 +3993,7 @@
 				"evidence": "grep -rliF captcha|recaptcha|hcaptcha|altcha|honeypot over src lib appinfo openspec/specs: no hits. The anonymous surface that does exist (portaliq PortalEmbedController.php:102,162) is protected by #[AnonRateLimit] only",
 				"reachedOn": "",
 				"owner": "ConductionNL/buildiq",
-				"note": "Decided no in the OpenSpec pass 2026-09-27: Recorded boundary: openspec/changes/forms-per-case-type/proposal.md Out of scope says rendering a public form and the captcha are portaliq's (cluster 51), and hydra ADR-108 puts citizen-facing form access in portaliq. A buildiq-built form sits behind a Nextcloud login."
+				"note": "Decided no in the OpenSpec pass 2026-09-27: Recorded boundary: openspec/changes/archive/2026-11-25-forms-per-case-type/proposal.md Out of scope says rendering a public form and the captcha are portaliq's (cluster 51), and hydra ADR-108 puts citizen-facing form access in portaliq. A buildiq-built form sits behind a Nextcloud login."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7827,7 +7827,7 @@
 				"change": "forms-per-case-type",
 				"requirement": [
 					"openspec/changes/archive/2026-11-25-case-page-layout-per-case-type/specs/page-layout-per-type :: The layout is served as a data-provider leaf (REQ-OBPL-003)",
-					"openspec/changes/forms-per-case-type/specs/registration-form-builder :: The leaf serves by audience and by name (REQ-OBRF-006)"
+					"openspec/changes/archive/2026-11-25-forms-per-case-type/specs/registration-form-builder :: The leaf serves by audience and by name (REQ-OBRF-006)"
 				],
 				"plan": [
 					"openspec/changes/competitor-parity-2026-09",
@@ -8847,7 +8847,7 @@
 				"owner": "ConductionNL/buildiq",
 				"readOn": "2026-09-26",
 				"change": "forms-per-case-type",
-				"requirement": "openspec/changes/forms-per-case-type/specs/registration-form-builder :: A form presets fields, hidden or visible (REQ-OBRF-005)"
+				"requirement": "openspec/changes/archive/2026-11-25-forms-per-case-type/specs/registration-form-builder :: A form presets fields, hidden or visible (REQ-OBRF-005)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",

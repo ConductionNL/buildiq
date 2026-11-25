@@ -15,11 +15,14 @@
  *
  * WHAT A PASS HERE DOES NOT PROVE
  * -------------------------------
- * Not the served form. No published registrationForm exists on a CI stack, so
- * the hidden preset, the channel fall-back and the field order are asserted in
- * the unit suite, which can build those fixtures.
+ * The served form is asserted by the last test, which writes its own
+ * published registrationForm rows for a host type that exists nowhere else
+ * (through OpenRegister's objects API, so buildiq's destination check against
+ * a real target schema does not apply), asks the leaf for one channel, and
+ * removes the rows again. The hidden preset is still asserted in the unit
+ * suite only.
  *
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md
+ * @spec openspec/specs/registration-form-builder/spec.md
  * @e2e registration-form-builder/requirement-the-leaf-serves-by-audience-and-by-name-req-obrf-006/dossiq-asks-for-the-desk-default
  * @e2e registration-form-builder/requirement-a-form-presets-fields-hidden-or-visible-req-obrf-005/the-citizen-never-sees-the-channel-field
  * @e2e registration-form-builder/requirement-the-form-owns-field-order-and-grouping-req-obrf-008/the-citizens-form-asks-four-fields-in-the-order-the-admin-set
@@ -31,6 +34,7 @@ import { anonymousContext } from './support/anonymous.ts'
 const CATALOGUE = '/index.php/apps/openregister/api/integrations'
 const LEAF_ID = 'buildiq-registration-form'
 const HEADERS = { 'OCS-APIRequest': 'true' }
+const FORMS = '/index.php/apps/openregister/api/objects/buildiq/registrationForm'
 
 test.describe('registration-form leaf', () => {
 	test("the leaf is on OpenRegister's catalogue under its own id", async ({
@@ -70,4 +74,69 @@ test.describe('registration-form leaf', () => {
 
 		await anonymous.dispose()
 	})
+
+	test("asked for a channel, the leaf serves that channel's forms first, with sections and fields in the admin's order", async ({
+		request,
+	}) => {
+		// forms-per-case-type 8.2: the channel filter (REQ-OBRF-009) and the
+		// ordered sections (REQ-OBRF-008) on the served answer.
+		const host = { register: 'e2e-host', schema: 'e2e-type', id: `e2e-${Date.now()}` }
+		const base = {
+			targetApp: 'dossiq',
+			register: host.register,
+			schema: host.schema,
+			typeProperty: 'caseType',
+			typeValue: host.id,
+			audience: 'client',
+			status: 'published',
+		}
+		const rows = [
+			{
+				...base,
+				name: 'E2E portal form',
+				channel: 'portal',
+				sections: [{ name: 'tweede', order: 2 }, { name: 'eerste', order: 1 }],
+				fields: [
+					{ name: 'losVeld' },
+					{ name: 'telefoon', section: 'tweede', order: 1 },
+					{ name: 'achternaam', section: 'eerste', order: 2 },
+					{ name: 'voornaam', section: 'eerste', order: 1 },
+				],
+			},
+			{ ...base, name: 'E2E form without a channel', channel: '' },
+			{ ...base, name: 'E2E desk form', channel: 'desk' },
+		]
+
+		const created: string[] = []
+		try {
+			for (const row of rows) {
+				const response = await request.post(FORMS, { headers: HEADERS, data: row })
+				test.skip(response.status() === 404, 'buildiq or OpenRegister is not installed here')
+				expect(response.ok(), `could not write the fixture "${row.name}"`).toBeTruthy()
+				const saved = await response.json()
+				created.push(String(saved.id ?? saved.uuid ?? saved['@self']?.id ?? ''))
+			}
+
+			const response = await request.get(
+				`/index.php/apps/openregister/api/objects/${host.register}/${host.schema}/${host.id}/integrations/${LEAF_ID}?channel=portal`,
+				{ headers: HEADERS },
+			)
+			expect(response.ok()).toBeTruthy()
+			const body = await response.json()
+			const items = (body.items ?? []) as Array<Record<string, any>>
+
+			// The channel's own form first, then the channel-less one; the desk form is not served.
+			expect(items.map((item) => item.name)).toEqual(['E2E portal form', 'E2E form without a channel'])
+			expect(items[0].channel).toBe('portal')
+
+			// Sections in their own order, fields grouped by section and ordered inside it, section-less last.
+			expect((items[0].sections as Array<{ name: string }>).map((section) => section.name)).toEqual(['eerste', 'tweede'])
+			expect((items[0].fields as Array<{ name: string }>).map((field) => field.name)).toEqual(['voornaam', 'achternaam', 'telefoon', 'losVeld'])
+		} finally {
+			for (const id of created.filter(Boolean)) {
+				await request.delete(`${FORMS}/${id}`, { headers: HEADERS })
+			}
+		}
+	})
 })
+

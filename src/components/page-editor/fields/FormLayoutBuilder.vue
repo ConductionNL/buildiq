@@ -21,7 +21,7 @@
   - fields out silently would be worse: it changes what a citizen is asked
   - without anybody asking for it. So the button says what to do first.
   -
-  - @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+  - @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
   -->
 <template>
 	<div class="form-layout">
@@ -307,7 +307,7 @@ export default {
 		 *
 		 * @return {Array<object>} Groups carrying their fields and each field's
 		 *   index in the flat `fields` array.
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 		 */
 		groups() {
 			const groups = [
@@ -350,7 +350,7 @@ export default {
 		 *
 		 * @param {object} field - the field.
 		 * @return {number} Its order.
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 		 */
 		orderOf(field) {
 			const order = field && field.order
@@ -362,7 +362,7 @@ export default {
 		 *
 		 * @param {string} name - the section's reference.
 		 * @return {Array<object>} Its fields.
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 		 */
 		holds(name) {
 			return this.fields.filter(
@@ -375,7 +375,7 @@ export default {
 		 *
 		 * @param {object} section - the section.
 		 * @return {string} The button title.
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 		 */
 		deleteTitle(section) {
 			if (this.holds(section.name).length === 0) {
@@ -392,7 +392,7 @@ export default {
 		 * Add one section, named after its heading.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 		 */
 		addSection() {
 			const next = this.sections.slice()
@@ -411,7 +411,7 @@ export default {
 		 * @param {number} index - which section.
 		 * @param {string} label - the new heading.
 		 * @return {void}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 		 */
 		renameSection(index, label) {
 			const next = this.sections.slice()
@@ -434,7 +434,7 @@ export default {
 		 * @param {number} index - which section.
 		 * @param {string} raw - what was typed.
 		 * @return {void}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 		 */
 		setSectionName(index, raw) {
 			const next = this.sections.slice()
@@ -452,7 +452,7 @@ export default {
 		 * @param {number} index - which section.
 		 * @param {number} delta - -1 up, 1 down.
 		 * @return {void}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 		 */
 		moveSection(index, delta) {
 			const next = this.sections.slice()
@@ -471,7 +471,7 @@ export default {
 		 *
 		 * @param {number} index - which section.
 		 * @return {void}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 		 */
 		removeSection(index) {
 			const section = this.sections[index] || {}
@@ -489,7 +489,7 @@ export default {
 		 *
 		 * @param {Array<object>} sections - the sections in their new order.
 		 * @return {Array<object>} The same sections, renumbered.
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 		 */
 		ordered(sections) {
 			return sections.map((section, index) => ({
@@ -504,7 +504,7 @@ export default {
 		 * @param {string} base - the derived name.
 		 * @param {number} skip - a section index to ignore, for a rename.
 		 * @return {string} A free name.
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 		 */
 		freeName(base, skip = -1) {
 			const taken = this.sections
@@ -529,7 +529,7 @@ export default {
 		 * @param {string} from - the old reference.
 		 * @param {string} to - the new one.
 		 * @return {Array<object>} The rewritten fields.
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 		 */
 		reassign(from, to) {
 			return this.fields.map((field) => {
@@ -548,7 +548,7 @@ export default {
 		 * @param {string} key - the property.
 		 * @param {string|boolean} value - the new value.
 		 * @return {void}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 		 */
 		write(index, key, value) {
 			const next = this.fields.slice()
@@ -570,7 +570,7 @@ export default {
 		 * @param {number} index - which field.
 		 * @param {string} section - the section reference, empty for none.
 		 * @return {void}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 		 */
 		assign(index, section) {
 			const next = this.fields.slice()
@@ -597,7 +597,7 @@ export default {
 		 * @param {number} position - its place in that group.
 		 * @param {number} delta - -1 up, 1 down.
 		 * @return {void}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 		 */
 		moveField(group, position, delta) {
 			const target = position + delta
@@ -621,7 +621,7 @@ export default {
 		 * Add an empty field at the end of the unsectioned group.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 		 */
 		addField() {
 			const next = this.fields.slice()
@@ -639,7 +639,7 @@ export default {
 		 *
 		 * @param {number} index - which field.
 		 * @return {void}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 		 */
 		removeField(index) {
 			const next = this.fields.slice()
@@ -653,7 +653,7 @@ export default {
 		 *
 		 * @param {Array<object>} fields - the fields.
 		 * @return {Array<object>} The same fields, renumbered.
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 		 */
 		renumber(fields) {
 			const counters = {}

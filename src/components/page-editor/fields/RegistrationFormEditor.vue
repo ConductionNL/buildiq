@@ -16,7 +16,7 @@
   - would put a second copy of them somewhere they can drift, and the copy that
   - drifts is always the one the administrator reads.
   -
-  - @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005, REQ-OBRF-007, REQ-OBRF-008, REQ-OBRF-009)
+  - @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005, REQ-OBRF-007, REQ-OBRF-008, REQ-OBRF-009)
   -->
 <template>
 	<section class="form-editor">
@@ -505,7 +505,7 @@ export default {
 		 * accepts anything.
 		 *
 		 * @return {boolean} True when there is no channel list to pick from.
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-007)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-007)
 		 */
 		channelsUnknown() {
 			return (this.channels || []).length === 0
@@ -545,7 +545,7 @@ export default {
 		 * @param {string} key - the key to write.
 		 * @param {string|boolean|Array<object>} value - its new value.
 		 * @return {void}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 		 */
 		write(key, value) {
 			this.$emit('update:modelValue', { ...this.modelValue, [key]: value })
@@ -559,7 +559,7 @@ export default {
 		 *
 		 * @param {string} value - '' for none, or low, substantial or high.
 		 * @return {void}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-009)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-009)
 		 */
 		writeSignInLevel(value) {
 			const next = { ...this.modelValue }
@@ -578,7 +578,7 @@ export default {
 		 *
 		 * @param {boolean} checked - the new value.
 		 * @return {void}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-009)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-009)
 		 */
 		/**
 		 * Write the steps. The steps manager sends null for no steps; the key

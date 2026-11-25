@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-009)
+ * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-009)
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -32,7 +32,7 @@ use InvalidArgumentException;
 /**
  * Checks and reads a registration form's sign-in level.
  *
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-009)
+ * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-009)
  */
 final class RegistrationFormSignInLevel {
 	/**
@@ -54,7 +54,7 @@ final class RegistrationFormSignInLevel {
 	 *
 	 * @throws InvalidArgumentException When the level is unknown or contradicts isPublic.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-009)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-009)
 	 */
 	public function assertValid(array $form): void {
 		$level = ($form['minTrust'] ?? null);

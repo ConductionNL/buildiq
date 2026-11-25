@@ -19,7 +19,7 @@
  * @link https://conduction.nl
  *
  * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-001)
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+ * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -36,7 +36,7 @@ use OCP\IAppConfig;
 /**
  * The stored rows of one authored schema, per target register and schema.
  *
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+ * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
  */
 final class AuthoredRowReader {
 	/**
@@ -63,7 +63,7 @@ final class AuthoredRowReader {
 	 *
 	 * @return array<int, array<string, mixed>> The rows.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function storedFor(string $register, string $schema): array {
@@ -95,7 +95,7 @@ final class AuthoredRowReader {
 	 *
 	 * @return string The slug.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 	 */
 	public function registerSlug(): string {
 		$slug = $this->appConfig->getValueString('buildiq', 'register', 'buildiq');
