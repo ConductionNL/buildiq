@@ -61,7 +61,9 @@ class PageRegisterBindingTest extends TestCase {
 		];
 
 		$this->assertSame(expected: $manifest, actual: PageRegisterBinding::forManifest(manifest: $manifest, registerSlug: 'openbuild-pw'));
-		$this->assertSame(expected: ['register' => '{{register}}', 'schema' => 's'], actual: PageRegisterBinding::forConfig(config: ['register' => '{{register}}', 'schema' => 's'], registerSlug: ''), message: 'no register to point at, nothing changes');
+		$tokenOnly = ['register' => '{{register}}', 'schema' => 's'];
+		$unbound   = PageRegisterBinding::forConfig(config: $tokenOnly, registerSlug: '');
+		$this->assertSame(expected: $tokenOnly, actual: $unbound, message: 'no register to point at, nothing changes');
 		$this->assertSame(expected: ['title' => 'x'], actual: PageRegisterBinding::forManifest(manifest: ['title' => 'x'], registerSlug: 'openbuild-pw'));
 	}//end testOtherPagesAreLeftAlone()
 }//end class

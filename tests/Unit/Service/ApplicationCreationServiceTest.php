@@ -232,8 +232,9 @@ class ApplicationCreationServiceTest extends TestCase {
 		);
 
 		foreach ([0, 1, 2] as $index) {
-			self::assertSame(expected: 'openbuild-pw-incidents', actual: $result['pages'][$index]['config']['register'], message: $result['pages'][$index]['id']);
-			self::assertSame(expected: 'pw-incidents-incident', actual: $result['pages'][$index]['config']['schema'], message: $result['pages'][$index]['id']);
+			$config = $result['pages'][$index]['config'];
+			self::assertSame(expected: 'openbuild-pw-incidents', actual: $config['register'], message: $result['pages'][$index]['id']);
+			self::assertSame(expected: 'pw-incidents-incident', actual: $config['schema'], message: $result['pages'][$index]['id']);
 		}
 
 		self::assertArrayNotHasKey(key: 'register', array: $result['pages'][3]['config'], message: 'a page without a schema gets no register');
