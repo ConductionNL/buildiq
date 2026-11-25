@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+ * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
  */
 
 declare(strict_types=1);
@@ -53,7 +53,7 @@ final class ReleaseOverrideRefusedException extends RuntimeException {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 	 */
 	public function __construct(private readonly string $errorCode, string $message) {
 		parent::__construct(message: $message);
@@ -64,7 +64,7 @@ final class ReleaseOverrideRefusedException extends RuntimeException {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 	 */
 	public function getErrorCode(): string {
 		return $this->errorCode;
@@ -76,7 +76,7 @@ final class ReleaseOverrideRefusedException extends RuntimeException {
 	 *
 	 * @return int
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 	 */
 	public function getStatus(): int {
 		if ($this->errorCode === self::NOT_OWNER) {

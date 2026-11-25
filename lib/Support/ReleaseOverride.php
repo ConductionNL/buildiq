@@ -19,7 +19,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+ * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ final class ReleaseOverride {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 	 */
 	public function __construct(
 		public readonly string $reason,
@@ -62,7 +62,7 @@ final class ReleaseOverride {
 	 *
 	 * @return self|null
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 	 */
 	public static function fromRequest(mixed $param, string $userId, bool $byOwner): ?self {
 		if (is_array($param) === true) {
@@ -89,7 +89,7 @@ final class ReleaseOverride {
 	 *
 	 * @throws ReleaseOverrideRefusedException When the caller is not an owner, or gave no reason.
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 	 */
 	public function assertMayRelease(): void {
 		if ($this->byOwner === false) {

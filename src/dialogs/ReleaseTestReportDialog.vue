@@ -77,7 +77,7 @@ export default {
 		 * The failed checks of the run.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 		 */
 		failedChecks() {
 			const report = (this.run && this.run.report) || []
@@ -90,7 +90,7 @@ export default {
 		 * React to the dialog opening.
 		 *
 		 * @param {boolean} isOpen Whether the dialog is open.
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 		 */
 		open(isOpen) {
 			if (isOpen) {

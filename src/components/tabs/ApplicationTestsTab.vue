@@ -187,7 +187,7 @@ export default {
 		 * Whether the caller may run the suite and write record tests (owner / editor).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 		 */
 		canEdit() {
 			return this.obAppRole === 'owner' || this.obAppRole === 'editor'
@@ -197,7 +197,7 @@ export default {
 		 * The app's versions as picker options, archived ones left out.
 		 *
 		 * @return {Array<{id: string, slug: string, label: string}>}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
 		 */
 		versionOptions() {
 			return this.versions
@@ -209,7 +209,7 @@ export default {
 		 * The latest run of the chosen version.
 		 *
 		 * @return {object|null}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
 		 */
 		latestRun() {
 			return (this.versionOption && this.latestRuns[this.versionOption.id]) || null
@@ -219,7 +219,7 @@ export default {
 		 * The latest run's checks by kind.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-the-suite-checks-the-apps-structure-req-bqrt-001
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-the-suite-checks-the-apps-structure-req-bqrt-001
 		 */
 		checkGroups() {
 			return groupChecks(this.latestRun && this.latestRun.report)
@@ -229,7 +229,7 @@ export default {
 		 * The schemas the chosen version's pages use, for the record test picker.
 		 *
 		 * @return {Array<string>}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 		 */
 		schemaSlugs() {
 			const version = this.versions.find((v) => this.versionOption && idOf(v) === this.versionOption.id)
@@ -246,7 +246,7 @@ export default {
 			 *
 			 * @param {string} slug The app slug.
 			 * @return {void}
-			 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
+			 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
 			 */
 			handler(slug) {
 				if (slug) {
@@ -265,7 +265,7 @@ export default {
 		 * @param {string} path The path after the app.
 		 * @param {object} params Its parameters.
 		 * @return {string}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
 		 */
 		url(path, params = {}) {
 			return generateUrl('/apps/buildiq/api/applications/{slug}' + path, { slug: this.obApp.slug, ...params })
@@ -275,7 +275,7 @@ export default {
 		 * Load the versions and the tab's content.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
 		 */
 		async load() {
 			this.loadError = ''
@@ -299,7 +299,7 @@ export default {
 		 *
 		 * @param {object} overview The tab's content.
 		 * @return {void}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
 		 */
 		applyOverview(overview) {
 			this.recordTests = overview.recordTests || []
@@ -311,7 +311,7 @@ export default {
 		 * Run the chosen version's suite now and show the run.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
 		 */
 		async runTests() {
 			if (!this.versionOption) {
@@ -333,7 +333,7 @@ export default {
 		 *
 		 * @param {object|null} test The test.
 		 * @return {void}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 		 */
 		editTest(test) {
 			this.editing = test
@@ -345,7 +345,7 @@ export default {
 		 *
 		 * @param {object} test The test.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 		 */
 		async saveTest(test) {
 			this.saving = true
@@ -371,7 +371,7 @@ export default {
 		 *
 		 * @param {object} test The test.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 		 */
 		async removeTest(test) {
 			try {
@@ -387,7 +387,7 @@ export default {
 		 *
 		 * @param {string} outcome passed, failed or skipped.
 		 * @return {string}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
 		 */
 		outcomeLabel(outcome) {
 			return {
@@ -402,7 +402,7 @@ export default {
 		 *
 		 * @param {string} trigger manual, release or promotion.
 		 * @return {string}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
 		 */
 		triggerLabel(trigger) {
 			return {
@@ -417,7 +417,7 @@ export default {
 		 *
 		 * @param {string} iso The ISO time.
 		 * @return {string}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
 		 */
 		formatTime(iso) {
 			const date = new Date(iso)

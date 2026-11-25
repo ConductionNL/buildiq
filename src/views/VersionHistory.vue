@@ -668,7 +668,7 @@ export default {
 		 * @param {object} row The version row.
 		 * @param {string} versionSlug The row's slug.
 		 * @return {void}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 		 */
 		onReleaseFailed(e, row, versionSlug) {
 			const run = failedTestRunOf(e)
@@ -685,7 +685,7 @@ export default {
 		 *
 		 * @param {string} reason Why the failures are acceptable.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 		 */
 		async releaseAnyway(reason) {
 			if (!this.testReport || this.releasing) {
@@ -711,7 +711,7 @@ export default {
 		 * @param {string} versionSlug The row's slug.
 		 * @param {object} body The request body: `{}`, or `{ override: { reason } }`.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 		 */
 		async postRelease(row, versionSlug, body = {}) {
 			const url = generateUrl(

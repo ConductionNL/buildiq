@@ -27,7 +27,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md
+ * @spec openspec/specs/app-release-test-gate/spec.md
  */
 
 declare(strict_types=1);
@@ -95,7 +95,7 @@ class ApplicationTestsController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
 	 */
 	#[NoAdminRequired]
 	public function index(string $appSlug): JSONResponse {
@@ -115,7 +115,7 @@ class ApplicationTestsController extends Controller {
 	 *
 	 * @return JSONResponse The run.
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
 	 */
 	#[NoAdminRequired]
 	public function run(string $appSlug, string $versionSlug): JSONResponse {
@@ -139,7 +139,7 @@ class ApplicationTestsController extends Controller {
 	 *
 	 * @return JSONResponse 201 with the stored test.
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 	 */
 	#[NoAdminRequired]
 	public function createRecordTest(string $appSlug): JSONResponse {
@@ -154,7 +154,7 @@ class ApplicationTestsController extends Controller {
 	 *
 	 * @return JSONResponse 200 with the stored test.
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 	 */
 	#[NoAdminRequired]
 	public function updateRecordTest(string $appSlug, string $id): JSONResponse {
@@ -169,7 +169,7 @@ class ApplicationTestsController extends Controller {
 	 *
 	 * @return JSONResponse 204, or 404 when it is not a test of this app.
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 	 */
 	#[NoAdminRequired]
 	public function destroyRecordTest(string $appSlug, string $id): JSONResponse {

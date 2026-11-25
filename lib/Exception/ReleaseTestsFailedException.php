@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+ * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ final class ReleaseTestsFailedException extends RuntimeException {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 	 */
 	public function __construct(private readonly array $run) {
 		parent::__construct(
@@ -59,7 +59,7 @@ final class ReleaseTestsFailedException extends RuntimeException {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 	 */
 	public function getRun(): array {
 		return $this->run;
@@ -70,7 +70,7 @@ final class ReleaseTestsFailedException extends RuntimeException {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 	 */
 	public function getErrorCode(): string {
 		return self::ERROR_CODE;
