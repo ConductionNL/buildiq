@@ -95,7 +95,8 @@ Acceptance criteria:
 Acceptance criteria:
 - Scenarios not covered by a test carry a reason-bearing `@e2e exclude`.
 
-- [ ] 5.3 Run the Buildiq quality gates and the vitest + Playwright suites, and fix any pre-existing failures encountered.
+- [x] 5.3 Run the Buildiq quality gates and the vitest + Playwright suites, and fix any pre-existing failures encountered.
+  > Done 25 Nov 2026, live on Nextcloud 34.0.6 (MariaDB, pretty URLs on), OpenRegister 58479c0d, `ci-seed.sh`. `tests/e2e/connector-widget-runtime.spec.ts` was 1 passed / 5 failed: a built app opened at `/index.php/apps/buildiq/builder/{slug}/{page}` showed its first page, because `src/builder.js` took its router base from `generateUrl()`, which names only the pretty form. Fixed with `src/utils/builderRouterBase.js` (base from the served path, as `src/main.js` does; Vitest `tests/vitest/BuilderRouterBase.spec.js`): the spec now passes **6/6**, and `tests/e2e/connector-bound-pages.spec.ts` (3 reds on the same cause) passes **4/4**. Vitest: 603 files, 5490 tests passed; its one unhandled error (`TemplateGallery.categories.spec.js`) is the same on development. Gates: the diff check has no NEW finding on the lines touched (gate-24 and gate-109 fail the same on development, on files this change does not touch); `npm run lint` 0 errors.
 
 Acceptance criteria:
 - Gates report a summary line; an aborted run is not accepted as green.

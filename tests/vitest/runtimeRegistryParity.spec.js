@@ -13,7 +13,7 @@
  * with only a console warning, so this spec asserts on each host's MOUNT
  * CONFIGURATION — the value it actually passes — not on the registry module.
  *
- * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-001-single-runtime-registry-seam-for-every-virtual-app-host
+ * @spec openspec/changes/archive/2026-11-25-openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-001-single-runtime-registry-seam-for-every-virtual-app-host
  */
 import { mount } from '@vue/test-utils'
 import { readFileSync } from 'node:fs'
