@@ -133,24 +133,46 @@ test.describe(`l10n browser catalogue (${APP_ID})`, () => {
 					Record<string, string>
 				>
 				t?: (app: string, key: string) => string
-				OC?: { L10N?: { translate?: (app: string, key: string) => string } }
+				OC?: {
+					L10N?: {
+						translate?: (app: string, key: string) => string
+						translatePlural?: (app: string, singular: string, plural: string, count: number) => string
+					}
+				}
 			}
 			const registry = w._oc_l10n_registry_translations || {}
 			const bundle = registry[appId]
 			if (!bundle) return { registered: false as const, keys: 0 }
 
 			// A key whose translation differs from itself — the only kind that can
-			// tell a working lookup apart from the identity fallback.
-			const translated =
-				Object.keys(bundle).find((k) => bundle[k] !== k) || null
-			const translate = w.OC?.L10N?.translate || w.t
+			// tell a working lookup apart from the identity fallback. A singular
+			// entry is read with t(). A catalogue whose singular strings all equal
+			// their keys (English ships only what differs) is read through a
+			// plural entry: `_singular_::_plural_` holds an array, which
+			// translatePlural() returns one form of, never t().
+			const keys = Object.keys(bundle)
+			const singular = keys.find((k) => typeof bundle[k] === 'string' && bundle[k] !== k) || null
+			if (singular !== null) {
+				const translate = w.OC?.L10N?.translate || w.t
+				return {
+					registered: true as const,
+					keys: keys.length,
+					sampleKey: singular,
+					expected: bundle[singular] as unknown as string,
+					actual: translate ? translate(appId, singular) : null,
+				}
+			}
+
+			const plural = keys.find((k) => Array.isArray(bundle[k]) && /^_.*_::_.*_$/.test(k)) || null
+			const forms = plural ? (bundle[plural] as unknown as string[]) : []
+			const [one, other] = plural ? plural.slice(1, -1).split('_::_') : ['', '']
+			const translatePlural = w.OC?.L10N?.translatePlural
 			return {
 				registered: true as const,
-				keys: Object.keys(bundle).length,
-				sampleKey: translated,
-				expected: translated ? bundle[translated] : null,
-				actual:
-					translated && translate ? translate(appId, translated) : null,
+				keys: keys.length,
+				sampleKey: plural,
+				expected: plural ? forms[forms.length - 1].replace('%n', '2') : null,
+				actual: plural && translatePlural ? translatePlural(appId, one, other, 2) : null,
 			}
 		}, APP_ID)
 
