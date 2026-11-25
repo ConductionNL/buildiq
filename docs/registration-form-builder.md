@@ -19,10 +19,16 @@ Open the page designer, pick a **detail** page, and set its register, its
 schema and the case type under **Applies to**. The forms for that type
 appear below, under **Forms for this case type**.
 
+![The detail page's Applies to panel: the case type is the objects whose intakeChannel is portal](/screenshots/registration-form-builder/01-applies-to.png)
+
+![Forms for this case type, with one form and the fields to add another](/screenshots/registration-form-builder/02-forms-for-this-case-type.png)
+
 Add one and it opens straight away. A form with no fields asks nothing, so
 there is no reason to leave it closed.
 
 ## What a form carries
+
+![An open form: what it applies to, its name, who fills it in, its channel, state and sign-in](/screenshots/registration-form-builder/03-form-editor.png)
 
 **Name.** How a consumer asks for this form. Three forms for one case type
 is the point, and the name is how you tell them apart.
