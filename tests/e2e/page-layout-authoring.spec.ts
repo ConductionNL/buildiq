@@ -23,7 +23,7 @@
  *
  * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md
  * @e2e screen-override-layers/requirement-an-override-records-the-base-it-was-cut-against-req-obso-002/an-override-without-a-base-is-refused
- * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md
+ * @spec openspec/specs/page-layout-task-panel/spec.md
  */
 import { expect, test } from '@playwright/test'
 import { anonymousContext } from './support/anonymous.ts'

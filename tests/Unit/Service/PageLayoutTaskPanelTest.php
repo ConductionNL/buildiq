@@ -32,7 +32,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * The panel is declared in the register, checked on save and served as declared.
  *
- * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md
+ * @spec openspec/specs/page-layout-task-panel/spec.md
  */
 #[CoversClass(PageLayoutBodyRules::class)]
 #[CoversClass(PageLayoutPresenter::class)]
