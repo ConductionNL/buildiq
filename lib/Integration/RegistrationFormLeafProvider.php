@@ -33,7 +33,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-006, REQ-OBRF-009)
+ * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-006, REQ-OBRF-009)
  */
 
 declare(strict_types=1);
@@ -53,7 +53,7 @@ use RuntimeException;
 /**
  * Serves the registration forms bound to a type, and appends drafts.
  *
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-006)
+ * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-006)
  */
 final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 	/**
@@ -154,7 +154,7 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 	 *
 	 * @return array<string, mixed> The `{items, total, nextCursor, drafts}` envelope.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-006, REQ-OBRF-009)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-006, REQ-OBRF-009)
 	 */
 	#[\Override]
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
@@ -190,7 +190,7 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 	 *
 	 * @return array<int, array<string, mixed>> The matching forms, in their order.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-006, REQ-OBRF-009)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-006, REQ-OBRF-009)
 	 */
 	private static function matchingFilters(array $forms, array $filters): array {
 		foreach (['audience', 'name'] as $key) {
@@ -217,7 +217,7 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 	 *
 	 * @return array<int, array<string, mixed>> The forms on the channel, then the channel-less ones.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-006, REQ-OBRF-009)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-006, REQ-OBRF-009)
 	 */
 	private static function channelFirst(array $forms, string $channel): array {
 		$onChannel = [];
@@ -275,7 +275,7 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 	 *
 	 * @throws RuntimeException When there is no session, or no form is named.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-006)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-006)
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The parameters are mandated by the
 	 *   IntegrationProvider interface. A draft is scoped to the form it answers and to

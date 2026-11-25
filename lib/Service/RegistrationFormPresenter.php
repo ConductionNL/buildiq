@@ -33,7 +33,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-008)
+ * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-008)
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use OCA\Buildiq\Kernel\Contracts\RegistrationFormPresenterInterface;
 /**
  * Turns a stored registration form into the shape a consumer renders.
  *
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005)
+ * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-005)
  */
 final class RegistrationFormPresenter implements RegistrationFormPresenterInterface {
 	/**
@@ -55,7 +55,7 @@ final class RegistrationFormPresenter implements RegistrationFormPresenterInterf
 	 *
 	 * @return array<string, mixed> The served form.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-008)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-008)
 	 * @spec openspec/changes/forms-fee-on-submit/specs/registration-form-builder/spec.md (REQ-OBRF-010)
 	 */
 	#[\Override]
@@ -106,7 +106,7 @@ final class RegistrationFormPresenter implements RegistrationFormPresenterInterf
 	 *
 	 * @return string|null The level.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-009)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-009)
 	 */
 	private function signInLevel(array $form): ?string {
 		$level = ($form['minTrust'] ?? null);
@@ -125,7 +125,7 @@ final class RegistrationFormPresenter implements RegistrationFormPresenterInterf
 	 *
 	 * @return array{served: array<int, array<string, mixed>>, hidden: array<int, string>, visible: array<string, mixed>} The presets.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-005)
 	 */
 	private function presetsOf(array $form): array {
 		$served = [];
@@ -164,7 +164,7 @@ final class RegistrationFormPresenter implements RegistrationFormPresenterInterf
 	 *
 	 * @return array<int, array<string, mixed>> The fields.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-005)
 	 */
 	private function fieldsWithPresets(array $form, array $hidden, array $visible): array {
 		$fields = [];
@@ -196,7 +196,7 @@ final class RegistrationFormPresenter implements RegistrationFormPresenterInterf
 	 *
 	 * @return array<int, array<string, mixed>> The sections.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 	 */
 	public function orderedSections(array $form): array {
 		$sections = [];
@@ -223,7 +223,7 @@ final class RegistrationFormPresenter implements RegistrationFormPresenterInterf
 	 *
 	 * @return array<int, array<string, mixed>> The ordered fields.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 	 */
 	public function orderFields(array $fields, array $sections): array {
 		$order = [];
@@ -256,7 +256,7 @@ final class RegistrationFormPresenter implements RegistrationFormPresenterInterf
 	 *
 	 * @return array<int, array<string, mixed>> The forms, defaults first.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 	 */
 	#[\Override]
 	public function defaultsFirst(array $forms): array {

@@ -11,7 +11,7 @@
   - and this panel repeats their sentence rather than guessing at a second copy
   - that could drift.
   -
-  - @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+  - @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
   -->
 <template>
 	<fieldset class="form-list">
@@ -214,7 +214,7 @@ export default {
 		 * Whether this list knows which type it is for.
 		 *
 		 * @return {boolean} True when the scope is complete.
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 		 */
 		scoped() {
 			return (
@@ -233,7 +233,7 @@ export default {
 			 * Re-read whenever the panel moves to another case type.
 			 *
 			 * @return {void}
-			 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+			 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 			 */
 			handler() {
 				this.reload()
@@ -245,7 +245,7 @@ export default {
 			 * The same for the schema.
 			 *
 			 * @return {void}
-			 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+			 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 			 */
 			handler() {
 				this.reload()
@@ -259,7 +259,7 @@ export default {
 			 * would offer channels the newly named property never accepts.
 			 *
 			 * @return {void}
-			 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-007)
+			 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-007)
 			 */
 			handler() {
 				this.readTarget()
@@ -272,7 +272,7 @@ export default {
 		 * Read what the target schema declares, for the editor's pickers.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-007)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-007)
 		 */
 		async readTarget() {
 			if (!this.scoped) {
@@ -303,7 +303,7 @@ export default {
 		 *
 		 * @param {object} form - the stored form.
 		 * @return {void}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 		 */
 		edit(form) {
 			// A copy, so closing without saving leaves the list as it was.
@@ -318,7 +318,7 @@ export default {
 		 * Save the form being edited.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-008)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-008)
 		 */
 		async saveEdited() {
 			this.adding = true
@@ -346,7 +346,7 @@ export default {
 		 * would quietly list every type's forms under one heading.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 		 */
 		async reload() {
 			if (!this.scoped) {
@@ -379,7 +379,7 @@ export default {
 		 *
 		 * @param {object} form - the form.
 		 * @return {string} The label.
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 		 */
 		audienceLabel(form) {
 			const labels = {
@@ -427,7 +427,7 @@ export default {
 		 * refusal is shown with the sentence it wrote.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 		 */
 		async addForm() {
 			this.adding = true

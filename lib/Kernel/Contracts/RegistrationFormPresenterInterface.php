@@ -44,7 +44,7 @@ interface RegistrationFormPresenterInterface {
 	 *
 	 * @return array<string, mixed> The served form.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-008)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-008)
 	 */
 	public function serve(array $form): array;
 
@@ -55,7 +55,7 @@ interface RegistrationFormPresenterInterface {
 	 *
 	 * @return array<int, array<string, mixed>> The forms, defaults first.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 	 */
 	public function defaultsFirst(array $forms): array;
 }//end interface

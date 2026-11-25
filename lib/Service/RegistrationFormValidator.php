@@ -32,7 +32,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005, REQ-OBRF-007, REQ-OBRF-008)
+ * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005, REQ-OBRF-007, REQ-OBRF-008)
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use InvalidArgumentException;
 /**
  * Validates a registration form before it is saved.
  *
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+ * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
  */
 final class RegistrationFormValidator {
 	/**
@@ -72,7 +72,7 @@ final class RegistrationFormValidator {
 	 *
 	 * @throws InvalidArgumentException When a rule refuses the form.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005, REQ-OBRF-007, REQ-OBRF-008)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005, REQ-OBRF-007, REQ-OBRF-008)
 	 * @spec openspec/changes/forms-fee-on-submit/specs/registration-form-builder/spec.md (REQ-OBRF-010)
 	 */
 	public function validate(
@@ -97,7 +97,7 @@ final class RegistrationFormValidator {
 	 *
 	 * @return string The key.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 	 */
 	public function tupleKey(array $form): string {
 		$parts = [];
@@ -180,7 +180,7 @@ final class RegistrationFormValidator {
 	 *
 	 * @return array<int, string> The names.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 	 */
 	private function declaredSections(array $form): array {
 		$declared = [];
@@ -201,7 +201,7 @@ final class RegistrationFormValidator {
 	 *
 	 * @return array<int, string> The names nothing declares.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 	 */
 	private function undeclaredSections(array $form, array $declared): array {
 		$unknown = [];
@@ -340,7 +340,7 @@ final class RegistrationFormValidator {
 	 *
 	 * @return bool True when this candidate already holds it.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 	 */
 	private function holdsTheDefault(mixed $candidate, string $key, string $audience, string $channel): bool {
 		if (is_array($candidate) === false || $this->tupleKey(form: $candidate) !== $key) {

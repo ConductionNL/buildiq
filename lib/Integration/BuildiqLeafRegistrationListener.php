@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-006)
+ * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-006)
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -42,7 +42,7 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @template-implements IEventListener<Event>
  *
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-006)
+ * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-006)
  */
 final class BuildiqLeafRegistrationListener implements IEventListener {
 	/**
@@ -78,7 +78,7 @@ final class BuildiqLeafRegistrationListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-006)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-006)
 	 */
 	#[\Override]
 	public function handle(Event $event): void {

@@ -58,7 +58,7 @@ final class AdminAuthoringGuard {
 	 * @return JSONResponse|null Null on allow, a refusal otherwise.
 	 *
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002, REQ-OBSO-003)
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005)
 	 */
 	public function refuseNonAdmin(string $forbiddenDetail): ?JSONResponse {
 		$user = $this->userSession->getUser();
@@ -83,7 +83,7 @@ final class AdminAuthoringGuard {
 	 *                                     administrator or the request names no full scope.
 	 *
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002, REQ-OBSO-003)
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005)
 	 */
 	public function adminScope(IRequest $request, string $forbiddenDetail): AuthoringScope|JSONResponse {
 		$refusal = $this->refuseNonAdmin(forbiddenDetail: $forbiddenDetail);

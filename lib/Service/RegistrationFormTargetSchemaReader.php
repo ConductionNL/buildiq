@@ -45,7 +45,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-007)
+ * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-007)
  */
 
 declare(strict_types=1);
@@ -61,7 +61,7 @@ use Throwable;
 /**
  * Reads the target schema's properties and accepted channels.
  *
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-007)
+ * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-007)
  */
 final class RegistrationFormTargetSchemaReader {
 	/**
@@ -91,7 +91,7 @@ final class RegistrationFormTargetSchemaReader {
 	 *   The declared property names, the channel values, and a sentence to show
 	 *   the author when either could not be read.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-007)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-007)
 	 */
 	public function read(string $registerSlug, string $schemaSlug, string $channelProperty = ''): array {
 		$unread = ['properties' => null, 'channels' => null, 'note' => null];

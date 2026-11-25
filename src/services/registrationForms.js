@@ -35,7 +35,7 @@ function normaliseError(err) {
  * @param {{register: string, schema: string}} scope - which schema to read.
  * @return {Promise<Array<object>>} The forms.
  * @throws {{status: number, error: string, message: string}} Normalised refusal.
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md
+ * @spec openspec/specs/registration-form-builder/spec.md
  */
 export async function fetchRegistrationForms({ register, schema }) {
 	try {
@@ -58,7 +58,7 @@ export async function fetchRegistrationForms({ register, schema }) {
  * @param {{register: string, schema: string, channelProperty?: string}} scope - which schema to read.
  * @return {Promise<{properties: Array<string>|null, channels: Array<string>|null, note: string|null}>} What it declares.
  * @throws {{status: number, error: string, message: string}} Normalised refusal.
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-007)
+ * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-007)
  */
 export async function fetchTargetSchema({ register, schema, channelProperty }) {
 	try {
@@ -85,7 +85,7 @@ export async function fetchTargetSchema({ register, schema, channelProperty }) {
  *
  * @return {Promise<{form: object, warnings: Array<string>, findings: Array<object>}>} What was stored.
  * @throws {{status: number, error: string, message: string, findings: Array<object>}} Normalised refusal.
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md
+ * @spec openspec/specs/registration-form-builder/spec.md
  * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-a-draft-form-saves-with-its-findings
  */
 export async function saveRegistrationForm(form) {

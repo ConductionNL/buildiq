@@ -251,7 +251,7 @@
 		"row": "form-captcha",
 		"matrix": "buildiq",
 		"decision": "decided-no",
-		"reason": "Recorded boundary: openspec/changes/forms-per-case-type/proposal.md Out of scope says rendering a public form and the captcha are portaliq's (cluster 51), and hydra ADR-108 puts citizen-facing form access in portaliq. A buildiq-built form sits behind a Nextcloud login.",
+		"reason": "Recorded boundary: openspec/changes/archive/2026-11-25-forms-per-case-type/proposal.md Out of scope says rendering a public form and the captcha are portaliq's (cluster 51), and hydra ADR-108 puts citizen-facing form access in portaliq. A buildiq-built form sits behind a Nextcloud login.",
 		"change": null,
 		"decidedOn": "2026-09-27"
 	},

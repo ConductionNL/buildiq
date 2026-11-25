@@ -27,7 +27,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005)
+ * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005)
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use Throwable;
 /**
  * HTTP surface for authoring registration forms.
  *
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+ * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
  */
 class RegistrationFormController extends Controller {
 	/**
@@ -103,7 +103,7 @@ class RegistrationFormController extends Controller {
 	 *
 	 * @return JSONResponse 200 with `{items, total}`; 400 without a register and schema.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 	 */
 	#[AuthorizedAdminSetting(AdminSettings::class)]
 	public function index(): JSONResponse {
@@ -127,7 +127,7 @@ class RegistrationFormController extends Controller {
 	 *
 	 * @return JSONResponse 200 with `{properties, channels, note}`; 400 without a register and schema.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-007)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-007)
 	 */
 	#[AuthorizedAdminSetting(AdminSettings::class)]
 	public function target(): JSONResponse {
@@ -155,7 +155,7 @@ class RegistrationFormController extends Controller {
 	 * @return JSONResponse 200 with `{form, warnings, findings}` (a draft keeps its findings);
 	 *   422 when a rule refuses it, with `findings` when the destination refuses a form that is not a draft.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005)
+	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005)
 	 */
 	#[AuthorizedAdminSetting(AdminSettings::class)]
 	public function save(): JSONResponse {

@@ -14,7 +14,7 @@
   - it. A typed property name that nothing answers to is written and ignored,
   - and the only thing that would say so is the warning the save returns.
   -
-  - @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005)
+  - @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-005)
   -->
 <template>
 	<fieldset class="form-presets">
@@ -131,7 +131,7 @@ export default {
 		 * @param {'field'|'value'|'hidden'} key - the key.
 		 * @param {string|boolean} value - the new value.
 		 * @return {void}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-005)
 		 */
 		write(index, key, value) {
 			const next = this.presets.slice()
@@ -143,7 +143,7 @@ export default {
 		 * Add an empty preset.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-005)
 		 */
 		add() {
 			this.$emit('update:presets', [
@@ -157,7 +157,7 @@ export default {
 		 *
 		 * @param {number} index - which preset.
 		 * @return {void}
-		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005)
+		 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-005)
 		 */
 		remove(index) {
 			const next = this.presets.slice()

@@ -12,7 +12,7 @@
  * route comes back as `200 text/html` rather than as a 404: these assertions
  * read the CONTENT TYPE, not the status.
  *
- * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md
+ * @spec openspec/specs/registration-form-builder/spec.md
  * @e2e registration-form-builder/requirement-a-case-type-carries-several-forms-req-obrf-004/two-forms-cannot-share-a-name-on-one-type
  */
 import { expect, test } from '@playwright/test'
@@ -106,4 +106,45 @@ test.describe('registration form authoring', () => {
 
 		await anonymous.dispose()
 	})
+
+	test('each form of a type keeps its own channel', async ({ request }) => {
+		// forms-per-case-type 8.2: a channel per form (REQ-OBRF-009). Saved as
+		// drafts, so the destination check reports findings without refusing.
+		const typeValue = `e2e-channel-${Date.now()}`
+		const base = {
+			targetApp: 'dossiq',
+			register: 'dossiq',
+			schema: 'Zaak',
+			typeProperty: 'caseType',
+			typeValue,
+			audience: 'client',
+			status: 'draft',
+		}
+		const saved: string[] = []
+		try {
+			for (const [name, channel] of [['E2E balie', 'desk'], ['E2E portaal', 'portal']]) {
+				const response = await request.put(API, { headers: HEADERS, data: { ...base, name, channel } })
+				test.skip(response.status() === 404, 'buildiq is not installed here')
+				expect(response.ok(), `could not save the draft "${name}"`).toBeTruthy()
+				const body = await response.json()
+				const form = body.form ?? body
+				saved.push(String(form.id ?? form.uuid ?? ''))
+			}
+
+			const listed = await request.get(`${API}?register=dossiq&schema=Zaak`, { headers: HEADERS })
+			expect(listed.ok()).toBeTruthy()
+			const items = ((await listed.json()).items ?? []) as Array<Record<string, unknown>>
+			const mine = items.filter((item) => item.typeValue === typeValue)
+
+			expect(Object.fromEntries(mine.map((item) => [item.name, item.channel]))).toEqual({
+				'E2E balie': 'desk',
+				'E2E portaal': 'portal',
+			})
+		} finally {
+			for (const id of saved.filter(Boolean)) {
+				await request.delete(`/index.php/apps/openregister/api/objects/buildiq/registrationForm/${id}`, { headers: HEADERS })
+			}
+		}
+	})
 })
+
