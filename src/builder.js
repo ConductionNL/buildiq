@@ -60,7 +60,7 @@ import { normalizeManifestRouting } from './services/manifestRouting.js'
 import { startOffline } from './services/offlineRuntime.js'
 import { brandTopBar } from './services/topBarBrand.js'
 import { keepVersionQuery } from './services/versionQuery.js'
-import { embedSlots, needsSignIn, signInNotice } from './utils/appEmbed.js'
+import { embedShellProps, embedSlots, ensureEmbedSkipTarget, needsSignIn, signInNotice } from './utils/appEmbed.js'
 import { virtualAppSupportDialog } from './utils/virtualAppSupportDialog.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
@@ -595,7 +595,7 @@ async function boot() {
 		render: () =>
 			h(
 				CnAppRoot,
-				{ ...shellProps, routerViewKey: shellState.routerEpoch },
+				{ ...shellProps, ...embedShellProps(embedded), routerViewKey: shellState.routerEpoch },
 				slots,
 			),
 	})
@@ -604,6 +604,7 @@ async function boot() {
 	app.use(pinia)
 	app.use(router)
 	registerDirectives(app)
+	ensureEmbedSkipTarget(embedded, document)
 	app.mount('#content')
 }
 
