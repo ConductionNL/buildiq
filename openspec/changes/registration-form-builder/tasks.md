@@ -33,4 +33,5 @@
       phase labels, the `visibleWhen` rule intact) and checks that a caller with no account cannot publish. The
       publish skips with the destination's reason on a stack without dossiq. Written, not run here (no live stack).
 - [ ] 4.3 Dutch and English strings; docs with screenshots
-- [ ] 4.4 Hand the leaf id and the `{form, drafts}` shape to dossiq for `friendly-case-create-form`
+- [x] 4.4 Hand the leaf id and the `{form, drafts}` shape to dossiq for `friendly-case-create-form`
+  > Done 25 Nov: dossiq ConductionNL/dossiq#6918 (competitor-parity-2026-09 task 15, shapes in buildiq-consumer-halves.md), task 15.4: leaf id `buildiq-registration-form` and the `{items, total, nextCursor, drafts}` envelope with an example form, for `friendly-case-create-form`.

@@ -285,7 +285,7 @@ final class PageLayoutBodyRules {
 	 *
 	 * @throws InvalidArgumentException When the panel is not one a consumer can place.
 	 *
-	 * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md (REQ-BQTP-001, REQ-BQTP-002)
+	 * @spec openspec/specs/page-layout-task-panel/spec.md (REQ-BQTP-001, REQ-BQTP-002)
 	 */
 	public function assertTaskPanel(array $layout): void {
 		$taskList = ($layout['taskList'] ?? null);

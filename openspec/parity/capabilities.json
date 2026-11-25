@@ -7831,7 +7831,7 @@
 				],
 				"plan": [
 					"openspec/changes/competitor-parity-2026-09",
-					"openspec/changes/pages-task-panel-beside-case-tabs"
+					"openspec/changes/archive/2026-11-25-pages-task-panel-beside-case-tabs"
 				]
 			},
 			"provider": "buildiq",

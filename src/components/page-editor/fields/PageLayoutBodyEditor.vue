@@ -769,7 +769,7 @@ export default {
 		/**
 		 * The task panel of this layout: where the task list sits.
 		 *
-		 * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md#requirement-a-layout-declares-where-the-task-panel-sits-req-bqtp-001
+		 * @spec openspec/specs/page-layout-task-panel/spec.md#requirement-a-layout-declares-where-the-task-panel-sits-req-bqtp-001
 		 * @return {object} the panel, or an empty object when none is declared.
 		 */
 		taskPanel() {
@@ -779,7 +779,7 @@ export default {
 		/**
 		 * The placements a maker can pick, the schema-wide fall-back first.
 		 *
-		 * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md#requirement-a-layout-declares-where-the-task-panel-sits-req-bqtp-001
+		 * @spec openspec/specs/page-layout-task-panel/spec.md#requirement-a-layout-declares-where-the-task-panel-sits-req-bqtp-001
 		 * @return {Array<{value: string, label: string}>} the options.
 		 */
 		panelPlacements() {
@@ -1177,7 +1177,7 @@ export default {
 		 * Write the task panel. An empty placement removes the panel, so the
 		 * schema-wide layout's panel applies; `none` is kept as a choice.
 		 *
-		 * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md#requirement-a-layout-declares-where-the-task-panel-sits-req-bqtp-001
+		 * @spec openspec/specs/page-layout-task-panel/spec.md#requirement-a-layout-declares-where-the-task-panel-sits-req-bqtp-001
 		 * @param {object|null} panel The panel, or null to remove it.
 		 * @return {void}
 		 */
@@ -1194,7 +1194,7 @@ export default {
 		/**
 		 * Pick where the task list sits. Tabs are only kept for `side`.
 		 *
-		 * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md#requirement-a-layout-declares-where-the-task-panel-sits-req-bqtp-001
+		 * @spec openspec/specs/page-layout-task-panel/spec.md#requirement-a-layout-declares-where-the-task-panel-sits-req-bqtp-001
 		 * @param {string} placement `side`, `tab`, `none` or '' for none declared.
 		 * @return {void}
 		 */
@@ -1215,7 +1215,7 @@ export default {
 		 * Tick or untick a tab the side panel shows beside, by id, in the
 		 * layout's tab order.
 		 *
-		 * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md#requirement-the-panel-names-tabs-the-layout-has-req-bqtp-002
+		 * @spec openspec/specs/page-layout-task-panel/spec.md#requirement-the-panel-names-tabs-the-layout-has-req-bqtp-002
 		 * @param {string} tabId The tab id.
 		 * @param {boolean} ticked Whether it is ticked.
 		 * @return {void}
@@ -1234,7 +1234,7 @@ export default {
 		/**
 		 * Whether the side panel starts folded.
 		 *
-		 * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md#requirement-a-layout-declares-where-the-task-panel-sits-req-bqtp-001
+		 * @spec openspec/specs/page-layout-task-panel/spec.md#requirement-a-layout-declares-where-the-task-panel-sits-req-bqtp-001
 		 * @param {boolean} collapsed Folded or not.
 		 * @return {void}
 		 */

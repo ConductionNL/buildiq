@@ -25,7 +25,7 @@
  * @e2e page-layout-per-type/requirement-a-widget-carries-display-conditions-and-a-high-contrast-flag-req-obpl-006/a-high-contrast-widget-reaches-the-consumer-marked
  * @e2e page-layout-per-type/requirement-a-case-type-declares-its-task-list-columns-and-search-fields-req-obpl-008/building-permits-show-the-address-column-on-the-task-list
  * @e2e page-layout-per-type/requirement-a-case-type-declares-its-document-upload-fields-req-obpl-009/the-upload-dialog-defaults-the-confidentiality-and-locks-it
- * @e2e openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md#dossiq-asks-for-the-layout-of-a-building-permit-case
+ * @e2e openspec/specs/page-layout-task-panel/spec.md#dossiq-asks-for-the-layout-of-a-building-permit-case
  */
 import { expect, test } from '@playwright/test'
 import { createLeafHost } from './support/leafHost.ts'
