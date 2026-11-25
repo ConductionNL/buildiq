@@ -64,19 +64,27 @@ final class LeafProvidersLoadOnTheBaseContractTest extends TestCase {
 	 */
 	#[DataProvider('leaves')]
 	public function testEveryOverrideNamesADeclaredParentMethod(string $leaf): void {
-		$class   = new ReflectionClass($leaf);
-		$parents = array_merge(
-			$class->getParentClass() !== false ? [$class->getParentClass()] : [],
-			array_values($class->getInterfaces())
-		);
+		$class   = new ReflectionClass(objectOrClass: $leaf);
+		$parents = array_values($class->getInterfaces());
+		if ($class->getParentClass() !== false) {
+			$parents[] = $class->getParentClass();
+		}
 
-		foreach ($class->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-			if ($method->getDeclaringClass()->getName() !== $leaf || $method->getAttributes(\Override::class) === []) {
+		foreach ($class->getMethods(filter: ReflectionMethod::IS_PUBLIC) as $method) {
+			if ($method->getDeclaringClass()->getName() !== $leaf || $method->getAttributes(name: \Override::class) === []) {
 				continue;
 			}
 
-			$declared = array_filter($parents, static fn (ReflectionClass $parent): bool => $parent->hasMethod($method->getName()));
-			self::assertNotSame([], $declared, $leaf . '::' . $method->getName() . '() is marked #[\Override] but no parent declares it.');
+			$name     = $method->getName();
+			$declared = array_filter(
+				array: $parents,
+				callback: static fn (ReflectionClass $parent): bool => $parent->hasMethod(name: $name)
+			);
+			self::assertNotSame(
+				expected: [],
+				actual: $declared,
+				message: $leaf . '::' . $name . '() is marked #[\Override] but no parent declares it.'
+			);
 		}
 	}//end testEveryOverrideNamesADeclaredParentMethod()
 
@@ -91,10 +99,10 @@ final class LeafProvidersLoadOnTheBaseContractTest extends TestCase {
 	 */
 	#[DataProvider('leaves')]
 	public function testTheLeafKeepsItsLegacyOperations(string $leaf): void {
-		self::assertTrue(is_a($leaf, IntegrationProvider::class, true));
+		self::assertTrue(condition: is_a(object_or_class: $leaf, class: IntegrationProvider::class, allow_string: true));
 		foreach (['list', 'get', 'create', 'update', 'delete'] as $operation) {
-			$method = new ReflectionMethod($leaf, $operation);
-			self::assertSame('register', $method->getParameters()[0]->getName(), $operation . '() takes the register first.');
+			$method = new ReflectionMethod(objectOrMethod: $leaf, method: $operation);
+			self::assertSame(expected: 'register', actual: $method->getParameters()[0]->getName(), message: $operation . '() takes the register first.');
 		}
 	}//end testTheLeafKeepsItsLegacyOperations()
 }//end class
