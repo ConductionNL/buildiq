@@ -31,6 +31,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\Buildiq\Support\SlugSearch;
 
 /**
  * Reads an application and picks the version an export job means.
@@ -142,12 +143,11 @@ class ExportAppSourceResolver {
 		}
 
 		try {
-			$results = $this->objectService->searchObjectsBySlug(
-				(string)$resolution->slug,
-				'applicationVersion',
-				['_limit' => 1000],
-				_rbac: false,
-				_multitenancy: false
+			$results = (new SlugSearch(register: (string)$resolution->slug, schema: 'applicationVersion'))->run(
+				objectService: $this->objectService,
+				filters: ['_limit' => 1000],
+				rbac: false,
+				multitenancy: false
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq export: could not list application versions: ' . $e->getMessage());
