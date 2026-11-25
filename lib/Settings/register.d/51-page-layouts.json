@@ -5,7 +5,7 @@
 			"pageLayout": {
 				"slug": "pageLayout",
 				"icon": "ViewDashboardOutline",
-				"version": "0.4.0",
+				"version": "0.4.1",
 				"title": "Page Layout",
 				"description": "What a detail page shows for one schema, and optionally for one type value of it: the header, the tabs, the widget grids inside them, the task-list columns and the upload dialog's fields. An administrator arranges it; the owning app renders it through the buildiq-page-layout leaf and falls back to its own manifest when nothing answers, so an instance without buildiq is unchanged. At most one published layout per (targetApp, register, schema, typeProperty, typeValue): two would mean the consumer rendered whichever came back first. V0.3.0 (screen-overrides-as-a-patch-with-fall-through) makes an override a PATCH over the layout it extends, bound to a named audience, pinned to the base it was cut against. A base that moves puts the override in needs-review, tells its maintainer, and serves the base with the override withheld: the page always renders.",
 				"x-openregister-audit-trail": {
@@ -619,17 +619,33 @@
 				},
 				"x-openregister-notifications": {
 					"driftDetected": {
-						"event": "update",
-						"condition": {
-							"field": "status",
-							"operator": "equals",
-							"value": "needs-review"
+						"trigger": {
+							"type": "updated",
+							"condition": {
+								"field": "status",
+								"operator": "equals",
+								"value": "needs-review"
+							}
 						},
-						"recipients": {
-							"field": "maintainer"
+						"enabled": true,
+						"originApp": "buildiq",
+						"channels": [
+							"nc-notification"
+						],
+						"recipients": [
+							{
+								"kind": "field",
+								"field": "maintainer"
+							}
+						],
+						"subject": {
+							"en": "A screen override needs reviewing",
+							"nl": "Een schermaanpassing moet worden nagekeken"
 						},
-						"subject": "A screen override needs reviewing",
-						"message": "The layout \"{{name}}\" was cut against a base that has since changed, so it is not being applied. The page still renders on the base. Open the override to re-cut it."
+						"message": {
+							"en": "The layout \"{{name}}\" was cut against a base that has since changed, so it is not being applied. The page still renders on the base. Open the override to re-cut it.",
+							"nl": "De indeling \"{{name}}\" is gemaakt op een basis die sindsdien is veranderd, dus wordt ze niet toegepast. De pagina toont de basis. Open de aanpassing om haar opnieuw op de basis af te stemmen."
+						}
 					}
 				}
 			}
