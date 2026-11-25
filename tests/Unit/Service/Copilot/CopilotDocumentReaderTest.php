@@ -29,13 +29,17 @@ namespace OCA\Buildiq\Tests\Unit\Service\Copilot;
 
 use OCA\Buildiq\Exception\CopilotException;
 use OCA\Buildiq\Service\Copilot\CopilotDocumentReader;
+use OCA\OpenRegister\Contract\FileTextReaderInterface;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotPermittedException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use RuntimeException;
+
+require_once __DIR__ . '/../../../Stubs/Contract/FileTextReaderInterface.php';
 
 /**
  * @covers \OCA\Buildiq\Service\Copilot\CopilotDocumentReader
@@ -51,30 +55,56 @@ final class CopilotDocumentReaderTest extends TestCase {
 	 *
 	 * @return CopilotDocumentReader
 	 */
-	private function readerOver(array $nodes, string $user = 'alice'): CopilotDocumentReader {
+	private function readerOver(array $nodes, string $user = 'alice', ?FileTextReaderInterface $textReader = null): CopilotDocumentReader {
 		$folder = $this->createMock(Folder::class);
 		$folder->method('getById')->with(5)->willReturn($nodes);
 		$root = $this->createMock(IRootFolder::class);
 		$root->expects($this->once())->method('getUserFolder')->with($user)->willReturn($folder);
 
-		return new CopilotDocumentReader(rootFolder: $root);
+		$container = null;
+		if ($textReader !== null) {
+			$container = $this->createMock(ContainerInterface::class);
+			$container->method('get')->with(CopilotDocumentReader::FILE_TEXT_READER)->willReturn($textReader);
+		}
+
+		return new CopilotDocumentReader(rootFolder: $root, container: $container);
 	}//end readerOver()
+
+	/**
+	 * OpenRegister's file text read answering this text, or throwing.
+	 *
+	 * @param string|null     $text  The text it answers.
+	 * @param \Throwable|null $error What it throws instead.
+	 *
+	 * @return FileTextReaderInterface&MockObject
+	 */
+	private function textRead(?string $text, ?\Throwable $error = null): FileTextReaderInterface&MockObject {
+		$reader = $this->createMock(FileTextReaderInterface::class);
+		if ($error !== null) {
+			$reader->method('readFileText')->willThrowException($error);
+		} else {
+			$reader->method('readFileText')->willReturn($text);
+		}
+
+		return $reader;
+	}//end textRead()
 
 	/**
 	 * A file mock.
 	 *
-	 * @param string  $name     The file name.
-	 * @param string  $mimetype The mimetype.
-	 * @param string  $text     The content.
-	 * @param boolean $readable Whether the user may read it.
+	 * @param string       $name     The file name.
+	 * @param string       $mimetype The mimetype.
+	 * @param string       $text     The content.
+	 * @param boolean      $readable Whether the user may read it.
+	 * @param integer|null $size     The size, when not the content's length.
 	 *
 	 * @return File&MockObject
 	 */
-	private function file(string $name, string $mimetype, string $text, bool $readable = true): File&MockObject {
+	private function file(string $name, string $mimetype, string $text, bool $readable = true, ?int $size = null): File&MockObject {
 		$file = $this->createMock(File::class);
 		$file->method('getName')->willReturn($name);
 		$file->method('getMimetype')->willReturn($mimetype);
-		$file->method('getSize')->willReturn(strlen($text));
+		$file->method('getSize')->willReturn($size ?? strlen($text));
 		$file->method('getContent')->willReturn($text);
 		$file->method('isReadable')->willReturn($readable);
 		return $file;
@@ -187,6 +217,73 @@ final class CopilotDocumentReaderTest extends TestCase {
 		);
 		$this->assertSame(['acceptedTypes' => ['txt', 'md', 'markdown']], $e->getContext());
 	}//end testAWordDocumentIsRefusedNamingTheAcceptedTypes()
+
+	/**
+	 * T09: a .docx is read through OpenRegister's published file text read, as the maker's own file.
+	 *
+	 * @return void
+	 */
+	public function testAWordDocumentIsReadThroughThePublishedRead(): void {
+		$docx   = $this->file('Eisen tuinvergunning.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'PK');
+		$reader = $this->createMock(FileTextReaderInterface::class);
+		$reader->expects($this->once())->method('readFileText')->with($docx)->willReturn('Aanvragers volgen hun aanvraag.');
+		$docx->expects($this->never())->method('getContent');
+
+		$this->assertSame(
+			['fileId' => 5, 'name' => 'Eisen tuinvergunning.docx', 'text' => 'Aanvragers volgen hun aanvraag.'],
+			$this->readerOver(nodes: [$docx], textReader: $reader)->read(fileId: 5, userId: 'alice')
+		);
+	}//end testAWordDocumentIsReadThroughThePublishedRead()
+
+	/**
+	 * PDF and OpenDocument text, also by extension under a generic mimetype, go through the read.
+	 *
+	 * @return void
+	 */
+	public function testPdfAndOpenDocumentAreReadThroughThePublishedRead(): void {
+		foreach ([['brief.pdf', 'application/pdf'], ['brief.odt', 'application/vnd.oasis.opendocument.text'], ['brief.PDF', 'application/octet-stream']] as [$name, $mimetype]) {
+			$text = $this->readerOver(nodes: [$this->file($name, $mimetype, '%PDF')], textReader: $this->textRead(text: 'Eisen'))->read(fileId: 5, userId: 'alice')['text'];
+			$this->assertSame('Eisen', $text, $name);
+		}
+	}//end testPdfAndOpenDocumentAreReadThroughThePublishedRead()
+
+	/**
+	 * With the read available, an unreadable type is refused naming PDF, Word and OpenDocument too.
+	 *
+	 * @return void
+	 */
+	public function testWithTheReadAnImageIsRefusedNamingEveryAcceptedType(): void {
+		$e = $this->assertRefused($this->readerOver(nodes: [$this->file('logo.png', 'image/png', 'PNG')], textReader: $this->textRead(text: 'x')), 'unsupported_document', 422);
+		$this->assertSame(['acceptedTypes' => ['pdf', 'docx', 'doc', 'odt', 'txt', 'md', 'markdown']], $e->getContext());
+	}//end testWithTheReadAnImageIsRefusedNamingEveryAcceptedType()
+
+	/**
+	 * The read's text keeps the 60,000 character cap, and no text is an empty document.
+	 *
+	 * @return void
+	 */
+	public function testTheReadTextKeepsTheCapAndMustHoldText(): void {
+		$long = $this->readerOver(nodes: [$this->file('a.docx', 'application/msword', 'x')], textReader: $this->textRead(text: str_repeat('a', 60001)));
+		$this->assertRefused($long, 'document_too_long', 422);
+
+		$empty = $this->readerOver(nodes: [$this->file('a.pdf', 'application/pdf', 'x')], textReader: $this->textRead(text: null));
+		$this->assertRefused($empty, 'invalid_arguments', 422);
+	}//end testTheReadTextKeepsTheCapAndMustHoldText()
+
+	/**
+	 * A file over 20 MB is refused unread, and a failing read is refused, never cut or guessed.
+	 *
+	 * @return void
+	 */
+	public function testAHugeOrUnreadableDocumentIsRefused(): void {
+		$reader = $this->createMock(FileTextReaderInterface::class);
+		$reader->expects($this->never())->method('readFileText');
+		$huge = $this->readerOver(nodes: [$this->file('a.pdf', 'application/pdf', 'x', size: 20971521)], textReader: $reader);
+		$this->assertRefused($huge, 'document_too_long', 422);
+
+		$broken = $this->readerOver(nodes: [$this->file('a.pdf', 'application/pdf', 'x')], textReader: $this->textRead(text: null, error: new RuntimeException('bad xref')));
+		$this->assertRefused($broken, 'unsupported_document', 422);
+	}//end testAHugeOrUnreadableDocumentIsRefused()
 
 	/**
 	 * Exactly 60,000 characters is read; one more is refused, never cut.
