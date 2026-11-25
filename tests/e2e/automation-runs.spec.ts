@@ -198,9 +198,11 @@ test.describe('logic-automation-run-log: the runs of an automation', () => {
 			actions: [{
 				type: 'send-notification',
 				channels: ['nextcloud'],
-				recipients: ['group:admin'],
-				subject: 'New message',
-				message: 'A message was created.',
+				// Recipient records, the x-openregister-notifications shape the
+				// automation schema and the editor use (the editor's default).
+				recipients: [{ kind: 'object-acl', permission: 'manage' }],
+				// A subject per language, as the editor writes it.
+				subject: { en: 'New message', nl: 'Nieuw bericht' },
 			}],
 		})
 
