@@ -588,7 +588,7 @@ export default {
 		 * @param {object} state The reactive CnAppRoot prop bag.
 		 * @param {object} router The sandbox router.
 		 * @return {object} the (unmounted) application.
-		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
+		 * @spec openspec/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
 		 */
 		buildSandboxApp(state, router) {
 			// The "Paste to fill" control of a form with smart paste

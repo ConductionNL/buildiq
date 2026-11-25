@@ -77,7 +77,7 @@ async function applyLastEmit(wrapper) {
 	return next
 }
 
-// @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+// @spec openspec/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
 describe('FormPageEditor: fill from pasted text', () => {
 	it('lets a maker switch it on for naam, adres and telefoon on a create form', async () => {
 		const wrapper = mountEditor({ title: 'Nieuwe klant', mode: 'create', fields: FIELDS, keep: 1 })
@@ -122,7 +122,7 @@ describe('FormPageEditor: fill from pasted text', () => {
 		expect((await applyLastEmit(wrapper)).smartPaste).toEqual({ enabled: false, fields: ['adres'], handler: 'buildiq-smart-paste' })
 	})
 
-	// @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
+	// @spec openspec/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
 	it('keeps the switch off on a public form and says why', async () => {
 		for (const config of [{ mode: 'public', fields: FIELDS }, { fields: FIELDS }]) {
 			const wrapper = mountEditor(config)

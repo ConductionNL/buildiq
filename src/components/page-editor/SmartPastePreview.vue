@@ -74,7 +74,7 @@ function firstOption(field) {
  * @param {object} field - a form field.
  * @param {(app: string, text: string) => string} t - the translate function.
  * @return {string} the value as shown.
- * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
+ * @spec openspec/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
  */
 export function sampleValue(field, t) {
 	switch (field.type) {
@@ -99,7 +99,7 @@ export function sampleValue(field, t) {
  * @param {object} manifest - the manifest under edit.
  * @param {unknown} pageId - the preview route's name, the page id.
  * @return {?object} the page.
- * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
+ * @spec openspec/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
  */
 export function smartPastePage(manifest, pageId) {
 	const pages = Array.isArray(manifest?.pages) ? manifest.pages : []
@@ -133,7 +133,7 @@ export default {
 		 * The previewed form page, when it offers smart paste.
 		 *
 		 * @return {?object}
-		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
+		 * @spec openspec/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
 		 */
 		page() {
 			return smartPastePage(this.manifest, this.$route?.name)
@@ -143,7 +143,7 @@ export default {
 		 * The hint the maker wrote, or the default one.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
+		 * @spec openspec/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
 		 */
 		hint() {
 			const hint = this.page?.config?.smartPaste?.hint
@@ -156,7 +156,7 @@ export default {
 		 * One sample proposal per allowed, fillable field, in the form's order.
 		 *
 		 * @return {Array<{key: string, label: string, value: string}>}
-		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
+		 * @spec openspec/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
 		 */
 		proposals() {
 			const config = this.page?.config || {}
@@ -177,7 +177,7 @@ export default {
 		 * Another page closes the panel.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
+		 * @spec openspec/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
 		 */
 		page() {
 			this.open = false

@@ -545,7 +545,7 @@ export const SMART_PASTE_UNFILLABLE_TYPES = Object.freeze([
  *
  * @param {object} config - the form page config.
  * @return {string}
- * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
+ * @spec openspec/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
  */
 export function formMode(config) {
 	return config && typeof config.mode === 'string' && config.mode !== ''
@@ -558,7 +558,7 @@ export function formMode(config) {
  *
  * @param {object} field - a `config.fields[]` entry.
  * @return {boolean}
- * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
+ * @spec openspec/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
  */
 export function isSmartPasteFillable(field) {
 	return (
@@ -578,7 +578,7 @@ export function isSmartPasteFillable(field) {
  * @param {{pathBase: string, fieldList: Array}} ctx - the
  *   `/pages/<n>/config` pointer prefix and the form's fields.
  * @return {string[]}
- * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
+ * @spec openspec/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
  */
 function smartPasteErrors(config, ctx) {
 	const smartPaste = config.smartPaste
