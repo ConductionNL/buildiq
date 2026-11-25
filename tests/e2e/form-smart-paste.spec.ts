@@ -137,7 +137,7 @@ test.describe('ai-smart-paste-into-forms: authoring smart paste', () => {
 	})
 
 	test('REQ-BQSP-001: a maker allows three fields', async ({ page }) => {
-		// @e2e openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		// @e2e openspec/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
 		await openFormPage(page, { mode: 'create' })
 
 		const fieldset = page.getByTestId('form-smart-paste')
@@ -154,7 +154,7 @@ test.describe('ai-smart-paste-into-forms: authoring smart paste', () => {
 	})
 
 	test('REQ-BQSP-002: a public form cannot use smart paste', async ({ page }) => {
-		// @e2e openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
+		// @e2e openspec/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
 		await openFormPage(page, { mode: 'public' })
 
 		const fieldset = page.getByTestId('form-smart-paste')
@@ -164,7 +164,7 @@ test.describe('ai-smart-paste-into-forms: authoring smart paste', () => {
 	})
 
 	test('REQ-BQSP-002: a removed field is caught', async ({ page }) => {
-		// @e2e openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
+		// @e2e openspec/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
 		await openFormPage(page, { mode: 'create', smartPaste: { enabled: true, fields: ['naam', 'gone'] } })
 
 		// The fieldset carries the inline mark for the unknown key.
@@ -172,7 +172,7 @@ test.describe('ai-smart-paste-into-forms: authoring smart paste', () => {
 	})
 
 	test('REQ-BQSP-003: the preview shows the control with a sample answer', async ({ page }) => {
-		// @e2e openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
+		// @e2e openspec/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
 		await openFormPage(page, { mode: 'create', smartPaste: { enabled: true, fields: ['naam', 'adres', 'telefoon'] } })
 
 		const preview = page.getByTestId('smart-paste-preview')
@@ -185,7 +185,7 @@ test.describe('ai-smart-paste-into-forms: authoring smart paste', () => {
 	})
 
 	test('REQ-BQSP-003: an app user fills a form from an email', async ({ page }) => {
-		// @e2e openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
+		// @e2e openspec/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
 		test.skip(FILL_ROUTE === '', 'needs the CnFormPage control and the Hermiq fill endpoint (T04, T05); set SMART_PASTE_FILL_ROUTE to the endpoint URL glob')
 
 		await seedFormPage(page, { mode: 'create', smartPaste: { enabled: true, fields: ['naam', 'adres', 'telefoon'] } })

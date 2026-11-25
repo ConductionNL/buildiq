@@ -13,7 +13,7 @@
  *   answer proposes nothing. CnFormPage fits every value to its field, fills
  *   only what it may, and never submits on its own.
  *
- * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
+ * @spec openspec/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
  */
 import axios from '@nextcloud/axios'
 import { getLanguage } from '@nextcloud/l10n'
@@ -29,7 +29,7 @@ export const SMART_PASTE_MAX_TEXT = 10000
  * Whether hermiq's form fill is switched on for this user.
  *
  * @return {Promise<boolean>}
- * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
+ * @spec openspec/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
  */
 export async function smartPasteAvailable() {
 	try {
@@ -45,7 +45,7 @@ export async function smartPasteAvailable() {
  *
  * @param {Array<{key: string, label?: string, type?: string, options?: ?Array<string>}>} fields The allowed fields.
  * @return {Array<{key: string, label: string, type: string, options: Array<string>}>}
- * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
+ * @spec openspec/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
  */
 export function describeFields(fields) {
 	return (Array.isArray(fields) ? fields : [])
@@ -65,7 +65,7 @@ export function describeFields(fields) {
  * @param {string} text The pasted text.
  * @param {Array<object>} fields The allowed fields as CnFormPage describes them.
  * @return {Promise<{values: object, notice: string}>}
- * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
+ * @spec openspec/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
  */
 export async function smartPasteFill(text, fields) {
 	const descriptors = describeFields(fields)

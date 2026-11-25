@@ -681,7 +681,7 @@
 			"overlay": null,
 			"specs": [
 				"automation-ai-steps",
-				"ai-smart-paste-into-forms"
+				"form-smart-paste"
 			]
 		},
 		{
@@ -10117,22 +10117,22 @@
 			"source": "competitor",
 			"origin": "roadmap",
 			"originUrl": "https://learn.microsoft.com/en-us/power-platform/release-plan/2026wave1/power-apps/planned-features",
-			"buildiq": "no",
+			"buildiq": "yes",
 			"nocobase": "yes",
 			"budibase": "partial",
 			"appsmith": "no",
 			"mendix": "unknown",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "Searched: no paste-to-fill on form pages (src/components/page-editor/FormPageEditor.vue, nextcloud-vue v2.55.1 CnFormPage); the AI companion (CnAiCompanion via hermiq, src/views/BuilderHost.vue:38) answers questions and does not fill a form",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-25-ai-smart-paste-into-forms: the form editor (src/components/page-editor/FormPageEditor.vue, Fill from pasted text) writes config.smartPaste {enabled, fields, hint, handler: buildiq-smart-paste} for signed-in forms only; nextcloud-vue CnFormPage renders Paste to fill; BuildiqFormPage registers src/services/smartPaste.js, which asks hermiq form-fill (GET /apps/hermiq/api/assistant/form-fill/available, POST /apps/hermiq/api/assistant/form-fill, AiFeature form-fill off until acknowledged) with the pasted text and the allowed field descriptors only; the page designer preview shows a sample answer (SmartPastePreview.vue). Vitest tests/services/smartPaste.spec.js, tests/components/runtime/BuildiqFormPage.spec.js, tests/components/page-editor/FormPageEditor.smartPaste.spec.js; Playwright tests/e2e/form-smart-paste.spec.ts written, runs in the nightly. Before: Searched: no paste-to-fill on form pages (src/components/page-editor/FormPageEditor.vue, nextcloud-vue v2.55.1 CnFormPage); the AI companion (CnAiCompanion via hermiq, src/views/BuilderHost.vue:38) answers questions and does not fill a form",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/ai-smart-paste-into-forms (OpenSpec pass 2026-09-27).",
+				"note": "Specified in openspec/changes/ai-smart-paste-into-forms (OpenSpec pass 2026-09-27); built and archived 2026-11-25.",
 				"change": "ai-smart-paste-into-forms",
 				"requirement": [
-					"openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste :: A maker turns on smart paste for chosen fields (REQ-BQSP-001)",
-					"openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste :: The authored behaviour is fixed for the renderer (REQ-BQSP-003)"
+					"openspec/changes/archive/2026-11-25-ai-smart-paste-into-forms/specs/form-smart-paste :: A maker turns on smart paste for chosen fields (REQ-BQSP-001)",
+					"openspec/changes/archive/2026-11-25-ai-smart-paste-into-forms/specs/form-smart-paste :: The authored behaviour is fixed for the renderer (REQ-BQSP-003)"
 				]
 			},
 			"provider": "buildiq",

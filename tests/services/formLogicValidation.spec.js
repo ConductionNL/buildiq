@@ -240,7 +240,7 @@ describe('assignUnassignedFieldsToFinalStep', () => {
 	})
 })
 
-// @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
+// @spec openspec/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
 describe('validateFormLogic: smart paste (REQ-BQSP-002)', () => {
 	const fields = [
 		{ key: 'naam', label: 'Naam', type: 'string' },

@@ -6,7 +6,7 @@
  * hermiq's form fill. It sends the pasted text and the allowed field
  * descriptors only, and proposes only values for the fields it asked for.
  *
- * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
+ * @spec openspec/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 

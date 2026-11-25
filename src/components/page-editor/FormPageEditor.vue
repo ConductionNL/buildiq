@@ -576,7 +576,7 @@ export default {
 		 * The form's `config.smartPaste`, or an empty setting.
 		 *
 		 * @return {{enabled?: boolean, fields?: Array<string>, hint?: string}}
-		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 * @spec openspec/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
 		 */
 		smartPaste() {
 			const value = this.config.smartPaste
@@ -587,7 +587,7 @@ export default {
 		 * Whether smart paste is switched on.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 * @spec openspec/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
 		 */
 		smartPasteOn() {
 			return this.smartPaste.enabled === true
@@ -597,7 +597,7 @@ export default {
 		 * The field keys smart paste may fill.
 		 *
 		 * @return {Array<string>}
-		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 * @spec openspec/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
 		 */
 		smartPasteFields() {
 			return Array.isArray(this.smartPaste.fields) ? this.smartPaste.fields : []
@@ -607,7 +607,7 @@ export default {
 		 * The form's fields of a type the fill can set.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 * @spec openspec/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
 		 */
 		smartPasteCandidates() {
 			return (Array.isArray(this.config.fields) ? this.config.fields : []).filter(
@@ -619,7 +619,7 @@ export default {
 		 * Whether the form renders in `public` mode, where smart paste is refused.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
+		 * @spec openspec/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
 		 */
 		isPublicForm() {
 			return formMode(this.config) === 'public'
@@ -633,7 +633,7 @@ export default {
 		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 * @spec openspec/specs/form-editor-logic/spec.md#req-obfel-001
 		 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
-		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
+		 * @spec openspec/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
 		 */
 		validatedConfigKeys() {
 			return [
@@ -791,7 +791,7 @@ export default {
 		 *
 		 * @param {object} patch - the keys to change.
 		 * @return {void}
-		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 * @spec openspec/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
 		 */
 		writeSmartPaste(patch) {
 			// The renderer resolves the fill through this registry name
@@ -808,7 +808,7 @@ export default {
 		 *
 		 * @param {boolean} enabled - the switch's new state.
 		 * @return {void}
-		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 * @spec openspec/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
 		 */
 		setSmartPasteEnabled(enabled) {
 			if (enabled === true && this.isPublicForm) {
@@ -823,7 +823,7 @@ export default {
 		 * @param {string} key - the field key.
 		 * @param {boolean} allowed - whether the AI may fill it.
 		 * @return {void}
-		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 * @spec openspec/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
 		 */
 		toggleSmartPasteField(key, allowed) {
 			const chosen = new Set(this.smartPasteFields)
@@ -845,7 +845,7 @@ export default {
 		 *
 		 * @param {string} hint - the hint, '' to remove it.
 		 * @return {void}
-		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 * @spec openspec/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
 		 */
 		setSmartPasteHint(hint) {
 			this.writeSmartPaste({ hint })

@@ -125,7 +125,7 @@ export default {
 		 * plus buildiq's smart-paste handler.
 		 *
 		 * @return {object}
-		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
+		 * @spec openspec/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
 		 */
 		formComponents() {
 			const inherited = this.$attrs.customComponents || this.cnCustomComponents || {}
@@ -136,7 +136,7 @@ export default {
 		 * The form's smart-paste setting, naming buildiq's handler when it names none.
 		 *
 		 * @return {?object}
-		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
+		 * @spec openspec/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
 		 */
 		smartPasteConfig() {
 			const setting = this.$attrs.smartPaste
