@@ -20,9 +20,11 @@
  * automation this spec creates is deleted again in `afterAll`.
  *
  * Fixture: the seeded `hello-world` app and its `hello-message` schema, and the
- * seeded `loan-eligibility` decision table (its `decision` output defaults to
- * "deny" when a record carries none of its inputs). Override with
- * NC_BUILDIQ_TEST_SLUG, BUILDIQ_E2E_FLOW_SCHEMA and BUILDIQ_E2E_FLOW_RULE_SET.
+ * spec's own rule set `pw-flow-table-<run>`: a decision table with one input,
+ * the record's `title`, and one rule that decides "deny" for every record.
+ * (OpenRegister evaluates a table only with every declared input present and
+ * of its type, so a seeded table whose inputs a hello-message lacks cannot
+ * decide on one.) Override with NC_BUILDIQ_TEST_SLUG and BUILDIQ_E2E_FLOW_SCHEMA.
  * The colleague is the globalSetup fixture user `rbac-outsider`
  * (NC_RBAC_OUTSIDER_USER / NC_RBAC_OUTSIDER_PASS), from an empty storage state.
  *
@@ -40,13 +42,18 @@ import { E2E_BASE_URL as BASE_URL } from './support/baseUrl.ts'
 
 const APP_SLUG = process.env.NC_BUILDIQ_TEST_SLUG ?? 'hello-world'
 const SCHEMA = process.env.BUILDIQ_E2E_FLOW_SCHEMA ?? 'hello-message'
-const RULE_SET = process.env.BUILDIQ_E2E_FLOW_RULE_SET ?? 'loan-eligibility'
+const RULE_SET = `pw-flow-table-${Date.now().toString(36)}`
 const OUTSIDER_USER = process.env.NC_RBAC_OUTSIDER_USER ?? 'rbac-outsider'
 const OUTSIDER_PASS = process.env.NC_RBAC_OUTSIDER_PASS ?? 'RbacOutsider-1!'
 
 const HEADERS = { 'OCS-APIRequest': 'true' }
 const AUTOMATIONS = '/index.php/apps/buildiq/api/automations'
-const RECORDS = `/index.php/apps/openregister/api/objects/buildiq/${SCHEMA}`
+/**
+ * The records the automations act on, in the app version's own register
+ * (`openbuild-<slug>` for the fixture): a compiled flow reads and writes that
+ * register, not buildiq's. Set when the production version is read.
+ */
+let RECORDS = ''
 const RUN_ID = Date.now().toString(36)
 
 /** Uuids of the automations this run created, removed in afterAll. */
@@ -89,6 +96,9 @@ async function productionVersion(request: APIRequestContext): Promise<string> {
 	const production = (Array.isArray(versions) ? versions : []).find((v: any) => v?.slug === 'production')
 	const uuid = uuidOf(production ?? {})
 	expect(uuid, `${APP_SLUG} needs a production version`).not.toBe('')
+	const register = String(production?.register ?? '')
+	expect(register, `${APP_SLUG}'s production version names its register`).not.toBe('')
+	RECORDS = `/index.php/apps/openregister/api/objects/${register}/${SCHEMA}`
 	return uuid
 }
 
@@ -169,18 +179,74 @@ async function expectField(request: APIRequestContext, uuid: string, field: stri
 				const resp = await request.get(`${BASE_URL}${RECORDS}/${uuid}`, { headers: HEADERS })
 				return resp.ok() ? ((await resp.json())?.[field] ?? null) : `HTTP ${resp.status()}`
 			},
-			{ timeout: 30_000, message },
+			// The trigger queues the flow; OpenRegister's flow worker (a
+			// background job) runs it, so allow for the next worker pass.
+			{ timeout: 120_000, message },
 		)
 		.toBe(expected)
 }
 
+const RULE_SETS = '/index.php/apps/openregister/api/objects/buildiq/rule-set'
+const DECISION_TABLES = '/index.php/apps/openregister/api/objects/decision-tables/decision-table'
+
+/** The uuid of the rule set this run created, and its table's key. */
+const ruleSetState = { uuid: '', tableKey: '' }
+
+/**
+ * Create this run's rule set (a draft, as every new rule set starts) and its
+ * decision table: input `title` from the record, one rule deciding "deny".
+ *
+ * @param request The admin request context.
+ */
+async function createRuleSet(request: APIRequestContext): Promise<void> {
+	const ruleSet = await request.post(`${BASE_URL}${RULE_SETS}`, {
+		headers: HEADERS,
+		data: { slug: RULE_SET, name: `PW flow table ${RUN_ID}`, ruleType: 'decision-table', version: '1.0.0' },
+	})
+	await expectOk(ruleSet, `create rule set ${RULE_SET}`)
+	ruleSetState.uuid = uuidOf(await ruleSet.json())
+
+	const table = await request.put(`${BASE_URL}/index.php/apps/buildiq/api/rules/${RULE_SET}/decision-table`, {
+		headers: HEADERS,
+		data: {
+			hitPolicy: 'first',
+			inputColumns: [{ name: 'title', type: 'string', expressionPath: 'title' }],
+			outputColumns: [{ name: 'decision', type: 'string', defaultValue: 'deny' }],
+			rules: [{ conditions: { title: '-' }, values: { decision: 'deny' }, label: 'Every record' }],
+		},
+	})
+	await expectOk(table, `store the decision table of ${RULE_SET}`)
+	ruleSetState.tableKey = String((await table.json())?.key ?? '')
+}
+
+/**
+ * Delete this run's rule set and its stored decision table.
+ *
+ * @param request The admin request context.
+ */
+async function removeRuleSet(request: APIRequestContext): Promise<void> {
+	if (ruleSetState.tableKey !== '') {
+		const rows = await request.get(`${BASE_URL}${DECISION_TABLES}`, { headers: HEADERS, params: { key: ruleSetState.tableKey } })
+		const body = rows.ok() ? await rows.json() : {}
+		for (const row of (body?.results ?? [])) {
+			if (row?.key === ruleSetState.tableKey) {
+				await request.delete(`${BASE_URL}${DECISION_TABLES}/${uuidOf(row)}`, { headers: HEADERS })
+			}
+		}
+	}
+	if (ruleSetState.uuid !== '') {
+		await request.delete(`${BASE_URL}${RULE_SETS}/${ruleSetState.uuid}`, { headers: HEADERS })
+	}
+}
+
 test.describe('automations run as OpenRegister flows', () => {
-	test.describe.configure({ mode: 'serial', timeout: 90_000 })
+	test.describe.configure({ mode: 'serial', timeout: 180_000 })
 
 	test.afterAll(async ({ request }) => {
 		for (const uuid of created) {
 			await request.delete(`${BASE_URL}${AUTOMATIONS}/${uuid}`, { headers: HEADERS }).catch(() => {})
 		}
+		await removeRuleSet(request).catch(() => {})
 	})
 
 	test('REQ-BQAR-002: a record step on object created writes a record', async ({ request }) => {
@@ -204,6 +270,7 @@ test.describe('automations run as OpenRegister flows', () => {
 	})
 
 	test('REQ-BQAR-005: a rule decision writes the table\'s decision onto the record', async ({ request }) => {
+		await createRuleSet(request)
 		const uuid = await createAutomation(request, {
 			slug: `pw-flow-decision-${RUN_ID}`,
 			name: `PW flow rule decision ${RUN_ID}`,
@@ -211,7 +278,7 @@ test.describe('automations run as OpenRegister flows', () => {
 			actions: [{
 				type: 'rule-decision',
 				ruleSetSlug: RULE_SET,
-				inputMapping: {},
+				inputMapping: { title: 'title' },
 				outputMapping: { decision: 'body' },
 			}],
 		})
@@ -225,7 +292,9 @@ test.describe('automations run as OpenRegister flows', () => {
 		const uuid = await createAutomation(request, {
 			slug: `pw-flow-manual-${RUN_ID}`,
 			name: `PW flow manual run ${RUN_ID}`,
-			trigger: { type: 'manual' },
+			// A manual automation is offered on the records of its trigger's
+			// schema: the listing below asks for that schema's automations.
+			trigger: { type: 'manual', schema: SCHEMA },
 			actions: [{
 				type: 'object-op',
 				operation: 'update',
