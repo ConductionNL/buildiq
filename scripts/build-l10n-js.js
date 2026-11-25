@@ -87,14 +87,39 @@ function appId() {
 }
 
 /**
+ * The entries the browser catalogue of a locale carries. English (en, en_*)
+ * drops every entry that maps a string to itself: the browser answers a
+ * missing key with the key, so such an entry changes nothing, yet it cost
+ * 253 KB on every page (ADR-124 speed budget). l10n/en.json stays complete;
+ * it is the English source the server and the parity check read.
+ *
+ * @param {string} locale - the catalogue's locale, e.g. `en` or `nl`
+ * @param {object} translations - key -> translation from the .json
+ * @return {object} the key -> translation pairs to write into the .js
+ */
+function browserEntries(locale, translations) {
+	if (locale !== 'en' && !locale.startsWith('en_')) {
+		return translations
+	}
+	const kept = {}
+	for (const key of Object.keys(translations)) {
+		if (translations[key] !== key) {
+			kept[key] = translations[key]
+		}
+	}
+	return kept
+}
+
+/**
  * Render one catalogue as the `OC.L10N.register` call the browser expects.
  *
  * @param {string} id - the app id to register under
  * @param {object} doc - the parsed catalogue: translations and an optional pluralForm
+ * @param {string} locale - the catalogue's locale (see browserEntries)
  * @return {string} the .js file body
  */
-function renderJs(id, doc) {
-	const translations = doc.translations
+function renderJs(id, doc, locale) {
+	const translations = browserEntries(locale, doc.translations)
 	const body = Object.keys(translations)
 		.map(
 			(key) =>
@@ -106,7 +131,7 @@ function renderJs(id, doc) {
 		'OC.L10N.register(',
 		`    ${JSON.stringify(id)},`,
 		'    {',
-		body,
+		...(body === '' ? [] : [body]),
 		'    },',
 		`    ${JSON.stringify(doc.pluralForm || DEFAULT_PLURAL_FORM)}`,
 		')',
@@ -191,7 +216,7 @@ function readIfPresent(file) {
 function syncLocale(locale, run) {
 	const doc = readCatalogue(locale)
 	const jsFile = path.join(L10N_DIR, `${locale}.js`)
-	const rendered = renderJs(run.id, doc)
+	const rendered = renderJs(run.id, doc, locale)
 	const keys = Object.keys(doc.translations).length
 
 	if (readIfPresent(jsFile) === rendered) {
@@ -222,4 +247,8 @@ function main() {
 	}
 }
 
-main()
+if (require.main === module) {
+	main()
+}
+
+module.exports = { browserEntries, renderJs }

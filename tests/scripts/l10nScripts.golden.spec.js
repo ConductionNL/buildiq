@@ -79,7 +79,7 @@ const SPDX_JS = '/**\n * SPDX-FileCopyrightText: 2026 Conduction B.V.\n * SPDX-L
 const NL_JS =
 	SPDX_JS + 'OC.L10N.register(\n    "buildiq",\n    {\n        "Hello": "Hallo"\n    },\n    "nplurals=2; plural=(n > 1);"\n)\n'
 const EN_JS =
-	SPDX_JS + 'OC.L10N.register(\n    "buildiq",\n    {\n        "Hello": "Hello",\n        "Say \\"hi\\"": "Say \\"hi\\""\n    },\n    "nplurals=2; plural=(n != 1);"\n)\n'
+	SPDX_JS + 'OC.L10N.register(\n    "buildiq",\n    {\n    },\n    "nplurals=2; plural=(n != 1);"\n)\n'
 
 /**
  * Write every file of a fixture under a root directory.
@@ -261,6 +261,11 @@ const CASES = {
 	},
 
 	'l10n-js: writes every catalogue': { script: 'build-l10n-js.js', files: L10N },
+	// English keeps only the entries that differ from their key: a renamed message id stays, Hello goes.
+	'l10n-js: English keeps only what changes a string': {
+		script: 'build-l10n-js.js',
+		files: { ...L10N, 'l10n/en.json': json({ translations: { Hello: 'Hello', share_expired: 'This share has expired' } }) },
+	},
 	'l10n-js: --check when current': {
 		script: 'build-l10n-js.js',
 		args: ['--check'],

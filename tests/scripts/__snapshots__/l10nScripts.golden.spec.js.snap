@@ -18,8 +18,6 @@ exports[`l10n build and check scripts > l10n-js: --check when current 1`] = `
 OC.L10N.register(
     "buildiq",
     {
-        "Hello": "Hello",
-        "Say \\"hi\\"": "Say \\"hi\\""
     },
     "nplurals=2; plural=(n != 1);"
 )
@@ -140,6 +138,62 @@ Run \`npm run l10n:build\` and commit the result.
 }
 `;
 
+exports[`l10n build and check scripts > l10n-js: English keeps only what changes a string 1`] = `
+{
+  "files": {
+    "appinfo/info.xml": "<info>
+	<id> buildiq </id>
+</info>
+",
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 3
+}",
+    "l10n/README.md": "not a catalogue",
+    "l10n/en.js": "/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+OC.L10N.register(
+    "buildiq",
+    {
+        "share_expired": "This share has expired"
+    },
+    "nplurals=2; plural=(n != 1);"
+)
+",
+    "l10n/en.json": "{
+  "translations": {
+    "Hello": "Hello",
+    "share_expired": "This share has expired"
+  }
+}",
+    "l10n/nl.js": "/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+OC.L10N.register(
+    "buildiq",
+    {
+        "Hello": "Hallo"
+    },
+    "nplurals=2; plural=(n > 1);"
+)
+",
+    "l10n/nl.json": "{
+  "translations": {
+    "Hello": "Hallo"
+  },
+  "pluralForm": "nplurals=2; plural=(n > 1);"
+}",
+  },
+  "status": 0,
+  "stderr": "",
+  "stdout": "  ✎ l10n/en.js written (2 keys)
+  ✎ l10n/nl.js written (1 keys)
+",
+}
+`;
+
 exports[`l10n build and check scripts > l10n-js: catalogue does not parse 1`] = `
 {
   "files": {
@@ -158,8 +212,6 @@ exports[`l10n build and check scripts > l10n-js: catalogue does not parse 1`] = 
 OC.L10N.register(
     "buildiq",
     {
-        "Hello": "Hello",
-        "Say \\"hi\\"": "Say \\"hi\\""
     },
     "nplurals=2; plural=(n != 1);"
 )
@@ -198,8 +250,6 @@ exports[`l10n build and check scripts > l10n-js: catalogue without translations 
 OC.L10N.register(
     "buildiq",
     {
-        "Hello": "Hello",
-        "Say \\"hi\\"": "Say \\"hi\\""
     },
     "nplurals=2; plural=(n != 1);"
 )
@@ -233,7 +283,6 @@ exports[`l10n build and check scripts > l10n-js: empty translations 1`] = `
 OC.L10N.register(
     "buildiq",
     {
-
     },
     "nplurals=2; plural=(n != 1);"
 )
@@ -308,8 +357,6 @@ exports[`l10n build and check scripts > l10n-js: rewrites only the stale one 1`]
 OC.L10N.register(
     "buildiq",
     {
-        "Hello": "Hello",
-        "Say \\"hi\\"": "Say \\"hi\\""
     },
     "nplurals=2; plural=(n != 1);"
 )
@@ -365,8 +412,6 @@ exports[`l10n build and check scripts > l10n-js: writes every catalogue 1`] = `
 OC.L10N.register(
     "buildiq",
     {
-        "Hello": "Hello",
-        "Say \\"hi\\"": "Say \\"hi\\""
     },
     "nplurals=2; plural=(n != 1);"
 )
