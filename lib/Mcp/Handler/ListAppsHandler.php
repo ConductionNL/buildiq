@@ -24,6 +24,7 @@
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp\Handler;
+use OCA\Buildiq\Support\SlugSearch;
 
 /**
  * Handles the buildiq.listApps tool invocation.
@@ -78,7 +79,12 @@ class ListAppsHandler extends AbstractToolHandler {
 			$filters['status'] = $validation['statusFilter'];
 		}
 
-		$rawApps = $objectService->searchObjectsBySlug(self::REGISTER_SLUG, 'built-app', $filters, _rbac: true, _multitenancy: false);
+		$rawApps = (new SlugSearch(register: self::REGISTER_SLUG, schema: 'built-app'))->run(
+			objectService: $objectService,
+			filters: $filters,
+			rbac: true,
+			multitenancy: false
+		);
 		if (is_array(value: $rawApps) === false) {
 			$rawApps = [];
 		}
