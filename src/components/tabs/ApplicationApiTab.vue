@@ -7,7 +7,7 @@
   use, cut from OpenRegister's own documents and shown with nextcloud-vue's
   CnApiReference, which also downloads that same document. Everything is read from this instance; nothing outside is loaded.
 
-  @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md#requirement-an-app-has-an-api-tab-per-version-req-bqad-001
+  @spec openspec/specs/app-api-docs/spec.md#requirement-an-app-has-an-api-tab-per-version-req-bqad-001
 -->
 <template>
 	<div class="ob-api-tab">
@@ -107,7 +107,7 @@ export default {
 		 * The production version UUID of the app.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md#requirement-an-app-has-an-api-tab-per-version-req-bqad-001
+		 * @spec openspec/specs/app-api-docs/spec.md#requirement-an-app-has-an-api-tab-per-version-req-bqad-001
 		 */
 		productionUuid() {
 			const pv = this.obApp && this.obApp.productionVersion
@@ -121,7 +121,7 @@ export default {
 		 * The version the page has selected (`?_version=`), else production, else the first.
 		 *
 		 * @return {object|null}
-		 * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md#requirement-an-app-has-an-api-tab-per-version-req-bqad-001
+		 * @spec openspec/specs/app-api-docs/spec.md#requirement-an-app-has-an-api-tab-per-version-req-bqad-001
 		 */
 		version() {
 			const slug = (this.$route && this.$route.query && this.$route.query._version) || ''
@@ -142,7 +142,7 @@ export default {
 		 * This instance's OpenRegister API base address.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md#requirement-an-app-has-an-api-tab-per-version-req-bqad-001
+		 * @spec openspec/specs/app-api-docs/spec.md#requirement-an-app-has-an-api-tab-per-version-req-bqad-001
 		 */
 		apiBase() {
 			const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || ''
@@ -153,7 +153,7 @@ export default {
 		 * The cut document and what it says about each bound schema.
 		 *
 		 * @return {{document: object, schemas: Array<object>, notDocumented: Array<object>}}
-		 * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md#requirement-the-document-holds-only-what-the-app-uses-req-bqad-002
+		 * @spec openspec/specs/app-api-docs/spec.md#requirement-the-document-holds-only-what-the-app-uses-req-bqad-002
 		 */
 		built() {
 			return buildAppOpenApi({
@@ -169,7 +169,7 @@ export default {
 		 * The bound schemas whose register did not describe them.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md#requirement-the-document-holds-only-what-the-app-uses-req-bqad-002
+		 * @spec openspec/specs/app-api-docs/spec.md#requirement-the-document-holds-only-what-the-app-uses-req-bqad-002
 		 */
 		undocumented() {
 			return this.built.schemas.filter((binding) => !binding.documented)
@@ -179,7 +179,7 @@ export default {
 		 * The download file name stem the reference saves under (`<app>-<version>`).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md#requirement-the-reference-stays-inside-the-instance-and-downloads-as-a-file-req-bqad-003
+		 * @spec openspec/specs/app-api-docs/spec.md#requirement-the-reference-stays-inside-the-instance-and-downloads-as-a-file-req-bqad-003
 		 */
 		downloadName() {
 			return openApiFileName(this.built.document).replace(/\.openapi\.json$/, '')
@@ -212,7 +212,7 @@ export default {
 		 * Load the versions, then the documents of the selected version's registers.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md#requirement-an-app-has-an-api-tab-per-version-req-bqad-001
+		 * @spec openspec/specs/app-api-docs/spec.md#requirement-an-app-has-an-api-tab-per-version-req-bqad-001
 		 */
 		async load() {
 			this.loading = true
@@ -233,7 +233,7 @@ export default {
 		 * Fetch OpenRegister's document for each register the selected version binds, from this instance.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md#requirement-the-reference-stays-inside-the-instance-and-downloads-as-a-file-req-bqad-003
+		 * @spec openspec/specs/app-api-docs/spec.md#requirement-the-reference-stays-inside-the-instance-and-downloads-as-a-file-req-bqad-003
 		 */
 		async loadDocuments() {
 			const manifest = (this.version && this.version.manifest) || {}

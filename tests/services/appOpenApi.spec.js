@@ -5,7 +5,7 @@
  * Vitest spec for services/appOpenApi.js: an app's API reference holds only
  * the schemas its pages and widgets bind, and lists connector pages apart.
  *
- * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md
+ * @spec openspec/specs/app-api-docs/spec.md
  */
 import { describe, expect, it } from 'vitest'
 import { boundSchemas, buildAppOpenApi, connectorPages, openApiFileName } from '../../src/services/appOpenApi.js'

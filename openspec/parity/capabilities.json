@@ -735,7 +735,7 @@
 			"overlay": null,
 			"specs": [
 				"adopt-connection-registry",
-				"operate-api-docs"
+				"app-api-docs"
 			]
 		},
 		{
@@ -8673,21 +8673,21 @@
 			"area": "operate",
 			"name": "Get generated API documentation for each built app.",
 			"source": "competitor",
-			"buildiq": "no",
+			"buildiq": "yes",
 			"nocobase": "yes",
 			"budibase": "partial",
 			"appsmith": "no",
 			"mendix": "yes",
 			"power-apps": "partial",
 			"built": {
-				"state": "specified",
-				"evidence": "grep for OpenAPI/swagger/'api-docs'/apiDocs across lib/ and src/: the only hits (lib/Service/SettingsService.php:296,367) are internal comments about OpenAPI-SHAPED data structures (components.schemas/paths as keyed objects) used for schema import/export bookkeeping, not generated API documentation for a built app.",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-25-operate-api-docs: src/services/appOpenApi.js cuts the per-register OpenRegister documents (GET /apps/openregister/api/registers/{id}/oas) down to the schemas a version's pages and widgets bind, titled after the app and carrying the version; src/components/tabs/ApplicationApiTab.vue (the api tab of VirtualAppDetail, src/manifest.json) renders it with nextcloud-vue CnApiReference with its Download OpenAPI file, the base address and the app-password note, and lists connector pages as not documented here. Vitest tests/services/appOpenApi.spec.js, tests/components/ApplicationApiTab.spec.js; Playwright tests/e2e/app-api-docs.spec.ts is written and runs in the nightly. Before: grep for OpenAPI/swagger/'api-docs'/apiDocs across lib/ and src/: the only hits (lib/Service/SettingsService.php:296,367) are internal comments about OpenAPI-SHAPED data structures (components.schemas/paths as keyed objects) used for schema import/export bookkeeping, not generated API documentation for a built app.",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/operate-api-docs (OpenSpec pass 2026-09-27).",
+				"note": "Specified in openspec/changes/operate-api-docs (OpenSpec pass 2026-09-27); built and archived 2026-11-25.",
 				"change": "operate-api-docs",
 				"requirement": [
-					"openspec/changes/operate-api-docs/specs/app-api-docs :: An app has an API tab per version (REQ-BQAD-001)",
-					"openspec/changes/operate-api-docs/specs/app-api-docs :: The reference stays inside the instance and downloads as a file (REQ-BQAD-003)"
+					"openspec/changes/archive/2026-11-25-operate-api-docs/specs/app-api-docs :: An app has an API tab per version (REQ-BQAD-001)",
+					"openspec/changes/archive/2026-11-25-operate-api-docs/specs/app-api-docs :: The reference stays inside the instance and downloads as a file (REQ-BQAD-003)"
 				]
 			},
 			"provider": "buildiq",

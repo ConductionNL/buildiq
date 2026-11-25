@@ -28,7 +28,7 @@
  * The fixture app `pw-app-api-docs` is created in beforeAll and removed, data
  * included, in afterAll.
  *
- * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md
+ * @spec openspec/specs/app-api-docs/spec.md
  * @e2e app-api-docs/requirement-an-app-has-an-api-tab-per-version-req-bqad-001/an-integrator-reads-the-permit-api
  * @e2e app-api-docs/requirement-the-reference-stays-inside-the-instance-and-downloads-as-a-file-req-bqad-003/a-maker-downloads-the-file-for-a-supplier
  *

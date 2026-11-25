@@ -6,9 +6,9 @@
  * handed to nextcloud-vue's `CnApiReference` (calls, fields and download live
  * there), the base address, and no request leaving the instance.
  *
- * @spec openspec/changes/operate-api-docs/tasks.md#t04
+ * @spec openspec/changes/archive/2026-11-25-operate-api-docs/tasks.md#t04
  *
- * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md
+ * @spec openspec/specs/app-api-docs/spec.md
  */
 import { flushPromises, shallowMount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
