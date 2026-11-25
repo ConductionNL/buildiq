@@ -53,6 +53,22 @@ interface ExportJobServiceInterface {
 	public function loadJob(string $jobUuid): ?array;
 
 	/**
+	 * Run a piece of a background export as the ExportJob's owner.
+	 *
+	 * A queued job has no session user, and OpenRegister refuses an
+	 * RBAC-checked read for Anonymous, so the export pipeline runs inside
+	 * the owner's session, the same way the lifecycle transitions do.
+	 *
+	 * @param string   $jobUuid ExportJob UUID.
+	 * @param callable $work    The work to run.
+	 *
+	 * @return mixed What the work returns.
+	 *
+	 * @spec openspec/changes/apps-standalone-deploy/tasks.md#task-T07
+	 */
+	public function runAsJobOwner(string $jobUuid, callable $work): mixed;
+
+	/**
 	 * Create an ExportJob record in OR and schedule the background job.
 	 *
 	 * No secret is accepted or stored here. A GitHub export carries only

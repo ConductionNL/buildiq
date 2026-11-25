@@ -58,12 +58,17 @@ final class AutomationFlowBuilder {
 	/**
 	 * Object-event triggers and their `openregister.trigger-object` event (D3).
 	 *
+	 * The names are the events OpenRegister's flow engine fires
+	 * (`TriggerObjectNode::EVENTS`). The bare `created` / `updated` /
+	 * `deleted` are refused there ("Unknown trigger event"), which made every
+	 * object-triggered automation fail to compile.
+	 *
 	 * @var array<string, string>
 	 */
 	private const OBJECT_EVENTS = [
-		'object-created' => 'created',
-		'object-updated' => 'updated',
-		'object-deleted' => 'deleted',
+		'object-created' => 'object.created',
+		'object-updated' => 'object.updated',
+		'object-deleted' => 'object.deleted',
 	];
 
 	/**
@@ -205,6 +210,12 @@ final class AutomationFlowBuilder {
 		for ($i = 1; $i < $count; $i++) {
 			$edges[] = ['id' => 'e' . $i, 'from' => [$nodes[($i - 1)]['id']], 'to' => [$nodes[$i]['id']]];
 		}
+
+		// The last node ends the automation on purpose. OpenRegister refuses to
+		// publish a node with no outgoing edge that is not a terminal step type
+		// ("a node a token cannot leave") unless it says `exit: true`. There is
+		// always at least the trigger.
+		$nodes[($count - 1)]['exit'] = true;
 
 		// An AI field also follows edits of its source fields: a second trigger
 		// into the same steps (ai-llm-steps-and-computed-fields REQ-BQLS-004).
