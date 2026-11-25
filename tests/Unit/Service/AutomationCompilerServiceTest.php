@@ -1400,7 +1400,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 		$plan = $this->compiler->compile($automation);
 
 		$this->assertSame(
-			['id' => 'trigger', 'type' => 'openregister.trigger-object', 'config' => ['event' => 'created', 'register' => 'openbuild-claims-production', 'schema' => 'claim']],
+			['id' => 'trigger', 'type' => 'openregister.trigger-object', 'config' => ['event' => 'object.created', 'register' => 'openbuild-claims-production', 'schema' => 'claim']],
 			$plan['flow']['nodes'][0]
 		);
 		$this->assertSame(['id' => '{{json.id}}'], $plan['flow']['nodes'][1]['config']['match']);
@@ -1570,7 +1570,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 		$nodes = $plan['flow']['nodes'];
 
 		$this->assertSame(['openregister.trigger-object', 'hermiq.agent-step', 'openregister.object-write'], array_column($nodes, 'type'));
-		$this->assertSame('created', $nodes[0]['config']['event']);
+		$this->assertSame('object.created', $nodes[0]['config']['event']);
 		$this->assertSame('agent-1', $nodes[1]['config']['agentId']);
 		$this->assertTrue($nodes[1]['config']['expectJson']);
 		preg_match_all('/\{\{\s*([^}]*?)\s*\}\}/', $nodes[1]['config']['prompt'], $placeholders);
@@ -1719,7 +1719,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 		$this->assertSame('trigger-edit', $last['id']);
 		$this->assertSame(['omschrijving'], $last['config']['changedFields']);
 		$this->assertSame(['id' => 'e-edit', 'from' => ['trigger-edit'], 'to' => ['step-1']], $flow['edges'][(count($flow['edges']) - 1)]);
-		$this->assertSame('created', $flow['nodes'][0]['config']['event']);
+		$this->assertSame('object.created', $flow['nodes'][0]['config']['event']);
 	}//end testAiFieldAlsoFollowsEditsOfItsSources()
 	/**
 	 * A compiler whose container serves OpenRegister's node registry with this palette.

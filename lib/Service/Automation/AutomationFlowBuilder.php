@@ -58,12 +58,17 @@ final class AutomationFlowBuilder {
 	/**
 	 * Object-event triggers and their `openregister.trigger-object` event (D3).
 	 *
+	 * The names are the events OpenRegister's flow engine fires
+	 * (`TriggerObjectNode::EVENTS`). The bare `created` / `updated` /
+	 * `deleted` are refused there ("Unknown trigger event"), which made every
+	 * object-triggered automation fail to compile.
+	 *
 	 * @var array<string, string>
 	 */
 	private const OBJECT_EVENTS = [
-		'object-created' => 'created',
-		'object-updated' => 'updated',
-		'object-deleted' => 'deleted',
+		'object-created' => 'object.created',
+		'object-updated' => 'object.updated',
+		'object-deleted' => 'object.deleted',
 	];
 
 	/**

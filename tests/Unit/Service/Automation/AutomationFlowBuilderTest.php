@@ -104,7 +104,7 @@ final class AutomationFlowBuilderTest extends TestCase {
 		$flow = $this->builder()->build(self::input(['type' => 'object-created', 'schema' => 'permit'], [self::createStep()]), 'buildiq-permits-v1', ['permit', 'inspectie']);
 
 		self::assertSame('aut-inspect-permit', $flow['name']);
-		self::assertSame(['id' => 'trigger', 'type' => 'openregister.trigger-object', 'config' => ['event' => 'created', 'register' => 'buildiq-permits-v1', 'schema' => 'permit']], $flow['nodes'][0]);
+		self::assertSame(['id' => 'trigger', 'type' => 'openregister.trigger-object', 'config' => ['event' => 'object.created', 'register' => 'buildiq-permits-v1', 'schema' => 'permit']], $flow['nodes'][0]);
 		self::assertSame(['id' => 'step-1', 'type' => 'openregister.object-write', 'config' => ['register' => 'buildiq-permits-v1', 'schema' => 'inspectie', 'operation' => 'create', 'fields' => ['permit' => '{{json.id}}', 'status' => 'open']]], $flow['nodes'][1]);
 		self::assertSame([['id' => 'e1', 'from' => ['trigger'], 'to' => ['step-1']]], $flow['edges']);
 	}//end testANewPermitCreatesAnInspectionRecord()
