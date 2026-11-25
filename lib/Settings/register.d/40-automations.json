@@ -615,7 +615,7 @@
 			"AutomationRun": {
 				"slug": "automation-run",
 				"icon": "History",
-				"version": "1.0.0",
+				"version": "1.1.0",
 				"title": "Automation run",
 				"description": "One run of one automation on one subject (logic-automation-run-log, design D1): the trigger, the outcome, the duration and one step per action. No input payload is stored. Admin-only on OpenRegister's object API; makers read runs through GET /api/automations/{uuid}/runs, which applies the automation's own rules. Pruned after 90 days.",
 				"authorization": {
@@ -743,6 +743,11 @@
 						"title": "Actor",
 						"type": "string",
 						"description": "The user that caused the trigger, or system."
+					},
+					"flowRun": {
+						"title": "Flow run",
+						"type": "string",
+						"description": "For a run OpenRegister executes (a manual run): the uuid of its flow run, which completes this record when it ends."
 					}
 				}
 			}
