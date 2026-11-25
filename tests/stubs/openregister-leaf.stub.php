@@ -62,33 +62,10 @@ if (interface_exists(IntegrationProvider::class) === false) {
 		 */
 		public function authRequirements(): array;
 
-		/**
-		 * @param array $filters Filters.
-		 *
-		 * @return array<int|string, mixed>
-		 */
-		public function list(string $register, string $schema, string $objectId, array $filters = []): array;
-
-		/**
-		 * @return array<string, mixed>
-		 */
-		public function get(string $register, string $schema, string $objectId, string $entityId): array;
-
-		/**
-		 * @param array $payload Payload.
-		 *
-		 * @return array<string, mixed>
-		 */
-		public function create(string $register, string $schema, string $objectId, array $payload): array;
-
-		/**
-		 * @param array $payload Payload.
-		 *
-		 * @return array<string, mixed>
-		 */
-		public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array;
-
-		public function delete(string $register, string $schema, string $objectId, string $entityId): void;
+		// No list(), get(), create(), update() or delete(): OpenRegister's base
+		// contract dropped them (RefIntegrationProvider / LegacyIntegrationProvider
+		// carry them now), so a provider that marks them #[\Override] fatals on
+		// load. Declaring them here would hide that again.
 
 		/**
 		 * @return array<string, mixed>
