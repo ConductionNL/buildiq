@@ -4,8 +4,8 @@
 
   ApplicationApiTab — the "API" tab of the app detail page: for the selected
   version, the OpenRegister calls and fields of every schema the app's pages
-  use, cut from OpenRegister's own documents, with a download of that same
-  document. Everything is read from this instance; nothing outside is loaded.
+  use, cut from OpenRegister's own documents and shown with nextcloud-vue's
+  CnApiReference, which also downloads that same document. Everything is read from this instance; nothing outside is loaded.
 
   @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md#requirement-an-app-has-an-api-tab-per-version-req-bqad-001
 -->
@@ -21,60 +21,35 @@
 			{{ t('buildiq', 'This app has no version to document yet.') }}
 		</p>
 		<template v-else>
-			<section class="ob-api-tab__intro">
-				<h3>{{ t('buildiq', 'API') }}: {{ versionLabel }}</h3>
-				<p>
-					{{ t('buildiq', 'Base address') }}:
-					<code class="ob-api-tab__base">{{ apiBase }}</code>
-				</p>
-				<p class="ob-api-tab__note">
-					{{ t('buildiq', 'Sign in with your user name and an app password, which you create under Personal settings, Security. Never use your own password in an integration.') }}
-				</p>
-				<NcButton variant="primary" class="ob-api-tab__download" @click="download">
-					{{ t('buildiq', 'Download OpenAPI file') }}
-				</NcButton>
-			</section>
-
+			<h3 class="ob-api-tab__heading">
+				{{ t('buildiq', 'API') }}: {{ versionLabel }}
+			</h3>
 			<p v-if="error" class="ob-api-tab__error">
 				{{ error }}
 			</p>
-			<p v-if="schemaCards.length === 0" class="ob-api-tab__note">
+			<p v-if="built.schemas.length === 0" class="ob-api-tab__note">
 				{{ t('buildiq', 'The pages of this version use no OpenRegister schema.') }}
 			</p>
 
-			<section
-				v-for="card in schemaCards"
-				:key="card.key"
-				class="ob-api-tab__schema">
-				<h4>{{ card.schema }} <span class="ob-api-tab__register">{{ card.register }}</span></h4>
-				<p v-if="!card.documented" class="ob-api-tab__note">
-					{{ t('buildiq', 'Its register did not describe this schema.') }}
-				</p>
-				<template v-else>
-					<ul class="ob-api-tab__calls">
-						<li v-for="call in card.calls" :key="call.method + call.path">
-							<code>{{ call.method }} {{ call.path }}</code>
-							<span v-if="call.summary"> — {{ call.summary }}</span>
-						</li>
-					</ul>
-					<table v-if="card.fields.length" class="ob-api-tab__fields">
-						<thead>
-							<tr>
-								<th scope="col">{{ t('buildiq', 'Field') }}</th>
-								<th scope="col">{{ t('buildiq', 'Type') }}</th>
-								<th scope="col">{{ t('buildiq', 'Rules') }}</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr v-for="field in card.fields" :key="field.name">
-								<td><code>{{ field.name }}</code></td>
-								<td>{{ field.type }}</td>
-								<td>{{ field.rules }}</td>
-							</tr>
-						</tbody>
-					</table>
+			<CnApiReference
+				:document="built.document"
+				:download-name="downloadName">
+				<template #intro>
+					<p>
+						{{ t('buildiq', 'Base address') }}:
+						<code class="ob-api-tab__base">{{ apiBase }}</code>
+					</p>
+					<p class="ob-api-tab__note">
+						{{ t('buildiq', 'Sign in with your user name and an app password, which you create under Personal settings, Security. Never use your own password in an integration.') }}
+					</p>
+					<p
+						v-for="binding in undocumented"
+						:key="binding.register + '/' + binding.schema"
+						class="ob-api-tab__note">
+						{{ binding.schema }}: {{ t('buildiq', 'Its register did not describe this schema.') }}
+					</p>
 				</template>
-			</section>
+			</CnApiReference>
 
 			<section v-if="built.notDocumented.length" class="ob-api-tab__connectors">
 				<h4>{{ t('buildiq', 'Not documented here') }}</h4>
@@ -95,11 +70,9 @@
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import NcButton from '@nextcloud/vue/components/NcButton'
+import { CnApiReference } from '@conduction/nextcloud-vue'
 import applicationContext from '../../mixins/applicationContext.js'
 import { boundSchemas, buildAppOpenApi, openApiFileName } from '../../services/appOpenApi.js'
-
-const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete']
 
 /**
  * The own UUID of a version row.
@@ -115,28 +88,9 @@ function rowUuid(row) {
 	return [row.id, row.uuid, self.id, self.uuid].find(Boolean) || ''
 }
 
-/**
- * A field's rules, as the reference shows them.
- *
- * @param {object} definition The property definition.
- * @return {string}
- */
-function rulesOf(definition) {
-	const rules = []
-	for (const key of ['format', 'pattern', 'minLength', 'maxLength', 'minimum', 'maximum']) {
-		if (definition[key] !== undefined) {
-			rules.push(`${key}: ${definition[key]}`)
-		}
-	}
-	if (Array.isArray(definition.enum)) {
-		rules.push(`enum: ${definition.enum.join(', ')}`)
-	}
-	return rules.join('; ')
-}
-
 export default {
 	name: 'ApplicationApiTab',
-	components: { NcButton },
+	components: { CnApiReference },
 	mixins: [applicationContext],
 
 	data() {
@@ -212,45 +166,23 @@ export default {
 		},
 
 		/**
-		 * One card per bound schema: its calls and its fields.
+		 * The bound schemas whose register did not describe them.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md#requirement-an-app-has-an-api-tab-per-version-req-bqad-001
+		 * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md#requirement-the-document-holds-only-what-the-app-uses-req-bqad-002
 		 */
-		schemaCards() {
-			const document = this.built.document
-			return this.built.schemas.map((binding) => {
-				const prefix = `/objects/${binding.register}/${binding.schema}`
-				const calls = []
-				let component = null
-				for (const [path, item] of Object.entries(document.paths)) {
-					if (path !== prefix && !path.startsWith(`${prefix}/`)) {
-						continue
-					}
-					for (const method of HTTP_METHODS) {
-						if (item[method]) {
-							calls.push({ method: method.toUpperCase(), path, summary: item[method].summary || '' })
-							const ref = JSON.stringify(item[method]).match(/#\/components\/schemas\/([^"]+)/)
-							if (component === null && ref) {
-								component = document.components.schemas[ref[1]] || null
-							}
-						}
-					}
-				}
-				const properties = (component && component.properties) || {}
-				return {
-					key: `${binding.register}/${binding.schema}`,
-					register: binding.register,
-					schema: binding.schema,
-					documented: binding.documented,
-					calls,
-					fields: Object.entries(properties).map(([name, definition]) => ({
-						name,
-						type: definition.type || (definition.$ref ? definition.$ref.split('/').pop() : ''),
-						rules: rulesOf(definition),
-					})),
-				}
-			})
+		undocumented() {
+			return this.built.schemas.filter((binding) => !binding.documented)
+		},
+
+		/**
+		 * The download file name stem the reference saves under (`<app>-<version>`).
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md#requirement-the-reference-stays-inside-the-instance-and-downloads-as-a-file-req-bqad-003
+		 */
+		downloadName() {
+			return openApiFileName(this.built.document).replace(/\.openapi\.json$/, '')
 		},
 	},
 
@@ -320,23 +252,6 @@ export default {
 			}))
 			this.documents = documents
 		},
-
-		/**
-		 * Save the cut document as an OpenAPI 3 JSON file.
-		 *
-		 * @return {void}
-		 * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md#requirement-the-reference-stays-inside-the-instance-and-downloads-as-a-file-req-bqad-003
-		 */
-		download() {
-			const document = this.built.document
-			const blob = new Blob([JSON.stringify(document, null, 2)], { type: 'application/json' })
-			const url = URL.createObjectURL(blob)
-			const anchor = window.document.createElement('a')
-			anchor.href = url
-			anchor.download = openApiFileName(document)
-			anchor.click()
-			URL.revokeObjectURL(url)
-		},
 	},
 }
 </script>
@@ -355,29 +270,5 @@ export default {
 
 .ob-api-tab__error {
 	color: var(--color-error-text);
-}
-
-.ob-api-tab__register {
-	color: var(--color-text-maxcontrast);
-	font-weight: normal;
-	font-size: 0.9em;
-}
-
-.ob-api-tab__calls {
-	list-style: none;
-	padding: 0;
-	margin: 4px 0 8px;
-}
-
-.ob-api-tab__fields {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.ob-api-tab__fields th,
-.ob-api-tab__fields td {
-	text-align: start;
-	padding: 4px 8px;
-	border-bottom: 1px solid var(--color-border);
 }
 </style>

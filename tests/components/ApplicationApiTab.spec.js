@@ -2,9 +2,11 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Vitest spec for `ApplicationApiTab`: the selected version's bound schemas
- * with their calls and fields, the base address, the download of the cut
- * document, and no request leaving the instance.
+ * Vitest spec for `ApplicationApiTab`: the selected version's cut document
+ * handed to nextcloud-vue's `CnApiReference` (calls, fields and download live
+ * there), the base address, and no request leaving the instance.
+ *
+ * @spec openspec/changes/operate-api-docs/tasks.md#t04
  *
  * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md
  */
@@ -82,7 +84,16 @@ async function mountTab(query = {}) {
 	})
 	const wrapper = shallowMount(ApplicationApiTab, {
 		props: { object: { uuid: 'app', slug: 'vergunningen', name: 'Vergunningen', productionVersion: 'prod' } },
-		global: { mocks: { $route: { query } }, stubs: { NcButton: { emits: ['click'], template: '<button @click="$emit(\'click\')"><slot /></button>' } } },
+		global: {
+			mocks: { $route: { query } },
+			stubs: {
+				CnApiReference: {
+					name: 'CnApiReference',
+					props: ['document', 'downloadName'],
+					template: '<div class="cn-api-reference-stub"><slot name="intro" /></div>',
+				},
+			},
+		},
 	})
 	await flushPromises()
 	return wrapper
@@ -97,19 +108,17 @@ afterEach(() => {
 })
 
 describe('ApplicationApiTab', () => {
-	it('shows the production version\'s schema with its calls and fields, and the base address', async () => {
+	it('hands the production version\'s cut document to CnApiReference, with the base address', async () => {
 		const wrapper = await mountTab()
-		const text = wrapper.text()
 		expect(wrapper.find('h3').text()).toBe('API: Production (1.4.0)')
-		expect(text).toContain(`GET /objects/${REGISTER}/permit`)
-		expect(text).toContain(`DELETE /objects/${REGISTER}/permit/{id}`)
-		expect(text).not.toContain('/archive')
-		expect(wrapper.vm.schemaCards[0].fields).toEqual([
-			{ name: 'title', type: 'string', rules: 'maxLength: 255' },
-			{ name: 'status', type: 'string', rules: 'enum: new, granted' },
-		])
+		const reference = wrapper.findComponent({ name: 'CnApiReference' })
+		expect(reference.exists()).toBe(true)
+		const document = reference.props('document')
+		expect(Object.keys(document.paths)).toEqual([`/objects/${REGISTER}/permit`, `/objects/${REGISTER}/permit/{id}`])
+		expect(Object.keys(document.components.schemas)).toEqual(['Permit'])
+		expect(document.components.schemas.Permit.properties.status.enum).toEqual(['new', 'granted'])
 		expect(wrapper.find('.ob-api-tab__base').text()).toBe(`${window.location.origin}/apps/openregister/api`)
-		expect(text).toContain('app password')
+		expect(wrapper.text()).toContain('app password')
 	})
 
 	it('lists the connector page as not documented here', async () => {
@@ -121,34 +130,24 @@ describe('ApplicationApiTab', () => {
 		const wrapper = await mountTab({ _version: 'development' })
 		expect(wrapper.find('h3').text()).toBe('API: Development (1.5.0)')
 		expect(wrapper.text()).toContain('The pages of this version use no OpenRegister schema.')
+		expect(Object.keys(wrapper.findComponent({ name: 'CnApiReference' }).props('document').paths)).toEqual([])
 	})
 
-	it('downloads exactly the cut document, titled after the app and carrying the version', async () => {
+	it('names the download after the app and the version, titled after the app', async () => {
 		const wrapper = await mountTab()
-		let saved = null
-		vi.spyOn(URL, 'createObjectURL').mockImplementation((blob) => {
-			saved = blob
-			return 'blob:x'
-		})
-		vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
-		const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function () {
-			expect(this.download).toBe('vergunningen-1.4.0.openapi.json')
-		})
-
-		await wrapper.find('.ob-api-tab__download').trigger('click')
-
-		expect(click).toHaveBeenCalledTimes(1)
-		const document = JSON.parse(await saved.text())
-		expect(document.info).toEqual({ title: 'Vergunningen', version: '1.4.0' })
-		expect(Object.keys(document.paths)).toEqual([`/objects/${REGISTER}/permit`, `/objects/${REGISTER}/permit/{id}`])
-		expect(Object.keys(document.components.schemas)).toEqual(['Permit'])
+		const reference = wrapper.findComponent({ name: 'CnApiReference' })
+		expect(reference.props('downloadName')).toBe('vergunningen-1.4.0')
+		expect(reference.props('document').info).toEqual({ title: 'Vergunningen', version: '1.4.0' })
 	})
 
-	it('scopes each field table header to its column', async () => {
+	it('says when a register did not describe a bound schema', async () => {
+		axiosMock.get.mockReset()
 		const wrapper = await mountTab()
-		const headers = wrapper.findAll('table th')
-		expect(headers.length).toBeGreaterThan(0)
-		headers.forEach((th) => expect(th.attributes('scope')).toBe('col'))
+		// The register document is answered, so the permit schema is documented.
+		expect(wrapper.text()).not.toContain('Its register did not describe this schema.')
+		wrapper.vm.documents = {}
+		await wrapper.vm.$nextTick()
+		expect(wrapper.text()).toContain('permit: Its register did not describe this schema.')
 	})
 
 	it('makes no request outside the instance', async () => {
