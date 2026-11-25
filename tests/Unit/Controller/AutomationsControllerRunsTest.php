@@ -23,6 +23,7 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\AutomationsController;
 use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
+use OCA\Buildiq\Service\Automation\ManualRunReconciler;
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\Buildiq\Service\AutomationWriteService;
 use OCA\Buildiq\Service\CallerContext;
@@ -78,6 +79,13 @@ final class AutomationsControllerRunsTest extends TestCase {
 	private AutomationRunRecorderInterface&MockObject $runs;
 
 	/**
+	 * Completes waiting manual runs before a read.
+	 *
+	 * @var ManualRunReconciler&MockObject
+	 */
+	private ManualRunReconciler&MockObject $reconciler;
+
+	/**
 	 * The controller under test.
 	 *
 	 * @var AutomationsController
@@ -93,6 +101,7 @@ final class AutomationsControllerRunsTest extends TestCase {
 		$this->request     = $this->createMock(IRequest::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->runs        = $this->createMock(AutomationRunRecorderInterface::class);
+		$this->reconciler  = $this->createMock(ManualRunReconciler::class);
 		$groupManager      = $this->createMock(IGroupManager::class);
 		$groupManager->method('getUserGroups')->willReturn([]);
 		$groupManager->method('isAdmin')->willReturn(false);
@@ -117,7 +126,8 @@ final class AutomationsControllerRunsTest extends TestCase {
 			conditionExecutor: $this->createMock(ConditionActionExecutor::class),
 			caller: new CallerContext(userSession: $this->userSession, groupManager: $groupManager, permissionResolver: $permissionResolver),
 			writeService: $writeService,
-			runs: $this->runs
+			runs: $this->runs,
+			reconciler: $this->reconciler
 		);
 	}//end setUp()
 
@@ -248,4 +258,46 @@ final class AutomationsControllerRunsTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_UNAUTHORIZED, $this->controller->runsSummary()->getStatus());
 	}//end testTheSummaryNeedsASignedInUser()
+
+	/**
+	 * Waiting manual runs are completed before the runs and the summary are
+	 * read, for the automations the caller may read only.
+	 *
+	 * @return void
+	 */
+	public function testWaitingManualRunsAreCompletedBeforeTheyAreRead(): void {
+		$this->signIn(uid: 'bob');
+		$this->query(params: ['uuids' => 'aut-1,aut-2']);
+		$order = [];
+		$this->reconciler->expects($this->exactly(2))->method('reconcile')->with('aut-1')
+			->willReturnCallback(static function () use (&$order): int {
+				$order[] = 'reconcile';
+				return 1;
+			});
+		$this->runs->method('runsOf')->willReturnCallback(static function () use (&$order): array {
+			$order[] = 'runsOf';
+			return ['results' => [], 'total' => 0, 'summary' => []];
+		});
+		$this->runs->method('summaryOf')->willReturnCallback(static function () use (&$order): array {
+			$order[] = 'summaryOf';
+			return ['lastRunAt' => null, 'lastOutcome' => null, 'lastError' => null];
+		});
+
+		$this->assertSame(Http::STATUS_OK, $this->controller->runs(uuid: 'aut-1')->getStatus());
+		$this->assertSame(Http::STATUS_OK, $this->controller->runsSummary()->getStatus());
+		$this->assertSame(['reconcile', 'runsOf', 'reconcile', 'summaryOf'], $order);
+	}//end testWaitingManualRunsAreCompletedBeforeTheyAreRead()
+
+	/**
+	 * A caller without a role completes nothing.
+	 *
+	 * @return void
+	 */
+	public function testACallerWithoutARoleCompletesNothing(): void {
+		$this->signIn(uid: 'eve');
+		$this->query(params: []);
+		$this->reconciler->expects($this->never())->method('reconcile');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller->runs(uuid: 'aut-1')->getStatus());
+	}//end testACallerWithoutARoleCompletesNothing()
 }//end class
