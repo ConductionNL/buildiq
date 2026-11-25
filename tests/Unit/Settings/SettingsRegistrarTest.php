@@ -158,4 +158,40 @@ final class SettingsRegistrarTest extends TestCase {
 			actual: $factories[AdminSettings::class]($container)->getSection()
 		);
 	}//end testThePanelLivesInTheRegisteredSection()
+	/**
+	 * A constructor that takes OpenRegister's SettingsPlacement first is built the new way.
+	 *
+	 * OpenRegister moved the generic section and panel onto SettingsPlacement,
+	 * SectionAppearance and AdminFormServices; the old named scalars answered
+	 * "Unknown named parameter $appId" and a 500 on /settings/admin/buildiq.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/app-composition-bindings/spec.md
+	 */
+	public function testAPlacementConstructorIsRecognisedAndTheStubIsNot(): void {
+		if (class_exists('OCA\\OpenRegister\\AppHost\\Settings\\SettingsPlacement') === false) {
+			eval(
+				'namespace OCA\\OpenRegister\\AppHost\\Settings; final class SettingsPlacement { '
+				.'public function __construct(public readonly string $appId, public readonly string $sectionId, public readonly int $priority) {} }'
+			);
+		}
+
+		$takes = new \ReflectionMethod(objectOrMethod: SettingsRegistrar::class, method: 'takesPlacement');
+		$newStyle = new class (new \OCA\OpenRegister\AppHost\Settings\SettingsPlacement('buildiq', 'buildiq', 10)) {
+			/**
+			 * Constructor.
+			 *
+			 * @param \OCA\OpenRegister\AppHost\Settings\SettingsPlacement $placement The placement.
+			 */
+			public function __construct(public readonly \OCA\OpenRegister\AppHost\Settings\SettingsPlacement $placement) {
+			}
+		};
+
+		$this->assertTrue(condition: $takes->invoke(null, $newStyle::class));
+		$this->assertFalse(
+			condition: $takes->invoke(null, AdminSettings::class),
+			message: 'The unit-test stub keeps the scalar constructor, so the old call is kept for it.'
+		);
+	}//end testAPlacementConstructorIsRecognisedAndTheStubIsNot()
 }//end class
