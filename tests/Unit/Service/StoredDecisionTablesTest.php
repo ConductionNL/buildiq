@@ -233,8 +233,41 @@ final class StoredDecisionTablesTest extends TestCase {
 		$this->store->method('find')->willThrowException(new UnexpectedValueException('No decision table.'));
 
 		$this->assertSame([], $this->tables->forRuleSet(['slug' => 'loan-eligibility']));
+		$this->assertNull(actual: $this->tables->runnableKeyOf(ruleSet: ['slug' => 'loan-eligibility']));
+		$this->assertNull(actual: $this->tables->runnableKeyOf(ruleSet: []));
 
 	}//end testARuleSetWithoutATableHasNone()
+
+	/**
+	 * A compiled decision step names the table that exists: the rule set's own
+	 * key when it has one, else the shared seed table's.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
+	 */
+	public function testTheRunnableKeyIsTheTableThatExists(): void {
+		$own = 'buildiq.org-b.loan-eligibility';
+		$this->store->method('find')->willReturnCallback(
+			function (string $reference) use ($own): array {
+				if ($reference === 'buildiq.loan-eligibility' || $reference === $own) {
+					return $this->shape->toStored(key: $reference, name: 'Loan', table: $this->loanTable());
+				}
+
+				throw new UnexpectedValueException('No decision table has the key or id "' . $reference . '".');
+			}
+		);
+
+		$this->assertSame(
+			expected: 'buildiq.loan-eligibility',
+			actual: $this->tables->runnableKeyOf(ruleSet: ['slug' => 'loan-eligibility', '@self' => ['organisation' => 'org-a']])
+		);
+		$this->assertSame(
+			expected: $own,
+			actual: $this->tables->runnableKeyOf(ruleSet: ['slug' => 'loan-eligibility', '@self' => ['organisation' => 'org-b']])
+		);
+
+	}//end testTheRunnableKeyIsTheTableThatExists()
 
 	/**
 	 * A write replaces the row the key already names, never a second row.
