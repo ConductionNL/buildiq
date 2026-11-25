@@ -25,7 +25,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md
+ * @spec openspec/specs/app-release-test-gate/spec.md
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 /**
  * The data behind the Tests tab.
  *
- * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+ * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
  */
 class ApplicationTestsService {
 
@@ -67,7 +67,7 @@ class ApplicationTestsService {
 	 *
 	 * @return array<string, mixed>|null
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
 	 */
 	public function application(string $slug): ?array {
 		foreach ($this->objects->findAsSystem(schema: ApplicationVersionServiceInterface::APPLICATION_SCHEMA, filters: ['slug' => $slug]) as $app) {
@@ -87,7 +87,7 @@ class ApplicationTestsService {
 	 *
 	 * @return array<string, mixed>|null
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
 	 */
 	public function version(array $application, string $slug): ?array {
 		$appId = self::idOf(object: $application);
@@ -108,7 +108,7 @@ class ApplicationTestsService {
 	 *
 	 * @return array{recordTests: list<array<string, mixed>>, ruleSets: list<array<string, mixed>>, latestRuns: array<string, array<string, mixed>>}
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
 	 */
 	public function overview(array $application): array {
 		$appId = self::idOf(object: $application);
@@ -136,7 +136,7 @@ class ApplicationTestsService {
 	 *
 	 * @throws InvalidArgumentException When the input is not a valid record test.
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function saveRecordTest(array $application, array $input, ?string $id = null): ?array {
@@ -169,7 +169,7 @@ class ApplicationTestsService {
 	 *
 	 * @return bool False when `$id` is not a test of this app.
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 	 */
 	public function deleteRecordTest(array $application, string $id): bool {
 		if ($this->recordTest(appId: self::idOf(object: $application), id: $id) === null) {

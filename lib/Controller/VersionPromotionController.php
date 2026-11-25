@@ -444,7 +444,7 @@ class VersionPromotionController extends Controller {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 	 */
 	private function isOwner(array $application, IUser $user): bool {
 		$permissions = ($application['permissions'] ?? []);

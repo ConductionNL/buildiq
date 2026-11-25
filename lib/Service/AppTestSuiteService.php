@@ -33,7 +33,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md
+ * @spec openspec/specs/app-release-test-gate/spec.md
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ use Throwable;
 /**
  * Builds the report of an app version's test suite.
  *
- * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md
+ * @spec openspec/specs/app-release-test-gate/spec.md
  */
 class AppTestSuiteService {
 
@@ -105,7 +105,7 @@ class AppTestSuiteService {
 	 *
 	 * @return array{passed: int, failed: int, skipped: int, checks: list<array{kind: string, name: string, outcome: string, message: string}>}
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-the-suite-checks-the-apps-structure-req-bqrt-001
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-the-suite-checks-the-apps-structure-req-bqrt-001
 	 */
 	public function run(array $application, array $version): array {
 		$this->properties = [];
@@ -137,7 +137,7 @@ class AppTestSuiteService {
 	 *
 	 * @return list<array{kind: string, name: string, outcome: string, message: string}>
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-the-suite-checks-the-apps-structure-req-bqrt-001
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-the-suite-checks-the-apps-structure-req-bqrt-001
 	 */
 	public function structureChecks(array $manifest): array {
 		$checks = [];
@@ -303,7 +303,7 @@ class AppTestSuiteService {
 	 *
 	 * @return list<array{kind: string, name: string, outcome: string, message: string}>
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-the-suite-runs-the-apps-rule-set-tests-req-bqrt-002
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-the-suite-runs-the-apps-rule-set-tests-req-bqrt-002
 	 */
 	public function ruleSetChecks(string $appSlug): array {
 		if ($appSlug === '') {
@@ -351,7 +351,7 @@ class AppTestSuiteService {
 	 *
 	 * @return list<array{kind: string, name: string, outcome: string, message: string}>
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 	 */
 	public function recordChecks(string $appId, string $register=''): array {
 		if ($appId === '') {

@@ -139,7 +139,7 @@ export default {
 		 * The two outcomes a record test can expect.
 		 *
 		 * @return {Array<{id: string, label: string}>}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 		 */
 		expectOptions() {
 			return [
@@ -154,7 +154,7 @@ export default {
 		 * React to the dialog opening.
 		 *
 		 * @param {boolean} isOpen Whether the dialog is open.
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 		 */
 		open(isOpen) {
 			if (isOpen) {
@@ -169,7 +169,7 @@ export default {
 		 * Emit the test, or show why it cannot be saved.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+		 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 		 */
 		submit() {
 			const { test, error } = testOf(this.draft)

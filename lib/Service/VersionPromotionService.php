@@ -191,7 +191,7 @@ class VersionPromotionService implements VersionPromotionServiceInterface {
 	 * @throws \OCA\Buildiq\Exception\ReleaseOverrideRefusedException When the override is not an owner's or has no reason
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 	 */
 	#[\Override]
 	public function promote(array $source, string $strategy, ?ReleaseOverride $override = null): array {
@@ -653,7 +653,7 @@ class VersionPromotionService implements VersionPromotionServiceInterface {
 	 *
 	 * @throws RuntimeException When the Application cannot be read.
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 	 */
 	private function guardProductionPromotion(array $source, string $targetUuid, ?ReleaseOverride $override): void {
 		$applicationUuid = (string)($source['application'] ?? '');

@@ -45,7 +45,7 @@
  * NOTE: Playwright binaries are NOT installed by `npm install`. Run
  * `npm run test:e2e:install` once before invoking `npm run test:e2e`.
  *
- * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md
+ * @spec openspec/specs/app-release-test-gate/spec.md
  */
 
 import type { Page } from '@playwright/test'

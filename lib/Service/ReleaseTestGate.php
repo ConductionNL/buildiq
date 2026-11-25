@@ -30,7 +30,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md
+ * @spec openspec/specs/app-release-test-gate/spec.md
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use Throwable;
 /**
  * The test gate in front of a release and a promotion onto production.
  *
- * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+ * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
  */
 class ReleaseTestGate {
 
@@ -93,7 +93,7 @@ class ReleaseTestGate {
 	 * @throws ReleaseTestsFailedException     When a check fails and no override was given.
 	 * @throws RuntimeException                When an override cannot be recorded.
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 	 */
 	public function guard(array $application, array $version, string $trigger, ?ReleaseOverride $override = null): array {
 		$report = $this->suite->run(application: $application, version: $version);
@@ -136,7 +136,7 @@ class ReleaseTestGate {
 	 *
 	 * @return array<string, mixed> The run, stored when the store accepted it.
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
 	 */
 	public function runManually(array $application, array $version): array {
 		$report = $this->suite->run(application: $application, version: $version);

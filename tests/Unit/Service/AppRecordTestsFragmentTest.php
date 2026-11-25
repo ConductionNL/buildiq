@@ -50,7 +50,7 @@ final class AppRecordTestsFragmentTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
 	 */
 	public function testTheAppRecordTestsFragmentAddsBothSchemas(): void {
 		$root = __DIR__ . '/../../../lib/Settings/';

@@ -747,7 +747,7 @@
 			"specs": [
 				"application-versions",
 				"version-lifecycle-ui",
-				"lifecycle-release-test-gate",
+				"app-release-test-gate",
 				"version-routing",
 				"openbuild-version-snapshots",
 				"version-promotion",
@@ -7236,22 +7236,22 @@
 			"area": "lifecycle",
 			"name": "Run automated tests against an app before releasing it.",
 			"source": "competitor",
-			"buildiq": "partial",
+			"buildiq": "yes",
 			"nocobase": "no",
 			"budibase": "no",
 			"appsmith": "no",
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "routes.php:184 rules#testAll POST /api/rules/{ruleSetSlug}/test-all -> lib/Controller/RulesController.php:236 testAll() runs stored RuleTestCase rows against a rule set via versioningService->runTestGate(); reached from src/views/RuleSetsPage.vue:227 and src/modals/RuleSetTestSandboxModal.vue:180",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-25-lifecycle-release-test-gate: AppTestSuiteService runs a version's suite (structure checks of its manifest, the stored test cases of the rule sets it owns, and record tests through OpenRegister's validate-only ObjectServiceInterface::validateObject() via RecordTestRunner, nothing saved); ReleaseTestGate stops releaseVersion() and a promotion onto production on a failing suite (422 release_tests_failed with the report), with an owner-only override and its reason, and keeps each run as app-test-run; the Tests tab of the app (src/components/tabs/ApplicationTestsTab.vue) lists the checks, runs them and edits record tests; the release dialog shows the report. PHPUnit AppTestSuiteServiceTest, ReleaseTestGateTest, VersionPromotionTestGateTest, ApplicationTestsControllerTest; vitest tests/components/ApplicationTestsTab.spec.js; Playwright tests/e2e/release-test-gate.spec.ts written, runs in the nightly. Before: routes.php:184 rules#testAll POST /api/rules/{ruleSetSlug}/test-all -> lib/Controller/RulesController.php:236 testAll() runs stored RuleTestCase rows against a rule set via versioningService->runTestGate(); reached from src/views/RuleSetsPage.vue:227 and src/modals/RuleSetTestSandboxModal.vue:180",
 				"reachedOn": "RuleSets page /business-rules (typed URL only), 'Run all tests' on a business-rule set",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/lifecycle-release-test-gate (OpenSpec pass 2026-09-27).",
+				"note": "Specified in openspec/changes/lifecycle-release-test-gate (OpenSpec pass 2026-09-27); built and archived 2026-11-25.",
 				"change": "lifecycle-release-test-gate",
 				"requirement": [
-					"openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate :: The suite runs the app's rule-set tests (REQ-BQRT-002)",
-					"openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate :: Release waits for a green suite (REQ-BQRT-004)"
+					"openspec/changes/archive/2026-11-25-lifecycle-release-test-gate/specs/app-release-test-gate :: The suite runs the app's rule-set tests (REQ-BQRT-002)",
+					"openspec/changes/archive/2026-11-25-lifecycle-release-test-gate/specs/app-release-test-gate :: Release waits for a green suite (REQ-BQRT-004)"
 				]
 			},
 			"provider": "buildiq",

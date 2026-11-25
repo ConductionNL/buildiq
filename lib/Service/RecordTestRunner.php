@@ -28,7 +28,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+ * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use Throwable;
 /**
  * Runs one record test against a register without saving the record.
  *
- * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+ * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
  */
 class RecordTestRunner {
 
@@ -74,7 +74,7 @@ class RecordTestRunner {
 	 *
 	 * @return array{outcome: string, message: string} outcome passed, failed or skipped.
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 	 */
 	public function run(array $test, string $register): array {
 		$records = $this->records;
@@ -115,7 +115,7 @@ class RecordTestRunner {
 	 *
 	 * @return array{outcome: string, message: string}
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 	 */
 	private static function judgeAcceptance(?array $refused): array {
 		if ($refused === null) {
@@ -135,7 +135,7 @@ class RecordTestRunner {
 	 *
 	 * @return array{outcome: string, message: string}
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 	 */
 	private static function judgeRefusal(?array $refused, array $expected): array {
 		if ($refused === null) {
@@ -176,7 +176,7 @@ class RecordTestRunner {
 	 *
 	 * @return list<string>|null
 	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+	 * @spec openspec/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 	 */
 	private static function refusedFields(mixed $verdict): ?array {
 		$answer = $verdict;
