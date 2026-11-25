@@ -31,6 +31,8 @@ const CnFormPageStandIn = {
 		unmetConditions: { type: Array, default: () => [] },
 		blockSubmit: { type: Boolean, default: false },
 		title: { type: String, default: '' },
+		customComponents: { type: Object, default: null },
+		smartPaste: { type: Object, default: null },
 	},
 	emits: ['input', 'submit'],
 	data() {
@@ -214,4 +216,30 @@ describe('BuildiqFormPage', () => {
 		expect(onSubmit).toHaveBeenCalledWith({ name: 'Ann' })
 		expect(evaluatePreview).not.toHaveBeenCalled()
 	})
+
+	describe('paste to fill (ai-smart-paste-into-forms REQ-BQSP-003)', () => {
+		it('registers buildiq\'s smart-paste handler beside what the form would have resolved', () => {
+			const inherited = { 'my-handler': () => ({}) }
+			const wrapper = mount(BuildiqFormPage, {
+				props: { fields: [] },
+				global: { provide: { cnCustomComponents: inherited } },
+			})
+			const components = wrapper.findComponent({ name: 'CnFormPage' }).props('customComponents')
+			expect(components['my-handler']).toBe(inherited['my-handler'])
+			expect(typeof components['buildiq-smart-paste'].fill).toBe('function')
+			expect(typeof components['buildiq-smart-paste'].available).toBe('function')
+		})
+
+		it('names buildiq\'s handler on a setting saved without one, and keeps one that names its own', () => {
+			const without = mount(BuildiqFormPage, { props: { fields: [] }, attrs: { smartPaste: { enabled: true, fields: ['naam'] } } })
+			expect(without.findComponent({ name: 'CnFormPage' }).props('smartPaste')).toEqual({ enabled: true, fields: ['naam'], handler: 'buildiq-smart-paste' })
+
+			const own = mount(BuildiqFormPage, { props: { fields: [] }, attrs: { smartPaste: { enabled: true, fields: ['naam'], handler: 'other' } } })
+			expect(own.findComponent({ name: 'CnFormPage' }).props('smartPaste').handler).toBe('other')
+
+			const none = mount(BuildiqFormPage, { props: { fields: [] } })
+			expect(none.findComponent({ name: 'CnFormPage' }).props('smartPaste')).toBeNull()
+		})
+	})
 })
+

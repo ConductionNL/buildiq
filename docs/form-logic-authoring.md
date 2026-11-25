@@ -205,14 +205,17 @@ fields the AI may fill, and optionally write a hint for the paste box. The
 page config then carries:
 
 ```json
-"smartPaste": { "enabled": true, "fields": ["naam", "adres", "telefoon"], "hint": "Paste an email or letter" }
+"smartPaste": { "enabled": true, "fields": ["naam", "adres", "telefoon"], "hint": "Paste an email or letter", "handler": "buildiq-smart-paste" }
 ```
 
 What the user gets:
 
-- A **Paste to fill** control. The AI proposes values for the ticked fields
-  only, and only for fields that are empty and visible; the other fields
-  stay as they are.
+- A **Paste to fill** control, shown only when Hermiq's form fill is switched
+  on (an administrator acknowledges the `form-fill` AI feature in Hermiq). The
+  pasted text and the ticked fields' names, labels, types and choices go to
+  Hermiq, never the other answers. The AI proposes values for the ticked
+  fields only, and only for fields that are empty and visible; the other
+  fields stay as they are.
 - Every proposed value is marked as a suggestion, still passes the field's
   own validation, and nothing is submitted until the user clicks Submit.
 

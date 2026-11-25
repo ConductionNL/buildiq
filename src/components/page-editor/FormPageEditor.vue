@@ -354,6 +354,7 @@ import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 import { findingsByField } from '../../services/formDestinationCheck.js'
 import { addSchemaProperties } from '../../services/formLibrary.js'
 import { formMode, isSmartPasteFillable } from '../../services/manifestValidation/formLogic.js'
+import { SMART_PASTE_HANDLER } from '../../services/smartPaste.js'
 
 // OpenRegister's object collection URL: POSTing the form's values here
 // creates an object in that register and schema.
@@ -793,7 +794,9 @@ export default {
 		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
 		 */
 		writeSmartPaste(patch) {
-			const next = { ...this.smartPaste, ...patch }
+			// The renderer resolves the fill through this registry name
+			// (BuildiqFormPage registers it), and refuses an enabled setting without one.
+			const next = { ...this.smartPaste, ...patch, handler: SMART_PASTE_HANDLER }
 			if (next.hint === '') {
 				delete next.hint
 			}
