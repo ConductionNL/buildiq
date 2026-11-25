@@ -1,6 +1,7 @@
 # Tasks: competitor-parity-2026-09
 
 - [x] 1.1 Build `forms-per-case-type`. Archive it on merge and tick it here.
+  > Archived 25 Nov 2026 with its drift notification fixed (buildiq#1915) and every task live-checked (screen-override e2e 4/4, notification delivered to the maintainer); main spec `screen-override-layers`.
   > Archived 25 Nov as `openspec/changes/archive/2026-11-25-forms-per-case-type` (main spec `openspec/specs/registration-form-builder`, REQ-OBRF-004 to 009).
 - [x] 1.2 Build `case-page-layout-per-case-type`. Archive it on merge and tick it here.
   > Archived 25 Nov as `openspec/changes/archive/2026-11-25-case-page-layout-per-case-type` (main spec `openspec/specs/page-layout-per-type`); the CnDetailPage merge is nextcloud-vue `runtime-detail-layout`.
@@ -17,7 +18,7 @@
 - [x] 3.2 Record that the consolidated candidates C-tasks-and-phases-33 and C-access-and-privacy-37 are split: buildiq stores and serves, clusters 53 and 58 render.
   > Recorded 24 Nov in `proposal.md` under "Two decisions that change how the clusters are read".
 - [ ] 4.1 Add any later buildiq change that cites the gap register or the discovery sweep to the index above, in the same PR that opens it.
-- [ ] 5.1 Build `screen-overrides-as-a-patch-with-fall-through` (gap-register rows 11.43 and 11.51), after `case-page-layout-per-case-type`. Archive it on merge and tick it here.
+- [x] 5.1 Build `screen-overrides-as-a-patch-with-fall-through` (gap-register rows 11.43 and 11.51), after `case-page-layout-per-case-type`. Archive it on merge and tick it here.
 - [x] 5.2 Tell the dossiq lane which audience to ask the `buildiq-page-layout` leaf with on the desk channel.
   > Told 25 Nov: dossiq ConductionNL/dossiq#6918 (competitor-parity-2026-09 task 15, shapes in buildiq-consumer-halves.md), task 15.1.
 - [x] 5.3 Tell the portaliq lane to ask that leaf with the `portal` audience for a public visitor.
