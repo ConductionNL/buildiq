@@ -22,6 +22,8 @@ import { ensureVersionChain } from './support/versionChain.ts'
 
 const TEST_SLUG = 'hello-world'
 const OR_API = `${BASE}/index.php/apps/openregister/api`
+// Nextcloud refuses a cookie-authenticated write without it (412, CSRF check).
+const OCS = { 'OCS-APIRequest': 'true' }
 const FLOW_NAME = `PW run-on fixture ${Date.now()}`
 const WRAPPER_PREFIX = `aut-attach-${TEST_SLUG}-`
 
@@ -34,6 +36,7 @@ const WRAPPER_PREFIX = `aut-attach-${TEST_SLUG}-`
 async function application(page: Page): Promise<Record<string, any>> {
 	const lookup = await page.request.get(
 		`${OR_API}/objects/buildiq/built-app?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
+		{ headers: OCS },
 	)
 	expect(lookup.ok(), 'the application lookup must succeed').toBeTruthy()
 	const apps = (await lookup.json()).results || []
@@ -48,10 +51,33 @@ async function application(page: Page): Promise<Record<string, any>> {
  * @return The flows.
  */
 async function flows(page: Page): Promise<Array<Record<string, any>>> {
-	const resp = await page.request.get(`${OR_API}/flows?_limit=500`)
+	const resp = await page.request.get(`${OR_API}/flows?_limit=500`, { headers: OCS })
 	expect(resp.ok()).toBeTruthy()
 	const body = await resp.json()
 	return (Array.isArray(body) ? body : body.results || []) as Array<Record<string, any>>
+}
+
+/**
+ * A value for every property a schema requires, so a record of it saves.
+ *
+ * @param page   The page.
+ * @param schema The schema id or slug.
+ * @return The record body.
+ */
+async function requiredValues(page: Page, schema: string): Promise<Record<string, unknown>> {
+	const resp = await page.request.get(`${OR_API}/schemas/${encodeURIComponent(schema)}`, { headers: OCS })
+	const definition = resp.ok() ? await resp.json() : {}
+	const properties: Record<string, { type?: string, enum?: unknown[] }> = definition?.properties ?? {}
+	const body: Record<string, unknown> = {}
+	for (const name of (definition?.required ?? []) as string[]) {
+		const property = properties[name] ?? {}
+		if (Array.isArray(property.enum) && property.enum.length > 0) {
+			body[name] = property.enum[0]
+			continue
+		}
+		body[name] = ({ number: 1, integer: 1, boolean: true, array: [], object: {} } as Record<string, unknown>)[property.type ?? ''] ?? 'e2e'
+	}
+	return body
 }
 
 test.describe('app-flow-bindings', () => {
@@ -64,12 +90,13 @@ test.describe('app-flow-bindings', () => {
 		try {
 			if (appId !== '') {
 				await page.request.patch(`${OR_API}/objects/buildiq/built-app/${appId}`, {
+					headers: OCS,
 					data: { flows: bindingsBefore },
 					failOnStatusCode: false,
 				})
 			}
 			if (flowUuid !== '') {
-				await page.request.delete(`${OR_API}/flows/${flowUuid}`, { failOnStatusCode: false })
+				await page.request.delete(`${OR_API}/flows/${flowUuid}`, { headers: OCS, failOnStatusCode: false })
 			}
 		} finally {
 			await page.close()
@@ -84,6 +111,7 @@ test.describe('app-flow-bindings', () => {
 		await ensureVersionChain(page, TEST_SLUG, 'Hello World')
 
 		const created = await page.request.post(`${OR_API}/flows`, {
+			headers: OCS,
 			data: {
 				name: FLOW_NAME,
 				description: 'Attached with a Run on entry by tests/e2e/app-flow-bindings.spec.ts.',
@@ -114,7 +142,9 @@ test.describe('app-flow-bindings', () => {
 		await expect(combo).toBeEnabled({ timeout: 30_000 })
 		await combo.click()
 		await combo.fill(FLOW_NAME)
-		await page.getByRole('option', { name: FLOW_NAME }).first().click()
+		// The option shows the name split for its ellipsis ("PW run-on f" + "ixture ...")
+		// and carries the whole name as its title.
+		await page.getByRole('option').filter({ has: page.getByTitle(FLOW_NAME, { exact: true }) }).first().click()
 		await page.keyboard.press('Escape')
 
 		const runOn = page.locator(`[data-test="app-settings-run-on-${flowUuid}"]`)
@@ -149,15 +179,19 @@ test.describe('app-flow-bindings', () => {
 
 		// Update a record of that schema.
 		const objects = `${OR_API}/objects/${trigger.config.register}/${trigger.config.schema}`
-		const record = await page.request.post(objects, { data: {}, failOnStatusCode: false })
+		const record = await page.request.post(objects, {
+			headers: OCS,
+			data: await requiredValues(page, String(trigger.config.schema)),
+			failOnStatusCode: false,
+		})
 		expect(record.status(), 'a record of the app schema can be created').toBeLessThan(300)
 		const recordBody = await record.json()
 		const recordId = String(recordBody.id || recordBody.uuid || recordBody['@self']?.id)
-		const updated = await page.request.patch(`${objects}/${recordId}`, { data: {}, failOnStatusCode: false })
+		const updated = await page.request.patch(`${objects}/${recordId}`, { headers: OCS, data: {}, failOnStatusCode: false })
 		expect(updated.status(), 'the record can be updated').toBeLessThan(300)
 
 		await expect.poll(async () => {
-			const runs = await page.request.get(`${OR_API}/flow-runs`, { params: { flowId: flowUuid, limit: '1' } })
+			const runs = await page.request.get(`${OR_API}/flow-runs`, { headers: OCS, params: { flowId: flowUuid, limit: '1' } })
 			if (!runs.ok()) {
 				return 0
 			}
@@ -165,7 +199,7 @@ test.describe('app-flow-bindings', () => {
 			return (Array.isArray(body) ? body : body.results || []).length
 		}, { timeout: 120_000, message: 'updating the record runs the attached flow' }).toBeGreaterThan(0)
 
-		await page.request.delete(`${objects}/${recordId}`, { failOnStatusCode: false })
+		await page.request.delete(`${objects}/${recordId}`, { headers: OCS, failOnStatusCode: false })
 
 		// The app's detail page says where the flow runs and how its last run went.
 		await page.goto(`${BASE}/apps/buildiq/applications/${appId}`)
