@@ -127,6 +127,11 @@ test.describe('app-flow-bindings', () => {
 		const createdBody = await created.json()
 		flowUuid = String(createdBody.uuid || createdBody.id || '')
 		expect(flowUuid).toBeTruthy()
+		// OpenRegister runs a flow only from its published version, and the
+		// wrapper's sub-flow refuses an unpublished one: publish the fixture, as
+		// a maker's flow is published before it is attached.
+		const published = await page.request.post(`${OR_API}/flows/${flowUuid}/publish`, { headers: OCS, failOnStatusCode: false })
+		expect(published.status(), `publishing the fixture flow: ${(await published.text()).slice(0, 300)}`).toBeLessThan(300)
 
 		const app = await application(page)
 		appId = String(app.uuid || app.id)
@@ -206,7 +211,10 @@ test.describe('app-flow-bindings', () => {
 		await dismissOverlays(page)
 		const widget = page.locator('.ob-flows-widget').first()
 		await expect(widget).toContainText(FLOW_NAME, { timeout: 20_000 })
-		await expect(widget.locator('.ob-flows-widget__run-on')).toContainText(/is updated/)
-		await expect(widget.locator('.ob-flows-widget__last-run')).toBeVisible({ timeout: 20_000 })
+		// The widget lists every flow bound to the app (its wrappers too), so
+		// read the line of this spec's flow only.
+		const item = widget.locator('.ob-flows-widget__list > li').filter({ hasText: FLOW_NAME })
+		await expect(item.locator('.ob-flows-widget__run-on')).toContainText(/is updated/)
+		await expect(item.locator('.ob-flows-widget__last-run')).toBeVisible({ timeout: 20_000 })
 	})
 })
