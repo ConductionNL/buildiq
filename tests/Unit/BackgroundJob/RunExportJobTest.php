@@ -36,6 +36,7 @@ use OCA\Buildiq\Kernel\Values\ExportTarget;
 use OCA\Buildiq\Kernel\Values\BrokerAccess;
 use OCA\Buildiq\Kernel\Values\PushTarget;
 use OCA\Buildiq\Service\GitHubPushService;
+use OCA\Buildiq\Service\JobOwnerImpersonator;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -182,6 +183,63 @@ final class RunExportJobTest extends TestCase {
 
 		$this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
 	}//end testRunTransitionsThroughRunningToSucceeded()
+
+	/**
+	 * The pipeline runs as the job's owner. A queued job has no session user,
+	 * and OpenRegister refuses an RBAC-checked read for Anonymous, so the
+	 * pipeline's own loadJob() failed and every export ended failed.
+	 *
+	 * @return void
+	 */
+	public function testThePipelineRunsAsTheJobOwner(): void {
+		$jobUuid = 'job-owner-uuid';
+		$inside  = false;
+		$seen    = [];
+
+		$this->exportJobService->method('loadJob')->willReturnCallback(
+			function () use (&$inside, &$seen): array {
+				$seen[] = $inside;
+				return $this->jobFixture();
+			}
+		);
+		$this->exportJobService->method('transitionJob')->willReturn(true);
+		$this->exportService->method('generateAppZip')->willReturnCallback(
+			static function () use (&$inside, &$seen, $jobUuid): string {
+				$seen[] = $inside;
+				return '/tmp/buildiq-exports/' . $jobUuid . '.zip';
+			}
+		);
+
+		$impersonator = $this->createMock(JobOwnerImpersonator::class);
+		$impersonator->expects(self::once())
+			->method('runAsOwner')
+			->with(self::identicalTo($jobUuid), self::isType('callable'))
+			->willReturnCallback(
+				static function (string $objectId, callable $work) use (&$inside): mixed {
+					$inside = true;
+					try {
+						return $work();
+					} finally {
+						$inside = false;
+					}
+				}
+			);
+
+		$job = new RunExportJob(
+			$this->time,
+			$this->exportService,
+			$this->exportJobService,
+			$this->githubPushService,
+			new NullLogger(),
+			null,
+			$impersonator
+		);
+		$this->invokeRun($job, ['jobUuid' => $jobUuid]);
+
+		// The first load (the still-queued check) is outside; the pipeline's
+		// own load and the archive are inside the owner's session.
+		self::assertSame([false, true, true], $seen);
+	}//end testThePipelineRunsAsTheJobOwner()
 
 	/**
 	 * The job hands the application, its chosen version and the seed-data

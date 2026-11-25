@@ -33,6 +33,7 @@ use OCA\Buildiq\Kernel\Contracts\ExportAppContentBundlerInterface;
 use OCA\Buildiq\Kernel\Contracts\ExportJobServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ExportServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\GitHubPushServiceInterface;
+use OCA\Buildiq\Service\JobOwnerImpersonator;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
@@ -60,6 +61,7 @@ class RunExportJob extends QueuedJob {
 	 * @param LoggerInterface $logger Logger.
 	 * @param ExportAppContentBundlerInterface|null $contentBundler Finds the application and version the job names.
 	 *                                                     Null exports the bare scaffold.
+	 * @param JobOwnerImpersonator|null $jobOwnerImpersonator Runs the pipeline as the job's owner (null: as the job's own session).
 	 */
 	public function __construct(
 		ITimeFactory $time,
@@ -68,6 +70,7 @@ class RunExportJob extends QueuedJob {
 		private GitHubPushServiceInterface $githubPushService,
 		private LoggerInterface $logger,
 		private ?ExportAppContentBundlerInterface $contentBundler = null,
+		private ?JobOwnerImpersonator $jobOwnerImpersonator = null,
 	) {
 		parent::__construct(time: $time);
 		$this->pipeline = new ExportJobPipeline(
@@ -116,7 +119,7 @@ class RunExportJob extends QueuedJob {
 		$this->exportJobService->transitionJob(jobUuid: $jobUuid, action: 'start');
 
 		try {
-			$this->pipeline->execute(jobUuid: $jobUuid);
+			$this->executeAsOwner(jobUuid: $jobUuid);
 		} catch (\Throwable $e) {
 			// No-auto-retry: fire the declarative 'fail' transition, merge
 			// an errorMessage onto the record, and leave it for the user
@@ -132,6 +135,37 @@ class RunExportJob extends QueuedJob {
 			);
 		}//end try
 	}//end run()
+
+	/**
+	 * Run the export pipeline as the job's owner.
+	 *
+	 * A queued job runs with no session user, and OpenRegister refuses an
+	 * RBAC-checked read for `Anonymous`: the pipeline's first step,
+	 * loading its own ExportJob record, failed with "User 'Anonymous' does
+	 * not have permission to 'read' objects in schema 'Export Job'", so every
+	 * export ended `failed`. The lifecycle transitions already run as the
+	 * owner (ExportJobService::transitionJob()); the pipeline now does too, so
+	 * each read and write inside it is checked against the user who asked for
+	 * the export.
+	 *
+	 * @param string $jobUuid The ExportJob uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/apps-standalone-deploy/tasks.md#task-T07
+	 */
+	private function executeAsOwner(string $jobUuid): void {
+		$work = function () use ($jobUuid): void {
+			$this->pipeline->execute(jobUuid: $jobUuid);
+		};
+
+		if ($this->jobOwnerImpersonator === null) {
+			$work();
+			return;
+		}
+
+		$this->jobOwnerImpersonator->runAsOwner(objectId: $jobUuid, work: $work);
+	}//end executeAsOwner()
 
 	/**
 	 * Run the export for one job now, outside cron.
