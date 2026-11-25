@@ -27,6 +27,10 @@
  * this spec creates is deleted again in `afterAll`. The colleague is the
  * globalSetup fixture user `rbac-outsider`, from an empty storage state.
  *
+ * The manual run is queued: OpenRegister's flow worker (a background job)
+ * executes it, so the instance must run its background jobs (cron) while
+ * this spec runs; the run is listed `waiting` until then.
+ *
  * GUARDED: the manual run needs OpenRegister to start a manual flow for an app
  * user. Until it can, `POST /api/automations/{uuid}/run` (and the manual
  * listing) answers 503 and the scenarios that need a recorded run skip with
@@ -65,7 +69,6 @@ const OUTSIDER_PASS = process.env.NC_RBAC_OUTSIDER_PASS ?? 'RbacOutsider-1!'
 
 const HEADERS = { 'OCS-APIRequest': 'true' }
 const AUTOMATIONS = '/index.php/apps/buildiq/api/automations'
-const RECORDS = `/index.php/apps/openregister/api/objects/buildiq/${SCHEMA}`
 const RUN_ID = Date.now().toString(36)
 
 const RAN = { slug: `pw-runs-manual-${RUN_ID}`, name: `PW runs manual ${RUN_ID}` }
@@ -77,7 +80,7 @@ const createdAutomations: string[] = []
 const createdRecords: string[] = []
 
 /** Shared between the serial tests. */
-const state = { ran: '', never: '', notify: '', record: '', runSkipReason: '' }
+const state = { ran: '', never: '', notify: '', record: '', records: '', runSkipReason: '' }
 
 /**
  * The uuid of an OpenRegister object or buildiq record response.
@@ -100,19 +103,25 @@ async function expectOk(resp: APIResponse, what: string): Promise<void> {
 }
 
 /**
- * The uuid of the app's production version.
+ * The app's production version: its uuid and the register its records live in.
+ *
+ * A compiled automation reads and writes the records of the version's own
+ * register (`openbuild-<slug>` for the seeded fixture), so the record the
+ * manual run acts on is created there, not in buildiq's own register.
  *
  * @param request The admin request context.
- * @return The version uuid.
+ * @return The version uuid and register slug.
  */
-async function productionVersion(request: APIRequestContext): Promise<string> {
+async function productionVersion(request: APIRequestContext): Promise<{ uuid: string, register: string }> {
 	const resp = await request.get(`${BASE_URL}/index.php/apps/buildiq/api/applications/${APP_SLUG}/versions`, { headers: HEADERS })
 	await expectOk(resp, 'list the app versions')
 	const versions = await resp.json()
 	const production = (Array.isArray(versions) ? versions : []).find((v: any) => v?.slug === 'production')
 	const uuid = uuidOf(production ?? {})
 	expect(uuid, `${APP_SLUG} needs a production version`).not.toBe('')
-	return uuid
+	const register = String(production?.register ?? '')
+	expect(register, `${APP_SLUG}'s production version names its register`).not.toBe('')
+	return { uuid, register }
 }
 
 /**
@@ -125,7 +134,7 @@ async function productionVersion(request: APIRequestContext): Promise<string> {
 async function createAutomation(request: APIRequestContext, definition: Record<string, any>): Promise<string> {
 	const resp = await request.post(`${BASE_URL}${AUTOMATIONS}`, {
 		headers: HEADERS,
-		data: { applicationSlug: APP_SLUG, versionUuid: await productionVersion(request), enabled: false, ...definition },
+		data: { applicationSlug: APP_SLUG, versionUuid: (await productionVersion(request)).uuid, enabled: false, ...definition },
 	})
 	await expectOk(resp, `create automation ${definition.slug}`)
 	const uuid = uuidOf(await resp.json())
@@ -206,7 +215,8 @@ test.describe('logic-automation-run-log: the runs of an automation', () => {
 			}],
 		})
 
-		const record = await request.post(`${BASE_URL}${RECORDS}`, { headers: HEADERS, data: { title: `pw-runs-${RUN_ID}` } })
+		state.records = `/index.php/apps/openregister/api/objects/${(await productionVersion(request)).register}/${SCHEMA}`
+		const record = await request.post(`${BASE_URL}${state.records}`, { headers: HEADERS, data: { title: `pw-runs-${RUN_ID}` } })
 		await expectOk(record, `create a ${SCHEMA} record`)
 		state.record = uuidOf(await record.json())
 		createdRecords.push(state.record)
@@ -218,7 +228,7 @@ test.describe('logic-automation-run-log: the runs of an automation', () => {
 			await request.delete(`${BASE_URL}${AUTOMATIONS}/${uuid}`, { headers: HEADERS }).catch(() => {})
 		}
 		for (const uuid of createdRecords) {
-			await request.delete(`${BASE_URL}${RECORDS}/${uuid}`, { headers: HEADERS }).catch(() => {})
+			await request.delete(`${BASE_URL}${state.records}/${uuid}`, { headers: HEADERS }).catch(() => {})
 		}
 	})
 
@@ -241,8 +251,10 @@ test.describe('logic-automation-run-log: the runs of an automation', () => {
 		await expect.poll(async () => {
 			const resp = await request.get(runsUrl, { headers: HEADERS })
 			body = resp.ok() ? await resp.json() : {}
-			return (body.results ?? []).filter((r: any) => r?.subject?.uuid === state.record).length
-		}, { timeout: 30_000, message: 'one run record for this automation and record' }).toBe(1)
+			// The run is listed 'waiting' as soon as it is queued and completed
+			// from its flow run once OpenRegister's flow worker has run it.
+			return (body.results ?? []).filter((r: any) => r?.subject?.uuid === state.record && r?.outcome !== 'waiting').length
+		}, { timeout: 120_000, message: 'one finished run record for this automation and record' }).toBe(1)
 
 		const recorded = body.results.find((r: any) => r?.subject?.uuid === state.record)
 		expect(recorded.trigger).toBe('manual')
@@ -304,7 +316,9 @@ test.describe('logic-automation-run-log: the runs of an automation', () => {
 		await expect(runRow).toContainText('succeeded')
 		await expect(runRow.getByRole('link', { name: state.record }), 'the object cell links to the object').toBeVisible()
 
-		await runRow.click()
+		// The row toggles its detail; its object cell is a link that opens the
+		// record (and stops the toggle), so click the first cell, not the middle.
+		await runRow.locator('td').first().click()
 		await expect(runRow).toHaveAttribute('aria-expanded', 'true')
 		const detail = dialog.getByTestId('run-detail')
 		await expect(detail.getByRole('columnheader', { name: 'Action', exact: true })).toBeVisible()
