@@ -33,7 +33,7 @@
 
 			<CnApiReference
 				:document="built.document"
-				:download-name="downloadName">
+				:downloadName="downloadName">
 				<template #intro>
 					<p>
 						{{ t('buildiq', 'Base address') }}:
@@ -67,10 +67,10 @@
 </template>
 
 <script>
+import { CnApiReference } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { CnApiReference } from '@conduction/nextcloud-vue'
 import applicationContext from '../../mixins/applicationContext.js'
 import { boundSchemas, buildAppOpenApi, openApiFileName } from '../../services/appOpenApi.js'
 
