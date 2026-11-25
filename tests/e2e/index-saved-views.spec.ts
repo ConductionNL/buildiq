@@ -63,6 +63,8 @@ const SEED = {
 
 let appUuid = ''
 let register = ''
+/** The clone's own slug of the template's schema (`<app>-incident`, REQ-OBTC-005). */
+let schema = ''
 let indexPageId = ''
 let indexRoute = ''
 const records: Record<string, string> = {}
@@ -138,8 +140,11 @@ test.describe('data-index-grid-and-saved-views: views for everyone on an index p
 
 			const manifest = (await api(page, 'GET', MANIFEST_URL)).data
 			const pages = manifest.pages || []
-			const detail = pages.find((p: any) => p.type === 'detail' && p.config?.schema === SCHEMA)
-			const index = pages.find((p: any) => p.type === 'index' && p.config?.schema === SCHEMA)
+			// A clone prefixes the template's schema slug with the app's slug.
+			const onSchema = (p: any) => [SCHEMA, `${APP_SLUG}-${SCHEMA}`].includes(String(p.config?.schema ?? ''))
+			const detail = pages.find((p: any) => p.type === 'detail' && onSchema(p))
+			const index = pages.find((p: any) => p.type === 'index' && onSchema(p))
+			schema = String(index?.config?.schema ?? detail?.config?.schema ?? SCHEMA)
 			register = String(detail?.config?.register ?? '')
 			expect(register, 'the template\'s detail page names its register').not.toBe('')
 			expect(index, 'the template has an incident index page').toBeTruthy()
@@ -150,7 +155,7 @@ test.describe('data-index-grid-and-saved-views: views for everyone on an index p
 			expect(saved.status, JSON.stringify(saved.data).slice(0, 300)).toBeLessThan(300)
 
 			for (const [key, values] of Object.entries(SEED)) {
-				const obj = await api(page, 'POST', `/index.php/apps/openregister/api/objects/${register}/${SCHEMA}`, {
+				const obj = await api(page, 'POST', `/index.php/apps/openregister/api/objects/${register}/${schema}`, {
 					reportedBy: 'e2e',
 					incidentType: 'equipment',
 					severity: 'low',
@@ -170,7 +175,7 @@ test.describe('data-index-grid-and-saved-views: views for everyone on an index p
 		try {
 			await page.goto('/index.php/apps/buildiq/', { waitUntil: 'domcontentloaded' })
 			for (const id of Object.values(records)) {
-				await api(page, 'DELETE', `/index.php/apps/openregister/api/objects/${register}/${SCHEMA}/${id}`).catch(() => undefined)
+				await api(page, 'DELETE', `/index.php/apps/openregister/api/objects/${register}/${schema}/${id}`).catch(() => undefined)
 			}
 			if (appUuid !== '') {
 				await api(page, 'DELETE', `/index.php/apps/buildiq/api/applications/${appUuid}`, { deleteData: true })

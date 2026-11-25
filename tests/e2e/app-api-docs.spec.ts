@@ -36,7 +36,7 @@
  * `npm run test:e2e:install` once before invoking `npm run test:e2e`.
  */
 
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
@@ -107,6 +107,21 @@ async function loginAs(page: Page, user: string, pass: string): Promise<void> {
 	if (/\/login(\?|$|\/)/.test(page.url())) {
 		throw new Error(`Login as ${user} appears to have failed, still on ${page.url()}.`)
 	}
+}
+
+/**
+ * The CnApiReference operation of one method on the schema's collection path
+ * (`/objects/{register}/{app}-permit-application`).
+ *
+ * @param scope  The API tab.
+ * @param method The HTTP method.
+ * @return The operation.
+ */
+function schemaOperation(scope: Locator, method: string): Locator {
+	return scope.locator('.cn-api-operation')
+		.filter({ has: scope.page().locator('.cn-api-operation__method', { hasText: new RegExp(`^\\s*${method}\\s*$`) }) })
+		.filter({ has: scope.page().locator('.cn-api-operation__path', { hasText: new RegExp(`/objects/[^/]+/[^/]*${SCHEMA}\\s*$`) }) })
+		.first()
 }
 
 /**
@@ -188,13 +203,13 @@ test.describe('operate-api-docs: the API tab of an app', () => {
 		await openApiTab(page)
 		const tab = page.locator('.ob-api-tab').first()
 
-		const card = tab.locator('.ob-api-tab__schema').filter({ hasText: SCHEMA }).first()
-		await expect(card, `the tab lists ${SCHEMA}`).toBeVisible({ timeout: 30_000 })
-		await expect(
-			card.locator('.ob-api-tab__calls code').filter({ hasText: new RegExp(`^GET \\S*/objects/[^/]+/${SCHEMA}$`) }).first(),
-			'the schema\'s list call is shown',
-		).toBeVisible()
-		await expect(card.locator('.ob-api-tab__fields'), 'its fields are shown').toBeVisible()
+		// The tab shows the app's OpenAPI document with CnApiReference (#1880):
+		// one operation per call, its path naming the clone's schema slug
+		// (`<app>-permit-application`).
+		const listCall = schemaOperation(tab, 'GET')
+		await expect(listCall, `the tab lists ${SCHEMA}'s list call`).toBeVisible({ timeout: 30_000 })
+		await listCall.locator('.cn-api-operation__toggle').click()
+		await expect(listCall.locator('.cn-api-operation__body'), 'its fields are shown').toContainText('applicant')
 		await expect(tab.locator('.ob-api-tab__base'), 'the base address of this instance').toContainText(`${instance}`)
 		await expect(tab.getByText(/app password/i).first(), 'it says how to sign in with an app password').toBeVisible()
 
@@ -209,24 +224,30 @@ test.describe('operate-api-docs: the API tab of an app', () => {
 		expect(document.info?.title, 'titled after the app').toBe(APP_NAME)
 		expect(String(document.info?.version ?? ''), 'it carries the version').not.toBe('')
 		const paths = Object.keys(document.paths ?? {})
-		expect(paths.some((p) => p.endsWith(`/${SCHEMA}`)), 'the file holds the schema\'s list call').toBeTruthy()
+		expect(paths.some((p) => p.endsWith(SCHEMA)), 'the file holds the schema\'s list call').toBeTruthy()
 
 		expect(outside, 'no request left the instance while the tab was open').toEqual([])
 	})
 
 	// @e2e app-api-docs/requirement-an-app-has-an-api-tab-per-version-req-bqad-001/an-integrator-reads-the-permit-api
 	test.describe('as a viewer of the app', () => {
-		test.use({ storageState: { cookies: [], origins: [] } })
-
-		test('a viewer opens the API tab and reads the same schema', async ({ page }) => {
-			await loginAs(page, VIEWER_USER, VIEWER_PASS)
-			await suppressSupportDialog(page)
-			await suppressSetupWizard(page)
-			await openApiTab(page)
-			await expect(
-				page.locator('.ob-api-tab__schema').filter({ hasText: SCHEMA }).first(),
-				'a viewer sees the schema the app uses',
-			).toBeVisible({ timeout: 30_000 })
+		test('a viewer opens the API tab and reads the same schema', async ({ browser }) => {
+			// Its own empty context: after the owner's test in this serial
+			// block the page fixture still carried the admin session.
+			const viewer = await browser.newContext({ baseURL: E2E_BASE_URL, storageState: { cookies: [], origins: [] } })
+			const page = await viewer.newPage()
+			try {
+				await loginAs(page, VIEWER_USER, VIEWER_PASS)
+				await suppressSupportDialog(page)
+				await suppressSetupWizard(page)
+				await openApiTab(page)
+				await expect(
+					schemaOperation(page.locator('.ob-api-tab').first(), 'GET'),
+					'a viewer sees the schema the app uses',
+				).toBeVisible({ timeout: 30_000 })
+			} finally {
+				await viewer.close()
+			}
 		})
 	})
 })
