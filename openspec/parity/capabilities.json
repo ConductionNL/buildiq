@@ -8491,7 +8491,7 @@
 					"openspec/specs/first-time-setup :: Provisioning runs from the admin settings page",
 					"openspec/changes/capability-requirements-backfill/specs/settings-and-observability :: An administrator configures the builder on the admin settings page (REQ-BQCV-026)"
 				],
-				"plan": "openspec/changes/openbuild-admin-settings-abstraction"
+				"plan": "openspec/changes/archive/2026-11-25-openbuild-admin-settings-abstraction"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",

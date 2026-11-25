@@ -253,7 +253,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-51
-	 * @spec openspec/changes/openbuild-admin-settings-abstraction/specs/admin-settings-owner-gating/spec.md#requirement-owner-signal-is-derived-from-existing-buildiq-primitives
+	 * @spec openspec/changes/archive/2026-11-25-openbuild-admin-settings-abstraction/tasks.md#task-4.1
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -1981,7 +1981,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 *
 	 * @return array<string, mixed> The manifest with `runtime.user.isOwner` set (boolean).
 	 *
-	 * @spec openspec/changes/openbuild-admin-settings-abstraction/specs/admin-settings-owner-gating/spec.md#requirement-owner-signal-is-derived-from-existing-buildiq-primitives
+	 * @spec openspec/changes/archive/2026-11-25-openbuild-admin-settings-abstraction/tasks.md#task-4.1
 	 */
 	private function injectOwnerSignal(array $manifest, ?array $applicationArray, ?IUser $caller): array {
 		$isOwner = false;
