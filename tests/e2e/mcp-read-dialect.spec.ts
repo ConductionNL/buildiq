@@ -58,7 +58,9 @@ test.describe('the read-only MCP dialect on the imported register', () => {
 				expect(dialect.tools[verb].scope).toBe('read')
 				expect(dialect.tools[verb].readOnlyHint).toBe(true)
 			}
-			expect(dialect.tools.search.filters).toEqual(filters)
+			// The order is not part of the dialect: the register import keeps
+			// the filters, sorted.
+			expect([...dialect.tools.search.filters].sort()).toEqual([...filters].sort())
 		})
 	}
 })
