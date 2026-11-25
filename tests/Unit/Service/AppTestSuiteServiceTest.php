@@ -4,8 +4,8 @@
  * Unit tests for AppTestSuiteService.
  *
  * The structure checks of a version's manifest, the test cases of the rule
- * sets the app owns, and record tests that are skipped, never passed, until
- * OpenRegister can check a record without saving it.
+ * sets the app owns, and record tests checked through OpenRegister's
+ * validate-only call, skipped (never passed) where OpenRegister lacks it.
  *
  * @category Test
  * @package  OCA\Buildiq\Tests\Unit\Service
@@ -27,21 +27,26 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\AppTestSuiteService;
+use OCA\Buildiq\Service\RecordTestRunner;
 use OCA\Buildiq\Service\RegistrationFormTargetSchemaReader;
 use OCA\Buildiq\Service\RuleObjectReader;
 use OCA\Buildiq\Service\RuleSetVersioningService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectValidationVerdict;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * Covers the three kinds of check.
  *
  * @covers \OCA\Buildiq\Service\AppTestSuiteService
+ * @covers \OCA\Buildiq\Service\RecordTestRunner
  * @uses   \OCA\Buildiq\Service\RegistrationFormTargetSchemaReader
  */
 final class AppTestSuiteServiceTest extends TestCase {
@@ -78,10 +83,11 @@ final class AppTestSuiteServiceTest extends TestCase {
 	 *
 	 * @param array<string, mixed>|null $properties The properties of `permit`, or null for a missing register.
 	 * @param array<int, string>        $failing    The rule test cases runTestGate reports failing.
+	 * @param ObjectServiceInterface|null $records  OpenRegister's object service, for the validate-only call.
 	 *
 	 * @return AppTestSuiteService
 	 */
-	private function suite(?array $properties, array $failing=[]): AppTestSuiteService {
+	private function suite(?array $properties, array $failing=[], ?ObjectServiceInterface $records=null): AppTestSuiteService {
 		$schema = $this->createMock(Schema::class);
 		$schema->method('getSlug')->willReturn('permit');
 		$schema->method('getProperties')->willReturn(($properties ?? []));
@@ -120,7 +126,7 @@ final class AppTestSuiteServiceTest extends TestCase {
 		$versioning = $this->createMock(RuleSetVersioningService::class);
 		$versioning->method('runTestGate')->willReturn($failing);
 
-		return new AppTestSuiteService(schemas: $reader, objects: $objects, versioning: $versioning);
+		return new AppTestSuiteService(schemas: $reader, objects: $objects, versioning: $versioning, runner: new RecordTestRunner(records: $records));
 	}//end suite()
 
 	/**
@@ -239,7 +245,7 @@ final class AppTestSuiteServiceTest extends TestCase {
 	}//end testARuleSetOfAnotherAppIsLeftOut()
 
 	/**
-	 * Record tests are skipped with the reason, never passed, while OpenRegister cannot validate without saving.
+	 * Without a validate-only call record tests are skipped with the reason, never passed.
 	 *
 	 * @return void
 	 */
@@ -251,7 +257,7 @@ final class AppTestSuiteServiceTest extends TestCase {
 			],
 		];
 
-		$report = $this->suite(properties: ['title' => [], 'kvkNumber' => [], 'applicant' => [], 'notes' => []])->run(['slug' => 'vergunningen', 'id' => 'app-1'], self::VERSION);
+		$report = $this->suite(properties: ['title' => [], 'kvkNumber' => [], 'applicant' => [], 'notes' => []])->run(['slug' => 'vergunningen', 'id' => 'app-1'], self::VERSION + ['register' => 'vergunningen']);
 
 		$this->assertSame(1, $report['skipped']);
 		$this->assertSame(
@@ -259,4 +265,154 @@ final class AppTestSuiteServiceTest extends TestCase {
 			$report['checks'][8]
 		);
 	}//end testRecordTestsAreSkippedWithTheReasonNeverPassed()
+
+	/**
+	 * The record checks of one record test answered by the given verdict.
+	 *
+	 * @param array<string, mixed>                $test     The record test.
+	 * @param ObjectValidationVerdict|RuntimeException $verdict The verdict, or the exception the call throws.
+	 * @param string                              $register The version's register.
+	 *
+	 * @return list<array{kind: string, name: string, outcome: string, message: string}>
+	 */
+	private function recordChecksFor(array $test, ObjectValidationVerdict|RuntimeException $verdict, string $register='vergunningen'): array {
+		$this->objects = ['app-record-test' => [$test + ['application' => 'app-1', 'schema' => 'permit', 'name' => 'Sample']]];
+		$records = $this->createMock(ObjectServiceInterface::class);
+		$call = $records->method('validateObject');
+		if ($register !== '') {
+			$call->with(($test['record'] ?? []), $register, 'permit');
+		}
+
+		if ($verdict instanceof RuntimeException) {
+			$call->willThrowException($verdict);
+		} else {
+			$call->willReturn($verdict);
+		}
+
+		$records->expects($this->never())->method('saveObject');
+
+		return $this->suite(properties: [], records: $records)->recordChecks(appId: 'app-1', register: $register);
+	}//end recordChecksFor()
+
+	/**
+	 * REQ-BQRT-003 scenario: a permit without an applicant is refused on `applicant`, so the test passes and nothing is saved.
+	 *
+	 * @return void
+	 */
+	public function testAPermitWithoutAnApplicantIsRefusedSoTheTestPasses(): void {
+		$checks = $this->recordChecksFor(
+			test: ['name' => 'Permit needs an applicant', 'record' => ['title' => 'Dakkapel'], 'expect' => 'refuse', 'expectedFields' => ['applicant']],
+			verdict: new ObjectValidationVerdict(errors: [['property' => 'applicant', 'message' => 'The property applicant is required.', 'rule' => 'schema']])
+		);
+
+		$this->assertSame([['kind' => 'record', 'name' => 'permit: Permit needs an applicant', 'outcome' => 'passed', 'message' => '']], $checks);
+	}//end testAPermitWithoutAnApplicantIsRefusedSoTheTestPasses()
+
+	/**
+	 * A record expected to be accepted passes when OpenRegister accepts it.
+	 *
+	 * @return void
+	 */
+	public function testAnAcceptedRecordPassesWhenAcceptanceIsExpected(): void {
+		$checks = $this->recordChecksFor(test: ['record' => ['title' => 'Dakkapel', 'applicant' => 'J. Jansen'], 'expect' => 'accept'], verdict: new ObjectValidationVerdict());
+
+		$this->assertSame('passed', $checks[0]['outcome']);
+	}//end testAnAcceptedRecordPassesWhenAcceptanceIsExpected()
+
+	/**
+	 * A record expected to be accepted fails, naming the refused fields, when OpenRegister refuses it.
+	 *
+	 * @return void
+	 */
+	public function testARefusedRecordFailsWhenAcceptanceIsExpected(): void {
+		$checks = $this->recordChecksFor(
+			test: ['record' => ['title' => ''], 'expect' => 'accept'],
+			verdict: new ObjectValidationVerdict(errors: [['property' => 'title', 'message' => 'Too short.', 'rule' => 'schema'], ['property' => null, 'message' => 'Bounds.', 'rule' => 'write-rule']])
+		);
+
+		$this->assertSame('failed', $checks[0]['outcome']);
+		$this->assertSame('Expected the record to be accepted, but it was refused on title, (record).', $checks[0]['message']);
+	}//end testARefusedRecordFailsWhenAcceptanceIsExpected()
+
+	/**
+	 * A refusal on another field than the expected one fails the test.
+	 *
+	 * @return void
+	 */
+	public function testARefusalOnAnotherFieldFails(): void {
+		$checks = $this->recordChecksFor(
+			test: ['record' => ['title' => 'x'], 'expect' => 'refuse', 'expectedFields' => ['applicant']],
+			verdict: new ObjectValidationVerdict(errors: [['property' => 'title', 'message' => 'Too short.', 'rule' => 'schema']])
+		);
+
+		$this->assertSame('failed', $checks[0]['outcome']);
+		$this->assertSame('Expected a refusal on applicant, but it was refused on title.', $checks[0]['message']);
+	}//end testARefusalOnAnotherFieldFails()
+
+	/**
+	 * A record expected to be refused fails when OpenRegister accepts it.
+	 *
+	 * @return void
+	 */
+	public function testAnAcceptedRecordFailsWhenARefusalIsExpected(): void {
+		$checks = $this->recordChecksFor(test: ['record' => ['title' => 'Dakkapel'], 'expect' => 'refuse', 'expectedFields' => ['applicant']], verdict: new ObjectValidationVerdict());
+
+		$this->assertSame('failed', $checks[0]['outcome']);
+		$this->assertSame('Expected the record to be refused, but it was accepted.', $checks[0]['message']);
+	}//end testAnAcceptedRecordFailsWhenARefusalIsExpected()
+
+	/**
+	 * A refusal expected on no field in particular passes on any refusal.
+	 *
+	 * @return void
+	 */
+	public function testARefusalWithoutExpectedFieldsPassesOnAnyRefusal(): void {
+		$checks = $this->recordChecksFor(
+			test: ['record' => [], 'expect' => 'refuse', 'expectedFields' => []],
+			verdict: new ObjectValidationVerdict(errors: [['property' => 'title', 'message' => 'Required.', 'rule' => 'schema']])
+		);
+
+		$this->assertSame('passed', $checks[0]['outcome']);
+	}//end testARefusalWithoutExpectedFieldsPassesOnAnyRefusal()
+
+	/**
+	 * A call that throws fails the test rather than passing or skipping it.
+	 *
+	 * @return void
+	 */
+	public function testACallThatThrowsFailsTheTest(): void {
+		$checks = $this->recordChecksFor(test: ['record' => [], 'expect' => 'accept'], verdict: new RuntimeException('Schema permit not found'));
+
+		$this->assertSame('failed', $checks[0]['outcome']);
+		$this->assertSame('The record could not be checked: Schema permit not found', $checks[0]['message']);
+	}//end testACallThatThrowsFailsTheTest()
+
+	/**
+	 * A version without a register fails its record tests.
+	 *
+	 * @return void
+	 */
+	public function testAVersionWithoutARegisterFailsItsRecordTests(): void {
+		$checks = $this->recordChecksFor(test: ['record' => [], 'expect' => 'accept'], verdict: new ObjectValidationVerdict(), register: '');
+
+		$this->assertSame('failed', $checks[0]['outcome']);
+		$this->assertSame(AppTestSuiteService::RECORD_TEST_NO_REGISTER, $checks[0]['message']);
+	}//end testAVersionWithoutARegisterFailsItsRecordTests()
+
+	/**
+	 * The suite hands the version's register to the record tests.
+	 *
+	 * @return void
+	 */
+	public function testTheSuiteChecksRecordsAgainstTheVersionsRegister(): void {
+		$this->objects = ['app-record-test' => [['application' => 'app-1', 'schema' => 'permit', 'name' => 'Accepts', 'record' => ['title' => 'x'], 'expect' => 'accept']]];
+		$records = $this->createMock(ObjectServiceInterface::class);
+		$records->expects($this->once())->method('validateObject')->with(['title' => 'x'], 'openbuild-vergunningen-development', 'permit')->willReturn(new ObjectValidationVerdict());
+
+		$report = $this->suite(properties: ['title' => [], 'kvkNumber' => [], 'applicant' => [], 'notes' => []], records: $records)
+			->run(['slug' => 'vergunningen', 'id' => 'app-1'], self::VERSION + ['register' => 'openbuild-vergunningen-development']);
+
+		$this->assertSame('passed', $report['checks'][8]['outcome']);
+		$this->assertSame(0, $report['skipped']);
+	}//end testTheSuiteChecksRecordsAgainstTheVersionsRegister()
 }//end class

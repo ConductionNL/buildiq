@@ -15,9 +15,11 @@
  *   leads to a page of the version.
  * - Rule sets: the stored test cases of every rule set whose owner app is this
  *   app, through RuleSetVersioningService::runTestGate().
- * - Record tests: the app's record tests. OpenRegister cannot validate a record
- *   without saving it yet, so each is reported skipped with that reason, never
- *   passed.
+ * - Record tests: the app's record tests, each run through OpenRegister's
+ *   validate-only call (`ObjectServiceInterface::validateObject()`, change
+ *   records-validate-without-saving) against the version's register, so
+ *   nothing is saved. An OpenRegister without that call reports each test
+ *   skipped with the reason, never passed.
  *
  * A schema that cannot be read fails its checks rather than passing them: a
  * check that silently did not run looks exactly like one that passed.
@@ -62,9 +64,14 @@ class AppTestSuiteService {
 	public const RECORD_TEST_SCHEMA = 'app-record-test';
 
 	/**
-	 * Why a record test does not run yet (REQ-BQRT-003).
+	 * Why a record test does not run (REQ-BQRT-003).
 	 */
-	public const RECORD_TEST_SKIP_REASON = 'OpenRegister cannot check a record without saving it yet, so this record test did not run.';
+	public const RECORD_TEST_SKIP_REASON = RecordTestRunner::SKIP_REASON;
+
+	/**
+	 * Why a record test fails when its version names no register.
+	 */
+	public const RECORD_TEST_NO_REGISTER = RecordTestRunner::NO_REGISTER;
 
 	/**
 	 * Property lists already read in this run, by "register/schema"; null when
@@ -80,11 +87,13 @@ class AppTestSuiteService {
 	 * @param RegistrationFormTargetSchemaReader $schemas    Reads a schema of a register.
 	 * @param RuleObjectReader                   $objects    Reads rule sets, their test cases and record tests.
 	 * @param RuleSetVersioningService           $versioning Runs a rule set's test cases.
+	 * @param RecordTestRunner                   $runner     Checks one record test without saving it.
 	 */
 	public function __construct(
 		private readonly RegistrationFormTargetSchemaReader $schemas,
 		private readonly RuleObjectReader $objects,
 		private readonly RuleSetVersioningService $versioning,
+		private readonly RecordTestRunner $runner=new RecordTestRunner(),
 	) {
 	}//end __construct()
 
@@ -108,7 +117,7 @@ class AppTestSuiteService {
 		$checks = array_merge(
 			$this->structureChecks(manifest: $manifest),
 			$this->ruleSetChecks(appSlug: (string)($application['slug'] ?? '')),
-			$this->recordChecks(appId: self::idOf(object: $application))
+			$this->recordChecks(appId: self::idOf(object: $application), register: (string)($version['register'] ?? ''))
 		);
 
 		$counts = array_count_values(array_column($checks, 'outcome'));
@@ -333,16 +342,18 @@ class AppTestSuiteService {
 	}//end ruleSetChecks()
 
 	/**
-	 * The app's record tests. Each is skipped with its reason until
-	 * OpenRegister can check a record without saving it; none is passed.
+	 * The record tests of an app, each checked against the version's register without saving.
 	 *
-	 * @param string $appId The app's uuid.
+	 * Each test runs through RecordTestRunner, which says when it passes.
+	 *
+	 * @param string $appId    The app's uuid.
+	 * @param string $register The version's register (id, uuid or slug).
 	 *
 	 * @return list<array{kind: string, name: string, outcome: string, message: string}>
 	 *
 	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 	 */
-	public function recordChecks(string $appId): array {
+	public function recordChecks(string $appId, string $register=''): array {
 		if ($appId === '') {
 			return [];
 		}
@@ -350,11 +361,13 @@ class AppTestSuiteService {
 		$checks = [];
 		foreach ($this->objects->findScoped(schema: self::RECORD_TEST_SCHEMA, filters: ['application' => $appId]) as $test) {
 			$name = (string)($test['schema'] ?? '') . ': ' . (string)($test['name'] ?? 'unnamed');
-			$checks[] = self::check(kind: self::KIND_RECORD, name: $name, outcome: self::SKIPPED, message: self::RECORD_TEST_SKIP_REASON);
+			$result   = $this->runner->run(test: $test, register: $register);
+			$checks[] = self::check(kind: self::KIND_RECORD, name: $name, outcome: $result['outcome'], message: $result['message']);
 		}
 
 		return $checks;
 	}//end recordChecks()
+
 
 	/**
 	 * The uuid of an object array: `id`, else `uuid`, else `@self.id`.

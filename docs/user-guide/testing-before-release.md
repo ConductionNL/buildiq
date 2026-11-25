@@ -19,9 +19,12 @@ it was.
 - **Rule sets.** The stored test cases of every rule set the app owns. A failing case is
   named by its rule set and case, for example `permit-fees: Large build pays 1200`.
 - **Record tests.** Sample records you write per schema, with whether the schema should
-  accept or refuse them. Record tests are reported as **skipped** for now: OpenRegister
-  cannot yet check a record without saving it, and a test that did not run is never shown
-  as passed.
+  accept or refuse them, and for a refusal the fields it should be refused on.
+  OpenRegister checks each sample against the version's schema without saving it. A test
+  passes when the record is accepted as expected, or refused on every field you named;
+  it fails when it is refused where you expected acceptance, accepted where you expected a
+  refusal, or refused only on other fields. On an OpenRegister that cannot check a record
+  without saving it, record tests are reported as **skipped**, never as passed.
 
 ## The Tests tab
 
