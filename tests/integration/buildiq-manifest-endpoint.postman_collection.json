@@ -1,0 +1,517 @@
+{
+	"info": {
+		"_postman_id": "buildiq-manifest-endpoint-collection",
+		"name": "Buildiq manifest endpoint — legacy blob and base + delta (app-delta-override 7.1)",
+		"description": "Newman suite for app-delta-override task 7.1 (REQ-OBR-001 scenarios 'Legacy blob app serves unchanged' and 'Delta-mode app serves a merged manifest').\n\nSelf-contained: setup creates a base app and a derived app through the wizard with fresh slugs, gives the derived app's production version a `baseRef` (kind `buildiq-app`) and a one-page `manifestDelta`, then adds a page to the base so the run proves the base is read live. Both apps are deleted at the end.\n\nThe version fields are written with PATCH on the OpenRegister object, as the page designer saves them (`PageDesignerHost::saveOntoVersion`): buildiq's version PUT keeps only its MUTABLE_FIELDS, and a full PUT on the object trips the `register` collision.\n\nOn MariaDB this needs openregister#11175: without it every object lock fails and the version writes answer 409.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{admin_user}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{admin_password}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "manifest-endpoint",
+			"item": [
+				{
+					"name": "0. Setup: fresh slugs",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const run = Math.random().toString(36).slice(2, 8);",
+									"pm.collectionVariables.set('base_slug', 'newman-delta-base-' + run);",
+									"pm.collectionVariables.set('child_slug', 'newman-delta-child-' + run);",
+									"pm.test('Nextcloud is up', function () { pm.response.to.have.status(200); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/status.php"
+					}
+				},
+				{
+					"name": "1. Create the base app (legacy blob)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('201', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+									"pm.collectionVariables.set('base_uuid', pm.response.json().applicationUuid);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/wizard",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Newman Delta Base\",\n  \"slug\": \"{{base_slug}}\",\n  \"description\": \"app-delta-override 7.1 base\",\n  \"preset\": \"single\",\n  \"versions\": []\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "2. Create the derived app",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('201', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+									"pm.collectionVariables.set('child_uuid', pm.response.json().applicationUuid);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/wizard",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Newman Delta Child\",\n  \"slug\": \"{{child_slug}}\",\n  \"description\": \"app-delta-override 7.1 derived\",\n  \"preset\": \"single\",\n  \"versions\": []\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "3. Read the base's stored production manifest",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const versions = pm.response.json();",
+									"pm.test('the base has one version with a stored manifest', function () { pm.expect(versions[0].manifest.pages).to.be.an('array').that.is.not.empty; });",
+									"pm.collectionVariables.set('base_version_uuid', versions[0].id);",
+									"pm.collectionVariables.set('base_manifest', JSON.stringify(versions[0].manifest));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{base_slug}}/versions"
+					}
+				},
+				{
+					"name": "4. Legacy blob app serves its stored manifest unchanged",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', function () { pm.response.to.have.status(200); });",
+									"const body = pm.response.json();",
+									"pm.test('no raw baseRef, manifestDelta or merge diagnostics in the response', function () {",
+									"    ['baseRef', 'manifestDelta', 'orphanedDeltaPaths', 'diagnostics'].forEach(function (key) { pm.expect(body).to.not.have.property(key); });",
+									"});",
+									"const stored = JSON.parse(pm.collectionVariables.get('base_manifest'));",
+									"pm.test('pages, menu and version are the stored blob', function () {",
+									"    pm.expect(body.pages).to.eql(stored.pages);",
+									"    pm.expect(body.menu).to.eql(stored.menu);",
+									"    pm.expect(body.version).to.eql(stored.version);",
+									"});",
+									"pm.test('the Application name is injected', function () { pm.expect(body.name).to.equal('Newman Delta Base'); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{base_slug}}/manifest"
+					}
+				},
+				{
+					"name": "5. Find the derived app's production version",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const versions = pm.response.json();",
+									"pm.test('one version', function () { pm.expect(versions).to.have.lengthOf(1); });",
+									"pm.collectionVariables.set('child_version_uuid', versions[0].id);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{child_slug}}/versions"
+					}
+				},
+				{
+					"name": "6. Give the derived version a base and a one-page delta",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', function () { pm.response.to.have.status(200); });",
+									"pm.test('the base and delta are stored', function () { pm.expect(pm.response.json().baseRef.id).to.equal(pm.collectionVariables.get('base_slug')); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/applicationVersion/{{child_version_uuid}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"baseRef\": {\n    \"kind\": \"buildiq-app\",\n    \"id\": \"{{base_slug}}\"\n  },\n  \"manifestDelta\": {\n    \"pages\": [\n      {\n        \"id\": \"MessagesIndex\",\n        \"title\": \"Delta messages\"\n      }\n    ]\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "7. Add a page to the base",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const m = JSON.parse(pm.collectionVariables.get('base_manifest'));",
+									"m.pages.push({ id: 'BaseOnly', route: '/base-only', type: 'index', title: 'Base only', config: {} });",
+									"pm.collectionVariables.set('base_manifest_plus', JSON.stringify({ manifest: m }));"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', function () { pm.response.to.have.status(200); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/applicationVersion/{{base_version_uuid}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{{base_manifest_plus}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "8. Delta-mode app serves the merged manifest",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', function () { pm.response.to.have.status(200); });",
+									"const body = pm.response.json();",
+									"pm.test('no raw baseRef, manifestDelta or merge diagnostics in the response', function () {",
+									"    ['baseRef', 'manifestDelta', 'orphanedDeltaPaths', 'diagnostics'].forEach(function (key) { pm.expect(body).to.not.have.property(key); });",
+									"});",
+									"const byId = {}; body.pages.forEach(function (p) { byId[p.id] = p; });",
+									"pm.test('the delta retitles its page', function () { pm.expect(byId.MessagesIndex.title).to.equal('Delta messages'); });",
+									"pm.test('the base is read live: its new page is inherited', function () { pm.expect(byId).to.have.property('BaseOnly'); });",
+									"pm.test('the untouched base page is kept', function () { pm.expect(byId).to.have.property('Dashboard'); });",
+									"pm.test('the derived Application name is injected', function () { pm.expect(body.name).to.equal('Newman Delta Child'); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{child_slug}}/manifest"
+					}
+				},
+				{
+					"name": "9. Teardown: delete the derived app",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', function () { pm.expect(pm.response.code).to.be.oneOf([200, 204]); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{child_uuid}}"
+					}
+				},
+				{
+					"name": "10. Teardown: delete the base app",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', function () { pm.expect(pm.response.code).to.be.oneOf([200, 204]); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{base_uuid}}"
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "base_slug",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "child_slug",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "base_uuid",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "child_uuid",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "base_version_uuid",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "child_version_uuid",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "base_manifest",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "base_manifest_plus",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

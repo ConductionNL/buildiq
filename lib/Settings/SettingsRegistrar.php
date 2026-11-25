@@ -31,6 +31,8 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
+use Psr\Container\ContainerInterface;
+use ReflectionClass;
 
 /**
  * Registers the admin settings section and panel.
@@ -46,6 +48,23 @@ use OCP\IURLGenerator;
 final class SettingsRegistrar {
 
 	/**
+	 * OpenRegister's value classes for a settings section and panel.
+	 *
+	 * @var string
+	 */
+	private const PLACEMENT = 'OCA\\OpenRegister\\AppHost\\Settings\\SettingsPlacement';
+
+	/**
+	 * @var string
+	 */
+	private const APPEARANCE = 'OCA\\OpenRegister\\AppHost\\Settings\\SectionAppearance';
+
+	/**
+	 * @var string
+	 */
+	private const FORM_SERVICES = 'OCA\\OpenRegister\\AppHost\\Settings\\AdminFormServices';
+
+	/**
 	 * Bind the admin settings section and panel.
 	 *
 	 * @param IRegistrationContext $context The registration context
@@ -58,8 +77,10 @@ final class SettingsRegistrar {
 		// 4. SettingsSection + AdminSettings — the admin settings section and
 		// panel referenced by info.xml `<settings>`. Both are one-line leaf
 		// subclasses of OpenRegister's GenericSettingsSection / GenericAdminSettings,
-		// whose constructors take scalar params (sectionId, name, icon, priority)
-		// that are NOT autowireable — they MUST be bound by a service factory.
+		// whose constructors take values that are NOT autowireable (the scalars
+		// sectionId, name, icon, priority, or on current OpenRegister the
+		// SettingsPlacement / SectionAppearance / AdminFormServices values that
+		// carry them) — they MUST be bound by a service factory.
 		// Bootstrap::register() normally binds them, but when Bootstrap is not
 		// autoloadable at register() time (it lives in OCA\OpenRegister and that
 		// app's autoloader is not guaranteed to be registered before Buildiq
@@ -72,25 +93,105 @@ final class SettingsRegistrar {
 		// they resolve regardless of app load order (last registration wins).
 		$context->registerService(
 			SettingsSection::class,
-			static fn ($c): SettingsSection => new SettingsSection(
-				sectionId: AppIdentity::APP_ID,
-				name: 'Buildiq',
-				appId: AppIdentity::APP_ID,
-				iconFile: 'app-dark.svg',
-				priority: 75,
-				urlGenerator: $c->get(IURLGenerator::class)
-			)
+			static fn (ContainerInterface $c): SettingsSection => self::section(urlGenerator: $c->get(IURLGenerator::class))
 		);
 		$context->registerService(
 			AdminSettings::class,
-			static fn ($c): AdminSettings => new AdminSettings(
-				appId: AppIdentity::APP_ID,
-				sectionId: AppIdentity::APP_ID,
-				priority: 10,
+			static fn (ContainerInterface $c): AdminSettings => self::panel(
 				appManager: $c->get(IAppManager::class),
 				initialState: $c->get(IInitialState::class),
 				appConfig: $c->get(IAppConfig::class)
 			)
 		);
 	}//end registerAdminSettings()
+	/**
+	 * The Buildiq settings section, built the way the installed OpenRegister's constructor takes it.
+	 *
+	 * OpenRegister moved GenericSettingsSection's scalar parameters into
+	 * SettingsPlacement + SectionAppearance values. Building it with the old
+	 * named parameters threw "Unknown named parameter $appId" and answered 500
+	 * on /settings/admin/buildiq; older OpenRegister (and the unit-test stub)
+	 * still take the scalars.
+	 *
+	 * @param IURLGenerator $urlGenerator The URL generator.
+	 *
+	 * @return SettingsSection
+	 *
+	 * @spec openspec/specs/app-composition-bindings/spec.md
+	 */
+	private static function section(IURLGenerator $urlGenerator): SettingsSection {
+		if (self::takesPlacement(class: SettingsSection::class) === true) {
+			$placement  = self::PLACEMENT;
+			$appearance = self::APPEARANCE;
+			// Named keys: the unit-test stub, which static analysis reads, still
+			// declares the scalar constructor.
+			return (new ReflectionClass(objectOrClass: SettingsSection::class))->newInstanceArgs(
+				args: [
+					'placement'    => new $placement(AppIdentity::APP_ID, AppIdentity::APP_ID, 75),
+					'appearance'   => new $appearance('Buildiq', 'app-dark.svg'),
+					'urlGenerator' => $urlGenerator,
+				]
+			);
+		}
+
+		return new SettingsSection(
+			sectionId: AppIdentity::APP_ID,
+			name: 'Buildiq',
+			appId: AppIdentity::APP_ID,
+			iconFile: 'app-dark.svg',
+			priority: 75,
+			urlGenerator: $urlGenerator
+		);
+	}//end section()
+
+	/**
+	 * The Buildiq admin panel, built the way the installed OpenRegister's constructor takes it.
+	 *
+	 * @param IAppManager   $appManager   The app manager.
+	 * @param IInitialState $initialState The initial state.
+	 * @param IAppConfig    $appConfig    The app config.
+	 *
+	 * @return AdminSettings
+	 *
+	 * @spec openspec/specs/app-composition-bindings/spec.md
+	 */
+	private static function panel(IAppManager $appManager, IInitialState $initialState, IAppConfig $appConfig): AdminSettings {
+		if (self::takesPlacement(class: AdminSettings::class) === true) {
+			$placement = self::PLACEMENT;
+			$services  = self::FORM_SERVICES;
+			return (new ReflectionClass(objectOrClass: AdminSettings::class))->newInstanceArgs(
+				args: [
+					'placement' => new $placement(AppIdentity::APP_ID, AppIdentity::APP_ID, 10),
+					'services'  => new $services($appManager, $initialState, $appConfig),
+				]
+			);
+		}
+
+		return new AdminSettings(
+			appId: AppIdentity::APP_ID,
+			sectionId: AppIdentity::APP_ID,
+			priority: 10,
+			appManager: $appManager,
+			initialState: $initialState,
+			appConfig: $appConfig
+		);
+	}//end panel()
+
+	/**
+	 * Whether the class's constructor takes OpenRegister's SettingsPlacement first.
+	 *
+	 * @param class-string $class The settings class.
+	 *
+	 * @return bool
+	 */
+	private static function takesPlacement(string $class): bool {
+		if (class_exists(self::PLACEMENT) === false) {
+			return false;
+		}
+
+		$constructor = (new ReflectionClass(objectOrClass: $class))->getConstructor();
+		$first       = ($constructor?->getParameters()[0] ?? null);
+
+		return ($first !== null && ltrim((string) $first->getType(), characters: '?\\') === self::PLACEMENT);
+	}//end takesPlacement()
 }//end class

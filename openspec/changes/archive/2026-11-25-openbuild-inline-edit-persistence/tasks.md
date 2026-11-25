@@ -60,7 +60,8 @@
 
 - [x] 5.1 On one fleet app (proof-of-concept), wire its loader to `useAppManifest(appId, bundledManifest, { mergeStrategy: 'delta', endpoint: generateUrl('/apps/buildiq/api/app-overrides/' + appId) })` so a stored delta merges over the bundled base; the broad per-app rollout is follow-on work, not this change.
   > Done 24 Nov: stackiq is the proof-of-concept app (ConductionNL/stackiq#2181, merged): `src/manifestOverride.js` `loadManifest()` loads through `useAppManifest('stackiq', resolved, { mergeStrategy: 'delta', endpoint: generateUrl('/apps/buildiq/api/app-overrides/stackiq') })` when the capabilities document carries `buildiq.enabled === true`, else the in-memory branch with no request; vitest `tests/vitest/manifestOverride.spec.js`.
-- [ ] 5.2 Manual: edit a page label via the shell → Save → reload → confirm the delta is applied; DELETE the override → reload → confirm the app reverts to its bundled manifest.
+- [x] 5.2 Manual: edit a page label via the shell → Save → reload → confirm the delta is applied; DELETE the override → reload → confirm the app reverts to its bundled manifest.
+  > Live 25 Nov 2026 on Nextcloud 34.0.6 (MariaDB, `php -S`), OpenRegister main 55f2aa3e, buildiq with buildiq#1905 (before it, a saved override read back as `{}` on OpenRegister main), stackiq development (the 5.1 proof-of-concept app), in Chromium as admin. stackiq's menu showed `Suites`. Save: `PUT /apps/buildiq/api/app-overrides/stackiq` with `{"menu":[{"id":"Suites","label":"Suites (delta check)"}]}` from the signed-in page (the request the shell's Save sends) answered 200 with `updatedBy: admin`. Reload: stackiq fetched the override and its menu showed `Suites (delta check)`. `DELETE` answered `{"cleared":true}`; on reload the menu showed `Suites` again. The delta must be in the keyed-array shape `diffManifest` writes (`menu: [{id, …}]`); a map keyed by id (`menu: {Suites: {…}}`) is stored but `mergeManifestDelta` does not apply it.
 
 ## 6. Tests
 
