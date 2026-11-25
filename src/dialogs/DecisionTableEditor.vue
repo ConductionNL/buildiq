@@ -200,7 +200,7 @@ export default {
 		 * The names the Ask AI help may see: input column names and payload paths, never values.
 		 *
 		 * @return {{columns: Array<string>, paths: Array<string>}}
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-expression-editors-offer-an-ask-ai-button-req-bqch-001
+		 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-expression-editors-offer-an-ask-ai-button-req-bqch-001
 		 */
 		assistContext() {
 			const columns = this.staged.inputColumns.map((col) => (col.name || '').trim()).filter(Boolean)
@@ -285,7 +285,7 @@ export default {
 		 * @param {object} rule - a staged rule row.
 		 * @return {{conditions: object, decision: string}}
 		 *
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-expression-editors-offer-an-ask-ai-button-req-bqch-001
+		 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-expression-editors-offer-an-ask-ai-button-req-bqch-001
 		 */
 		assistRow(rule) {
 			return {
@@ -301,7 +301,7 @@ export default {
 		 * @param {string} [label] - the row's label to keep.
 		 * @return {object}
 		 *
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
+		 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
 		 */
 		ruleFromProposal(proposal, label = '') {
 			return {
@@ -316,7 +316,7 @@ export default {
 		 *
 		 * @param {{conditions: object, decision: string}} proposal - the accepted value.
 		 * @return {void}
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
+		 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
 		 */
 		appendRule(proposal) {
 			this.staged.rules.push(this.ruleFromProposal(proposal))
@@ -328,7 +328,7 @@ export default {
 		 * @param {number} index - the row to replace.
 		 * @param {{conditions: object, decision: string}} proposal - the accepted value.
 		 * @return {void}
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
+		 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
 		 */
 		replaceRule(index, proposal) {
 			const previous = this.staged.rules[index] || {}

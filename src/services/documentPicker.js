@@ -12,7 +12,7 @@ import { getFilePickerBuilder } from '@nextcloud/dialogs'
  * Open the Nextcloud file picker for one file.
  *
  * @return {Promise<{id: number, name: string}|null>} The picked file, or null when the picker was closed.
- * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+ * @spec openspec/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
  */
 export async function pickRequirementsDocument() {
 	let picked = null

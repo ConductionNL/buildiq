@@ -154,7 +154,7 @@ export async function discardRun({ agentId, prompt, plan } = {}) {
  * @param {object} [params.context] - names only: `columns`, `paths`, `register`, `targetSchema`, `triggerSchema`.
  * @return {Promise<{mode: string, value?: (string|object), explanation: string}>} The server-checked answer.
  * @throws {{status: number, error: string, message: string}} Normalised error envelope.
- * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
+ * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
  */
 export async function assist({ target, mode, request = '', current = '', appSlug, context = {} } = {}) {
 	try {

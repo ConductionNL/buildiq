@@ -293,7 +293,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
+	 * @spec openspec/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
 	 */
 	private function withStories(array $payload, array $plan): array {
 		if (($plan['stories'] ?? []) !== []) {

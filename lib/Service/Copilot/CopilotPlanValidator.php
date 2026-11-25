@@ -78,7 +78,7 @@ class CopilotPlanValidator {
 	 *
 	 * @return array<int, array{stepIndex: int, message: string}>
 	 *
-	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-plan-carries-user-stories-req-bqch-006
+	 * @spec openspec/specs/ai-copilot/spec.md#requirement-the-plan-carries-user-stories-req-bqch-006
 	 */
 	private function storyViolations(mixed $stories, array $steps): array {
 		if ($stories === null) {

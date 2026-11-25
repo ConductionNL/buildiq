@@ -548,7 +548,7 @@ export default {
 		 * The user stories the app keeps from the plan it was created from.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
+		 * @spec openspec/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
 		 */
 		activeStories() {
 			const stories = this.application && this.application.stories

@@ -25,7 +25,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
+ * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ namespace OCA\Buildiq\Service;
 /**
  * Syntactic check of one decision-table cell condition.
  *
- * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
+ * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
  */
 final class FeelCellCondition {
 
@@ -79,7 +79,7 @@ final class FeelCellCondition {
 	 *
 	 * @return boolean
 	 *
-	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
+	 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
 	 */
 	public function isValid(mixed $raw): bool {
 		if ($raw !== null && is_scalar($raw) === false) {

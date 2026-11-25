@@ -297,7 +297,7 @@ class CopilotService implements CopilotServiceInterface {
 	 *
 	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
-	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+	 * @spec openspec/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
 	 */
 	#[\Override]
 	public function plan(
@@ -373,7 +373,7 @@ class CopilotService implements CopilotServiceInterface {
 	 *
 	 * @throws CopilotException On an unreadable document or an invalid brief.
 	 *
-	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+	 * @spec openspec/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
 	 */
 	private function prepareBrief(string $brief, ?int $documentFileId, string $userId): array {
 		$document = null;
@@ -394,7 +394,7 @@ class CopilotService implements CopilotServiceInterface {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+	 * @spec openspec/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
 	 */
 	private function withDocument(array $result, ?array $document): array {
 		if ($document !== null) {
@@ -416,7 +416,7 @@ class CopilotService implements CopilotServiceInterface {
 	 *
 	 * @throws CopilotException (404 not_found, 422 unsupported_target, 403 forbidden).
 	 *
-	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
+	 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
 	 */
 	public function requireWritableApp(string $appSlug, string $userId): array {
 		$app = $this->requireExistingVirtualApp(appSlug: $appSlug);
@@ -528,7 +528,7 @@ class CopilotService implements CopilotServiceInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ApplicationStories is a pure conversion with no collaborators.
 	 *
-	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
+	 * @spec openspec/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
 	 */
 	private function attachStoriesToCreateApp(array $plan): array {
 		$stories = (array)($plan['stories'] ?? []);

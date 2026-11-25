@@ -24,7 +24,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
+ * @spec openspec/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ namespace OCA\Buildiq\Support;
 /**
  * Converts and sanitises Application user stories.
  *
- * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
+ * @spec openspec/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
  */
 final class ApplicationStories {
 
@@ -74,7 +74,7 @@ final class ApplicationStories {
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
-	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
+	 * @spec openspec/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
 	 */
 	public static function fromPlan(array $stories, array $steps): array {
 		$named = [];
@@ -112,7 +112,7 @@ final class ApplicationStories {
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
-	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
+	 * @spec openspec/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
 	 */
 	public static function sanitise(mixed $stories): array {
 		if (is_array($stories) === false) {
