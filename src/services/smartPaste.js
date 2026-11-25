@@ -45,6 +45,7 @@ export async function smartPasteAvailable() {
  *
  * @param {Array<{key: string, label?: string, type?: string, options?: ?Array<string>}>} fields The allowed fields.
  * @return {Array<{key: string, label: string, type: string, options: Array<string>}>}
+ * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
  */
 export function describeFields(fields) {
 	return (Array.isArray(fields) ? fields : [])
