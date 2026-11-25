@@ -161,13 +161,14 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 	 * @param string                                                       $outcome The outcome.
 	 * @param array<int, array{action: string, outcome: string, message?: string}> $steps The steps to add.
 	 * @param string|null                                                  $reason  Why, for failed.
+	 * @param int|null $durationMs How long the run took; measured from startedAt when null.
 	 *
 	 * @return bool
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	#[\Override]
-	public function complete(string $runUuid, string $outcome, array $steps, ?string $reason = null): bool {
+	public function complete(string $runUuid, string $outcome, array $steps, ?string $reason = null, ?int $durationMs = null): bool {
 		$run = $this->read(uuid: $runUuid);
 		if ($run === null || ($run['outcome'] ?? null) !== 'waiting') {
 			$this->logger->warning('Buildiq: no waiting automation run ' . $runUuid . ' to complete');
@@ -184,13 +185,38 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 		}
 
 		$run['outcome']    = $outcome;
-		$run['durationMs'] = $this->durationSince(startedAt: (string)($run['startedAt'] ?? ''));
+		$run['durationMs'] = $durationMs ?? $this->durationSince(startedAt: (string)($run['startedAt'] ?? ''));
 		if ($reason !== null && $reason !== '') {
 			$run['reason'] = $reason;
 		}
 
 		return $this->write(record: $run, uuid: $runUuid) !== null;
 	}//end complete()
+
+	/**
+	 * The waiting runs of one automation that an OpenRegister flow run will
+	 * complete.
+	 *
+	 * A manual run that OpenRegister executes is written `waiting` with the
+	 * flow run's uuid in `flowRun` when it is queued; ManualRunReconciler
+	 * completes it from that flow run once it has ended (design D2, the flow
+	 * path).
+	 *
+	 * @param string $automationUuid The automation.
+	 *
+	 * @return list<array<string, mixed>> The waiting runs, each with its `id` and `flowRun`.
+	 *
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 */
+	#[\Override]
+	public function waitingOnFlowRuns(string $automationUuid): array {
+		return array_values(array_filter(
+			$this->allRunsOf(automationUuid: $automationUuid),
+			static fn (array $run): bool => ($run['outcome'] ?? null) === 'waiting'
+				&& is_string($run['flowRun'] ?? null) === true && $run['flowRun'] !== ''
+				&& ($run['id'] ?? '') !== ''
+		));
+	}//end waitingOnFlowRuns()
 
 	/**
 	 * The runs of one automation, newest first.

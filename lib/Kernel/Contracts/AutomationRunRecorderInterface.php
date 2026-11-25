@@ -98,12 +98,24 @@ interface AutomationRunRecorderInterface {
 	 * @param string                                  $outcome succeeded or failed.
 	 * @param array<int, array{action: string, outcome: string, message?: string}> $steps The steps to add.
 	 * @param string|null                             $reason  For failed: why.
+	 * @param int|null $durationMs How long the run took; measured from startedAt when null.
 	 *
 	 * @return bool Whether the run was found and written.
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
-	public function complete(string $runUuid, string $outcome, array $steps, ?string $reason = null): bool;
+	public function complete(string $runUuid, string $outcome, array $steps, ?string $reason = null, ?int $durationMs = null): bool;
+
+	/**
+	 * The waiting runs of one automation that an OpenRegister flow run will complete.
+	 *
+	 * @param string $automationUuid The automation.
+	 *
+	 * @return list<array<string, mixed>> The waiting runs, each with its `id` and `flowRun`.
+	 *
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 */
+	public function waitingOnFlowRuns(string $automationUuid): array;
 
 	/**
 	 * The runs of one automation, newest first, with its summary.
