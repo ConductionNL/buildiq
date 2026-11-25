@@ -51,6 +51,7 @@ use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use OCA\Buildiq\Support\SlugSearch;
 
 /**
  * OR-backed store for fleet-app manifest overrides, on the unified app model.
@@ -60,6 +61,10 @@ use Throwable;
  * the delta shape and refuses an app-blanking delta (design D4).
  *
  * @spec openspec/specs/app-override-persistence/spec.md
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) SlugSearch is a call adapter over
+ *   OpenRegister's slug search (one published method, two signatures), not a
+ *   collaborator of its own; it took this class from 12 to 13.
  */
 class AppOverrideService implements AppOverrideServiceInterface {
 
@@ -421,9 +426,8 @@ class AppOverrideService implements AppOverrideServiceInterface {
 		}
 
 		try {
-			$results = $this->objectService->searchObjectsBySlug(
-				registerSlug: self::REGISTER_SLUG,
-				schemaSlug: self::APPLICATION_VERSION_SCHEMA,
+			$results = (new SlugSearch(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA))->run(
+				objectService: $this->objectService,
 				filters: ['scope' => 'user']
 			);
 		} catch (Throwable $e) {
@@ -612,9 +616,8 @@ class AppOverrideService implements AppOverrideServiceInterface {
 	#[\Override]
 	public function findHybridApplication(string $appId): ?array {
 		try {
-			$results = $this->objectService->searchObjectsBySlug(
-				registerSlug: self::REGISTER_SLUG,
-				schemaSlug: self::APPLICATION_SCHEMA,
+			$results = (new SlugSearch(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA))->run(
+				objectService: $this->objectService,
 				filters: [
 					'slug' => $appId,
 					'appType' => 'hybrid',
@@ -888,9 +891,8 @@ class AppOverrideService implements AppOverrideServiceInterface {
 		}
 
 		try {
-			$results = $this->objectService->searchObjectsBySlug(
-				registerSlug: self::REGISTER_SLUG,
-				schemaSlug: self::APPLICATION_VERSION_SCHEMA,
+			$results = (new SlugSearch(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA))->run(
+				objectService: $this->objectService,
 				filters: [
 					'scope' => 'user',
 					'owner' => $uid,

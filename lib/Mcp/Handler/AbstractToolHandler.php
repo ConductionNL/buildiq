@@ -44,6 +44,7 @@ use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Support\SlugSearch;
 
 /**
  * Abstract base for all Buildiq MCP tool handler classes.
@@ -228,13 +229,7 @@ abstract class AbstractToolHandler {
 	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
 	 */
 	private function findVisibleAppBySlug(string $appSlug): ?array {
-		$apps = $this->objectService->searchObjectsBySlug(
-			self::REGISTER_SLUG,
-			'built-app',
-			['slug' => $appSlug],
-			_rbac: true,
-			_multitenancy: false
-		);
+		$apps = self::appsWithSlug(objectService: $this->objectService, appSlug: $appSlug);
 		if (is_array($apps) === false || $apps === []) {
 			return null;
 		}
@@ -792,7 +787,7 @@ abstract class AbstractToolHandler {
 	 * @return array{version?: array, appUuid?: string, appName?: string, error?: string, message?: string}
 	 */
 	protected function loadVersion(object $objectService, string $appSlug, string $versionSlug): array {
-		$apps = $objectService->searchObjectsBySlug(self::REGISTER_SLUG, 'built-app', ['slug' => $appSlug], _rbac: true, _multitenancy: false);
+		$apps = self::appsWithSlug(objectService: $objectService, appSlug: $appSlug);
 		if (is_array($apps) === false || $apps === []) {
 			return ['error' => 'not_found', 'message' => "No virtual app found for slug '{$appSlug}'."];
 		}
@@ -800,12 +795,11 @@ abstract class AbstractToolHandler {
 		$app = $this->toArray(item: $apps[0]);
 		$appUuid = $this->extractUuid(item: $app);
 
-		$versions = $objectService->searchObjectsBySlug(
-			self::REGISTER_SLUG,
-			'applicationVersion',
-			['application' => $appUuid, 'slug' => $versionSlug],
-			_rbac: true,
-			_multitenancy: false
+		$versions = (new SlugSearch(register: self::REGISTER_SLUG, schema: 'applicationVersion'))->run(
+			objectService: $objectService,
+			filters: ['application' => $appUuid, 'slug' => $versionSlug],
+			rbac: true,
+			multitenancy: false
 		);
 		if (is_array($versions) === false || $versions === []) {
 			return ['error' => 'not_found', 'message' => "No version '{$versionSlug}' found for app '{$appSlug}'."];
@@ -896,4 +890,23 @@ abstract class AbstractToolHandler {
 		}//end try
 
 	}//end saveVersionManifest()
+
+	/**
+	 * The Applications carrying a slug, RBAC on and organisation scoping off (checked by the callers).
+	 *
+	 * @param object $objectService OpenRegister ObjectService instance.
+	 * @param string $appSlug       The Application slug.
+	 *
+	 * @return mixed The matches as OpenRegister answers them.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private static function appsWithSlug(object $objectService, string $appSlug): mixed {
+		return (new SlugSearch(register: self::REGISTER_SLUG, schema: 'built-app'))->run(
+			objectService: $objectService,
+			filters: ['slug' => $appSlug],
+			rbac: true,
+			multitenancy: false
+		);
+	}//end appsWithSlug()
 }//end class
