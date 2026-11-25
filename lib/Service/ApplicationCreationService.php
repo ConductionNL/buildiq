@@ -54,6 +54,7 @@ use OCA\Buildiq\Exception\WizardCreationException;
 use OCA\Buildiq\Kernel\Contracts\ApplicationCreationServiceInterface;
 use OCA\Buildiq\Support\ApplicationStories;
 use OCA\Buildiq\Support\ObjectRecord;
+use OCA\Buildiq\Support\PageRegisterBinding;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
@@ -1562,42 +1563,22 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	}//end substituteVersionContext()
 
 	/**
-	 * The tokens a template writes for "this version's own register".
-	 *
-	 * The seeded templates write `{{register}}` (BuiltAppDeepLinkListener reads
-	 * both forms the same way); `{registerSlug}` is the older one.
-	 *
-	 * @var array<int,string>
-	 */
-	private const VERSION_REGISTER_TOKENS = ['{registerSlug}', '{{register}}'];
-
-	/**
 	 * Point a page config at the version's own register: replace a register
 	 * token, and give a page that names a schema but no register the
-	 * version's register, where withSchemaPrefix() already puts its schema.
-	 * Without that a cloned template's index page had a schema and no
-	 * register, and listed nothing.
+	 * version's register, where withSchemaPrefix() already puts its schema
+	 * ({@see PageRegisterBinding}).
 	 *
 	 * @param array<string,mixed> $config       The page config.
 	 * @param string              $registerSlug The per-version register slug.
 	 *
 	 * @return array<string,mixed> The config with the register substituted.
 	 *
-	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
+	 * @spec openspec/specs/openbuild-template-catalogue/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) PageRegisterBinding is a pure rule with no collaborators.
 	 */
 	private function withVersionRegister(array $config, string $registerSlug): array {
-		$register = ($config['register'] ?? null);
-		if (in_array($register, self::VERSION_REGISTER_TOKENS, true) === true) {
-			$config['register'] = $registerSlug;
-			return $config;
-		}
-
-		$schema = ($config['schema'] ?? null);
-		if (($register === null || $register === '') && is_string($schema) === true && $schema !== '' && $registerSlug !== '') {
-			$config['register'] = $registerSlug;
-		}
-
-		return $config;
+		return PageRegisterBinding::forConfig(config: $config, registerSlug: $registerSlug);
 	}//end withVersionRegister()
 
 	/**
