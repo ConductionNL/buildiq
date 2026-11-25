@@ -36,7 +36,6 @@ use OCA\Buildiq\Kernel\Values\ExportTarget;
 use OCA\Buildiq\Kernel\Values\BrokerAccess;
 use OCA\Buildiq\Kernel\Values\PushTarget;
 use OCA\Buildiq\Service\GitHubPushService;
-use OCA\Buildiq\Service\JobOwnerImpersonator;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -85,6 +84,10 @@ final class RunExportJobTest extends TestCase {
 		$this->time = $this->createMock(ITimeFactory::class);
 		$this->exportService = $this->createMock(ExportService::class);
 		$this->exportJobService = $this->createMock(ExportJobService::class);
+		// The pipeline runs inside the job owner's session; the mock runs it in place.
+		$this->exportJobService->method('runAsJobOwner')->willReturnCallback(
+			static fn (string $jobUuid, callable $work): mixed => $work()
+		);
 		$this->githubPushService = $this->createMock(GitHubPushService::class);
 	}//end setUp()
 
@@ -196,26 +199,19 @@ final class RunExportJobTest extends TestCase {
 		$inside  = false;
 		$seen    = [];
 
-		$this->exportJobService->method('loadJob')->willReturnCallback(
+		$service = $this->createMock(originalClassName: ExportJobService::class);
+		$service->method('transitionJob')->willReturn(true);
+		$service->method('loadJob')->willReturnCallback(
 			function () use (&$inside, &$seen): array {
 				$seen[] = $inside;
 				return $this->jobFixture();
 			}
 		);
-		$this->exportJobService->method('transitionJob')->willReturn(true);
-		$this->exportService->method('generateAppZip')->willReturnCallback(
-			static function () use (&$inside, &$seen, $jobUuid): string {
-				$seen[] = $inside;
-				return '/tmp/buildiq-exports/' . $jobUuid . '.zip';
-			}
-		);
-
-		$impersonator = $this->createMock(JobOwnerImpersonator::class);
-		$impersonator->expects(self::once())
-			->method('runAsOwner')
-			->with(self::identicalTo($jobUuid), self::isType('callable'))
+		$service->expects(self::once())
+			->method('runAsJobOwner')
+			->with(self::identicalTo(value: $jobUuid), self::isType(type: 'callable'))
 			->willReturnCallback(
-				static function (string $objectId, callable $work) use (&$inside): mixed {
+				static function (string $owned, callable $work) use (&$inside): mixed {
 					$inside = true;
 					try {
 						return $work();
@@ -224,21 +220,25 @@ final class RunExportJobTest extends TestCase {
 					}
 				}
 			);
+		$this->exportService->method('generateAppZip')->willReturnCallback(
+			static function () use (&$inside, &$seen, $jobUuid): string {
+				$seen[] = $inside;
+				return '/tmp/buildiq-exports/' . $jobUuid . '.zip';
+			}
+		);
 
 		$job = new RunExportJob(
-			$this->time,
-			$this->exportService,
-			$this->exportJobService,
-			$this->githubPushService,
-			new NullLogger(),
-			null,
-			$impersonator
+			time: $this->time,
+			exportService: $this->exportService,
+			exportJobService: $service,
+			githubPushService: $this->githubPushService,
+			logger: new NullLogger()
 		);
-		$this->invokeRun($job, ['jobUuid' => $jobUuid]);
+		$this->invokeRun(job: $job, argument: ['jobUuid' => $jobUuid]);
 
-		// The first load (the still-queued check) is outside; the pipeline's
-		// own load and the archive are inside the owner's session.
-		self::assertSame([false, true, true], $seen);
+		// The still-queued check runs outside; the pipeline's own load and the
+		// archive run inside the owner's session.
+		self::assertSame(expected: [false, true, true], actual: $seen);
 	}//end testThePipelineRunsAsTheJobOwner()
 
 	/**

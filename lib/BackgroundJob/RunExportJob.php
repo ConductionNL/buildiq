@@ -33,7 +33,6 @@ use OCA\Buildiq\Kernel\Contracts\ExportAppContentBundlerInterface;
 use OCA\Buildiq\Kernel\Contracts\ExportJobServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ExportServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\GitHubPushServiceInterface;
-use OCA\Buildiq\Service\JobOwnerImpersonator;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
@@ -61,7 +60,6 @@ class RunExportJob extends QueuedJob {
 	 * @param LoggerInterface $logger Logger.
 	 * @param ExportAppContentBundlerInterface|null $contentBundler Finds the application and version the job names.
 	 *                                                     Null exports the bare scaffold.
-	 * @param JobOwnerImpersonator|null $jobOwnerImpersonator Runs the pipeline as the job's owner (null: as the job's own session).
 	 */
 	public function __construct(
 		ITimeFactory $time,
@@ -70,7 +68,6 @@ class RunExportJob extends QueuedJob {
 		private GitHubPushServiceInterface $githubPushService,
 		private LoggerInterface $logger,
 		private ?ExportAppContentBundlerInterface $contentBundler = null,
-		private ?JobOwnerImpersonator $jobOwnerImpersonator = null,
 	) {
 		parent::__construct(time: $time);
 		$this->pipeline = new ExportJobPipeline(
@@ -155,16 +152,12 @@ class RunExportJob extends QueuedJob {
 	 * @spec openspec/changes/apps-standalone-deploy/tasks.md#task-T07
 	 */
 	private function executeAsOwner(string $jobUuid): void {
-		$work = function () use ($jobUuid): void {
-			$this->pipeline->execute(jobUuid: $jobUuid);
-		};
-
-		if ($this->jobOwnerImpersonator === null) {
-			$work();
-			return;
-		}
-
-		$this->jobOwnerImpersonator->runAsOwner(objectId: $jobUuid, work: $work);
+		$this->exportJobService->runAsJobOwner(
+			jobUuid: $jobUuid,
+			work: function () use ($jobUuid): void {
+				$this->pipeline->execute(jobUuid: $jobUuid);
+			}
+		);
 	}//end executeAsOwner()
 
 	/**

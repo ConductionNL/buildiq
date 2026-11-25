@@ -501,6 +501,21 @@ class ExportJobService implements ExportJobServiceInterface {
 	// nothing to remember to delete on a terminal state, and no key to build.
 
 	/**
+	 * Run a piece of a background export as the ExportJob's owner.
+	 *
+	 * @param string   $jobUuid ExportJob UUID.
+	 * @param callable $work    The work to run.
+	 *
+	 * @return mixed What the work returns.
+	 *
+	 * @spec openspec/changes/apps-standalone-deploy/tasks.md#task-T07
+	 */
+	#[\Override]
+	public function runAsJobOwner(string $jobUuid, callable $work): mixed {
+		return $this->jobOwnerImpersonator->runAsOwner(objectId: $jobUuid, work: $work);
+	}//end runAsJobOwner()
+
+	/**
 	 * Load an ExportJob record from OR by its UUID.
 	 *
 	 * Returns the job data as an array, or null when the record cannot be
