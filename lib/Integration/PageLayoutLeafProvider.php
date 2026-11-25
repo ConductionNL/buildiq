@@ -214,7 +214,6 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 *
 	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-003, REQ-OBPL-006)
 	 */
-	#[\Override]
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
 		// The host object comes with the call when the consumer already has it,
 		// and is read here only when it does not: this path runs on every detail
@@ -504,7 +503,6 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 *
 	 * @throws RuntimeException When that layout does not apply here.
 	 */
-	#[\Override]
 	public function get(string $register, string $schema, string $objectId, string $entityId): array {
 		$listed = $this->list(register: $register, schema: $schema, objectId: $objectId);
 		foreach ($listed['items'] as $layout) {
@@ -534,7 +532,6 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 *   IntegrationProvider interface; this method refuses the call, and a provider that
 	 *   dropped them could not be registered as a leaf at all.
 	 */
-	#[\Override]
 	public function create(string $register, string $schema, string $objectId, array $payload): array {
 		throw new RuntimeException('A page layout is authored in buildiq; this leaf reads and never appends.');
 	}//end create()
@@ -556,7 +553,6 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 *   IntegrationProvider interface; this method refuses the call, and a provider that
 	 *   dropped them could not be registered as a leaf at all.
 	 */
-	#[\Override]
 	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
 		throw new RuntimeException('A page layout is edited in buildiq, where the rules that validate it live.');
 	}//end update()
@@ -577,7 +573,6 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 *   IntegrationProvider interface; this method refuses the call, and a provider that
 	 *   dropped them could not be registered as a leaf at all.
 	 */
-	#[\Override]
 	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
 		throw new RuntimeException('A page layout is retired in buildiq, not deleted from a consuming app.');
 	}//end delete()

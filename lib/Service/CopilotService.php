@@ -66,6 +66,7 @@ use OCP\IUserManager;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\Buildiq\Support\SlugSearch;
 
 /**
  * Prompt-to-app copilot orchestrator (REQ-OBAIC-001 through REQ-OBAIC-007).
@@ -1441,12 +1442,11 @@ class CopilotService implements CopilotServiceInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveApplicationBySlug(string $appSlug): ?array {
-		$apps = $this->objectService->searchObjectsBySlug(
-			self::REGISTER_SLUG,
-			self::APPLICATION_SCHEMA,
-			['slug' => $appSlug],
-			_rbac: true,
-			_multitenancy: false
+		$apps = (new SlugSearch(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA))->run(
+			objectService: $this->objectService,
+			filters: ['slug' => $appSlug],
+			rbac: true,
+			multitenancy: false
 		);
 
 		if (is_array($apps) === false || $apps === []) {
@@ -1941,12 +1941,11 @@ class CopilotService implements CopilotServiceInterface {
 		}
 
 		$appUuid = $this->extractUuid(item: $app);
-		$versions = $this->objectService->searchObjectsBySlug(
-			self::REGISTER_SLUG,
-			self::APPLICATION_VERSION_SCHEMA,
-			['application' => $appUuid, 'slug' => $versionSlug],
-			_rbac: true,
-			_multitenancy: false
+		$versions = (new SlugSearch(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA))->run(
+			objectService: $this->objectService,
+			filters: ['application' => $appUuid, 'slug' => $versionSlug],
+			rbac: true,
+			multitenancy: false
 		);
 
 		if (is_array($versions) === false || $versions === []) {

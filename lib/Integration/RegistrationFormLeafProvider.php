@@ -156,7 +156,6 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 	 *
 	 * @spec openspec/specs/registration-form-builder/spec.md (REQ-OBRF-006, REQ-OBRF-009)
 	 */
-	#[\Override]
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
 		$forms = $this->publishedFormsFor(register: $register, schema: $schema, objectId: $objectId);
 
@@ -246,7 +245,6 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 	 *
 	 * @throws RuntimeException When no such form is bound to this type.
 	 */
-	#[\Override]
 	public function get(string $register, string $schema, string $objectId, string $entityId): array {
 		$published = $this->publishedFormsFor(register: $register, schema: $schema, objectId: $objectId);
 		foreach ($published as $form) {
@@ -282,7 +280,6 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 	 *   the person who owns it, never to the host object, so the host coordinates are
 	 *   deliberately not read here.
 	 */
-	#[\Override]
 	public function create(string $register, string $schema, string $objectId, array $payload): array {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
@@ -337,7 +334,6 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 	 *   IntegrationProvider interface; this method refuses the call, and a provider that
 	 *   dropped them could not be registered as a leaf at all.
 	 */
-	#[\Override]
 	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
 		throw new RuntimeException('A registration form is edited in buildiq, where the rules that validate it live.');
 	}//end update()
@@ -358,7 +354,6 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 	 *   IntegrationProvider interface; this method refuses the call, and a provider that
 	 *   dropped them could not be registered as a leaf at all.
 	 */
-	#[\Override]
 	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
 		throw new RuntimeException('A registration form is retired in buildiq, not deleted from a consuming app.');
 	}//end delete()
