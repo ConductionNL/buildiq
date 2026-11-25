@@ -175,7 +175,7 @@
 					"name": "1.1 PUT Application to v1.1.0 (triggers draft→published)",
 					"request": {
 						"method": "PUT",
-						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" }],
 						"body": {
 							"mode": "raw",
 							"raw": "{{merged_body}}"
@@ -314,7 +314,7 @@
 					"name": "3.1 POST rollback action (PUT old manifest, re-publish)",
 					"request": {
 						"method": "PUT",
-						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" }],
 						"body": {
 							"mode": "raw",
 							"raw": "{{merged_body}}"
@@ -417,7 +417,7 @@
 					"name": "4.1 PUT original manifest back",
 					"request": {
 						"method": "PUT",
-						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" }],
 						"body": {
 							"mode": "raw",
 							"raw": "{{merged_body}}"
