@@ -82,6 +82,13 @@ class FlowBindingWrapperService {
 	private const OWNING_APP = 'buildiq';
 
 	/**
+	 * The lifecycle state of a flow that has never been published.
+	 *
+	 * @var string
+	 */
+	private const DRAFT = 'draft';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FlowService            $flowService   OpenRegister's single entry point for flows.
@@ -201,7 +208,9 @@ class FlowBindingWrapperService {
 			'enabled' => true,
 			'nodes' => [
 				$trigger,
-				['id' => 'run', 'type' => 'openregister.sub-flow', 'config' => ['flowId' => $wanted['flow'], 'wait' => false]],
+				// The last node: `exit` marks where a token leaves, without
+				// which OpenRegister refuses to publish the wrapper.
+				['id' => 'run', 'type' => 'openregister.sub-flow', 'config' => ['flowId' => $wanted['flow'], 'wait' => false], 'exit' => true],
 			],
 			'edges' => [['id' => 'trigger-run', 'from' => 'trigger', 'to' => 'run']],
 		];
@@ -274,6 +283,11 @@ class FlowBindingWrapperService {
 			if (isset($target['plan'][$name]) === true && isset($present[$name]) === false) {
 				$present[$name]    = true;
 				$result['flows'][] = $binding;
+				$failure = $this->publishIfDraft(binding: $binding, target: $target, wanted: $target['plan'][$name]);
+				if ($failure !== null) {
+					$result['failed'][] = $failure;
+				}
+
 				continue;
 			}
 
@@ -326,6 +340,50 @@ class FlowBindingWrapperService {
 	}//end createWrapper()
 
 	/**
+	 * Re-save and publish a kept wrapper that was never published.
+	 *
+	 * Wrappers saved before their last node carried `exit` could not be
+	 * published, so they stayed drafts whose trigger never subscribed. A kept
+	 * wrapper of this app that is still a draft gets the current definition and
+	 * is published; a published one is left exactly as it is.
+	 *
+	 * @param array<string,mixed>                                                      $binding The wrapper's binding.
+	 * @param array{slug:string,register:string}                                       $target  The application's slug and register.
+	 * @param array{flow:string,entry:array{schema:string,event?:string,mode?:string}} $wanted  The bound flow and its entry.
+	 *
+	 * @return array{name:string,reason:string}|null What failed, or null.
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
+	 */
+	private function publishIfDraft(array $binding, array $target, array $wanted): ?array {
+		$uuid = (string)($binding['flow'] ?? '');
+		$name = (string)($binding['label'] ?? '');
+		try {
+			$flow  = $this->flowService->find(uuid: $uuid);
+			$state = (string)$flow->getLifecycleStatus();
+		} catch (Throwable) {
+			return null;
+		}
+
+		if ($state !== self::DRAFT || self::ownWrapper(flow: $flow, appSlug: $target['slug']) === false) {
+			return null;
+		}
+
+		try {
+			$flow = $this->flowService->save(data: self::definition(target: $target, wanted: $wanted), uuid: $uuid);
+		} catch (Throwable $e) {
+			$this->logger->warning('Buildiq: wrapper flow "' . $name . '" could not be saved: ' . $e->getMessage());
+			return ['name' => $name, 'reason' => 'save_failed'];
+		}
+
+		if ($this->publish(flow: $flow, name: $name) === false) {
+			return ['name' => $name, 'reason' => 'not_published'];
+		}
+
+		return null;
+	}//end publishIfDraft()
+
+	/**
 	 * Publish a new wrapper, so its trigger subscribes.
 	 *
 	 * OpenRegister subscribes the triggers of a flow's PUBLISHED version only.
@@ -338,9 +396,11 @@ class FlowBindingWrapperService {
 	 * @return bool True when the wrapper was published.
 	 */
 	private function publish(\OCA\OpenRegister\Db\Flow $flow, string $name): bool {
-		if (interface_exists(FlowVersionServiceInterface::class) === false
-			|| $this->container->has(FlowVersionServiceInterface::class) === false
-		) {
+		// No container->has() guard: OpenRegister registers this service in its
+		// own app container, and buildiq's container answers has() false for it
+		// while get() resolves it, so the guard skipped every publish and left
+		// every wrapper an unsubscribed draft. A get() that fails is caught below.
+		if (interface_exists(FlowVersionServiceInterface::class) === false) {
 			return false;
 		}
 
