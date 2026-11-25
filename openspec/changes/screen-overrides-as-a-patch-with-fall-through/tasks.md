@@ -30,7 +30,12 @@
 - [x] 4.3 Playwright `tests/e2e/screen-override-editor.spec.ts` for three audiences on one case type (written, runs in nightly: the spec sits in tests/e2e and is not verified against a live instance)
 - [x] 4.4 Playwright `tests/e2e/screen-override-drift.spec.ts` for the re-cut of a drifted override — the spec ships and asserts that the answer carries appliedLayers and withheld over the wire, and that a caller with no account never gets an internal screen; the re-cut itself waits on the editor in section 3
 - [x] 4.5 Register-import test that the lifecycle and notification dialects import, per the notification-dialect gate
-- [ ] 4.6 Dutch and English strings for the panel, the state and the notification; docs with screenshots
+- [x] 4.6 Dutch and English strings for the panel, the state and the notification; docs with screenshots
+  > 25 Nov 2026: `npm run test:l10n` and `npm run test:l10n:parity` (nl) pass, so every panel and state string has its English and Dutch text. The notification's subject and message are declared in `register.d/51-page-layouts.json`. New page `docs/elements/screen-overrides.md` with three screenshots from a live Nextcloud 34 + OpenRegister main on a demo app (screens of a schema, withheld after the base changed, after a re-cut).
+  > Live observations, same instance:
+  > - The leaf moved a drifted override to `needs-review` when a case was read through `/api/objects/{register}/{schema}/{id}/integrations/buildiq-page-layout`.
+  > - **No notification arrived** for that override's maintainer (admin), also after `cron.php`. The `pageLayout` schema as stored by OpenRegister reads back without notifications, so the `x-openregister-notifications` annotation may not survive the import. Not diagnosed further; queued.
+  > - 4.3 and the drift spec also ran live: `screen-override-editor.spec.ts` and `screen-override-drift.spec.ts`, 4/4 passed.
   - 2026-11-14: the Dutch strings of the "applies to" panel are in `l10n/nl.json` and `l10n/nl.js` (English was already complete). Open: the docs with screenshots, which need a running instance.
 
 ## 5. Consumers
