@@ -14,6 +14,11 @@
   -   does not pass, its explanation is listed above submit and, with
   -   `eligibility.blockSubmit`, holds the submit.
   -
+  - - `customComponents` / `smartPaste`: buildiq's "Paste to fill" handler
+  -   (`buildiq-smart-paste`, over hermiq's form fill) is registered for
+  -   CnFormPage, and a smart-paste setting saved before the handler was named
+  -   gets it (ai-smart-paste-into-forms REQ-BQSP-003).
+  -
   - A form without calculated fields or an eligibility check renders exactly as
   - CnFormPage. Nothing computed here is trusted: the server evaluates again
   - when the record is saved.
@@ -25,6 +30,8 @@
 		:calculate="calculator"
 		:unmetConditions="unmetConditions"
 		:blockSubmit="submitBlocked"
+		:customComponents="formComponents"
+		:smartPaste="smartPasteConfig"
 		@input="onInput">
 		<template v-for="(_, name) in $slots" #[name]="slotProps">
 			<slot :name="name" v-bind="slotProps || {}" />
@@ -38,6 +45,7 @@ import {
 	createLiveValuesBridge,
 	evaluatePreview,
 } from '../../services/formLiveValues.js'
+import { SMART_PASTE_HANDLER, smartPasteHandler } from '../../services/smartPaste.js'
 
 /**
  * The field's calculation when it names a rule set and an output, else null.
@@ -79,6 +87,10 @@ export default {
 
 	components: { CnFormPage },
 
+	inject: {
+		cnCustomComponents: { default: null },
+	},
+
 	inheritAttrs: false,
 
 	props: {
@@ -108,6 +120,32 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * What CnFormPage resolves handlers from: what it would have resolved,
+		 * plus buildiq's smart-paste handler.
+		 *
+		 * @return {object}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
+		 */
+		formComponents() {
+			const inherited = this.$attrs.customComponents || this.cnCustomComponents || {}
+			return { ...inherited, [SMART_PASTE_HANDLER]: smartPasteHandler }
+		},
+
+		/**
+		 * The form's smart-paste setting, naming buildiq's handler when it names none.
+		 *
+		 * @return {?object}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
+		 */
+		smartPasteConfig() {
+			const setting = this.$attrs.smartPaste
+			if (!setting || typeof setting !== 'object') {
+				return null
+			}
+			return setting.handler ? setting : { ...setting, handler: SMART_PASTE_HANDLER }
+		},
+
 		/**
 		 * Whether any field is calculated by a rule set.
 		 *

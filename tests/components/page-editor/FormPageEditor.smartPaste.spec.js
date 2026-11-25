@@ -94,7 +94,7 @@ describe('FormPageEditor: fill from pasted text', () => {
 		await wrapper.find('[data-testid="smart-paste-field-adres"]').setValue(true)
 		const saved = await applyLastEmit(wrapper)
 
-		expect(saved.smartPaste).toEqual({ enabled: true, fields: ['naam', 'adres', 'telefoon'] })
+		expect(saved.smartPaste).toEqual({ enabled: true, fields: ['naam', 'adres', 'telefoon'], handler: 'buildiq-smart-paste' })
 		expect(saved.title).toBe('Nieuwe klant')
 	})
 
@@ -107,10 +107,10 @@ describe('FormPageEditor: fill from pasted text', () => {
 	it('writes the hint, and drops it again when cleared', async () => {
 		const wrapper = mountEditor({ mode: 'create', fields: FIELDS, smartPaste: { enabled: true, fields: ['naam'] } })
 		await wrapper.find('[data-testid="smart-paste-hint"]').setValue('Paste an email or letter')
-		expect((await applyLastEmit(wrapper)).smartPaste).toEqual({ enabled: true, fields: ['naam'], hint: 'Paste an email or letter' })
+		expect((await applyLastEmit(wrapper)).smartPaste).toEqual({ enabled: true, fields: ['naam'], hint: 'Paste an email or letter', handler: 'buildiq-smart-paste' })
 
 		await wrapper.find('[data-testid="smart-paste-hint"]').setValue('')
-		expect((await applyLastEmit(wrapper)).smartPaste).toEqual({ enabled: true, fields: ['naam'] })
+		expect((await applyLastEmit(wrapper)).smartPaste).toEqual({ enabled: true, fields: ['naam'], handler: 'buildiq-smart-paste' })
 	})
 
 	it('unticking a field and switching off keep the rest of the setting', async () => {
@@ -119,7 +119,7 @@ describe('FormPageEditor: fill from pasted text', () => {
 		expect((await applyLastEmit(wrapper)).smartPaste.fields).toEqual(['adres'])
 
 		await wrapper.find('[data-testid="smart-paste-enabled"]').setValue(false)
-		expect((await applyLastEmit(wrapper)).smartPaste).toEqual({ enabled: false, fields: ['adres'] })
+		expect((await applyLastEmit(wrapper)).smartPaste).toEqual({ enabled: false, fields: ['adres'], handler: 'buildiq-smart-paste' })
 	})
 
 	// @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
