@@ -15,9 +15,11 @@
  *   leads to a page of the version.
  * - Rule sets: the stored test cases of every rule set whose owner app is this
  *   app, through RuleSetVersioningService::runTestGate().
- * - Record tests: the app's record tests. OpenRegister cannot validate a record
- *   without saving it yet, so each is reported skipped with that reason, never
- *   passed.
+ * - Record tests: the app's record tests, each run through OpenRegister's
+ *   validate-only call (`ObjectServiceInterface::validateObject()`, change
+ *   records-validate-without-saving) against the version's register, so
+ *   nothing is saved. An OpenRegister without that call reports each test
+ *   skipped with the reason, never passed.
  *
  * A schema that cannot be read fails its checks rather than passing them: a
  * check that silently did not run looks exactly like one that passed.
@@ -38,7 +40,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use JsonSerializable;
 use OCA\Buildiq\Kernel\Contracts\RuleEngineServiceInterface;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Throwable;
 
 /**
@@ -67,6 +71,11 @@ class AppTestSuiteService {
 	public const RECORD_TEST_SKIP_REASON = 'OpenRegister cannot check a record without saving it yet, so this record test did not run.';
 
 	/**
+	 * Why a record test fails when its version names no register.
+	 */
+	public const RECORD_TEST_NO_REGISTER = 'This version has no register, so the record could not be checked.';
+
+	/**
 	 * Property lists already read in this run, by "register/schema"; null when
 	 * the register holds no such schema.
 	 *
@@ -80,11 +89,13 @@ class AppTestSuiteService {
 	 * @param RegistrationFormTargetSchemaReader $schemas    Reads a schema of a register.
 	 * @param RuleObjectReader                   $objects    Reads rule sets, their test cases and record tests.
 	 * @param RuleSetVersioningService           $versioning Runs a rule set's test cases.
+	 * @param ObjectServiceInterface|null        $records    OpenRegister's object service, for its validate-only call.
 	 */
 	public function __construct(
 		private readonly RegistrationFormTargetSchemaReader $schemas,
 		private readonly RuleObjectReader $objects,
 		private readonly RuleSetVersioningService $versioning,
+		private readonly ?ObjectServiceInterface $records=null,
 	) {
 	}//end __construct()
 
@@ -108,7 +119,7 @@ class AppTestSuiteService {
 		$checks = array_merge(
 			$this->structureChecks(manifest: $manifest),
 			$this->ruleSetChecks(appSlug: (string)($application['slug'] ?? '')),
-			$this->recordChecks(appId: self::idOf(object: $application))
+			$this->recordChecks(appId: self::idOf(object: $application), register: (string)($version['register'] ?? ''))
 		);
 
 		$counts = array_count_values(array_column($checks, 'outcome'));
@@ -333,16 +344,22 @@ class AppTestSuiteService {
 	}//end ruleSetChecks()
 
 	/**
-	 * The app's record tests. Each is skipped with its reason until
-	 * OpenRegister can check a record without saving it; none is passed.
+	 * The record tests of an app, each checked against the version's register without saving.
 	 *
-	 * @param string $appId The app's uuid.
+	 * A test expecting `accept` passes when OpenRegister accepts the sample. A
+	 * test expecting `refuse` passes when OpenRegister refuses it on every
+	 * expected field (on any field when none is named), and fails when the
+	 * sample is accepted or refused only elsewhere. A call that throws fails
+	 * the test: a check that silently did not run looks like one that passed.
+	 *
+	 * @param string $appId    The app's uuid.
+	 * @param string $register The version's register (id, uuid or slug).
 	 *
 	 * @return list<array{kind: string, name: string, outcome: string, message: string}>
 	 *
 	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 	 */
-	public function recordChecks(string $appId): array {
+	public function recordChecks(string $appId, string $register=''): array {
 		if ($appId === '') {
 			return [];
 		}
@@ -350,11 +367,110 @@ class AppTestSuiteService {
 		$checks = [];
 		foreach ($this->objects->findScoped(schema: self::RECORD_TEST_SCHEMA, filters: ['application' => $appId]) as $test) {
 			$name = (string)($test['schema'] ?? '') . ': ' . (string)($test['name'] ?? 'unnamed');
-			$checks[] = self::check(kind: self::KIND_RECORD, name: $name, outcome: self::SKIPPED, message: self::RECORD_TEST_SKIP_REASON);
+			$checks[] = $this->recordCheck(name: $name, test: $test, register: $register);
 		}
 
 		return $checks;
 	}//end recordChecks()
+
+	/**
+	 * Run one record test through OpenRegister's validate-only call.
+	 *
+	 * @param string               $name     The check's name.
+	 * @param array<string, mixed> $test     The record test (schema, record, expect, expectedFields).
+	 * @param string               $register The version's register.
+	 *
+	 * @return array{kind: string, name: string, outcome: string, message: string}
+	 *
+	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+	 */
+	private function recordCheck(string $name, array $test, string $register): array {
+		$records = $this->records;
+		if ($records === null || method_exists($records, 'validateObject') === false) {
+			return self::check(kind: self::KIND_RECORD, name: $name, outcome: self::SKIPPED, message: self::RECORD_TEST_SKIP_REASON);
+		}
+
+		if ($register === '') {
+			return self::check(kind: self::KIND_RECORD, name: $name, outcome: self::FAILED, message: self::RECORD_TEST_NO_REGISTER);
+		}
+
+		$record = $test['record'] ?? [];
+		try {
+			$verdict = $records->validateObject(
+				object: is_array($record) === true ? $record : [],
+				register: $register,
+				schema: (string)($test['schema'] ?? '')
+			);
+		} catch (Throwable $e) {
+			return self::check(kind: self::KIND_RECORD, name: $name, outcome: self::FAILED, message: 'The record could not be checked: ' . $e->getMessage());
+		}
+
+		$refused = self::refusedFields(verdict: $verdict);
+		$valid   = $refused === null;
+		if (($test['expect'] ?? '') === 'accept') {
+			if ($valid === true) {
+				return self::check(kind: self::KIND_RECORD, name: $name, outcome: self::PASSED, message: '');
+			}
+
+			return self::check(kind: self::KIND_RECORD, name: $name, outcome: self::FAILED, message: 'Expected the record to be accepted, but it was refused' . self::onFields(fields: $refused) . '.');
+		}
+
+		if ($valid === true) {
+			return self::check(kind: self::KIND_RECORD, name: $name, outcome: self::FAILED, message: 'Expected the record to be refused, but it was accepted.');
+		}
+
+		$expected = array_values(array_filter(array_map('strval', (array)($test['expectedFields'] ?? [])), static fn (string $field): bool => $field !== ''));
+		$missing  = array_values(array_diff($expected, $refused));
+		if ($missing === []) {
+			return self::check(kind: self::KIND_RECORD, name: $name, outcome: self::PASSED, message: '');
+		}
+
+		return self::check(kind: self::KIND_RECORD, name: $name, outcome: self::FAILED, message: 'Expected a refusal on ' . implode(', ', $missing) . ', but it was refused' . self::onFields(fields: $refused) . '.');
+	}//end recordCheck()
+
+	/**
+	 * The properties a validate-only verdict refused, or null when it accepted the record.
+	 *
+	 * Read through the verdict's published JSON shape (`valid`, `errors[].property`),
+	 * so buildiq does not depend on the verdict class itself. A refusal that
+	 * names no single property is listed as `(record)`.
+	 *
+	 * @param mixed $verdict The answer of validateObject().
+	 *
+	 * @return list<string>|null
+	 *
+	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+	 */
+	private static function refusedFields(mixed $verdict): ?array {
+		$answer = $verdict instanceof JsonSerializable ? $verdict->jsonSerialize() : $verdict;
+		if (is_array($answer) === false) {
+			return [];
+		}
+
+		$errors = (array)($answer['errors'] ?? []);
+		if (($answer['valid'] ?? false) === true && $errors === []) {
+			return null;
+		}
+
+		$fields = [];
+		foreach ($errors as $error) {
+			$property = is_array($error) === true ? ($error['property'] ?? null) : null;
+			$fields[] = is_string($property) === true && $property !== '' ? $property : '(record)';
+		}
+
+		return array_values(array_unique($fields));
+	}//end refusedFields()
+
+	/**
+	 * " on a, b" for a list of fields, or "" when the list is empty.
+	 *
+	 * @param list<string> $fields The fields.
+	 *
+	 * @return string
+	 */
+	private static function onFields(array $fields): string {
+		return $fields === [] ? '' : ' on ' . implode(', ', $fields);
+	}//end onFields()
 
 	/**
 	 * The uuid of an object array: `id`, else `uuid`, else `@self.id`.
