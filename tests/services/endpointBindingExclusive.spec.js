@@ -9,7 +9,7 @@
  * allowed. The rule lives in `@conduction/nextcloud-vue`'s validator; this
  * spec pins that buildiq's validator entry point still enforces it.
  *
- * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-002-normative-endpoint-binding-matrix-for-the-published-path
+ * @spec openspec/changes/archive/2026-11-25-openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-002-normative-endpoint-binding-matrix-for-the-published-path
  */
 import { validateManifest } from '@conduction/nextcloud-vue'
 import { describe, expect, it } from 'vitest'

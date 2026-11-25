@@ -61,6 +61,7 @@ import { startOffline } from './services/offlineRuntime.js'
 import { brandTopBar } from './services/topBarBrand.js'
 import { keepVersionQuery } from './services/versionQuery.js'
 import { embedSlots, needsSignIn, signInNotice } from './utils/appEmbed.js'
+import { builderRouterBase } from './utils/builderRouterBase.js'
 import { virtualAppSupportDialog } from './utils/virtualAppSupportDialog.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
@@ -430,7 +431,7 @@ function navSlots(manifest, router) {
 /**
  * Fetch the app manifest, build its router, and mount the standalone shell.
  *
- * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-001-single-runtime-registry-seam-for-every-virtual-app-host
+ * @spec openspec/changes/archive/2026-11-25-openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-001-single-runtime-registry-seam-for-every-virtual-app-host
  * @return {Promise<void>}
  */
 /**
@@ -524,7 +525,9 @@ async function boot() {
 	bootOffline(manifest)
 
 	const router = createRouter({
-		history: createWebHistory(generateUrl(`/apps/buildiq/builder/${slug}`)),
+		// The base the page was served at, so a deep link with or without
+		// /index.php opens the page it names (builderRouterBase.js).
+		history: createWebHistory(builderRouterBase(window.location.pathname, slug)),
 		routes: routesFromManifest(manifest),
 	})
 	// A development preview stays on its version while you click through it.
