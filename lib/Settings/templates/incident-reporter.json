@@ -6,7 +6,7 @@
   "category": "field-work",
   "screenshotUrl": "img/templates/incident-reporter.svg",
   "isSeeded": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "manifest": {
     "version": "1.0.0",
     "dependencies": ["openregister"],
@@ -20,7 +20,16 @@
         "route": "/report",
         "type": "form",
         "title": "Report an incident",
-        "config": { "schema": "incident" }
+        "config": {
+          "schema": "incident",
+          "fields": [
+            { "key": "reportedBy", "label": "Reported by", "type": "string" },
+            { "key": "location", "label": "Location", "type": "string" },
+            { "key": "incidentType", "label": "Incident type", "type": "string" },
+            { "key": "severity", "label": "Severity", "type": "enum", "options": ["low", "medium", "high", "critical"] },
+            { "key": "description", "label": "Description", "type": "string" }
+          ]
+        }
       },
       {
         "id": "Incidents",

@@ -72,6 +72,7 @@ use OCA\Buildiq\Service\SchemaExportFlag;
 use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCA\Buildiq\Service\TemplateInstall;
 use OCA\Buildiq\Support\ObjectRecord;
+use OCA\Buildiq\Support\PageRegisterBinding;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
@@ -2501,6 +2502,10 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 * @param array{register:int,templateSchema:int,applicationSchema:int} $ctx Shared context.
 	 *
 	 * @return array{uuid:string|null,registerSlug:string,schemaIds:array<int,int>}|array{error:array<string,mixed>,status:int}
+	 *
+	 * @spec openspec/specs/openbuild-template-catalogue/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) PageRegisterBinding is a pure rule with no collaborators.
 	 */
 	private function materialiseApplication(TemplateInstall $install, string $ownerUid, array $ctx): array {
 		$template = $install->template;
@@ -2546,11 +2551,14 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		// before this fix.
 		$newAppUuid = (string)($persistResult['uuid'] ?? '');
 		if ($newAppUuid !== '') {
+			$registerSlug = $cloneResult['register']->getSlug();
 			$this->linkProductionVersion(
 				application: ($persistResult['application'] ?? []),
 				appUuid: $newAppUuid,
-				manifest: $manifest,
-				registerSlug: $cloneResult['register']->getSlug()
+				// The template's pages name `{{register}}` or no register at
+				// all; both mean this app's own register.
+				manifest: PageRegisterBinding::forManifest(manifest: $manifest, registerSlug: $registerSlug),
+				registerSlug: $registerSlug
 			);
 		}
 
