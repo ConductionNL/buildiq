@@ -108,10 +108,16 @@ final class ScreenOverrideFragmentTest extends TestCase {
 		self::assertArrayHasKey('driftDetected', $notifications);
 
 		$rule = $notifications['driftDetected'];
-		self::assertSame('update', $rule['event']);
-		self::assertSame('status', $rule['condition']['field']);
-		self::assertSame('needs-review', $rule['condition']['value']);
-		self::assertSame('maintainer', $rule['recipients']['field']);
+		// OpenRegister's dialect: `trigger.type` is the event it dispatches
+		// (`updated`, not `update`), the condition sits in the trigger, and
+		// recipients are a list. The earlier top-level `event`/`condition`
+		// shape was never read, so no maintainer was ever told.
+		self::assertSame(expected: 'updated', actual: $rule['trigger']['type']);
+		self::assertSame(expected: ['field' => 'status', 'operator' => 'equals', 'value' => 'needs-review'], actual: $rule['trigger']['condition']);
+		self::assertSame(expected: [['kind' => 'field', 'field' => 'maintainer']], actual: $rule['recipients']);
+		self::assertSame(expected: ['nc-notification'], actual: $rule['channels']);
+		self::assertArrayHasKey(key: 'nl', array: $rule['subject']);
+		self::assertArrayHasKey(key: 'en', array: $rule['message']);
 	}//end testTheDriftNotificationIsDeclaredAndAddressedToTheMaintainer()
 
 	/**
@@ -135,6 +141,6 @@ final class ScreenOverrideFragmentTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheSchemaVersionMoved(): void {
-		self::assertSame('0.4.0', $this->schema()['version']);
+		self::assertSame(expected: '0.4.1', actual: $this->schema()['version']);
 	}//end testTheSchemaVersionMoved()
 }//end class
