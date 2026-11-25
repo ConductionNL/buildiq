@@ -384,6 +384,8 @@ class FlowBindingWrapperService {
 	 * @param string                    $appSlug The application's slug.
 	 *
 	 * @return bool True when the flow is ours to delete.
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
 	 */
 	public static function ownWrapper(\OCA\OpenRegister\Db\Flow $flow, string $appSlug): bool {
 		return $flow->getApp() === self::OWNING_APP && $appSlug !== '' && $flow->getApplicationSlug() === $appSlug;
@@ -393,6 +395,8 @@ class FlowBindingWrapperService {
 	 * Publishes wrappers (built on first use).
 	 *
 	 * @return FlowWrapperPublisher
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
 	 */
 	private function publisher(): FlowWrapperPublisher {
 		$this->publisher ??= new FlowWrapperPublisher(flowService: $this->flowService, container: $this->container, logger: $this->logger);
