@@ -32,6 +32,7 @@ use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\Buildiq\Support\SlugSearch;
 
 /**
  * Finds one record of a schema in Buildiq's register.
@@ -69,7 +70,14 @@ class RegisterRecordLookup {
 	 */
 	public function first(string $schema, array $filters): ?array {
 		try {
-			$rows = $this->objectService->searchObjectsBySlug(self::REGISTER, $schema, $filters, _rbac: false, _multitenancy: false);
+			$rows = SlugSearch::run(
+				objectService: $this->objectService,
+				register: self::REGISTER,
+				schema: $schema,
+				filters: $filters,
+				rbac: false,
+				multitenancy: false
+			);
 		} catch (Throwable $e) {
 			$this->logger->debug('RegisterRecordLookup: lookup in {schema} failed: {message}', ['schema' => $schema, 'message' => $e->getMessage()]);
 			return null;

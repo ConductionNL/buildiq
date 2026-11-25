@@ -51,6 +51,7 @@ use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use OCA\Buildiq\Support\SlugSearch;
 
 /**
  * OR-backed store for fleet-app manifest overrides, on the unified app model.
@@ -421,9 +422,10 @@ class AppOverrideService implements AppOverrideServiceInterface {
 		}
 
 		try {
-			$results = $this->objectService->searchObjectsBySlug(
-				registerSlug: self::REGISTER_SLUG,
-				schemaSlug: self::APPLICATION_VERSION_SCHEMA,
+			$results = SlugSearch::run(
+				objectService: $this->objectService,
+				register: self::REGISTER_SLUG,
+				schema: self::APPLICATION_VERSION_SCHEMA,
 				filters: ['scope' => 'user']
 			);
 		} catch (Throwable $e) {
@@ -612,9 +614,10 @@ class AppOverrideService implements AppOverrideServiceInterface {
 	#[\Override]
 	public function findHybridApplication(string $appId): ?array {
 		try {
-			$results = $this->objectService->searchObjectsBySlug(
-				registerSlug: self::REGISTER_SLUG,
-				schemaSlug: self::APPLICATION_SCHEMA,
+			$results = SlugSearch::run(
+				objectService: $this->objectService,
+				register: self::REGISTER_SLUG,
+				schema: self::APPLICATION_SCHEMA,
 				filters: [
 					'slug' => $appId,
 					'appType' => 'hybrid',
@@ -888,9 +891,10 @@ class AppOverrideService implements AppOverrideServiceInterface {
 		}
 
 		try {
-			$results = $this->objectService->searchObjectsBySlug(
-				registerSlug: self::REGISTER_SLUG,
-				schemaSlug: self::APPLICATION_VERSION_SCHEMA,
+			$results = SlugSearch::run(
+				objectService: $this->objectService,
+				register: self::REGISTER_SLUG,
+				schema: self::APPLICATION_VERSION_SCHEMA,
 				filters: [
 					'scope' => 'user',
 					'owner' => $uid,

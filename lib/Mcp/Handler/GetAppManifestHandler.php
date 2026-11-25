@@ -27,6 +27,7 @@ namespace OCA\Buildiq\Mcp\Handler;
 
 
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\Buildiq\Support\SlugSearch;
 /**
  * Handles the buildiq.getAppManifest tool invocation.
  *
@@ -135,12 +136,13 @@ class GetAppManifestHandler extends AbstractToolHandler {
 	 * @return array{application?: array<string, mixed>, error?: string, message?: string}
 	 */
 	private function resolveApplicationBySlug(object $objectService, string $slug): array {
-		$routeResults = $objectService->searchObjectsBySlug(
-			self::REGISTER_SLUG,
-			'built-app-route',
-			['slug' => $slug],
-			_rbac: true,
-			_multitenancy: false
+		$routeResults = SlugSearch::run(
+			objectService: $objectService,
+			register: self::REGISTER_SLUG,
+			schema: 'built-app-route',
+			filters: ['slug' => $slug],
+			rbac: true,
+			multitenancy: false
 		);
 		if (is_array($routeResults) === false || $routeResults === []) {
 			return ['error' => 'not_found', 'message' => "No published virtual app found for slug '{$slug}'."];

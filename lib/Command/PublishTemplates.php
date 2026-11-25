@@ -40,6 +40,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
+use OCA\Buildiq\Support\SlugSearch;
 
 /**
  * Occ buildiq:templates:publish.
@@ -242,12 +243,13 @@ class PublishTemplates extends Command {
 		try {
 			// System context (occ command): seeded templates are Conduction-
 			// curated store content, not per-user data.
-			$results = $this->objectService->searchObjectsBySlug(
-				self::REGISTER_SLUG,
-				self::TEMPLATE_SCHEMA,
-				$filters,
-				_rbac: false,
-				_multitenancy: false
+			$results = SlugSearch::run(
+				objectService: $this->objectService,
+				register: self::REGISTER_SLUG,
+				schema: self::TEMPLATE_SCHEMA,
+				filters: $filters,
+				rbac: false,
+				multitenancy: false
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq: template lookup failed: ' . $e->getMessage());

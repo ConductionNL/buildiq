@@ -44,6 +44,7 @@ use OCA\Buildiq\Service\RegistrationFormTargetSchemaReader;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Throwable;
+use OCA\Buildiq\Support\SlugSearch;
 
 /**
  * Proposes or explains one builder expression, checked before it is returned.
@@ -517,12 +518,13 @@ class CopilotAssistService {
 		$versions = [];
 		if ($appUuid !== '') {
 			try {
-				$versions = $this->objectService->searchObjectsBySlug(
-					self::REGISTER_SLUG,
-					self::APPLICATION_VERSION_SCHEMA,
-					['application' => $appUuid],
-					_rbac: true,
-					_multitenancy: false
+				$versions = SlugSearch::run(
+					objectService: $this->objectService,
+					register: self::REGISTER_SLUG,
+					schema: self::APPLICATION_VERSION_SCHEMA,
+					filters: ['application' => $appUuid],
+					rbac: true,
+					multitenancy: false
 				);
 			} catch (Throwable $e) {
 				$versions = [];

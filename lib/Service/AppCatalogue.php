@@ -28,6 +28,7 @@ namespace OCA\Buildiq\Service;
 use OCA\Buildiq\Kernel\Contracts\AppCatalogueInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\Buildiq\Support\SlugSearch;
 
 /**
  * The apps and their versions, read for the command line.
@@ -155,12 +156,13 @@ class AppCatalogue implements AppCatalogueInterface {
 	 */
 	private function search(string $schema, array $filters): array {
 		// System context: the command line reads every app, not one user's.
-		$results = $this->objectService->searchObjectsBySlug(
-			self::REGISTER_SLUG,
-			$schema,
-			$filters,
-			_rbac: false,
-			_multitenancy: false
+		$results = SlugSearch::run(
+			objectService: $this->objectService,
+			register: self::REGISTER_SLUG,
+			schema: $schema,
+			filters: $filters,
+			rbac: false,
+			multitenancy: false
 		);
 		if (is_array($results) === false) {
 			return [];

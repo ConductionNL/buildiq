@@ -52,6 +52,7 @@ use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\Buildiq\Support\SlugSearch;
 
 /**
  * Controller for the Buildiq export pipeline.
@@ -264,7 +265,7 @@ class ExportsController extends Controller {
 			return [];
 		}
 
-		$apps = $service->searchObjectsBySlug($registerSlug, 'built-app', ['slug' => $applicationSlug]);
+		$apps = SlugSearch::run(objectService: $service, register: $registerSlug, schema: 'built-app', filters: ['slug' => $applicationSlug]);
 		if (is_array($apps) === false || $apps === []) {
 			return [];
 		}
@@ -474,7 +475,7 @@ class ExportsController extends Controller {
 				return '';
 			}
 
-			$apps = $service->searchObjectsBySlug($registerSlug, 'built-app', ['slug' => $applicationSlug]);
+			$apps = SlugSearch::run(objectService: $service, register: $registerSlug, schema: 'built-app', filters: ['slug' => $applicationSlug]);
 			if (is_array($apps) === false || $apps === []) {
 				return '';
 			}

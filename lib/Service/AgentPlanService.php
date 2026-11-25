@@ -28,6 +28,7 @@ use OCP\IUser;
 use OCP\Security\ICrypto;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\Buildiq\Support\SlugSearch;
 
 /**
  * Stores agent plans as `agent-plan` objects and decides, per write tool call,
@@ -359,7 +360,14 @@ class AgentPlanService {
 	 */
 	private function mayDecide(string $appSlug, IUser $caller): bool {
 		try {
-			$apps = $this->objectService->searchObjectsBySlug(self::REGISTER_SLUG, self::APP_SCHEMA, ['slug' => $appSlug], _rbac: true, _multitenancy: false);
+			$apps = SlugSearch::run(
+				objectService: $this->objectService,
+				register: self::REGISTER_SLUG,
+				schema: self::APP_SCHEMA,
+				filters: ['slug' => $appSlug],
+				rbac: true,
+				multitenancy: false
+			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq: resolving the app of an agent plan failed: ' . $e->getMessage());
 			return false;
