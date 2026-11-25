@@ -62,6 +62,7 @@ import { brandTopBar } from './services/topBarBrand.js'
 import { keepVersionQuery } from './services/versionQuery.js'
 import { embedSlots, needsSignIn, signInNotice } from './utils/appEmbed.js'
 import { builderRouterBase } from './utils/builderRouterBase.js'
+import { keepOwnManifestLink } from './utils/ownManifestLink.js'
 import { virtualAppSupportDialog } from './utils/virtualAppSupportDialog.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
@@ -484,6 +485,9 @@ async function bootOffline(manifest) {
  *
  */
 async function boot() {
+	// An installable app installs from its own manifest, not Nextcloud's
+	// (REQ-BQOM-001); a page without one is left as it is.
+	keepOwnManifestLink(document)
 	// Flip the top-bar off the host "Buildiq" identity immediately using the
 	// slug, so there's no visible "Buildiq" flash while the manifest (which
 	// carries the real display name) is still loading.
