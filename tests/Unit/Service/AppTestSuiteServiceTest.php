@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\AppTestSuiteService;
+use OCA\Buildiq\Service\RecordTestRunner;
 use OCA\Buildiq\Service\RegistrationFormTargetSchemaReader;
 use OCA\Buildiq\Service\RuleObjectReader;
 use OCA\Buildiq\Service\RuleSetVersioningService;
@@ -45,6 +46,7 @@ use RuntimeException;
  * Covers the three kinds of check.
  *
  * @covers \OCA\Buildiq\Service\AppTestSuiteService
+ * @covers \OCA\Buildiq\Service\RecordTestRunner
  * @uses   \OCA\Buildiq\Service\RegistrationFormTargetSchemaReader
  */
 final class AppTestSuiteServiceTest extends TestCase {
@@ -124,7 +126,7 @@ final class AppTestSuiteServiceTest extends TestCase {
 		$versioning = $this->createMock(RuleSetVersioningService::class);
 		$versioning->method('runTestGate')->willReturn($failing);
 
-		return new AppTestSuiteService(schemas: $reader, objects: $objects, versioning: $versioning, records: $records);
+		return new AppTestSuiteService(schemas: $reader, objects: $objects, versioning: $versioning, runner: new RecordTestRunner(records: $records));
 	}//end suite()
 
 	/**
