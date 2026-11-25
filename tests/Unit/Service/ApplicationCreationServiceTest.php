@@ -206,6 +206,40 @@ class ApplicationCreationServiceTest extends TestCase {
 	}//end substituteVersionContextNamespacesSchemaSlugAlongsideRegister()
 
 	/**
+	 * The seeded templates write `{{register}}`, or no register at all on a
+	 * page that names a schema: both read the version's own register, so a
+	 * cloned template's index and form pages list and write its records.
+	 * A page without a schema is left as it is.
+	 *
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function substituteVersionContextGivesATemplatePageTheVersionsRegister(): void {
+		$manifest = [
+			'pages' => [
+				['id' => 'Incidents', 'type' => 'index', 'config' => ['schema' => 'incident']],
+				['id' => 'IncidentDetail', 'type' => 'detail', 'config' => ['register' => '{{register}}', 'schema' => 'incident']],
+				['id' => 'Blank', 'type' => 'index', 'config' => ['register' => '', 'schema' => 'incident']],
+				['id' => 'Dashboard', 'type' => 'dashboard', 'config' => ['widgets' => []]],
+			],
+		];
+
+		$result = $this->service->substituteVersionContext(
+			manifest: $manifest,
+			registerSlug: 'openbuild-pw-incidents',
+			schemaSlugPrefix: 'pw-incidents-'
+		);
+
+		foreach ([0, 1, 2] as $index) {
+			self::assertSame(expected: 'openbuild-pw-incidents', actual: $result['pages'][$index]['config']['register'], message: $result['pages'][$index]['id']);
+			self::assertSame(expected: 'pw-incidents-incident', actual: $result['pages'][$index]['config']['schema'], message: $result['pages'][$index]['id']);
+		}
+
+		self::assertArrayNotHasKey(key: 'register', array: $result['pages'][3]['config'], message: 'a page without a schema gets no register');
+	}//end substituteVersionContextGivesATemplatePageTheVersionsRegister()
+
+	/**
 	 * A page on a register the Application declares in `dataRegisters` keeps
 	 * its schema slug, next to an own-register page that is still namespaced
 	 * (REQ-BQDB-004, buildiq#991).
