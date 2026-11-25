@@ -105,7 +105,7 @@ final class AutomationFlowBuilderTest extends TestCase {
 
 		self::assertSame('aut-inspect-permit', $flow['name']);
 		self::assertSame(['id' => 'trigger', 'type' => 'openregister.trigger-object', 'config' => ['event' => 'object.created', 'register' => 'buildiq-permits-v1', 'schema' => 'permit']], $flow['nodes'][0]);
-		self::assertSame(['id' => 'step-1', 'type' => 'openregister.object-write', 'config' => ['register' => 'buildiq-permits-v1', 'schema' => 'inspectie', 'operation' => 'create', 'fields' => ['permit' => '{{json.id}}', 'status' => 'open']]], $flow['nodes'][1]);
+		self::assertSame(['id' => 'step-1', 'type' => 'openregister.object-write', 'config' => ['register' => 'buildiq-permits-v1', 'schema' => 'inspectie', 'operation' => 'create', 'fields' => ['permit' => '{{json.id}}', 'status' => 'open']], 'exit' => true], $flow['nodes'][1]);
 		self::assertSame([['id' => 'e1', 'from' => ['trigger'], 'to' => ['step-1']]], $flow['edges']);
 	}//end testANewPermitCreatesAnInspectionRecord()
 
@@ -158,7 +158,7 @@ final class AutomationFlowBuilderTest extends TestCase {
 		$step = ['type' => 'webhook', 'source' => 'planning', 'path' => '/intake', 'payloadTemplate' => ['id' => '{{id}}']];
 		$flow = $this->builder()->build(self::input(['type' => 'object-created', 'schema' => 'request'], [$step]), 'reg', ['request']);
 
-		self::assertSame(['id' => 'step-1', 'type' => 'openconnector.source-call', 'config' => ['source' => 'planning', 'endpoint' => '/intake', 'method' => 'POST', 'body' => ['id' => '{{id}}']]], $flow['nodes'][1]);
+		self::assertSame(['id' => 'step-1', 'type' => 'openconnector.source-call', 'config' => ['source' => 'planning', 'endpoint' => '/intake', 'method' => 'POST', 'body' => ['id' => '{{id}}']], 'exit' => true], $flow['nodes'][1]);
 
 		$this->expectException(UnsupportedAutomationCombinationException::class);
 		$this->expectExceptionMessage(AutomationFlowBuilder::BARE_URL_REFUSAL);
@@ -271,6 +271,7 @@ final class AutomationFlowBuilderTest extends TestCase {
 						'match' => ['uuid' => '{{json.uuid}}'],
 						'fields' => ['categorie' => '{{json.categorie}}'],
 					],
+					'exit' => true,
 				],
 			],
 			array_slice($flow['nodes'], 1)
