@@ -246,7 +246,9 @@ test.describe('lifecycle-import-app-and-cli: import an exported app', () => {
 		const opened = await page.goto(`${BASE_URL}/index.php/apps/buildiq/builder/${IMPORTED_SLUG}/${EXTRA_PAGE.id}`, { waitUntil: 'domcontentloaded' })
 		expect(opened?.status() ?? 0, 'the imported app is served').toBeLessThan(400)
 		await dismissOverlays(page)
-		await expect(page.locator('#app-navigation, nav').first().getByText(EXTRA_PAGE.title, { exact: true })).toBeVisible({ timeout: 30_000 })
+		// The app's own navigation (NcAppNavigation): the first <nav> on the
+		// page is Nextcloud's header app menu.
+		await expect(page.locator('#app-navigation-vue').getByText(EXTRA_PAGE.title, { exact: true })).toBeVisible({ timeout: 30_000 })
 	})
 
 	test('REQ-BQIC-001: an import under a slug that is taken is refused and creates nothing', async ({ page }) => {
