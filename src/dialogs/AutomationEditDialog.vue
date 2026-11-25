@@ -752,7 +752,7 @@ export default {
 		 * The app the Ask AI help is scoped to: the automation's own app.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
+		 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
 		 */
 		assistAppSlug() {
 			return (this.automation && this.automation.applicationSlug) || ''

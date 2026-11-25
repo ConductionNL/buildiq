@@ -51,7 +51,7 @@ export default {
 		 * The well-formed stories as display rows.
 		 *
 		 * @return {Array<{key: string, sentence: string, servedBy: Array<object>}>}
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
+		 * @spec openspec/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
 		 */
 		rows() {
 			return (Array.isArray(this.stories) ? this.stories : [])
@@ -78,7 +78,7 @@ export default {
 		 * @param {{role: string, goal: string, benefit?: string}} story The story.
 		 * @return {string}
 		 *
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
+		 * @spec openspec/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
 		 */
 		sentence(story) {
 			if (story.benefit) {

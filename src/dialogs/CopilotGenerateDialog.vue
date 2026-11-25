@@ -269,7 +269,7 @@ export default {
 		 * Whether there is something to generate from: a brief or a document.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+		 * @spec openspec/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
 		 */
 		canGenerate() {
 			return this.brief.trim() !== '' || this.document !== null
@@ -373,7 +373,7 @@ export default {
 		 * with the names of the schemas and pages that serve it.
 		 *
 		 * @return {Array<{text: string, servedBy: Array<string>}>}
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-plan-carries-user-stories-req-bqch-006
+		 * @spec openspec/specs/ai-copilot/spec.md#requirement-the-plan-carries-user-stories-req-bqch-006
 		 */
 		stories() {
 			const stories = (this.plan && Array.isArray(this.plan.stories)) ? this.plan.stories : []
@@ -424,7 +424,7 @@ export default {
 		 * Start every opening of the wizard from a clean state.
 		 *
 		 * @param {boolean} value Whether the wizard just opened.
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+		 * @spec openspec/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
 		 */
 		open(value) {
 			if (value) {
@@ -455,7 +455,7 @@ export default {
 		 * @param {{role: string, goal: string, benefit?: string}} story - the story.
 		 * @return {string}
 		 *
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-plan-carries-user-stories-req-bqch-006
+		 * @spec openspec/specs/ai-copilot/spec.md#requirement-the-plan-carries-user-stories-req-bqch-006
 		 */
 		storySentence(story) {
 			if (story.benefit) {
@@ -470,7 +470,7 @@ export default {
 		 * @param {object|undefined} step - a plan step.
 		 * @return {string}
 		 *
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-plan-carries-user-stories-req-bqch-006
+		 * @spec openspec/specs/ai-copilot/spec.md#requirement-the-plan-carries-user-stories-req-bqch-006
 		 */
 		stepName(step) {
 			if (!step || !step.arguments) {
@@ -506,7 +506,7 @@ export default {
 		 * Pick a requirements document from Files; the server reads it as the maker.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+		 * @spec openspec/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
 		 */
 		async onAddDocument() {
 			const picked = await pickRequirementsDocument()

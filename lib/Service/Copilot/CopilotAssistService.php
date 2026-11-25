@@ -27,7 +27,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md
+ * @spec openspec/specs/ai-builder-assist/spec.md
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ use Throwable;
 /**
  * Proposes or explains one builder expression, checked before it is returned.
  *
- * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md
+ * @spec openspec/specs/ai-builder-assist/spec.md
  */
 class CopilotAssistService {
 
@@ -138,9 +138,9 @@ class CopilotAssistService {
 	 *
 	 * @throws CopilotException 422 on bad arguments or a twice-refused answer, 403/404 on scope, 503 unavailable, 502 provider.
 	 *
-	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
-	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-explains-the-current-value-req-bqch-003
-	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
+	 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
+	 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-explains-the-current-value-req-bqch-003
+	 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
 	 */
 	public function assist(string $target, string $mode, string $request, string $current, string $appSlug, array $context, string $userId): array {
 		$this->assertArguments(target: $target, mode: $mode, request: $request, current: $current, appSlug: $appSlug);
@@ -211,7 +211,7 @@ class CopilotAssistService {
 	 *
 	 * @return array{0: array<string, mixed>|null, 1: string} `[answer|null, checker message]`.
 	 *
-	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
+	 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
 	 */
 	public function checkAnswer(string $target, string $mode, string $raw, array $names): array {
 		$decoded = $this->decodeObject(text: $raw);
@@ -409,7 +409,7 @@ class CopilotAssistService {
 	 *
 	 * @throws CopilotException (422) Without a target schema, (404) when the app holds no such schema.
 	 *
-	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
+	 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
 	 */
 	private function targetSchemaProperties(array $app, array $context): array {
 		$schemaSlug = $this->contextString(context: $context, key: 'targetSchema');

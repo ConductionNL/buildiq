@@ -29,7 +29,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+ * @spec openspec/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use Throwable;
 /**
  * Opens a picked document as the requesting user and returns its text.
  *
- * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+ * @spec openspec/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
  */
 class CopilotDocumentReader {
 
@@ -134,7 +134,7 @@ class CopilotDocumentReader {
 	 *
 	 * @throws CopilotException (404 not_found, 422 unsupported_document, 422 document_too_long).
 	 *
-	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+	 * @spec openspec/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
 	 */
 	public function read(int $fileId, string $userId): array {
 		$file = $this->findFile(fileId: $fileId, userId: $userId);
@@ -198,7 +198,7 @@ class CopilotDocumentReader {
 	 *
 	 * @throws CopilotException (422) When this OpenRegister cannot read it, it is too big, or the read fails.
 	 *
-	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-a-document-is-read-whole-in-a-type-the-server-can-read-req-bqch-008
+	 * @spec openspec/specs/ai-copilot/spec.md#requirement-a-document-is-read-whole-in-a-type-the-server-can-read-req-bqch-008
 	 */
 	private function readDocument(File $file): string {
 		$reader = $this->fileTextReader();

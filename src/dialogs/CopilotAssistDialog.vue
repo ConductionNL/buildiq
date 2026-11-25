@@ -127,7 +127,7 @@ export default {
 		 *
 		 * @return {string}
 		 *
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
+		 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
 		 */
 		currentText() {
 			if (this.current && typeof this.current === 'object') {
@@ -150,7 +150,7 @@ export default {
 		 *
 		 * @return {string}
 		 *
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
+		 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
 		 */
 		displayValue() {
 			const value = this.answer ? this.answer.value : ''
@@ -168,7 +168,7 @@ export default {
 		 * @param {boolean} shown Whether the dialog just opened.
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
+		 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
 		 */
 		open(shown) {
 			if (shown) {
@@ -183,7 +183,7 @@ export default {
 		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
+		 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
 		 */
 		reset() {
 			this.request = ''
@@ -197,7 +197,7 @@ export default {
 		 *
 		 * @param {string} mode `write` or `explain`.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
+		 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
 		 */
 		async send(mode) {
 			this.busy = true
@@ -223,7 +223,7 @@ export default {
 		 * Hand the proposed value to the editor and close.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
+		 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
 		 */
 		accept() {
 			if (!this.answer || this.answer.mode !== 'write') {
@@ -237,7 +237,7 @@ export default {
 		 * Drop the proposal and close, leaving the editor untouched.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
+		 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
 		 */
 		reject() {
 			this.answer = null
@@ -249,7 +249,7 @@ export default {
 		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
+		 * @spec openspec/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
 		 */
 		close() {
 			this.$emit('update:open', false)

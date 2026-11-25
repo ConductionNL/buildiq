@@ -657,7 +657,7 @@
 			"overlay": null,
 			"specs": [
 				"ai-copilot",
-				"ai-copilot-documents-and-code-help",
+				"ai-builder-assist",
 				"ai-chat-companion-streaming"
 			]
 		},
@@ -6066,22 +6066,22 @@
 			"area": "ai",
 			"name": "Get AI help writing expressions, queries or code in the builder.",
 			"source": "competitor",
-			"buildiq": "no",
+			"buildiq": "yes",
 			"nocobase": "yes",
 			"budibase": "yes",
 			"appsmith": "yes",
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "The copilot proposes manifest changes (pages, schemas, menus, widgets) only (BuildiqToolProvider.php:84-258); no AI help in the FEEL/condition editors (src/dialogs/DecisionTableEditor.vue, ConditionActionRuleEditor.vue, src/utils/feelCell.js), the automation field-mapping or payload JSON boxes (AutomationEditDialog.vue:205-246), or the raw manifest editor; grep -iE 'copilot|generate with' over those files: none.",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-25-ai-copilot-documents-and-code-help: CopilotAssistButton (src/components/copilot/CopilotAssistButton.vue) and CopilotAssistDialog in ConditionActionRuleEditor (condition), DecisionTableEditor (propose a row) and AutomationEditDialog (field mapping, payload template), over POST /api/copilot/assist (CopilotController::assist(), lib/Service/Copilot/CopilotAssistService.php: write and explain modes, one repair round-trip, checked values, writes nothing, app write access asserted). Main spec openspec/specs/ai-builder-assist. Before: The copilot proposes manifest changes (pages, schemas, menus, widgets) only (BuildiqToolProvider.php:84-258); no AI help in the FEEL/condition editors (src/dialogs/DecisionTableEditor.vue, ConditionActionRuleEditor.vue, src/utils/feelCell.js), the automation field-mapping or payload JSON boxes (AutomationEditDialog.vue:205-246), or the raw manifest editor; grep -iE 'copilot|generate with' over those files: none.",
 				"reachedOn": "",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/ai-copilot-documents-and-code-help (OpenSpec pass 2026-09-27).",
+				"note": "Specified in openspec/changes/ai-copilot-documents-and-code-help (OpenSpec pass 2026-09-27); built and archived 2026-11-25.",
 				"change": "ai-copilot-documents-and-code-help",
 				"requirement": [
-					"openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist :: Expression editors offer an Ask AI button (REQ-BQCH-001)",
-					"openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist :: The assist proposes a checked value (REQ-BQCH-002)"
+					"openspec/changes/archive/2026-11-25-ai-copilot-documents-and-code-help/specs/ai-builder-assist :: Expression editors offer an Ask AI button (REQ-BQCH-001)",
+					"openspec/changes/archive/2026-11-25-ai-copilot-documents-and-code-help/specs/ai-builder-assist :: The assist proposes a checked value (REQ-BQCH-002)"
 				]
 			},
 			"provider": "buildiq",
@@ -10308,22 +10308,22 @@
 			"source": "competitor",
 			"origin": "roadmap",
 			"originUrl": "https://www.mendix.com/whats-new/",
-			"buildiq": "partial",
+			"buildiq": "yes",
 			"nocobase": "partial",
 			"budibase": "no",
 			"appsmith": "no",
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "'Generate with AI' takes a typed description only: src/dialogs/CopilotGenerateDialog.vue:30 NcTextArea (no file upload in the dialog) -> POST /apps/buildiq/api/copilot/plan (appinfo/routes.php:320) -> lib/Controller/CopilotController.php:122; it proposes schemas and pages, not user stories, and a document's text can only be pasted",
+				"state": "built",
+				"evidence": "Built in openspec/changes/archive/2026-11-25-ai-copilot-documents-and-code-help: Generate with AI has Add a document (src/services/documentPicker.js, Nextcloud file picker) sending documentFileId; lib/Service/Copilot/CopilotDocumentReader.php opens it as the maker (404 otherwise), reads txt/md directly and PDF, Word and OpenDocument through OpenRegister FileTextReaderInterface (openregister#11139) where present, 60,000 character cap, never cut; the plan carries stories[] (CopilotPromptBuilder, CopilotPlanValidator, review in CopilotGenerateDialog.vue) and the created app keeps them (register.d/81-application-stories.json, StoriesWidget.vue). Before: 'Generate with AI' takes a typed description only: src/dialogs/CopilotGenerateDialog.vue:30 NcTextArea (no file upload in the dialog) -> POST /apps/buildiq/api/copilot/plan (appinfo/routes.php:320) -> lib/Controller/CopilotController.php:122; it proposes schemas and pages, not user stories, and a document's text can only be pasted",
 				"reachedOn": "/applications, New application wizard, 'Generate with AI'",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/ai-copilot-documents-and-code-help (OpenSpec pass 2026-09-27).",
+				"note": "Specified in openspec/changes/ai-copilot-documents-and-code-help (OpenSpec pass 2026-09-27); built and archived 2026-11-25.",
 				"change": "ai-copilot-documents-and-code-help",
 				"requirement": [
-					"openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot :: The wizard reads a document from Files (REQ-BQCH-005)",
-					"openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot :: The plan carries user stories (REQ-BQCH-006)"
+					"openspec/changes/archive/2026-11-25-ai-copilot-documents-and-code-help/specs/ai-copilot :: The wizard reads a document from Files (REQ-BQCH-005)",
+					"openspec/changes/archive/2026-11-25-ai-copilot-documents-and-code-help/specs/ai-copilot :: The plan carries user stories (REQ-BQCH-006)"
 				]
 			},
 			"provider": "buildiq",
