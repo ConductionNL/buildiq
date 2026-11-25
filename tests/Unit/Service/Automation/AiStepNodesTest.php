@@ -149,7 +149,7 @@ final class AiStepNodesTest extends TestCase {
 		$this->assertFalse($nodes[0]['config']['expectJson']);
 		$this->assertStringStartsWith($instruction, $nodes[0]['config']['prompt']);
 		$this->assertStringEndsWith("omschrijving:\n{{omschrijving}}\n\nlocatie:\n{{locatie}}", $nodes[0]['config']['prompt']);
-		$this->assertSame(['samenvatting' => '{{aiAnswer}}'], $nodes[1]['config']['fields']);
+		$this->assertSame(expected: ['samenvatting' => '{{aiAnswer}}'], actual: $nodes[1]['config']['fields']);
 	}//end testTextPresetsWriteThePlainAnswer()
 
 	/**

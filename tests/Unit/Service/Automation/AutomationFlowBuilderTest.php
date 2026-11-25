@@ -150,18 +150,18 @@ final class AutomationFlowBuilderTest extends TestCase {
 			],
 			'match' => ['uuid' => '{{ uuid }}'],
 		];
-		$flow = $this->builder()->build(self::input(['type' => 'manual'], [$step]), 'reg', ['permit']);
+		$flow = $this->builder()->build(input: self::input(trigger: ['type' => 'manual'], actions: [$step]), register: 'reg', schemas: ['permit']);
 
-		self::assertSame(['uuid' => '{{id}}'], $flow['nodes'][1]['config']['match']);
+		self::assertSame(expected: ['uuid' => '{{id}}'], actual: $flow['nodes'][1]['config']['match']);
 		self::assertSame(
-			[
+			expected: [
 				'fixed' => 'checked',
 				'legacy' => '{{applicant}}',
 				'note' => 'Checked {{id}} for {{applicant}}',
 				'ref' => '{{id}}',
 				'uuidCopy' => '{{uuidCopy}}',
 			],
-			$flow['nodes'][1]['config']['fields']
+			actual: $flow['nodes'][1]['config']['fields']
 		);
 	}//end testTheRecordUuidPlaceholderReadsTheItemId()
 
@@ -174,7 +174,7 @@ final class AutomationFlowBuilderTest extends TestCase {
 		$step = ['type' => 'object-op', 'operation' => 'update', 'schema' => 'permit', 'fieldMapping' => ['status' => 'checked'], 'match' => ['uuid' => '{{uuid}}']];
 		$flow = $this->builder()->build(self::input(['type' => 'manual'], [$step]), 'reg', ['permit']);
 
-		self::assertSame(['uuid' => '{{id}}'], $flow['nodes'][1]['config']['match']);
+		self::assertSame(expected: ['uuid' => '{{id}}'], actual: $flow['nodes'][1]['config']['match']);
 		self::assertSame('openregister.trigger-manual', $flow['nodes'][0]['type']);
 
 		unset($step['match']);
@@ -382,7 +382,7 @@ final class AutomationFlowBuilderTest extends TestCase {
 		$flow = $this->builder()->build(self::input(['type' => 'object-updated', 'schema' => 'aanvraag'], [$action]), 'r', ['aanvraag'], self::ruleSets());
 
 		self::assertSame(['a' => 'fieldA', 'b' => 'fieldB'], $flow['nodes'][1]['config']['outputMapping']);
-		self::assertSame(['fieldA' => '{{fieldA}}', 'fieldB' => '{{fieldB}}'], $flow['nodes'][2]['config']['fields']);
+		self::assertSame(expected: ['fieldA' => '{{fieldA}}', 'fieldB' => '{{fieldB}}'], actual: $flow['nodes'][2]['config']['fields']);
 	}//end testARuleDecisionWithAnOutputMapping()
 
 	/**

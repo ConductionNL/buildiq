@@ -1407,7 +1407,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 			],
 			actual: $plan['flow']['nodes'][0]
 		);
-		$this->assertSame(['id' => '{{id}}'], $plan['flow']['nodes'][1]['config']['match']);
+		$this->assertSame(expected: ['id' => '{{id}}'], actual: $plan['flow']['nodes'][1]['config']['match']);
 		$this->assertSame([], $plan['notifications']);
 
 	}//end testObjectCreatedRecordStepCompilesToATriggeredFlow()
@@ -1580,8 +1580,8 @@ final class AutomationCompilerServiceTest extends TestCase {
 		preg_match_all('/\{\{\s*([^}]*?)\s*\}\}/', $nodes[1]['config']['prompt'], $placeholders);
 		$this->assertSame(['omschrijving'], array_values(array_unique($placeholders[1])));
 		$this->assertSame('update', $nodes[2]['config']['operation']);
-		$this->assertSame(['categorie' => '{{aiAnswer.label}}'], $nodes[2]['config']['fields']);
-		$this->assertSame(['uuid' => '{{id}}'], $nodes[2]['config']['match']);
+		$this->assertSame(expected: ['categorie' => '{{aiAnswer.label}}'], actual: $nodes[2]['config']['fields']);
+		$this->assertSame(expected: ['uuid' => '{{id}}'], actual: $nodes[2]['config']['match']);
 		$this->assertSame(['id' => 'e2', 'from' => ['step-1'], 'to' => ['step-1-write']], $plan['flow']['edges'][1]);
 		$this->assertSame($plan['hash'], $this->compiler->compile(self::aiAutomation(trigger: 'object-created'))['hash']);
 	}//end testAiClassifyCompilesToTriggerAgentAndWrite()
