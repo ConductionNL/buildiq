@@ -38,7 +38,6 @@ namespace OCA\Buildiq\Service\Automation;
 
 use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Db\FlowRunMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -58,6 +57,14 @@ class ManualRunReconciler {
 	 * @var array<int, string>
 	 */
 	private const TERMINAL = ['completed', 'stopped', 'dead_letter', 'failed'];
+
+	/**
+	 * OpenRegister's flow run mapper, by its service id: resolved at use time
+	 * so buildiq loads without OpenRegister.
+	 *
+	 * @var string
+	 */
+	public const FLOW_RUN_MAPPER = 'OCA\\OpenRegister\\Db\\FlowRunMapper';
 
 	/**
 	 * The reason of a run whose flow run is gone.
@@ -139,7 +146,7 @@ class ManualRunReconciler {
 	 */
 	private function resultOf(string $flowRunUuid, ?array &$actions, string $automationUuid): ?array {
 		try {
-			$flowRun = $this->container->get(FlowRunMapper::class)->findByUuid($flowRunUuid);
+			$flowRun = $this->container->get(self::FLOW_RUN_MAPPER)->findByUuid($flowRunUuid);
 		} catch (DoesNotExistException) {
 			return ['outcome' => 'failed', 'reason' => self::GONE, 'durationMs' => null, 'steps' => []];
 		} catch (Throwable $e) {
