@@ -58,7 +58,8 @@
 
 ## 5. Runtime contract proof (one app)
 
-- [ ] 5.1 On one fleet app (proof-of-concept), wire its loader to `useAppManifest(appId, bundledManifest, { mergeStrategy: 'delta', endpoint: generateUrl('/apps/buildiq/api/app-overrides/' + appId) })` so a stored delta merges over the bundled base; the broad per-app rollout is follow-on work, not this change.
+- [x] 5.1 On one fleet app (proof-of-concept), wire its loader to `useAppManifest(appId, bundledManifest, { mergeStrategy: 'delta', endpoint: generateUrl('/apps/buildiq/api/app-overrides/' + appId) })` so a stored delta merges over the bundled base; the broad per-app rollout is follow-on work, not this change.
+  > Done 24 Nov: stackiq is the proof-of-concept app (ConductionNL/stackiq#2181, merged): `src/manifestOverride.js` `loadManifest()` loads through `useAppManifest('stackiq', resolved, { mergeStrategy: 'delta', endpoint: generateUrl('/apps/buildiq/api/app-overrides/stackiq') })` when the capabilities document carries `buildiq.enabled === true`, else the in-memory branch with no request; vitest `tests/vitest/manifestOverride.spec.js`.
 - [ ] 5.2 Manual: edit a page label via the shell → Save → reload → confirm the delta is applied; DELETE the override → reload → confirm the app reverts to its bundled manifest.
 
 ## 6. Tests
