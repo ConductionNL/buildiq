@@ -5,7 +5,8 @@
 - [x] **T03**: Serve `taskList.panel` through `PageLayoutPresenter::serve()` with the existing fall-through, and keep `placement: none` distinct from an absent panel (REQ-BQTP-003). Verify: PHPUnit on `PageLayoutLeafProvider::list()` for type layout, schema-wide fall-back and `none`.
 - [x] **T04**: In the task-list panel of the detail-page editor (task 6.5 of `case-page-layout-per-case-type`), add a placement picker and a tab checklist fed from the layout's `tabs[]` (REQ-BQTP-001, REQ-BQTP-002). Verify: vitest spec for the panel under `src/components/page-editor/fields/__tests__/`, and extend `tests/e2e/page-layout-authoring.spec.ts` to place the panel beside two tabs and publish.
 - [x] **T05**: Extend `tests/e2e/page-layout-leaf.spec.ts` to assert the served `taskList.panel` for a published `bouwvergunning` layout (REQ-BQTP-003). Extended 2026-11-17 with "a published layout serves its task panel to the case it is for", which makes its own host case; passes on a throwaway NC 34 rig. It only passed after the leaf was fixed to read the rows OpenRegister renders as entities and to read the host by id.
-- [ ] **T06**: Tell dossiq the shape: add the consumer task to dossiq's competitor-parity umbrella through its lane, with the leaf id and an example response.
+- [x] **T06**: Tell dossiq the shape: add the consumer task to dossiq's competitor-parity umbrella through its lane, with the leaf id and an example response.
+  > Done 25 Nov: dossiq ConductionNL/dossiq#6918 (competitor-parity-2026-09 task 15, shapes in buildiq-consumer-halves.md), task 15.2 with the leaf id `buildiq-page-layout` and an example answer carrying `taskList.panel`.
 - [x] **T07**: English and Dutch strings for the picker and the checklist (`l10n/en.json`, `l10n/nl.json`), and a paragraph in `docs/` on placing the task panel.
 - [x] **T08**: Run `openspec validate pages-task-panel-beside-case-tabs --strict`. Valid, 2026-11-17.
 

@@ -48,4 +48,5 @@
 - [x] 8.2 Playwright `tests/e2e/page-layout-leaf.spec.ts` for the high-contrast mark, the task-list column and the locked upload field — the spec ships and asserts reachability; the three served shapes are covered by PHPUnit, which can build the fixtures a CI stack has no published layout for
 - [x] 8.3 Extend `tests/e2e/page-layout-editor.spec.ts` with the tab kinds, the widths and the header Covered by the same `tests/e2e/page-layout-editor.spec.ts` (tab kinds and order, widths, header).
 - [x] 8.4 Dutch and English strings for the new panels; docs with screenshots See 4.3.
-- [ ] 8.5 (sibling: dossiq, handed to the build-all coordinator 2026-09-29) Tell dossiq that its task list and its upload dialog may ask the same leaf, and that both keep their manifest shape when nothing answers
+- [x] 8.5 (sibling: dossiq, handed to the build-all coordinator 2026-09-29) Tell dossiq that its task list and its upload dialog may ask the same leaf, and that both keep their manifest shape when nothing answers
+  > Done 25 Nov: dossiq ConductionNL/dossiq#6918 (competitor-parity-2026-09 task 15, shapes in buildiq-consumer-halves.md), task 15.3.

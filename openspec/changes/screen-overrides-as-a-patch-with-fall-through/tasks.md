@@ -35,7 +35,9 @@
 
 ## 5. Consumers
 
-- [ ] 5.1 Tell the dossiq lane which audience to ask with on the desk channel, and open its change
-- [ ] 5.2 Tell the portaliq lane to ask with the `portal` audience for a public visitor
+- [x] 5.1 Tell the dossiq lane which audience to ask with on the desk channel, and open its change
+  > Done 25 Nov: dossiq ConductionNL/dossiq#6918 (competitor-parity-2026-09 task 15, shapes in buildiq-consumer-halves.md), task 15.1: the desk channel asks as the signed-in handler with no audience filter; buildiq resolves the audience from the session.
+- [x] 5.2 Tell the portaliq lane to ask with the `portal` audience for a public visitor
+  > Done 25 Nov: portaliq ConductionNL/portaliq#2705 (competitor-parity-2026-09 task 17, shapes in buildiq-consumer-halves.md), task 17.3: a visitor without an account resolves to `portal` and `everyone` only, so the portal sends no audience.
 - [x] 5.3 Ask the `app-delta-override` lane whether its fail-soft orphan skip should become loud too
   > Answered 24 Nov: no withholding there; the orphaned paths stay skipped in what is served and are shown to the maintainers in the designer and on the Manifest layers page (#1858). The reason is in competitor-parity-2026-09 task 5.4.

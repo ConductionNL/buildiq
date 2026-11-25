@@ -42,6 +42,7 @@
 - [x] 8.1 PHPUnit for the audience and channel default rule, the channel validation and the serving order
 - [ ] 8.2 Extend `tests/e2e/registration-form-authoring.spec.ts` (the file the earlier tasks call `registration-form-builder.spec.ts`; it does not exist under that name) with a channel per form, and `tests/e2e/registration-form-leaf.spec.ts` with the channel filter and the ordered sections. The target-schema route's reachability and its anonymous refusal are covered
 - [x] 8.3 Dutch and English strings; docs at `docs/registration-form-builder.md`. No screenshots, same reason as 4.3
-- [ ] 8.4 Tell dossiq to write `case.intakeChannel` from the served form, and tell portaliq that `isPublic` and `confirmationText` arrive on the leaf
+- [x] 8.4 Tell dossiq to write `case.intakeChannel` from the served form, and tell portaliq that `isPublic` and `confirmationText` arrive on the leaf
+  > Done 25 Nov: dossiq ConductionNL/dossiq#6918 (competitor-parity-2026-09 task 15, shapes in buildiq-consumer-halves.md), task 15.5 (`case.intakeChannel` from the served `channel`); portaliq ConductionNL/portaliq#2705 (competitor-parity-2026-09 task 17, shapes in buildiq-consumer-halves.md), tasks 17.1 (`isPublic`) and 17.2 (`confirmationText`, already consumed).
 - [x] 8.5 Release note: a form now lists only the fields an admin put on it, not every property in fetch order
   - Written (21 Nov): `CHANGELOG.md` [Unreleased] → Changed, naming the old behaviour (every property in the order the schema returned them) and that a new schema field stays off a form until an admin puts it there (design D6).
