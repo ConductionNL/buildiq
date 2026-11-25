@@ -126,6 +126,7 @@
 	"CustomPageEditor.vue": {
 		"props": {
 			"appSlug": "my-app",
+			"componentKeys": [],
 			"config": {
 				"keep": "me",
 				"register": "reg-a",
