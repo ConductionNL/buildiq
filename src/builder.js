@@ -61,6 +61,7 @@ import { startOffline } from './services/offlineRuntime.js'
 import { brandTopBar } from './services/topBarBrand.js'
 import { keepVersionQuery } from './services/versionQuery.js'
 import { embedSlots, needsSignIn, signInNotice } from './utils/appEmbed.js'
+import { builderRouterBase } from './utils/builderRouterBase.js'
 import { virtualAppSupportDialog } from './utils/virtualAppSupportDialog.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
@@ -524,7 +525,9 @@ async function boot() {
 	bootOffline(manifest)
 
 	const router = createRouter({
-		history: createWebHistory(generateUrl(`/apps/buildiq/builder/${slug}`)),
+		// The base the page was served at, so a deep link with or without
+		// /index.php opens the page it names (builderRouterBase.js).
+		history: createWebHistory(builderRouterBase(window.location.pathname, slug)),
 		routes: routesFromManifest(manifest),
 	})
 	// A development preview stays on its version while you click through it.
