@@ -56,8 +56,11 @@ It opens the Nextcloud file picker; pick the requirements document and click
 **Generate**. You may leave the description empty when the document says it
 all.
 
-- Plain text (`.txt`) and Markdown (`.md`) documents can be read. Other types,
-  such as PDF and Word, are refused with a message for now.
+- Plain text (`.txt`) and Markdown (`.md`) documents are always read. PDF,
+  Word (`.docx`) and OpenDocument text (`.odt`) are read through OpenRegister,
+  on an OpenRegister that offers its file text read; elsewhere they are refused
+  with a message naming the types that work. A PDF, Word or OpenDocument file
+  can be at most 20 MB.
 - A document can be at most 60,000 characters. A longer one is refused, never
   cut; shorten or split it.
 - The document is opened as you. A file you cannot open yourself is not
