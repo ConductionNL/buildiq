@@ -70,7 +70,8 @@ Acceptance criteria
 ### 8. Quality
 
 - [x] Run phpstan explicitly with `vendor/` installed — the local gate suite silently skips it when `vendor/` is absent, so gate-green does not imply phpstan-green
-- [ ] Run `composer check:strict` and the hydra gates, and open the PR
+- [x] Run `composer check:strict` and the hydra gates, and open the PR
+  > Run 25 Nov on development (the channel applier is merged: `lib/Service/AppChannelApplier.php`): PHPUnit 4279 tests, 0 failures (`AppChannelApplierTest` 20/20); phpcs and phpmd clean on `AppChannelApplier.php`; phpstan whole project OK; hydra gates: only failures inherited elsewhere, none in this change's files. psalm 7 could not run (needs PHP >= 8.3.16; the sandbox has 8.3.6).
 
 Acceptance criteria
 - phpstan is confirmed to have actually run, not merely to have not failed
