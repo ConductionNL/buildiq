@@ -10,7 +10,7 @@
  * so what a maker reads and what an integrator downloads are the same
  * document.
  *
- * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md#requirement-the-document-holds-only-what-the-app-uses-req-bqad-002
+ * @spec openspec/specs/app-api-docs/spec.md#requirement-the-document-holds-only-what-the-app-uses-req-bqad-002
  */
 
 /**
@@ -41,7 +41,7 @@ function widgetsOf(config) {
  *
  * @param {object} manifest - the version's manifest.
  * @return {Array<{register: string, schema: string, pages: Array<string>}>}
- * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md#requirement-the-document-holds-only-what-the-app-uses-req-bqad-002
+ * @spec openspec/specs/app-api-docs/spec.md#requirement-the-document-holds-only-what-the-app-uses-req-bqad-002
  */
 export function boundSchemas(manifest) {
 	const found = new Map()
@@ -80,7 +80,7 @@ export function boundSchemas(manifest) {
  *
  * @param {object} manifest - the version's manifest.
  * @return {Array<{page: string, title: string, endpointPath: string}>}
- * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md#requirement-the-document-holds-only-what-the-app-uses-req-bqad-002
+ * @spec openspec/specs/app-api-docs/spec.md#requirement-the-document-holds-only-what-the-app-uses-req-bqad-002
  */
 export function connectorPages(manifest) {
 	const listed = []
@@ -155,7 +155,7 @@ function pathsOf(document, register, schema) {
  * @param {string} input.apiBase - this instance's OpenRegister API base address.
  * @return {{document: object, schemas: Array<{register: string, schema: string, pages: Array<string>, documented: boolean}>, notDocumented: Array<{page: string, title: string, endpointPath: string}>}}
  *         The cut document, each bound schema with whether its register's document had it, and the connector pages.
- * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md#requirement-an-app-has-an-api-tab-per-version-req-bqad-001
+ * @spec openspec/specs/app-api-docs/spec.md#requirement-an-app-has-an-api-tab-per-version-req-bqad-001
  */
 export function buildAppOpenApi({ manifest, documents, appName, version, apiBase }) {
 	const paths = {}
@@ -213,7 +213,7 @@ export function buildAppOpenApi({ manifest, documents, appName, version, apiBase
  *
  * @param {object} document - the cut document.
  * @return {string}
- * @spec openspec/changes/operate-api-docs/specs/app-api-docs/spec.md#requirement-the-reference-stays-inside-the-instance-and-downloads-as-a-file-req-bqad-003
+ * @spec openspec/specs/app-api-docs/spec.md#requirement-the-reference-stays-inside-the-instance-and-downloads-as-a-file-req-bqad-003
  */
 export function openApiFileName(document) {
 	const slug = `${document?.info?.title || 'app'}-${document?.info?.version || ''}`
