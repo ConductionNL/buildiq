@@ -29,7 +29,7 @@ namespace OCA\Buildiq\Service;
 /**
  * The layer stack, frozen base, presenter and delta store of a page layout.
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md
+ * @spec openspec/specs/page-layout-per-type/spec.md
  */
 final class PageLayoutParts {
 	/**

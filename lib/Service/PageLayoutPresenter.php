@@ -29,7 +29,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-006, REQ-OBPL-007, REQ-OBPL-008, REQ-OBPL-009)
+ * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-006, REQ-OBPL-007, REQ-OBPL-008, REQ-OBPL-009)
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use OCA\Buildiq\Kernel\Contracts\PageLayoutPresenterInterface;
 /**
  * Turns a resolved page layout into what the consumer renders.
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-006)
+ * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-006)
  */
 final class PageLayoutPresenter implements PageLayoutPresenterInterface {
 	/**
@@ -53,7 +53,7 @@ final class PageLayoutPresenter implements PageLayoutPresenterInterface {
 	 *
 	 * @return array<string, mixed> The served layout.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-006, REQ-OBPL-007, REQ-OBPL-008, REQ-OBPL-009)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-006, REQ-OBPL-007, REQ-OBPL-008, REQ-OBPL-009)
 	 */
 	#[\Override]
 	public function serve(array $layout, ?array $schemaWide, array $object): array {
@@ -86,7 +86,7 @@ final class PageLayoutPresenter implements PageLayoutPresenterInterface {
 	 *
 	 * @return array<string, mixed>|null The part, or null when neither declares it.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-007)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-007)
 	 */
 	private function declaredPart(array $layout, ?array $schemaWide, string $key): ?array {
 		$own = ($layout[$key] ?? null);
@@ -110,7 +110,7 @@ final class PageLayoutPresenter implements PageLayoutPresenterInterface {
 	 *
 	 * @return array<int, array<string, mixed>> The tabs.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-008)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-008)
 	 */
 	private function orderedTabs(array $layout, array $object): array {
 		$tabs = [];
@@ -144,7 +144,7 @@ final class PageLayoutPresenter implements PageLayoutPresenterInterface {
 	 *
 	 * @return array<int, array<string, mixed>> The widgets that hold.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-006)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-006)
 	 */
 	public function keepWidgetsThatHold(mixed $widgets, array $object): array {
 		if (is_array($widgets) === false) {

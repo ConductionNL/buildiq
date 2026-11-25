@@ -1,5 +1,5 @@
 {
-	"_comment": "ADR-037 register fragment — page layouts. Adds the disjoint schema key `pageLayout` to the shared `buildiq` register's components.schemas map (key-union merge, no existing schema is touched). A page layout is what a consuming app's detail page shows for one schema, and optionally for one type value of it. Buildiq stores it and serves it through the `buildiq-page-layout` data-provider leaf (ADR-066); the consuming app merges the answer over its own manifest config and renders its manifest unchanged when nothing answers, so an instance without buildiq behaves exactly as before. Resolution is type value first, then schema-wide, then nothing, and a draft never resolves. See openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md, REQ-OBPL-001 through REQ-OBPL-009.",
+	"_comment": "ADR-037 register fragment — page layouts. Adds the disjoint schema key `pageLayout` to the shared `buildiq` register's components.schemas map (key-union merge, no existing schema is touched). A page layout is what a consuming app's detail page shows for one schema, and optionally for one type value of it. Buildiq stores it and serves it through the `buildiq-page-layout` data-provider leaf (ADR-066); the consuming app merges the answer over its own manifest config and renders its manifest unchanged when nothing answers, so an instance without buildiq behaves exactly as before. Resolution is type value first, then schema-wide, then nothing, and a draft never resolves. See openspec/specs/page-layout-per-type/spec.md, REQ-OBPL-001 through REQ-OBPL-009.",
 	"components": {
 		"schemas": {
 			"pageLayout": {
@@ -12,7 +12,7 @@
 					"enabled": true,
 					"description": "A layout decides what a handler sees on a case. Every edit and publication is recorded."
 				},
-				"x-spec": "openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md",
+				"x-spec": "openspec/specs/page-layout-per-type/spec.md",
 				"type": "object",
 				"required": [
 					"targetApp",

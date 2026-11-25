@@ -65,7 +65,7 @@ export async function fetchPageLayouts({ register, schema }) {
  * @param {object} layout - the layout to store.
  * @return {Promise<{layout: object, warnings: Array<string>}>} What was stored.
  * @throws {{status: number, error: string, message: string}} Normalised refusal.
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md
+ * @spec openspec/specs/page-layout-per-type/spec.md
  */
 export async function savePageLayout(layout) {
 	// The server stamps the fingerprint from the base it composes itself, and

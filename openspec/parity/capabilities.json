@@ -4133,7 +4133,7 @@
 				"change": "case-page-layout-per-case-type",
 				"blocker": "nextcloud-vue runtime-detail-layout: CnDetailPage does not ask the buildiq-page-layout leaf yet (case-page-layout-per-case-type task 3.2); dossiq hand-off is task 8.5.",
 				"note": "Buildiq half complete 2026-09-29: the page designer authors tabs, widgets, header, task list and upload fields per case type (PageLayoutBodyEditor.vue) and the leaf serves them. The row stays building until a consumer renders them.",
-				"requirement": "openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type :: The detail-page editor authors a layout per type (REQ-OBPL-002)"
+				"requirement": "openspec/changes/archive/2026-11-25-case-page-layout-per-case-type/specs/page-layout-per-type :: The detail-page editor authors a layout per type (REQ-OBPL-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7826,7 +7826,7 @@
 				"owner": "ConductionNL/buildiq",
 				"change": "forms-per-case-type",
 				"requirement": [
-					"openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type :: The layout is served as a data-provider leaf (REQ-OBPL-003)",
+					"openspec/changes/archive/2026-11-25-case-page-layout-per-case-type/specs/page-layout-per-type :: The layout is served as a data-provider leaf (REQ-OBPL-003)",
 					"openspec/changes/forms-per-case-type/specs/registration-form-builder :: The leaf serves by audience and by name (REQ-OBRF-006)"
 				],
 				"plan": [

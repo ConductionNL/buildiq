@@ -157,7 +157,7 @@ final class PageLayoutFrozenBase implements PageLayoutFrozenBaseInterface {
 	 *
 	 * @return array<string, mixed>|null The schema-wide layout.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-007)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-007)
 	 */
 	private function schemaWideAmong(array $layouts): ?array {
 		foreach ($layouts as $layout) {
@@ -178,7 +178,7 @@ final class PageLayoutFrozenBase implements PageLayoutFrozenBaseInterface {
 	 *
 	 * @return array<string, mixed>|null The layout for this type value.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-006)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-006)
 	 */
 	private function typedAmong(array $layouts, string $typeProperty, string $typeValue): ?array {
 		if ($typeProperty === '' || $typeValue === '') {

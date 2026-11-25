@@ -39,8 +39,8 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003, REQ-OBPL-006)
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-007, REQ-OBPL-008, REQ-OBPL-009)
+ * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-003, REQ-OBPL-006)
+ * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-007, REQ-OBPL-008, REQ-OBPL-009)
  */
 
 declare(strict_types=1);
@@ -67,7 +67,7 @@ use RuntimeException;
 /**
  * Resolves and serves the detail-page layout for a host object.
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
+ * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Most of the count is OpenRegister's value objects and
  *     the layout parts, which are injected; the class itself only reads and composes.
@@ -212,7 +212,7 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 *
 	 * @return array<string, mixed> The `{items, total, nextCursor}` envelope, with at most one item.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003, REQ-OBPL-006)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-003, REQ-OBPL-006)
 	 */
 	#[\Override]
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
@@ -447,7 +447,7 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 *
 	 * @return array<string, mixed> The new composition.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-007)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-007)
 	 */
 	private function composeWhole(array $composed, array $layer): array {
 		if ($composed === []) {
@@ -528,7 +528,7 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 *
 	 * @throws RuntimeException Always.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The parameters are mandated by the
 	 *   IntegrationProvider interface; this method refuses the call, and a provider that

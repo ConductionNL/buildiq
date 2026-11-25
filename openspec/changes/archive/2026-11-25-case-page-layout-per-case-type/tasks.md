@@ -11,7 +11,8 @@
 ## 3. Leaf
 
 - [x] 3.1 Add `lib/Integration/PageLayoutLeafProvider.php` and the `RegisterLeafProvidersEvent` listener with the D4 resolution order (REQ-OBPL-003)
-- [ ] 3.2 (sibling: nextcloud-vue, handed to the build-all coordinator 2026-09-29; the rows stay building until it lands) Open the nextcloud-vue change `runtime-detail-layout` so `CnDetailPage` merges a provider answer over its manifest config
+- [x] 3.2 (sibling: nextcloud-vue, handed to the build-all coordinator 2026-09-29; the rows stay building until it lands) Open the nextcloud-vue change `runtime-detail-layout` so `CnDetailPage` merges a provider answer over its manifest config
+  > Done 25 Nov: nextcloud-vue ConductionNL/nextcloud-vue#2351 opened the change `runtime-detail-layout` (proposal, design D1-D4, spec delta `detail-page-layout-provider`, tasks): `CnDetailPage.layoutLeaf` reads the leaf for the loaded object and merges `items[0]` over `headerFields`, `sidebarTabs` and the widgets per part, hands `taskList`/`uploadFields` on through `layout-resolved`, and renders the manifest unchanged without an answer. Its code tasks are the nextcloud-vue lane's.
 
 ## 4. Quality
 

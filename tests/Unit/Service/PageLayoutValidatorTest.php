@@ -12,7 +12,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-001, REQ-OBPL-002, REQ-OBPL-004, REQ-OBPL-005, REQ-OBPL-009)
+ * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-001, REQ-OBPL-002, REQ-OBPL-004, REQ-OBPL-005, REQ-OBPL-009)
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2

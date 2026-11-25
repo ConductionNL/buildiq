@@ -118,7 +118,7 @@ class PageLayoutAuthoringService implements PageLayoutAuthoringServiceInterface 
 	 *
 	 * @throws InvalidArgumentException When a rule refuses it.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-001)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-001)
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002)
 	 */
 	#[\Override]
@@ -165,7 +165,7 @@ class PageLayoutAuthoringService implements PageLayoutAuthoringServiceInterface 
 	 *
 	 * @return array<int, string>|null The ids.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
 	 */
 	private function knownLeafIds(): ?array {
 		if ($this->locator === null) {

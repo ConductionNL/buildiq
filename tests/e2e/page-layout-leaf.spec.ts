@@ -21,7 +21,7 @@
  * case and layout. The high-contrast mark, the task-list column and the locked
  * upload field are asserted in the unit suite.
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md
+ * @spec openspec/specs/page-layout-per-type/spec.md
  * @e2e page-layout-per-type/requirement-a-widget-carries-display-conditions-and-a-high-contrast-flag-req-obpl-006/a-high-contrast-widget-reaches-the-consumer-marked
  * @e2e page-layout-per-type/requirement-a-case-type-declares-its-task-list-columns-and-search-fields-req-obpl-008/building-permits-show-the-address-column-on-the-task-list
  * @e2e page-layout-per-type/requirement-a-case-type-declares-its-document-upload-fields-req-obpl-009/the-upload-dialog-defaults-the-confidentiality-and-locks-it

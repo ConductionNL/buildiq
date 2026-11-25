@@ -170,7 +170,7 @@ final class PageLayoutLayerStack implements PageLayoutLayerStackInterface {
 	 *
 	 * @return array{schemaWide: array<string, mixed>|null, typed: array<string, mixed>|null} The two.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
 	 */
 	private function everyoneLayers(array $layouts, array $object): array {
 		$schemaWide = null;
@@ -409,7 +409,7 @@ final class PageLayoutLayerStack implements PageLayoutLayerStackInterface {
 	 *
 	 * @return array<string, mixed>|null The schema-wide layer.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-007)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-007)
 	 */
 	#[\Override]
 	public function schemaWideOf(array $layers): ?array {

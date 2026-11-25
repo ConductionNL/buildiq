@@ -46,7 +46,7 @@ interface PageLayoutPresenterInterface {
 	 *
 	 * @return array<string, mixed> The served layout.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-006, REQ-OBPL-007, REQ-OBPL-008, REQ-OBPL-009)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-006, REQ-OBPL-007, REQ-OBPL-008, REQ-OBPL-009)
 	 */
 	public function serve(array $layout, ?array $schemaWide, array $object): array;
 }//end interface

@@ -133,7 +133,7 @@ class PageLayoutController extends Controller {
 	 *
 	 * @return JSONResponse 200 with `{layout, warnings}`; 422 when a rule refuses it.
 	 *
-	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-001)
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-001)
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002)
 	 */
 	#[AuthorizedAdminSetting(AdminSettings::class)]
