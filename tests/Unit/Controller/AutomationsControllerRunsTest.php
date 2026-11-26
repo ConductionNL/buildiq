@@ -14,7 +14,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
+ * @spec openspec/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
  */
 
 declare(strict_types=1);
@@ -23,7 +23,10 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\AutomationsController;
 use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
+use OCA\Buildiq\Service\Automation\ManualAutomationRun;
+use OCA\Buildiq\Service\Automation\ManualRunReconciler;
 use OCA\Buildiq\Service\AutomationCompilerService;
+use OCA\Buildiq\Service\AutomationRunHistory;
 use OCA\Buildiq\Service\AutomationWriteService;
 use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\ConditionActionExecutor;
@@ -37,6 +40,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -78,6 +82,13 @@ final class AutomationsControllerRunsTest extends TestCase {
 	private AutomationRunRecorderInterface&MockObject $runs;
 
 	/**
+	 * Completes waiting manual runs before a read.
+	 *
+	 * @var ManualRunReconciler&MockObject
+	 */
+	private ManualRunReconciler&MockObject $reconciler;
+
+	/**
 	 * The controller under test.
 	 *
 	 * @var AutomationsController
@@ -93,6 +104,7 @@ final class AutomationsControllerRunsTest extends TestCase {
 		$this->request     = $this->createMock(IRequest::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->runs        = $this->createMock(AutomationRunRecorderInterface::class);
+		$this->reconciler  = $this->createMock(originalClassName: ManualRunReconciler::class);
 		$groupManager      = $this->createMock(IGroupManager::class);
 		$groupManager->method('getUserGroups')->willReturn([]);
 		$groupManager->method('isAdmin')->willReturn(false);
@@ -117,7 +129,13 @@ final class AutomationsControllerRunsTest extends TestCase {
 			conditionExecutor: $this->createMock(ConditionActionExecutor::class),
 			caller: new CallerContext(userSession: $this->userSession, groupManager: $groupManager, permissionResolver: $permissionResolver),
 			writeService: $writeService,
-			runs: $this->runs
+			runs: new AutomationRunHistory(recorder: $this->runs),
+			manualRuns: new ManualAutomationRun(
+				container: $this->createMock(originalClassName: ContainerInterface::class),
+				objectService: $objects,
+				runs: $this->runs,
+				reconciler: $this->reconciler
+			)
 		);
 	}//end setUp()
 
@@ -248,4 +266,46 @@ final class AutomationsControllerRunsTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_UNAUTHORIZED, $this->controller->runsSummary()->getStatus());
 	}//end testTheSummaryNeedsASignedInUser()
+
+	/**
+	 * Waiting manual runs are completed before the runs and the summary are
+	 * read, for the automations the caller may read only.
+	 *
+	 * @return void
+	 */
+	public function testWaitingManualRunsAreCompletedBeforeTheyAreRead(): void {
+		$this->signIn(uid: 'bob');
+		$this->query(params: ['uuids' => 'aut-1,aut-2']);
+		$order = [];
+		$this->reconciler->expects($this->exactly(count: 2))->method('reconcile')->with('aut-1')
+			->willReturnCallback(static function () use (&$order): int {
+				$order[] = 'reconcile';
+				return 1;
+			});
+		$this->runs->method('runsOf')->willReturnCallback(static function () use (&$order): array {
+			$order[] = 'runsOf';
+			return ['results' => [], 'total' => 0, 'summary' => []];
+		});
+		$this->runs->method('summaryOf')->willReturnCallback(static function () use (&$order): array {
+			$order[] = 'summaryOf';
+			return ['lastRunAt' => null, 'lastOutcome' => null, 'lastError' => null];
+		});
+
+		$this->assertSame(expected: Http::STATUS_OK, actual: $this->controller->runs(uuid: 'aut-1')->getStatus());
+		$this->assertSame(expected: Http::STATUS_OK, actual: $this->controller->runsSummary()->getStatus());
+		$this->assertSame(expected: ['reconcile', 'runsOf', 'reconcile', 'summaryOf'], actual: $order);
+	}//end testWaitingManualRunsAreCompletedBeforeTheyAreRead()
+
+	/**
+	 * A caller without a role completes nothing.
+	 *
+	 * @return void
+	 */
+	public function testACallerWithoutARoleCompletesNothing(): void {
+		$this->signIn(uid: 'eve');
+		$this->query(params: []);
+		$this->reconciler->expects($this->never())->method('reconcile');
+
+		$this->assertSame(expected: Http::STATUS_FORBIDDEN, actual: $this->controller->runs(uuid: 'aut-1')->getStatus());
+	}//end testACallerWithoutARoleCompletesNothing()
 }//end class

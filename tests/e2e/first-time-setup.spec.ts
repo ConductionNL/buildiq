@@ -27,7 +27,17 @@ import { E2E_BASE_URL as BASE_URL } from './support/baseUrl.ts'
 
 const OCS = { 'OCS-APIRequest': 'true' }
 const CONFIG = `${BASE_URL}/ocs/v2.php/apps/provisioning_api/api/v1/config/apps/buildiq`
-const KEYS = ['setup_completed_version', 'walkthrough_completed_version']
+// What makes the instance look unconfigured to the wizard. `SetupController::status()`
+// stamps the completion key itself and reports each step done from these values,
+// so clearing only the two completion keys leaves the wizard closed on an
+// instance the e2e seed configured (`demo_data_decided`, `registry_url`).
+const KEYS = [
+	'setup_completed_version',
+	'walkthrough_completed_version',
+	'demo_data_decided',
+	'demo_dataset',
+	'registry_url',
+]
 const OUTSIDER = { id: 'rbac-outsider', pass: 'RbacOutsider-1!' }
 
 /**
@@ -66,6 +76,22 @@ async function writeKey(request: APIRequestContext, key: string, value: string):
 	await request.post(`${CONFIG}/${key}`, { headers: OCS, form: { value }, failOnStatusCode: false })
 }
 
+// The admin's own "tour seen" preference. ci-seed sets it far above any real
+// version so the tour never opens in other specs; this spec needs it unset.
+const TOUR_PREF = `${BASE_URL}/index.php/apps/buildiq/api/preferences/walkthrough_completed_version`
+
+async function readTourPref(request: APIRequestContext): Promise<string> {
+	const resp = await request.get(TOUR_PREF, { headers: OCS, failOnStatusCode: false })
+	if (resp.status() !== 200) {
+		return ''
+	}
+	return String((await resp.json())?.value ?? '')
+}
+
+async function writeTourPref(request: APIRequestContext, value: string): Promise<void> {
+	await request.put(TOUR_PREF, { headers: OCS, data: { value }, failOnStatusCode: false })
+}
+
 /**
  * Press the wizard's forward button until it shows the step with the given title.
  *
@@ -85,12 +111,15 @@ async function advanceTo(page: Page, title: string): Promise<void> {
 
 test.describe.serial('first-time setup', () => {
 	const saved: Record<string, string> = {}
+	let savedTourPref = ''
 
 	test.beforeAll(async ({ request }) => {
 		for (const key of KEYS) {
 			saved[key] = await readKey(request, key)
 			await deleteKey(request, key)
 		}
+		savedTourPref = await readTourPref(request)
+		await writeTourPref(request, '')
 	})
 
 	test.afterAll(async ({ request }) => {
@@ -99,6 +128,7 @@ test.describe.serial('first-time setup', () => {
 				await writeKey(request, key, saved[key])
 			}
 		}
+		await writeTourPref(request, savedTourPref)
 	})
 
 	test('a non-admin on an unconfigured instance gets neither the wizard nor the tour', async ({ browser }) => {
@@ -125,6 +155,16 @@ test.describe.serial('first-time setup', () => {
 	test('an admin completes the wizard, finds the templates, and the tour reaches create-app', async ({ page }) => {
 		// Task 5.2.
 		await suppressSupportDialog(page)
+		// The shared admin storage state carries the dismissals global-setup
+		// writes so no other spec meets the wizard or the tour; a first visit
+		// has neither.
+		await page.addInitScript(() => {
+			for (const key of Object.keys(window.localStorage)) {
+				if (/^cn-(setup-wizard-dismissed|walkthrough-seen):buildiq/.test(key)) {
+					window.localStorage.removeItem(key)
+				}
+			}
+		})
 		await page.goto(`${BASE_URL}/apps/buildiq/`, { waitUntil: 'domcontentloaded' })
 
 		await expect(page.getByText('Welcome to Buildiq').first()).toBeVisible({ timeout: 30_000 })
@@ -132,7 +172,7 @@ test.describe.serial('first-time setup', () => {
 		await page.getByRole('button', { name: /^(Finish|Done|Close|Get started)$/i }).first().click()
 		await expect(page.getByText('Welcome to Buildiq')).toHaveCount(0)
 
-		const status = await page.request.get(`${BASE_URL}/index.php/apps/buildiq/api/setup/status`)
+		const status = await page.request.get(`${BASE_URL}/index.php/apps/buildiq/api/setup/status`, { headers: OCS })
 		expect(status.status()).toBe(200)
 		expect(await readKey(page.request, 'setup_completed_version')).toBe('1')
 
