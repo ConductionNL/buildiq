@@ -449,6 +449,7 @@ class AutomationsController extends Controller {
 	 * @return JSONResponse {results, total, summary: {lastRunAt, lastOutcome, lastError}}
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
 	 */
 	#[NoAdminRequired]
@@ -472,6 +473,7 @@ class AutomationsController extends Controller {
 
 				$limit  = max(1, min(self::RUNS_MAX_LIMIT, (int)($this->request->getParam('limit') ?? self::RUNS_DEFAULT_LIMIT)));
 				$offset = max(0, (int)($this->request->getParam('offset') ?? 0));
+				$this->manualRuns?->reconcile(automationUuid: $uuid);
 
 				return new JSONResponse(
 					data: $this->runs->pageFor(
@@ -493,6 +495,7 @@ class AutomationsController extends Controller {
 	 * @return JSONResponse {summaries: {uuid: {lastRunAt, lastOutcome, lastError}}}
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	#[NoAdminRequired]
 	public function runsSummary(): JSONResponse {
@@ -517,10 +520,10 @@ class AutomationsController extends Controller {
 				uuid: $uuid,
 				roles: self::WRITE_ROLES,
 				productionRoles: null,
-				action: fn (array $automation): JSONResponse => new JSONResponse(
-					data: $runs->summaryFor(automation: $automation, uuid: $uuid),
-					statusCode: Http::STATUS_OK
-				)
+				action: function (array $automation) use ($runs, $uuid): JSONResponse {
+					$this->manualRuns?->reconcile(automationUuid: $uuid);
+					return new JSONResponse(data: $runs->summaryFor(automation: $automation, uuid: $uuid), statusCode: Http::STATUS_OK);
+				}
 			);
 			if ($answer->getStatus() === Http::STATUS_OK) {
 				$summaries[$uuid] = $answer->getData();
@@ -611,7 +614,11 @@ class AutomationsController extends Controller {
 					return $this->error(code: 'record_not_readable', detail: null, status: Http::STATUS_FORBIDDEN);
 				}
 
-				$started = $this->manualRuns->start(automation: $automation, subject: $subject);
+				$started = $this->manualRuns->start(
+					automation: $automation,
+					subject: $subject,
+					actor: (string)($this->userSession->getUser()?->getUID() ?? '')
+				);
 				if ($started === null) {
 					return $this->error(
 						code: 'unavailable',
