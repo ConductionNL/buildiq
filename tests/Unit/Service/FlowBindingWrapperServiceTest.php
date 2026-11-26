@@ -113,10 +113,10 @@ class FlowBindingWrapperServiceTest extends TestCase {
 		parent::setUp();
 		$this->flows = $this->createMock(originalClassName: FlowService::class);
 		$this->flows->method('save')->willReturnCallback(
-			function (array $data): Flow {
+			function (array $data, ?string $uuid = null): Flow {
 				$this->saved[] = $data;
 				$flow = new Flow();
-				$flow->setUuid('wrapper-' . count($this->saved));
+				$flow->setUuid($uuid ?? 'wrapper-' . count($this->saved));
 				$flow->setApp($data['app'] ?? null);
 				$flow->setApplicationSlug($data['applicationSlug'] ?? null);
 				$this->stored[$flow->getUuid()] = $flow;
@@ -211,7 +211,7 @@ class FlowBindingWrapperServiceTest extends TestCase {
 		$this->assertSame(
 			expected: [
 				['id' => 'trigger', 'type' => 'openregister.trigger-object', 'config' => ['event' => 'object.updated', 'register' => 'permits-register', 'schema' => 'vergunning']],
-				['id' => 'run', 'type' => 'openregister.sub-flow', 'config' => ['flowId' => self::BOUND, 'wait' => false]],
+				['id' => 'run', 'type' => 'openregister.sub-flow', 'config' => ['flowId' => self::BOUND, 'wait' => false], 'exit' => true],
 			],
 			actual: $definition['nodes']
 		);
@@ -255,6 +255,7 @@ class FlowBindingWrapperServiceTest extends TestCase {
 	 */
 	public function testAReSaveWithTheSameEntriesIsIdempotent(): void {
 		$first = $this->service()->sync(self::APP, self::app([['schema' => 'vergunning', 'event' => 'object.updated']]), 'r');
+		$this->markPublished();
 		$this->saved = [];
 		$this->applications = [];
 		$this->flows->expects($this->never())->method('delete');
@@ -267,6 +268,44 @@ class FlowBindingWrapperServiceTest extends TestCase {
 		$this->assertSame(expected: [0, 0], actual: [$again['created'], $again['removed']]);
 
 	}//end testAReSaveWithTheSameEntriesIsIdempotent()
+
+	/**
+	 * A kept wrapper that is still a draft (saved before its last node carried
+	 * `exit`, so it could never be published) is re-saved with the current
+	 * definition and published; its binding stays as it is.
+	 *
+	 * @return void
+	 */
+	public function testAKeptDraftWrapperIsRepublished(): void {
+		$first = $this->service()->sync(
+			applicationUuid: self::APP,
+			application: self::app(runOn: [['schema' => 'vergunning', 'event' => 'object.updated']]),
+			register: 'r'
+		);
+		$this->saved = [];
+		$this->applications = [];
+		$this->versions->expects($this->once())->method('publish')
+			->with($this->callback(callback: static fn (Flow $flow): bool => $flow->getUuid() === 'wrapper-1'));
+
+		$again = $this->service()->sync(applicationUuid: self::APP, application: ['slug' => 'permits', 'flows' => $first['flows']], register: 'r');
+
+		$this->assertCount(expectedCount: 1, haystack: $this->saved);
+		$this->assertTrue(condition: $this->saved[0]['nodes'][1]['exit']);
+		$this->assertSame(expected: $first['flows'], actual: $again['flows']);
+		$this->assertSame(expected: [], actual: $again['failed']);
+		$this->assertSame(expected: [], actual: $this->applications);
+	}//end testAKeptDraftWrapperIsRepublished()
+
+	/**
+	 * Every flow the flow service holds is published, as after a real publish.
+	 *
+	 * @return void
+	 */
+	private function markPublished(): void {
+		foreach ($this->stored as $flow) {
+			$flow->setLifecycleStatus('published');
+		}
+	}//end markPublished()
 
 	/**
 	 * Removing an entry deletes and unbinds its wrapper; removing the binding removes every wrapper it had.
