@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+ * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ use Throwable;
  * applied the automation's own rules before it reads. No input payload is
  * stored. A failed write is logged at error and never thrown.
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+ * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
  */
 class AutomationRunRecorder implements AutomationRunRecorderInterface {
 
@@ -68,7 +68,7 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 	 * @param LoggerInterface        $logger        Logs a failed write.
 	 * @param AutomationRunPage      $page          Orders, filters and summarises runs.
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
@@ -88,7 +88,7 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	#[\Override]
 	public function start(array $automation, string $trigger, ?array $subject, string $actor): array {
@@ -123,7 +123,7 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	#[\Override]
 	public function step(array $run, string $action, string $outcome, string $message = ''): array {
@@ -140,7 +140,7 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 	 *
 	 * @return string|null The uuid, or null.
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	#[\Override]
 	public function finish(array $run, string $outcome, ?string $reason = null): ?string {
@@ -164,7 +164,7 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	#[\Override]
 	public function complete(string $runUuid, string $outcome, array $steps, ?string $reason = null): bool {
@@ -183,7 +183,7 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	#[\Override]
 	public function completeFromFlowRun(string $runUuid, array $result): bool {
@@ -229,7 +229,7 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 	 *
 	 * @return list<array<string, mixed>> The waiting runs, each with its `id` and `flowRun`.
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	#[\Override]
 	public function waitingOnFlowRuns(string $automationUuid): array {
@@ -255,7 +255,7 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 	 *     summary: array{lastRunAt: string|null, lastOutcome: string|null, lastError: string|null}
 	 * }
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
 	 */
 	#[\Override]
 	public function runsOf(string $automationUuid, array $filters = [], int $limit = 25, int $offset = 0): array {
@@ -277,7 +277,7 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 	 *
 	 * @return array{lastRunAt: string|null, lastOutcome: string|null, lastError: string|null}
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
 	 */
 	#[\Override]
 	public function summaryOf(string $automationUuid): array {
@@ -291,7 +291,7 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 	 *
 	 * @return int How many were deleted.
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-old-runs-are-pruned-and-the-last-run-stays-req-bqrl-005
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-old-runs-are-pruned-and-the-last-run-stays-req-bqrl-005
 	 */
 	#[\Override]
 	public function prune(int $now): int {

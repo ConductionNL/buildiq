@@ -223,7 +223,7 @@ class ManualAutomationRun {
 	 * @return array{flowUuid:string,run:mixed}|null The started run, or null when OpenRegister cannot start it.
 	 *
 	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	public function start(array $automation, array $subject, string $actor = ''): ?array {
 		$flows = $this->container->get(FlowService::class);
@@ -249,7 +249,7 @@ class ManualAutomationRun {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	public function reconcile(string $automationUuid): void {
 		$this->reconciler?->reconcile(automationUuid: $automationUuid);
@@ -266,7 +266,7 @@ class ManualAutomationRun {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	private function recordWaiting(array $automation, array $subject, string $flowRunUuid, string $actor): void {
 		if ($this->runs === null || $flowRunUuid === '') {

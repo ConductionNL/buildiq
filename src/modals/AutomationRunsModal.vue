@@ -150,7 +150,7 @@ export default {
 		 * The outcome filter's options; "All" sends no filter.
 		 *
 		 * @return {Array<{id: string, label: string}>}
-		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-filtering-on-failures
+		 * @spec openspec/specs/automation-designer/spec.md#scenario-filtering-on-failures
 		 */
 		outcomeOptions() {
 			return [
@@ -163,7 +163,7 @@ export default {
 		 * Whether no action of the automation runs in buildiq or leaves a record in OpenRegister, so there is no log to show.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-an-automation-with-no-record-anywhere-does-not-fake-a-log
+		 * @spec openspec/specs/automation-designer/spec.md#scenario-an-automation-with-no-record-anywhere-does-not-fake-a-log
 		 */
 		entirelyInOpenRegister() {
 			return runsEntirelyInOpenRegister(this.automation)
@@ -173,7 +173,7 @@ export default {
 	/**
 	 * Pick the default outcome filter and read the runs, unless the automation runs entirely in OpenRegister.
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
 	 */
 	mounted() {
 		this.outcomeFilter = this.outcomeOptions[0]
@@ -193,7 +193,7 @@ export default {
 		 * Read the runs, newest first, with the chosen outcome filter.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
+		 * @spec openspec/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
 		 */
 		async load() {
 			this.loading = true
@@ -219,7 +219,7 @@ export default {
 		 *
 		 * @param {string} id The run id.
 		 * @return {void}
-		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-the-run-detail-reads-like-a-test-result
+		 * @spec openspec/specs/automation-designer/spec.md#scenario-the-run-detail-reads-like-a-test-result
 		 */
 		toggle(id) {
 			this.openRun = this.openRun === id ? null : id
@@ -231,8 +231,8 @@ export default {
 		 *
 		 * @param {object} run The run.
 		 * @return {Array<{action: string, outcome: string, message: string}>}
-		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-mixed-automation-labels-the-openregister-step
-		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
+		 * @spec openspec/specs/automation-designer/spec.md#scenario-a-mixed-automation-labels-the-openregister-step
+		 * @spec openspec/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
 		 */
 		stepsOf(run) {
 			const recorded = Array.isArray(run?.steps) ? run.steps : []
@@ -248,7 +248,7 @@ export default {
 		 *
 		 * @param {object} run The run.
 		 * @return {string}
-		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
+		 * @spec openspec/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
 		 */
 		objectLink(run) {
 			const subject = run?.subject

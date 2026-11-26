@@ -5,7 +5,7 @@
  * buildiq, so the dialog labels them instead of inventing an outcome, and the
  * last-run line under each row.
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
+ * @spec openspec/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
  */
 import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 
@@ -41,7 +41,7 @@ export const IN_OPENREGISTER_OUTCOME = 'in-openregister'
  * @param {object} automation The automation.
  * @return {Array<object>} Every action.
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
+ * @spec openspec/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
  */
 export function actionsOf(automation) {
 	const top = Array.isArray(automation?.actions) ? automation.actions.filter((a) => a && typeof a === 'object') : []
@@ -60,7 +60,7 @@ export function actionsOf(automation) {
  * @param {boolean} branch Whether the action is an approve or reject follow-up, which buildiq dispatches.
  * @return {boolean}
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
+ * @spec openspec/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
  */
 export function runsInOpenRegister(automation, action, branch = false) {
 	if (branch || automation?.trigger?.type === 'manual') {
@@ -76,7 +76,7 @@ export function runsInOpenRegister(automation, action, branch = false) {
  * @param {object} action One of its top-level actions.
  * @return {boolean}
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
+ * @spec openspec/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
  */
 export function unrecordedInOpenRegister(automation, action) {
 	return runsInOpenRegister(automation, action) && !RECORDED_IN_OPENREGISTER.includes(action?.type)
@@ -88,7 +88,7 @@ export function unrecordedInOpenRegister(automation, action) {
  * @param {object} automation The automation.
  * @return {boolean}
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-an-automation-with-no-record-anywhere-does-not-fake-a-log
+ * @spec openspec/specs/automation-designer/spec.md#scenario-an-automation-with-no-record-anywhere-does-not-fake-a-log
  */
 export function runsEntirelyInOpenRegister(automation) {
 	const top = Array.isArray(automation?.actions) ? automation.actions.filter((a) => a && typeof a === 'object') : []
@@ -103,7 +103,7 @@ export function runsEntirelyInOpenRegister(automation) {
  * @param {object} automation The automation.
  * @return {Array<{action: string, outcome: string, message: string}>}
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-mixed-automation-labels-the-openregister-step
+ * @spec openspec/specs/automation-designer/spec.md#scenario-a-mixed-automation-labels-the-openregister-step
  */
 export function openRegisterSteps(automation) {
 	const top = Array.isArray(automation?.actions) ? automation.actions.filter((a) => a && typeof a === 'object') : []
@@ -119,7 +119,7 @@ export function openRegisterSteps(automation) {
  * @param {{outcome: string, message?: string, recipients?: number}} step The step.
  * @return {string}
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
+ * @spec openspec/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
  */
 export function stepDetail(step) {
 	if (!step || step.outcome === IN_OPENREGISTER_OUTCOME) {
@@ -140,7 +140,7 @@ export function stepDetail(step) {
  * @param {{durationMs?: (number|null)}} run The run.
  * @return {string}
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
+ * @spec openspec/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
  */
 export function durationText(run) {
 	return typeof run?.durationMs === 'number' ? `${run.durationMs} ms` : ''
@@ -153,7 +153,7 @@ export function durationText(run) {
  * @param {string} [locale] The locale; the browser's when omitted.
  * @return {string}
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
+ * @spec openspec/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
  */
 export function runTime(iso, locale = undefined) {
 	const date = new Date(iso)
@@ -171,7 +171,7 @@ export function runTime(iso, locale = undefined) {
  * @param {string} outcome The outcome.
  * @return {string}
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
+ * @spec openspec/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
  */
 export function outcomeLabel(outcome) {
 	switch (outcome) {
@@ -197,7 +197,7 @@ export function outcomeLabel(outcome) {
  * @param {string} [locale] The locale for the time.
  * @return {string}
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-failed-last-run-is-visible-on-the-list
+ * @spec openspec/specs/automation-designer/spec.md#scenario-a-failed-last-run-is-visible-on-the-list
  */
 export function lastRunText(summary, locale = undefined) {
 	if (!summary || !summary.lastRunAt) {

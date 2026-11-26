@@ -168,7 +168,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
+	 * @spec openspec/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
 	 */
 	public function testObjectCreatedPlusNotificationCompilesToDialectEntry(): void {
 		$automation = [

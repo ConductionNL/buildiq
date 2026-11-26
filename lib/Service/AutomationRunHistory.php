@@ -18,7 +18,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
+ * @spec openspec/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
  * unchanged. Without a reader (no OpenRegister outcome records) it is only the
  * run log.
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
+ * @spec openspec/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
  */
 final class AutomationRunHistory {
 
@@ -83,7 +83,7 @@ final class AutomationRunHistory {
 	 * @param AutomationOutcomeKeys                    $keys     Builds and matches the outcome keys.
 	 * @param AutomationRunPage                        $page     Orders, filters and summarises runs.
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
 	 */
 	public function __construct(
 		private readonly AutomationRunRecorderInterface $recorder,
@@ -105,7 +105,7 @@ final class AutomationRunHistory {
 	 *
 	 * @return list<array<string, mixed>>
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
+	 * @spec openspec/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
 	 */
 	public function runsFor(array $automation): array {
 		$key = $this->keys->forAutomation(automation: $automation);
@@ -137,7 +137,7 @@ final class AutomationRunHistory {
 	 *     summary: array{lastRunAt: string|null, lastOutcome: string|null, lastError: string|null}
 	 * }
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
+	 * @spec openspec/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
 	 */
 	public function pageFor(array $automation, array $query): array {
 		$outcomeRuns = $this->runsFor(automation: $automation);
@@ -159,7 +159,7 @@ final class AutomationRunHistory {
 	 *
 	 * @return array{lastRunAt: string|null, lastOutcome: string|null, lastError: string|null}
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
+	 * @spec openspec/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
 	 */
 	public function summaryFor(array $automation, string $uuid): array {
 		$outcomeRuns = $this->runsFor(automation: $automation);

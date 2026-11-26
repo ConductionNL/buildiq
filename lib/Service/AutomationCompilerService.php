@@ -1233,7 +1233,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 *
 	 * @return array<string,mixed>
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
+	 * @spec openspec/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
 	 */
 	private static function withOutcomeKey(array $entry, string $key): array {
 		if ($key !== '') {

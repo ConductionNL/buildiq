@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
+ * @spec openspec/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Throwable;
  * an OpenRegister without outcome records, or a read that fails, answers an
  * empty list and the runs dialog keeps its label.
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
+ * @spec openspec/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
  */
 class OpenRegisterAutomationOutcomeReader {
 
@@ -54,7 +54,7 @@ class OpenRegisterAutomationOutcomeReader {
 	 * @param ContainerInterface $container Resolves OpenRegister's record service.
 	 * @param LoggerInterface    $logger    Logs a read that failed.
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
 	 */
 	public function __construct(
 		private readonly ContainerInterface $container,
@@ -74,7 +74,7 @@ class OpenRegisterAutomationOutcomeReader {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) AutomationOutcome::fromRecord() is OpenRegister's one mapping to the outcome shape; it has no instance form.
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
 	 */
 	public function outcomes(string $keyPrefix): array {
 		if ($keyPrefix === '' || $this->available() === false) {
