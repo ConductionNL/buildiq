@@ -120,7 +120,7 @@
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "jsdom": "^30.0.1",
-    "newman": "^6.2.2",
+    "newman": "^6.2.3",
     "patch-package": "^8.0.1",
     "path-browserify": "^1.0.1",
     "postcss-html": "^1.6.0",
