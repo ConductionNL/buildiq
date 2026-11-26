@@ -123,7 +123,7 @@
     "newman": "^6.2.3",
     "patch-package": "^8.0.1",
     "path-browserify": "^1.0.1",
-    "postcss-html": "^1.6.0",
+    "postcss-html": "^2.0.1",
     "prettier": "^3.9.10",
     "sass": "^1.107.1",
     "sass-loader": "^17.1.0",
