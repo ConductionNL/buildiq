@@ -163,9 +163,12 @@ final class AutomationCompilerServiceTest extends TestCase {
 
 	/**
 	 * REQ-AUTD-004 scenario 1: event notification compiles to the
-	 * notifications dialect.
+	 * notifications dialect, carrying the key OpenRegister records its
+	 * outcomes under (logic-automation-run-log D4).
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
 	 */
 	public function testObjectCreatedPlusNotificationCompilesToDialectEntry(): void {
 		$automation = [
@@ -200,6 +203,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 						'channels' => ['nc-notification'],
 						'recipients' => [['kind' => 'object-acl', 'permission' => 'manage']],
 						'subject' => ['en' => 'New permit', 'nl' => 'Nieuwe vergunning'],
+						'key' => 'aut-auto-1-1',
 					],
 				],
 			],

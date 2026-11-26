@@ -7,7 +7,7 @@
  *
  * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
  */
-import { translate as t } from '@nextcloud/l10n'
+import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 
 /**
  * Action types that compile to an artifact OpenRegister (or integriq for a
@@ -16,6 +16,19 @@ import { translate as t } from '@nextcloud/l10n'
  * every action itself, so none of them is outside it there.
  */
 const IN_OPENREGISTER = ['send-notification', 'webhook', 'object-op', 'run-synchronization']
+
+/**
+ * Action types OpenRegister also records an outcome for, under the key the
+ * compiler gives them: their runs come back from the runs endpoint as runs of
+ * their own (`source: 'openregister'`), so they are never labelled as having
+ * no record.
+ */
+const RECORDED_IN_OPENREGISTER = ['send-notification']
+
+/**
+ * Where a run read from OpenRegister's own record comes from.
+ */
+export const OPENREGISTER_SOURCE = 'openregister'
 
 /**
  * The outcome a step carries when OpenRegister executed it.
@@ -57,21 +70,35 @@ export function runsInOpenRegister(automation, action, branch = false) {
 }
 
 /**
- * Whether every top-level action runs outside buildiq, so no run is ever recorded.
+ * Whether OpenRegister executes this action without buildiq and keeps no record of it.
+ *
+ * @param {object} automation The automation.
+ * @param {object} action One of its top-level actions.
+ * @return {boolean}
+ *
+ * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
+ */
+export function unrecordedInOpenRegister(automation, action) {
+	return runsInOpenRegister(automation, action) && !RECORDED_IN_OPENREGISTER.includes(action?.type)
+}
+
+/**
+ * Whether every top-level action runs outside buildiq with no record anywhere, so no run is ever shown.
  *
  * @param {object} automation The automation.
  * @return {boolean}
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notification-only-automation-does-not-fake-a-log
+ * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-an-automation-with-no-record-anywhere-does-not-fake-a-log
  */
 export function runsEntirelyInOpenRegister(automation) {
 	const top = Array.isArray(automation?.actions) ? automation.actions.filter((a) => a && typeof a === 'object') : []
-	return top.length > 0 && top.every((action) => runsInOpenRegister(automation, action))
+	return top.length > 0 && top.every((action) => unrecordedInOpenRegister(automation, action))
 }
 
 /**
- * The top-level actions OpenRegister executes, as `in-openregister` steps for
- * the run detail: listed, never given a success or a failure.
+ * The top-level actions OpenRegister executes without a record, as
+ * `in-openregister` steps for the run detail: listed, never given a success or
+ * a failure. A notification is left out: its outcome is a run of its own.
  *
  * @param {object} automation The automation.
  * @return {Array<{action: string, outcome: string, message: string}>}
@@ -81,8 +108,42 @@ export function runsEntirelyInOpenRegister(automation) {
 export function openRegisterSteps(automation) {
 	const top = Array.isArray(automation?.actions) ? automation.actions.filter((a) => a && typeof a === 'object') : []
 	return top
-		.filter((action) => runsInOpenRegister(automation, action))
+		.filter((action) => unrecordedInOpenRegister(automation, action))
 		.map((action) => ({ action: action.type, outcome: IN_OPENREGISTER_OUTCOME, message: '' }))
+}
+
+/**
+ * What a step says after its outcome: its message, or for a notification
+ * OpenRegister sent, how many people it reached.
+ *
+ * @param {{outcome: string, message?: string, recipients?: number}} step The step.
+ * @return {string}
+ *
+ * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
+ */
+export function stepDetail(step) {
+	if (!step || step.outcome === IN_OPENREGISTER_OUTCOME) {
+		return ''
+	}
+	if (step.message) {
+		return step.message
+	}
+	if (typeof step.recipients === 'number' && step.recipients > 0) {
+		return n('buildiq', 'Sent to {count} person', 'Sent to {count} people', step.recipients, { count: step.recipients })
+	}
+	return ''
+}
+
+/**
+ * A run's duration as the table shows it, or '' when it has none (a run OpenRegister recorded).
+ *
+ * @param {{durationMs?: (number|null)}} run The run.
+ * @return {string}
+ *
+ * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
+ */
+export function durationText(run) {
+	return typeof run?.durationMs === 'number' ? `${run.durationMs} ms` : ''
 }
 
 /**

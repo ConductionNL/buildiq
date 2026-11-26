@@ -50,6 +50,13 @@
     {
         "method": "registerServiceAlias",
         "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AutomationOutcomeReaderInterface",
+            "target": "OCA\\Buildiq\\Service\\OpenRegisterAutomationOutcomeReader"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AppNavigationServiceInterface",
             "target": "OCA\\Buildiq\\Service\\AppNavigationService"
         }

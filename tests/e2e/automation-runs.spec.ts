@@ -17,8 +17,9 @@
  *      "Action | Outcome" table and the duration (REQ-BQRL-003).
  *   4. An automation that never ran says "No run in the last 90 days" and
  *      shows no table (REQ-BQRL-003).
- *   5. A notification-only automation says it runs entirely in OpenRegister
- *      and shows no run row (REQ-BQRL-004).
+ *   5. A notification-only automation shows what OpenRegister recorded for
+ *      its notification as a run row, from OpenRegister's own outcome record
+ *      (REQ-BQRL-004). Needs an OpenRegister that records automation outcomes.
  *
  * The automations are written through buildiq's own `/api/automations`
  * endpoints, as `automations-flow-backend.spec.ts` does, on the seeded
@@ -47,7 +48,7 @@
  * @e2e automation-designer/requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002/a-user-who-may-not-edit-the-application-reads-nothing
  * @e2e automation-designer/requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003/the-run-detail-reads-like-a-test-result
  * @e2e automation-designer/requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003/an-automation-that-never-ran-says-so
- * @e2e automation-designer/requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004/a-notification-only-automation-does-not-fake-a-log
+ * @e2e automation-designer/requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004/a-notifications-runs-come-from-openregisters-record
  */
 
 import type { APIRequestContext, APIResponse, Page } from '@playwright/test'
@@ -324,16 +325,31 @@ test.describe('logic-automation-run-log: the runs of an automation', () => {
 		await expect(dialog.getByTestId('runs-table')).toHaveCount(0)
 	})
 
-	test('REQ-BQRL-004: a notification-only automation does not fake a log', async ({ page }) => {
-		await openAutomationsPage(page)
+	test('REQ-BQRL-004: a notification\'s runs come from OpenRegister\'s record', async ({ page, request }) => {
+		// Enabling compiles the notification with its outcome key; the record
+		// created after it fires the notification, which OpenRegister records.
+		await expectOk(await request.post(`${BASE_URL}${AUTOMATIONS}/${state.notify}/enable`, { headers: HEADERS }), 'enable the notification')
+		const created = await request.post(`${BASE_URL}${RECORDS}`, { headers: HEADERS, data: { title: `pw-runs-notify-${RUN_ID}` } })
+		await expectOk(created, `create a ${SCHEMA} record that fires the notification`)
+		const recordUuid = uuidOf(await created.json())
+		createdRecords.push(recordUuid)
 
+		await expect.poll(async () => {
+			const resp = await request.get(`${BASE_URL}${AUTOMATIONS}/${state.notify}/runs`, { headers: HEADERS })
+			const body = resp.ok() ? await resp.json() : {}
+			return (body?.results ?? []).filter((run: any) => run?.source === 'openregister' && run?.subject?.uuid === recordUuid).length
+		}, { timeout: 30_000, message: 'OpenRegister records the notification it sent' }).toBeGreaterThan(0)
+
+		await openAutomationsPage(page)
 		const row = automationRow(page, NOTIFY.name)
 		await expect(row).toBeVisible({ timeout: 30_000 })
 		await row.getByTestId('runs-button').click()
 
 		const dialog = page.locator('.automation-runs')
-		await expect(dialog.getByTestId('runs-entirely-in-openregister')).toContainText('This automation runs entirely in OpenRegister', { timeout: 15_000 })
-		await expect(dialog.getByTestId('run-row')).toHaveCount(0)
-		await expect(dialog.getByTestId('runs-table')).toHaveCount(0)
+		await expect(dialog.getByTestId('runs-entirely-in-openregister')).toHaveCount(0)
+		const run = dialog.getByTestId('run-row').filter({ hasText: recordUuid })
+		await expect(run).toBeVisible({ timeout: 15_000 })
+		await run.click()
+		await expect(dialog.getByTestId('run-step').first()).toContainText('send-notification')
 	})
 })

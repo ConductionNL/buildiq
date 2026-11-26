@@ -84,6 +84,7 @@ use OCA\Buildiq\Kernel\Contracts\AutomationWriteServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ConditionActionExecutorInterface;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Service\Automation\ManualAutomationRun;
+use OCA\Buildiq\Service\AutomationOutcomeRuns;
 use OCA\Buildiq\Service\Automation\ScriptSteps;
 use OCA\Buildiq\Service\CallerContext;
 use OCP\AppFramework\Controller;
@@ -161,8 +162,11 @@ class AutomationsController extends Controller {
 	 * @param AutomationWriteServiceInterface $writeService Create/update/delete write path.
 	 * @param AutomationRunRecorderInterface|null $runs The run log (logic-automation-run-log).
 	 * @param ManualAutomationRun|null $manualRuns Lists and starts manual automations on a record (logic-automation-actions-that-run D8).
+	 * @param AutomationOutcomeRuns|null $outcomeRuns The runs OpenRegister recorded for an automation's notifications and lifecycle actions.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
 	 */
 	public function __construct(
 		IRequest $request,
@@ -173,6 +177,7 @@ class AutomationsController extends Controller {
 		private readonly AutomationWriteServiceInterface $writeService,
 		private readonly ?AutomationRunRecorderInterface $runs = null,
 		private readonly ?ManualAutomationRun $manualRuns = null,
+		private readonly ?AutomationOutcomeRuns $outcomeRuns = null,
 	) {
 		$this->userSession = $caller->userSession;
 		$this->permissionResolver = $caller->permissionResolver;
@@ -447,6 +452,7 @@ class AutomationsController extends Controller {
 	 * @return JSONResponse {results, total, summary: {lastRunAt, lastOutcome, lastError}}
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
 	 */
 	#[NoAdminRequired]
 	public function runs(string $uuid): JSONResponse {
@@ -454,7 +460,7 @@ class AutomationsController extends Controller {
 			uuid: $uuid,
 			roles: self::WRITE_ROLES,
 			productionRoles: null,
-			action: function () use ($uuid): JSONResponse {
+			action: function (array $automation) use ($uuid): JSONResponse {
 				if ($this->runs === null) {
 					return $this->error(code: 'unavailable', detail: 'The run log is not available', status: Http::STATUS_SERVICE_UNAVAILABLE);
 				}
@@ -471,7 +477,7 @@ class AutomationsController extends Controller {
 				$offset = max(0, (int)($this->request->getParam('offset') ?? 0));
 
 				return new JSONResponse(
-					data: $this->runs->runsOf(automationUuid: $uuid, filters: $filters, limit: $limit, offset: $offset),
+					data: $this->runPage(runs: $this->runs, automation: $automation, query: ['uuid' => $uuid, 'filters' => $filters, 'limit' => $limit, 'offset' => $offset]),
 					statusCode: Http::STATUS_OK
 				);
 			}
@@ -504,13 +510,17 @@ class AutomationsController extends Controller {
 			self::RUNS_MAX_LIMIT
 		);
 
+		$runs      = $this->runs;
 		$summaries = [];
 		foreach ($uuids as $uuid) {
 			$answer = $this->withAutomation(
 				uuid: $uuid,
 				roles: self::WRITE_ROLES,
 				productionRoles: null,
-				action: fn (): JSONResponse => new JSONResponse(data: $this->runs->summaryOf(automationUuid: $uuid), statusCode: Http::STATUS_OK)
+				action: fn (array $automation): JSONResponse => new JSONResponse(
+					data: $this->runSummary(runs: $runs, automation: $automation, uuid: $uuid),
+					statusCode: Http::STATUS_OK
+				)
 			);
 			if ($answer->getStatus() === Http::STATUS_OK) {
 				$summaries[$uuid] = $answer->getData();
@@ -519,6 +529,71 @@ class AutomationsController extends Controller {
 
 		return new JSONResponse(data: ['summaries' => (object)$summaries], statusCode: Http::STATUS_OK);
 	}//end runsSummary()
+
+	/**
+	 * One page of an automation's runs: those buildiq recorded, and those
+	 * OpenRegister recorded for its notifications and lifecycle actions.
+	 *
+	 * Without an OpenRegister record the recorder's own page is answered as it was.
+	 *
+	 * @param AutomationRunRecorderInterface $runs       The run log.
+	 * @param array<string, mixed>           $automation The automation.
+	 * @param array{uuid: string, filters: array<string, string>, limit: int, offset: int} $query The page asked for.
+	 *
+	 * @return array{
+	 *     results: list<array<string, mixed>>,
+	 *     total: int,
+	 *     summary: array{lastRunAt: string|null, lastOutcome: string|null, lastError: string|null}
+	 * }
+	 *
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
+	 */
+	private function runPage(AutomationRunRecorderInterface $runs, array $automation, array $query): array {
+		$outcomeRuns = [];
+		if ($this->outcomeRuns !== null) {
+			$outcomeRuns = $this->outcomeRuns->runsFor(automation: $automation);
+		}
+
+		if ($outcomeRuns === [] || $this->outcomeRuns === null) {
+			return $runs->runsOf(automationUuid: $query['uuid'], filters: $query['filters'], limit: $query['limit'], offset: $query['offset']);
+		}
+
+		$recorded = $runs->runsOf(automationUuid: $query['uuid'], limit: AutomationOutcomeRuns::RECORDED_LIMIT)['results'];
+
+		return $this->outcomeRuns->pageOf(
+			recorded: $recorded,
+			outcomeRuns: $outcomeRuns,
+			filters: $query['filters'],
+			limit: $query['limit'],
+			offset: $query['offset']
+		);
+	}//end runPage()
+
+	/**
+	 * The last run of an automation, over buildiq's runs and OpenRegister's.
+	 *
+	 * @param AutomationRunRecorderInterface $runs       The run log.
+	 * @param array<string, mixed>           $automation The automation.
+	 * @param string                         $uuid       The automation uuid.
+	 *
+	 * @return array{lastRunAt: string|null, lastOutcome: string|null, lastError: string|null}
+	 *
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
+	 */
+	private function runSummary(AutomationRunRecorderInterface $runs, array $automation, string $uuid): array {
+		$outcomeRuns = [];
+		if ($this->outcomeRuns !== null) {
+			$outcomeRuns = $this->outcomeRuns->runsFor(automation: $automation);
+		}
+
+		if ($outcomeRuns === [] || $this->outcomeRuns === null) {
+			return $runs->summaryOf(automationUuid: $uuid);
+		}
+
+		$recorded = $runs->runsOf(automationUuid: $uuid, limit: AutomationOutcomeRuns::RECORDED_LIMIT)['results'];
+
+		return $this->outcomeRuns->pageOf(recorded: $recorded, outcomeRuns: $outcomeRuns, filters: [], limit: 0, offset: 0)['summary'];
+	}//end runSummary()
 
 	/**
 	 * The enabled manual automations of an app for a record schema (design D8).
