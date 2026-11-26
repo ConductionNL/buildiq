@@ -16,7 +16,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-old-runs-are-pruned-and-the-last-run-stays-req-bqrl-005
+ * @spec openspec/specs/automation-designer/spec.md#requirement-old-runs-are-pruned-and-the-last-run-stays-req-bqrl-005
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use OCP\BackgroundJob\TimedJob;
  * an automation that still runs keeps its last run; one that has not run for
  * 90 days shows no run, which is itself the useful fact.
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-old-runs-are-pruned-and-the-last-run-stays-req-bqrl-005
+ * @spec openspec/specs/automation-designer/spec.md#requirement-old-runs-are-pruned-and-the-last-run-stays-req-bqrl-005
  */
 class AutomationRunPruneJob extends TimedJob {
 
@@ -49,7 +49,7 @@ class AutomationRunPruneJob extends TimedJob {
 	 * @param ITimeFactory                   $time Time factory.
 	 * @param AutomationRunRecorderInterface $runs The run log.
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-old-runs-are-pruned-and-the-last-run-stays-req-bqrl-005
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-old-runs-are-pruned-and-the-last-run-stays-req-bqrl-005
 	 */
 	public function __construct(
 		ITimeFactory $time,
@@ -68,7 +68,7 @@ class AutomationRunPruneJob extends TimedJob {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-old-runs-are-pruned-and-the-last-run-stays-req-bqrl-005
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-old-runs-are-pruned-and-the-last-run-stays-req-bqrl-005
 	 */
 	#[\Override]
 	protected function run($argument): void {
