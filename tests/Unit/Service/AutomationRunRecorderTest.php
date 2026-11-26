@@ -306,4 +306,51 @@ final class AutomationRunRecorderTest extends TestCase {
 
 		$this->assertSame(1, $this->recorder()->prune(now: self::NOW));
 	}//end testPruneDeletesRunsOlderThan90Days()
+
+	/**
+	 * The waiting runs a flow run completes are the automation's waiting runs
+	 * that name a flow run; an approval's waiting run (no flowRun) and a
+	 * finished run are left out.
+	 *
+	 * @return void
+	 */
+	public function testWaitingOnFlowRunsListsOnlyWaitingRunsWithAFlowRun(): void {
+		$this->objects->method('findAll')->willReturn(['results' => [
+			['@self' => ['id' => 'r1'], 'automation' => 'aut-1', 'startedAt' => '2026-11-14T09:00:00+00:00', 'outcome' => 'waiting', 'flowRun' => 'fr-1'],
+			['@self' => ['id' => 'r2'], 'automation' => 'aut-1', 'startedAt' => '2026-11-14T08:00:00+00:00', 'outcome' => 'waiting'],
+			['@self' => ['id' => 'r3'], 'automation' => 'aut-1', 'startedAt' => '2026-11-14T07:00:00+00:00', 'outcome' => 'succeeded', 'flowRun' => 'fr-3'],
+			['@self' => ['id' => 'r4'], 'automation' => 'aut-9', 'startedAt' => '2026-11-14T06:00:00+00:00', 'outcome' => 'waiting', 'flowRun' => 'fr-4'],
+			['@self' => ['id' => 'r5'], 'automation' => 'aut-1', 'startedAt' => '2026-11-14T05:00:00+00:00', 'outcome' => 'waiting', 'flowRun' => ''],
+		]]);
+
+		$waiting = $this->recorder()->waitingOnFlowRuns(automationUuid: 'aut-1');
+
+		$this->assertSame(expected: ['r1'], actual: array_column($waiting, 'id'));
+		$this->assertSame(expected: 'fr-1', actual: $waiting[0]['flowRun']);
+	}//end testWaitingOnFlowRunsListsOnlyWaitingRunsWithAFlowRun()
+
+	/**
+	 * A completed run takes the duration it is given instead of the time since it started.
+	 *
+	 * @return void
+	 */
+	public function testACompletedRunTakesTheGivenDuration(): void {
+		$this->objects->method('find')->willReturn($this->entity(payload: [
+			'@self' => ['id' => 'run-4'],
+			'automation' => 'aut-1',
+			'startedAt' => '2026-11-14T09:00:00+00:00',
+			'outcome' => 'waiting',
+			'flowRun' => 'fr-4',
+		]));
+		$calls = [];
+		$this->objects->method('saveObject')->willReturnCallback(function (...$arguments) use (&$calls): ObjectEntity {
+			$calls[] = LegacyObjectArgs::positional(method: 'saveObject', args: $arguments);
+			return $this->entity(payload: ['@self' => ['id' => 'run-4']]);
+		});
+
+		$result = ['outcome' => 'succeeded', 'reason' => null, 'durationMs' => 336, 'steps' => []];
+		$this->assertTrue(condition: $this->recorder()->completeFromFlowRun(runUuid: 'run-4', result: $result));
+		$this->assertSame(expected: 336, actual: $calls[0][0]['durationMs']);
+		$this->assertSame(expected: 'fr-4', actual: $calls[0][0]['flowRun']);
+	}//end testACompletedRunTakesTheGivenDuration()
 }//end class

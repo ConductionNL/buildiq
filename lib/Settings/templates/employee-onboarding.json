@@ -6,7 +6,7 @@
   "category": "internal-operations",
   "screenshotUrl": "img/templates/employee-onboarding.svg",
   "isSeeded": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "manifest": {
     "version": "1.0.0",
     "dependencies": ["openregister"],
@@ -102,7 +102,13 @@
         "route": "/documents/new",
         "type": "form",
         "title": "Add onboarding document",
-        "config": { "schema": "onboarding-document" }
+        "config": {
+          "schema": "onboarding-document",
+          "fields": [
+            { "key": "taskUuid", "label": "Onboarding task", "type": "string", "format": "uuid" },
+            { "key": "documentName", "label": "Document name", "type": "string" }
+          ]
+        }
       }
     ]
   },

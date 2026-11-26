@@ -54,6 +54,7 @@ use OCA\Buildiq\Exception\WizardCreationException;
 use OCA\Buildiq\Kernel\Contracts\ApplicationCreationServiceInterface;
 use OCA\Buildiq\Support\ApplicationStories;
 use OCA\Buildiq\Support\ObjectRecord;
+use OCA\Buildiq\Support\PageRegisterBinding;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
@@ -1562,19 +1563,22 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	}//end substituteVersionContext()
 
 	/**
-	 * Replace the `{registerSlug}` token in a page config's `register`.
+	 * Point a page config at the version's own register: replace a register
+	 * token, and give a page that names a schema but no register the
+	 * version's register, where withSchemaPrefix() already puts its schema
+	 * ({@see PageRegisterBinding}).
 	 *
 	 * @param array<string,mixed> $config       The page config.
 	 * @param string              $registerSlug The per-version register slug.
 	 *
 	 * @return array<string,mixed> The config with the register substituted.
+	 *
+	 * @spec openspec/specs/openbuild-template-catalogue/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) PageRegisterBinding is a pure rule with no collaborators.
 	 */
 	private function withVersionRegister(array $config, string $registerSlug): array {
-		if (($config['register'] ?? null) === '{registerSlug}') {
-			$config['register'] = $registerSlug;
-		}
-
-		return $config;
+		return PageRegisterBinding::forConfig(config: $config, registerSlug: $registerSlug);
 	}//end withVersionRegister()
 
 	/**

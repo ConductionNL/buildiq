@@ -159,11 +159,19 @@ async function savePages(page: Page): Promise<void> {
  * Open a request in the running app and its header Actions menu, once the
  * record's lifecycle transitions have been read.
  *
- * @param page     A logged-in page.
- * @param recordId The request.
+ * Status buttons that follow the live lifecycle (`lifecycleActions: { field }`)
+ * read them from `/available-actions`; listed status buttons
+ * (`transitions: [...]`) are filtered on the page and make no such request
+ * (CnLifecycleActions), so there is nothing to wait for.
+ *
+ * @param page              A logged-in page.
+ * @param recordId          The request.
+ * @param serverTransitions Whether the page reads the transitions from the server.
  */
-async function openActionsOn(page: Page, recordId: string): Promise<void> {
-	const transitions = page.waitForResponse((resp) => resp.url().includes(`/objects/${recordId}/available-actions`), { timeout: 45_000 })
+async function openActionsOn(page: Page, recordId: string, serverTransitions = true): Promise<void> {
+	const transitions = serverTransitions
+		? page.waitForResponse((resp) => resp.url().includes(`/objects/${recordId}/available-actions`), { timeout: 45_000 })
+		: Promise.resolve(null)
 	await page.goto(`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}/requests/${recordId}?_version=production`, { waitUntil: 'domcontentloaded' })
 	await dismissOverlays(page)
 	await transitions
@@ -353,8 +361,11 @@ test.describe('pages-action-buttons: typed buttons on a detail page', () => {
 			type: 'run-node',
 			flowId: ids.flow,
 			nodeId: NODE_ID,
-			visibleWhen: { field: 'status', op: 'eq', value: 'submitted' },
+			// Equality is the default and is stored without `op` ($defs/visibleWhen
+			// `{ field, op?, value }`, REQ-OBFEL-002).
+			visibleWhen: { field: 'status', value: 'submitted' },
 		})
+		expect(stored.config.headerActions[0].visibleWhen.op ?? 'eq', 'shown when the status equals submitted').toBe('eq')
 		expect(stored.config.headerActions[0], 'only the keys run-node allows').not.toHaveProperty('target')
 		expect(stored.config.lifecycleActions, 'status buttons follow the live lifecycle').toEqual({ field: 'status' })
 
@@ -421,7 +432,7 @@ test.describe('pages-action-buttons: typed buttons on a detail page', () => {
 			message: 'the listed status button reaches the stored manifest',
 		}).toContain(CONFIRM)
 
-		await openActionsOn(page, ids.submitted)
+		await openActionsOn(page, ids.submitted, false)
 		await page.getByRole('menuitem', { name: 'Approve' }).click()
 		const dialog = page.getByRole('dialog').filter({ hasText: CONFIRM })
 		await expect(dialog, 'the move asks first').toBeVisible({ timeout: 20_000 })

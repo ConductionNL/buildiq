@@ -80,6 +80,8 @@ const TTL_HOURS = 12
 const state = {
 	appUuid: '',
 	register: '',
+	/** The clone's own slug of the template's schema (`<app>-permit-application`). */
+	schema: '',
 	offlineBefore: false,
 	submitted: [] as string[],
 	draft: '',
@@ -202,7 +204,13 @@ test.describe('pages-installable-offline-and-mobile: an installable app that wor
 			state.register = typeof production?.register === 'string' ? production.register : ''
 			expect(state.register, 'the production version has a register').not.toBe('')
 
-			const objects = `${OR_API}/objects/${state.register}/${SCHEMA}`
+			// A clone prefixes the template's schema slug with the app's slug.
+			const manifest = await page.request.get(`${API}/applications/${APP_SLUG}/manifest`, { headers: HEADERS })
+			const current = await manifest.json()
+			const bound = (current.pages ?? []).find((p: Record<string, any>) => [SCHEMA, `${APP_SLUG}-${SCHEMA}`].includes(String(p?.config?.schema ?? '')))
+			state.schema = String(bound?.config?.schema ?? SCHEMA)
+
+			const objects = `${OR_API}/objects/${state.register}/${state.schema}`
 			for (const [applicant, status] of [['Field visit north', 'submitted'], ['Field visit south', 'submitted'], ['Still a draft', 'draft']]) {
 				const saved = await page.request.post(objects, { headers: HEADERS, data: { applicant, status } })
 				expect(saved.status(), `save an application: ${(await saved.text()).slice(0, 200)}`).toBeLessThan(300)
@@ -215,15 +223,13 @@ test.describe('pages-installable-offline-and-mobile: an installable app that wor
 			}
 
 			// The maker's offline declaration: today's submitted applications, and the form.
-			const manifest = await page.request.get(`${API}/applications/${APP_SLUG}/manifest`, { headers: HEADERS })
-			const current = await manifest.json()
 			const put = await page.request.put(`${API}/applications/${APP_SLUG}/manifest`, {
 				headers: HEADERS,
 				data: {
 					manifest: {
 						...current,
 						offline: {
-							takeAlong: [{ schema: SCHEMA, filter: { status: 'submitted' }, limit: 50, ttlHours: TTL_HOURS }],
+							takeAlong: [{ schema: state.schema, filter: { status: 'submitted' }, limit: 50, ttlHours: TTL_HOURS }],
 							forms: [FORM_PAGE],
 						},
 					},
@@ -266,7 +272,15 @@ test.describe('pages-installable-offline-and-mobile: an installable app that wor
 		await expect(installable).toBeVisible({ timeout: 30_000 })
 		await installable.getByLabel('Short name').fill(SHORT_NAME)
 		await installable.getByLabel('Short name').press('Tab')
-		await installable.locator('[data-test="app-settings-theme-color"]').fill(THEME_COLOR)
+		// Each change saves on its own and the fields are disabled while a save
+		// runs; set the colour once the short name is stored, as a person would.
+		await expect.poll(async () => {
+			const resp = await page.request.get(`${RUN_URL}manifest.webmanifest`)
+			return resp.ok() ? String((await resp.json())?.short_name ?? '') : ''
+		}, { timeout: 30_000, message: 'the short name is saved' }).toBe(SHORT_NAME)
+		const colour = installable.locator('[data-test="app-settings-theme-color"]')
+		await expect(colour).toBeEnabled({ timeout: 30_000 })
+		await colour.fill(THEME_COLOR)
 
 		let webManifest: Record<string, any> = {}
 		await expect.poll(async () => {
@@ -278,7 +292,9 @@ test.describe('pages-installable-offline-and-mobile: an installable app that wor
 		expect(Array.isArray(webManifest.icons) && webManifest.icons.length > 0, 'the manifest carries the app icon').toBe(true)
 
 		await openRunPage(page)
-		const link = page.locator('link[rel="manifest"]')
+		// Nextcloud's theming app links its own manifest on every page too; this
+		// is the app's.
+		const link = page.locator('link[rel="manifest"][href="manifest.webmanifest"]')
 		await expect(link, 'the run page links its manifest').toHaveAttribute('href', 'manifest.webmanifest')
 		await expect(link, 'with the session, since the manifest is logged-in only').toHaveAttribute('crossorigin', 'use-credentials')
 	})
@@ -351,7 +367,7 @@ test.describe('pages-installable-offline-and-mobile: an installable app that wor
 		await expect(page.getByText(/waiting to sync/i).first()).toBeVisible({ timeout: 20_000 })
 		await context.setOffline(false)
 		await expect.poll(async () => {
-			const resp = await page.request.get(`${OR_API}/objects/${state.register}/${SCHEMA}`, {
+			const resp = await page.request.get(`${OR_API}/objects/${state.register}/${state.schema}`, {
 				headers: HEADERS,
 				params: { applicant: 'Report from the basement' },
 			})
@@ -418,6 +434,7 @@ test.describe('pages-installable-offline-and-mobile: an installable app that wor
 		expect(String(capacitor.server?.url ?? ''), 'the project opens the run page').toContain(RUN_PATH)
 		const allowed = capacitor.server?.allowNavigation ?? []
 		expect(allowed, 'one allowed origin').toHaveLength(1)
-		expect(allowed[0], 'and it is this instance').toBe(new URL(String(capacitor.server.url)).host)
+		// Capacitor matches allowNavigation against the host name, without a port.
+		expect(allowed[0], 'and it is this instance').toBe(new URL(String(capacitor.server.url)).hostname)
 	})
 })

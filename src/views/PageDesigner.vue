@@ -677,6 +677,21 @@ export default {
 		},
 
 		/**
+		 * REQ-OBPD-007: the keys CustomPageEditor's component picker suggests,
+		 * the same registry the preview sandbox resolves custom pages against.
+		 * Empty while the live preview is not available.
+		 *
+		 * @return {string[]} The registry keys, sorted.
+		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-4.3
+		 */
+		previewComponentKeys() {
+			if (!this.previewAvailable) {
+				return []
+			}
+			return Object.keys(this.previewFlatRegistry).sort()
+		},
+
+		/**
 		 * Flattened `{ name: component }` map derived from the v2 registry,
 		 * mirroring App.vue's `flatRegistry` — CnPageRenderer's
 		 * `effectiveCustomComponents` resolver (beta.107) consults
@@ -1073,6 +1088,11 @@ export default {
 			if (type === 'detail') {
 				// pages-action-buttons: the pages and flows a typed action can point at.
 				return { pages: this.actionPages, flows: this.applicationFlows }
+			}
+			if (type === 'custom') {
+				// REQ-OBPD-007: the component picker suggests the keys of the
+				// registry the live preview resolves custom pages against.
+				return { componentKeys: this.previewComponentKeys }
 			}
 			if (this.subEditorFor(type) !== 'StubPageEditor') {
 				return {}

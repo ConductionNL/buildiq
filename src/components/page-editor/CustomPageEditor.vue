@@ -117,6 +117,17 @@ export default {
 			type: String,
 			default: 'custom',
 		},
+
+		/**
+		 * The keys of the registry the live preview resolves custom pages
+		 * against, passed by PageDesigner while its preview pane is mounted
+		 * (REQ-OBPD-007). Empty without a live preview: the key is then
+		 * entered free-form.
+		 */
+		componentKeys: {
+			type: Array,
+			default: () => [],
+		},
 	},
 
 	/**
@@ -170,6 +181,9 @@ export default {
 		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		registryKeys() {
+			if (this.componentKeys.length > 0) {
+				return this.componentKeys
+			}
 			const reg = this.preview && this.preview.componentRegistry
 			if (Array.isArray(reg)) {
 				return reg

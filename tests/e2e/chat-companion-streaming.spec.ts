@@ -14,12 +14,10 @@ import { expect, test } from '@playwright/test'
  *      (data-testid=cn-ai-thinking) is visible with 3 animated dots
  *   5. When the response arrives the Thinking indicator disappears
  *      and an assistant bubble takes its place
- *   6. Streaming-aware specs (skipped today, enabled once the
- *      ai-chat-companion-streaming change lands):
- *        - First token arrives BEFORE the LLM call completes
- *          (assistant bubble has partial text mid-flight)
- *        - A long-running call surfaces ≥2 heartbeat events to the
- *          frontend (network requests panel shows them)
+ *   6. Streaming (openspec/specs/ai-chat-companion/spec.md):
+ *        - Partial text shows BEFORE the call completes, and only grows
+ *        - At least one heartbeat frame reaches the frontend before the
+ *          stream's final frame
  *
  * Preconditions:
  *   - Nextcloud reachable at PLAYWRIGHT_BASE_URL (default localhost:8080)
@@ -182,24 +180,97 @@ test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-co
 })
 
 /**
- * Streaming-only assertions — gated on the orchestrator's §5.3
- * (token events) and §6 (15s heartbeat) landing. Skipped today;
- * enabled by the ai-chat-companion-streaming change.
+ * Streaming assertions (ai-chat-companion-streaming tasks 4.1-4.3).
+ *
+ * The surface is built: hermiq's `ChatStreamController` streams the
+ * provider's deltas as `token` frames (`LlphantChatCall::streamChat()`, LLPhant
+ * `generateChatStream()` on OpenAI and Ollama), emits a `heartbeat` frame
+ * right after the headers and again before any frame that follows a 15 s
+ * silence, and ends with `final`. `useAiChatStream` in nextcloud-vue appends
+ * each token to the assistant bubble. These tests skip, like the ones above,
+ * only when no chat backend answers its health check.
  */
-test.describe('AI Chat Companion — true streaming (gated on ai-chat-companion-streaming)', () => {
-	test.skip(() => {
-		// Toggle this off once the streaming change is applied + the
-		// configured provider exposes generateStreamOfText.
-		return true
-	}, 'the streaming surface is not built yet, and both tests below are EMPTY — enabling them would report coverage that does not exist. Tracked in openspec/changes/ai-chat-companion-streaming/, which now exists: that change carries the token-event and heartbeat requirements plus tasks 4.1/4.2 to write these two bodies. Remove this guard only once they assert something.')
-
-	test('partial response text appears before the call completes', async () => {
-		// Long-prompt test: ask for a multi-paragraph answer, assert the
-		// assistant bubble's text grows over time rather than appearing
-		// all at once.
+test.describe('AI Chat Companion — true streaming (spec: ai-chat-companion-streaming)', () => {
+	test.beforeEach(async ({ page }) => {
+		// The same app-shell wait as the block above (it has no networkidle wait for the same reason).
+		await page.goto('/apps/buildiq/', { waitUntil: 'domcontentloaded' })
+		const appShell = page.locator('main, #app-content, .app-content, #content-vue').first()
+		const createApp = page.getByRole('button', { name: /create app|add application/i }).first()
+		await expect(appShell.or(createApp).first(), 'the Buildiq app shell must mount').toBeVisible({ timeout: 30_000 })
 	})
 
-	test('long-running call surfaces at least one heartbeat to the frontend', async () => {
-		// 35s prompt + watch network panel for `event: heartbeat` frames.
+	test('partial response text appears before the call completes', async ({
+		page,
+		request,
+	}) => {
+		const health = await request.get(CHAT_HEALTH_URL)
+		test.skip(chatUnavailable(health.status()), 'No chat backend reachable')
+		test.setTimeout(150_000)
+
+		await page.locator('[data-testid="cn-ai-fab"]').click()
+		const panel = page.locator('[data-testid="cn-ai-panel"]')
+		await expect(panel).toBeVisible({ timeout: 5_000 })
+
+		// Record every text the streaming bubble shows, from the first token on.
+		await page.evaluate(() => {
+			const w = window as unknown as { __cnBubbleTexts: string[] }
+			w.__cnBubbleTexts = []
+			const record = () => {
+				const bubbles = document.querySelectorAll('[data-testid="cn-ai-panel"] .cn-ai-message-list__bubble--assistant:not(.cn-ai-message-list__bubble--thinking)')
+				const last = bubbles[bubbles.length - 1]
+				const text = last ? (last.textContent || '').trim() : ''
+				const seen = w.__cnBubbleTexts
+				if (text !== '' && seen[seen.length - 1] !== text) {
+					seen.push(text)
+				}
+			}
+			new MutationObserver(record).observe(document.body, { childList: true, subtree: true, characterData: true })
+		})
+
+		const streamDone = page.waitForResponse((r) => r.url().includes('/api/chat/stream'), { timeout: 140_000 })
+		await panel.locator('textarea').fill('Write three paragraphs about Dutch windmills, each of at least four sentences.')
+		await panel.locator('textarea').press('Enter')
+		const stream = await streamDone
+		test.skip(!(stream.headers()['content-type'] || '').includes('text/event-stream'), 'The backend answered without streaming (the non-streaming fallback)')
+		await stream.finished()
+		await expect(page.locator('[data-testid="cn-ai-thinking"]')).toBeHidden({ timeout: 30_000 })
+
+		const texts = await page.evaluate(() => (window as unknown as { __cnBubbleTexts: string[] }).__cnBubbleTexts)
+		const final = texts[texts.length - 1] || ''
+		expect(final, 'the assistant answered').not.toBe('')
+		expect(
+			texts.some((text) => text.length > 0 && text.length < final.length),
+			'a strictly shorter, non-empty prefix showed before the answer was complete',
+		).toBe(true)
+		for (let i = 1; i < texts.length; i++) {
+			expect(texts[i].startsWith(texts[i - 1]), `text only grows: step ${i} keeps step ${i - 1} as its start`).toBe(true)
+		}
+	})
+
+	test('long-running call surfaces at least one heartbeat to the frontend', async ({
+		page,
+		request,
+	}) => {
+		const health = await request.get(CHAT_HEALTH_URL)
+		test.skip(chatUnavailable(health.status()), 'No chat backend reachable')
+		test.setTimeout(150_000)
+
+		await page.locator('[data-testid="cn-ai-fab"]').click()
+		const panel = page.locator('[data-testid="cn-ai-panel"]')
+		await expect(panel).toBeVisible({ timeout: 5_000 })
+
+		const streamDone = page.waitForResponse((r) => r.url().includes('/api/chat/stream'), { timeout: 140_000 })
+		await panel.locator('textarea').fill('Explain in two paragraphs how a register and a schema relate.')
+		await panel.locator('textarea').press('Enter')
+		const stream = await streamDone
+		test.skip(!(stream.headers()['content-type'] || '').includes('text/event-stream'), 'The backend answered without streaming (the non-streaming fallback)')
+		const body = await stream.text()
+
+		const heartbeat = body.indexOf('event: heartbeat')
+		const final = body.indexOf('event: final')
+		expect(heartbeat, 'at least one heartbeat frame reached the frontend').toBeGreaterThanOrEqual(0)
+		expect(final, 'the stream completed with a final frame').toBeGreaterThan(heartbeat)
+		// The Thinking indicator covers the wait until the first token.
+		await expect(page.locator('[data-testid="cn-ai-thinking"]')).toBeHidden({ timeout: 30_000 })
 	})
 })

@@ -1400,10 +1400,14 @@ final class AutomationCompilerServiceTest extends TestCase {
 		$plan = $this->compiler->compile($automation);
 
 		$this->assertSame(
-			['id' => 'trigger', 'type' => 'openregister.trigger-object', 'config' => ['event' => 'created', 'register' => 'openbuild-claims-production', 'schema' => 'claim']],
-			$plan['flow']['nodes'][0]
+			expected: [
+				'id' => 'trigger',
+				'type' => 'openregister.trigger-object',
+				'config' => ['event' => 'object.created', 'register' => 'openbuild-claims-production', 'schema' => 'claim'],
+			],
+			actual: $plan['flow']['nodes'][0]
 		);
-		$this->assertSame(['id' => '{{json.id}}'], $plan['flow']['nodes'][1]['config']['match']);
+		$this->assertSame(expected: ['id' => '{{id}}'], actual: $plan['flow']['nodes'][1]['config']['match']);
 		$this->assertSame([], $plan['notifications']);
 
 	}//end testObjectCreatedRecordStepCompilesToATriggeredFlow()
@@ -1570,14 +1574,14 @@ final class AutomationCompilerServiceTest extends TestCase {
 		$nodes = $plan['flow']['nodes'];
 
 		$this->assertSame(['openregister.trigger-object', 'hermiq.agent-step', 'openregister.object-write'], array_column($nodes, 'type'));
-		$this->assertSame('created', $nodes[0]['config']['event']);
+		$this->assertSame(expected: 'object.created', actual: $nodes[0]['config']['event']);
 		$this->assertSame('agent-1', $nodes[1]['config']['agentId']);
 		$this->assertTrue($nodes[1]['config']['expectJson']);
 		preg_match_all('/\{\{\s*([^}]*?)\s*\}\}/', $nodes[1]['config']['prompt'], $placeholders);
 		$this->assertSame(['omschrijving'], array_values(array_unique($placeholders[1])));
 		$this->assertSame('update', $nodes[2]['config']['operation']);
-		$this->assertSame(['categorie' => '{{json.aiAnswer.label}}'], $nodes[2]['config']['fields']);
-		$this->assertSame(['uuid' => '{{json.uuid}}'], $nodes[2]['config']['match']);
+		$this->assertSame(expected: ['categorie' => '{{aiAnswer.label}}'], actual: $nodes[2]['config']['fields']);
+		$this->assertSame(expected: ['uuid' => '{{id}}'], actual: $nodes[2]['config']['match']);
 		$this->assertSame(['id' => 'e2', 'from' => ['step-1'], 'to' => ['step-1-write']], $plan['flow']['edges'][1]);
 		$this->assertSame($plan['hash'], $this->compiler->compile(self::aiAutomation(trigger: 'object-created'))['hash']);
 	}//end testAiClassifyCompilesToTriggerAgentAndWrite()
@@ -1719,7 +1723,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 		$this->assertSame('trigger-edit', $last['id']);
 		$this->assertSame(['omschrijving'], $last['config']['changedFields']);
 		$this->assertSame(['id' => 'e-edit', 'from' => ['trigger-edit'], 'to' => ['step-1']], $flow['edges'][(count($flow['edges']) - 1)]);
-		$this->assertSame('created', $flow['nodes'][0]['config']['event']);
+		$this->assertSame(expected: 'object.created', actual: $flow['nodes'][0]['config']['event']);
 	}//end testAiFieldAlsoFollowsEditsOfItsSources()
 	/**
 	 * A compiler whose container serves OpenRegister's node registry with this palette.

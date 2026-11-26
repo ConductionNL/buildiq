@@ -41,7 +41,6 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Flow\FlowService;
-use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -80,6 +79,13 @@ class FlowBindingWrapperService {
 	 * @var string
 	 */
 	private const OWNING_APP = 'buildiq';
+
+	/**
+	 * Publishes wrappers; built on first use.
+	 *
+	 * @var FlowWrapperPublisher|null
+	 */
+	private ?FlowWrapperPublisher $publisher = null;
 
 	/**
 	 * Constructor.
@@ -201,7 +207,9 @@ class FlowBindingWrapperService {
 			'enabled' => true,
 			'nodes' => [
 				$trigger,
-				['id' => 'run', 'type' => 'openregister.sub-flow', 'config' => ['flowId' => $wanted['flow'], 'wait' => false]],
+				// The last node: `exit` marks where a token leaves, without
+				// which OpenRegister refuses to publish the wrapper.
+				['id' => 'run', 'type' => 'openregister.sub-flow', 'config' => ['flowId' => $wanted['flow'], 'wait' => false], 'exit' => true],
 			],
 			'edges' => [['id' => 'trigger-run', 'from' => 'trigger', 'to' => 'run']],
 		];
@@ -274,6 +282,16 @@ class FlowBindingWrapperService {
 			if (isset($target['plan'][$name]) === true && isset($present[$name]) === false) {
 				$present[$name]    = true;
 				$result['flows'][] = $binding;
+				$failure = $this->publisher()->republishDraft(
+					uuid: (string)($binding['flow'] ?? ''),
+					name: $name,
+					appSlug: $target['slug'],
+					definition: self::definition(target: $target, wanted: $target['plan'][$name])
+				);
+				if ($failure !== null) {
+					$result['failed'][] = $failure;
+				}
+
 				continue;
 			}
 
@@ -315,7 +333,7 @@ class FlowBindingWrapperService {
 		}
 
 		$failed = [];
-		if ($this->publish(flow: $flow, name: $name) === false) {
+		if ($this->publisher()->publish(flow: $flow, name: $name) === false) {
 			$failed[] = ['name' => $name, 'reason' => 'not_published'];
 		}
 
@@ -324,35 +342,6 @@ class FlowBindingWrapperService {
 			'failed' => $failed,
 		];
 	}//end createWrapper()
-
-	/**
-	 * Publish a new wrapper, so its trigger subscribes.
-	 *
-	 * OpenRegister subscribes the triggers of a flow's PUBLISHED version only.
-	 * A wrapper left a draft is saved and bound but never fires, so a failure
-	 * here is reported rather than passed over.
-	 *
-	 * @param \OCA\OpenRegister\Db\Flow $flow The saved wrapper.
-	 * @param string                    $name The wrapper's name.
-	 *
-	 * @return bool True when the wrapper was published.
-	 */
-	private function publish(\OCA\OpenRegister\Db\Flow $flow, string $name): bool {
-		if (interface_exists(FlowVersionServiceInterface::class) === false
-			|| $this->container->has(FlowVersionServiceInterface::class) === false
-		) {
-			return false;
-		}
-
-		try {
-			$this->container->get(FlowVersionServiceInterface::class)->publish(flow: $flow);
-		} catch (Throwable $e) {
-			$this->logger->warning('Buildiq: wrapper flow "' . $name . '" could not be published: ' . $e->getMessage());
-			return false;
-		}
-
-		return true;
-	}//end publish()
 
 	/**
 	 * Delete one wrapper's flow, or say why it stays bound.
@@ -395,10 +384,24 @@ class FlowBindingWrapperService {
 	 * @param string                    $appSlug The application's slug.
 	 *
 	 * @return bool True when the flow is ours to delete.
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
 	 */
-	private static function ownWrapper(\OCA\OpenRegister\Db\Flow $flow, string $appSlug): bool {
+	public static function ownWrapper(\OCA\OpenRegister\Db\Flow $flow, string $appSlug): bool {
 		return $flow->getApp() === self::OWNING_APP && $appSlug !== '' && $flow->getApplicationSlug() === $appSlug;
 	}//end ownWrapper()
+
+	/**
+	 * Publishes wrappers (built on first use).
+	 *
+	 * @return FlowWrapperPublisher
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
+	 */
+	private function publisher(): FlowWrapperPublisher {
+		$this->publisher ??= new FlowWrapperPublisher(flowService: $this->flowService, container: $this->container, logger: $this->logger);
+		return $this->publisher;
+	}//end publisher()
 
 	/**
 	 * Save the Application with its new bindings.

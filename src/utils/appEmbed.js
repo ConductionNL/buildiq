@@ -109,6 +109,11 @@ export function embedSnippet({ origin, slug, title, pageRoute = '' }) {
  * embedded page shows only that page. Outside embed mode the slots are
  * handed back as they are.
  *
+ * The `menu` slot is dropped rather than replaced: CnAppRoot falls back to
+ * its own navigation for an empty slot, and a slot answering null broke the
+ * whole embedded page. The shell hides the navigation with `hideMenu`
+ * (see embedShellProps()).
+ *
  * @param {boolean} embedded Whether the runtime is embedded.
  * @param {object} slots The shell's slots outside embed mode.
  * @return {object}
@@ -119,7 +124,46 @@ export function embedSlots(embedded, slots) {
 	if (!embedded) {
 		return slots
 	}
-	return { ...slots, menu: () => null }
+	const { menu, ...rest } = slots // eslint-disable-line no-unused-vars
+	return rest
+}
+
+/**
+ * The shell props embed mode adds: no app navigation at all, so the page
+ * starts at the frame's left edge.
+ *
+ * @param {boolean} embedded Whether the runtime is embedded.
+ * @return {object} `{ hideMenu: true }` when embedded, else nothing.
+ *
+ * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-embeds-one-page-req-bqem-004
+ */
+export function embedShellProps(embedded) {
+	return embedded ? { hideMenu: true } : {}
+}
+
+/**
+ * Give an embedded page the skip-link target Nextcloud's header carries.
+ *
+ * An embedded app is served in the bare layout, without the header, so
+ * `#skip-actions` is missing; the shell's NcContent teleports its skip links
+ * there, and without a target the whole page failed to mount. It is added to
+ * the body, outside `#content`, because the app mounts on `#content` and
+ * would replace anything inside it.
+ *
+ * @param {boolean} embedded Whether the runtime is embedded.
+ * @param {Document} doc The document.
+ * @return {boolean} Whether a target was added.
+ *
+ * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-embeds-one-page-req-bqem-004
+ */
+export function ensureEmbedSkipTarget(embedded, doc) {
+	if (!embedded || !doc?.body || doc.getElementById('skip-actions')) {
+		return false
+	}
+	const target = doc.createElement('div')
+	target.id = 'skip-actions'
+	doc.body.prepend(target)
+	return true
 }
 
 /**

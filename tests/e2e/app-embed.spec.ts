@@ -118,12 +118,27 @@ async function appId(page: Page): Promise<string> {
 }
 
 /**
+ * The element the built app mounts in. Nextcloud's page layout carries its
+ * own `#content` around the app's template, which has one too; the app
+ * mounts in the inner one.
+ *
+ * @param page The page.
+ * @return The app's mount element.
+ */
+function appMount(page: Page): Locator {
+	return page.locator('#content').last()
+}
+
+/**
  * Open the app detail page and its App settings modal.
  *
  * @param page A signed-in page.
  * @return The Embed section.
  */
 async function openEmbedSettings(page: Page): Promise<Locator> {
+	// The id is read with an in-page fetch, which needs a page on this origin
+	// first: on about:blank a relative URL does not parse.
+	await page.goto('/index.php/apps/buildiq/', { waitUntil: 'domcontentloaded' })
 	const id = await appId(page)
 	expect(id, 'the fixture app must be listed').not.toBe('')
 	await page.goto(`/apps/buildiq/applications/${id}`, { waitUntil: 'domcontentloaded' })
@@ -264,7 +279,7 @@ test.describe('apps-embed-in-other-sites: an app shown inside the intranet', () 
 		expect(ancestors, 'no wildcard source lets any site frame it').not.toMatch(/(^|\s)\*(\s|$)/)
 
 		await page.goto(snippetUrl, { waitUntil: 'domcontentloaded' })
-		await expect(page.locator('#content'), 'the app renders').toBeVisible({ timeout: 30_000 })
+		await expect(appMount(page), 'the app renders').toBeVisible({ timeout: 30_000 })
 		await expect(page.locator('#header'), 'the embedded app has no Nextcloud header').toHaveCount(0)
 
 		// The same app without `embed=1` keeps the header: only the embed request changes.
@@ -283,7 +298,7 @@ test.describe('apps-embed-in-other-sites: an app shown inside the intranet', () 
 		const pageUrl = await snippetSrc(section)
 
 		await page.goto(pageUrl, { waitUntil: 'domcontentloaded' })
-		await expect(page.locator('#content')).toBeVisible({ timeout: 30_000 })
+		await expect(appMount(page)).toBeVisible({ timeout: 30_000 })
 		await expect(page.locator('#header')).toHaveCount(0)
 		await expect(page.getByText(BOOK_PAGE.title).first(), 'the chosen page shows').toBeVisible({ timeout: 30_000 })
 		await expect(page.getByText(OVERVIEW_PAGE.title), 'no navigation leads to the other page').toHaveCount(0)

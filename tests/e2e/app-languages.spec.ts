@@ -7,11 +7,14 @@
  * as Nextcloud language sees the Dutch menu and column labels of an app, and
  * the English text where a label has no Dutch translation.
  *
- * `beforeAll` runs as admin in its own context: it builds the fixture app,
- * grants `rbac-viewer` (provisioned by tests/e2e/global-setup.ts) as viewer,
- * gives the app English labels with Dutch translations for one menu item and
- * one column, and sets the viewer's Nextcloud language to Dutch. `afterAll`
- * puts the viewer's language back, so other suites keep reading English.
+ * `beforeAll` runs as admin in its own context: it clones the
+ * `incident-reporter` template (an index page on a real schema, so the table
+ * and its column headers render; an index without records shows only its
+ * empty state), adds one record, grants `rbac-viewer` (provisioned by
+ * tests/e2e/global-setup.ts) as viewer, gives the app English labels with
+ * Dutch translations for one menu item and one column, and sets the viewer's
+ * Nextcloud language to Dutch. `afterAll` puts the viewer's language back and
+ * removes the app, so other suites keep reading English.
  *
  * The test itself runs as that NON-ADMIN viewer, logged in from an empty
  * storage state, on the app's runtime page (`/apps/buildiq/builder/{slug}/`).
@@ -21,26 +24,32 @@
  */
 
 import type { Page } from '@playwright/test'
+import type { TemplateApp } from './support/templateApp.ts'
 
 import { expect, test } from '@playwright/test'
-import { ensureApp, suppressSupportDialog } from './support/appFixture.ts'
+import { suppressSupportDialog } from './support/appFixture.ts'
 import { grantAppRoles } from './support/appRoles.ts'
 // PLAYWRIGHT_BASE_URL wins; there is no localhost default off CI.
 import { E2E_BASE_URL as BASE_URL } from './support/baseUrl.ts'
+import { adminPage, cloneTemplateApp, deleteApp, fixtureSlug } from './support/templateApp.ts'
 
 const ADMIN_STORAGE_STATE = 'tests/e2e/.auth/admin.json'
 const ADMIN_USER = process.env.NC_ADMIN_USER ?? 'admin'
 const VIEWER_USER = process.env.NC_RBAC_VIEWER_USER ?? 'rbac-viewer'
 const VIEWER_PASS = process.env.NC_RBAC_VIEWER_PASS ?? 'RbacViewer-1!'
 
-const APP_SLUG = 'pw-app-languages'
-const PAGE_ID = 'producten'
 const MENU_TRANSLATED = 'Products'
 const MENU_TRANSLATED_NL = 'Producten'
 const MENU_UNTRANSLATED = 'Suppliers'
-const COLUMN_TRANSLATED = 'Price'
-const COLUMN_TRANSLATED_NL = 'Prijs'
-const COLUMN_UNTRANSLATED = 'Stock level'
+const COLUMN_TRANSLATED = 'Place'
+const COLUMN_TRANSLATED_NL = 'Plaats'
+const COLUMN_UNTRANSLATED = 'Reported by'
+
+/** The fixture app, cloned in beforeAll. */
+let app: TemplateApp | null = null
+
+/** The route of its translated index page, without the leading slash. */
+let pageRoute = ''
 
 /** The viewer's language before this suite, restored in afterAll. */
 let previousLanguage = ''
@@ -100,26 +109,28 @@ async function setLanguage(page: Page, user: string, language: string): Promise<
 }
 
 /**
- * Give the app an English index page and menu with two Dutch translations.
+ * Give the app's index page an English title and columns, a second menu
+ * entry, and Dutch translations for one menu item and one column; add one
+ * record so the table renders.
  *
- * @param page An admin page.
+ * @param page    An admin page.
+ * @param fixture The cloned app.
+ * @return The route of the index page, without the leading slash.
  */
-async function seedLabels(page: Page): Promise<void> {
-	const path = `/index.php/apps/buildiq/api/applications/${APP_SLUG}/manifest`
+async function seedLabels(page: Page, fixture: TemplateApp): Promise<string> {
+	const path = `/index.php/apps/buildiq/api/applications/${fixture.slug}/manifest`
 	const read = await call(page, 'GET', path)
 	expect(read.status, 'GET manifest').toBe(200)
 	const manifest = read.data
-	const pages = (manifest.pages || []).filter((p: { id: string }) => p.id !== PAGE_ID && p.id !== 'leveranciers')
-	pages.push({
-		id: PAGE_ID,
-		type: 'index',
-		route: `/${PAGE_ID}`,
-		title: MENU_TRANSLATED,
-		config: { columns: [{ key: 'price', label: COLUMN_TRANSLATED }, { key: 'stock', label: COLUMN_UNTRANSLATED }] },
-	})
+	const pages = (manifest.pages || []).filter((p: { id: string }) => p.id !== 'leveranciers')
+	const index = pages.find((p: Record<string, any>) => p.type === 'index' && p.config?.schema === fixture.schema)
+	expect(index, 'the template has an index page on its schema').toBeTruthy()
+	index.title = MENU_TRANSLATED
+	index.config = { ...index.config, columns: [{ key: 'location', label: COLUMN_TRANSLATED }, { key: 'reportedBy', label: COLUMN_UNTRANSLATED }] }
 	pages.push({ id: 'leveranciers', type: 'index', route: '/leveranciers', title: MENU_UNTRANSLATED, config: { columns: [] } })
+	const route = String(index.route ?? `/${index.id}`).replace(/^\/+/, '')
 	const menu = [
-		{ id: PAGE_ID, label: MENU_TRANSLATED, route: PAGE_ID },
+		{ id: index.id, label: MENU_TRANSLATED, route: index.id },
 		{ id: 'leveranciers', label: MENU_UNTRANSLATED, route: 'leveranciers' },
 	]
 	const i18n = {
@@ -129,6 +140,17 @@ async function seedLabels(page: Page): Promise<void> {
 	}
 	const write = await call(page, 'PUT', path, { manifest: { ...manifest, pages, menu, i18n } })
 	expect(write.status, `seed labels: ${JSON.stringify(write.data).slice(0, 200)}`).toBeLessThan(300)
+
+	const record = await call(page, 'POST', `/index.php/apps/openregister/api/objects/${fixture.register}/${fixture.schema}`, {
+		reportedBy: 'e2e',
+		incidentType: 'inspection',
+		severity: 'low',
+		status: 'new',
+		reportedAt: new Date().toISOString(),
+		location: 'Stadhuis',
+	})
+	expect(record.status, `seed a record: ${JSON.stringify(record.data).slice(0, 200)}`).toBeLessThan(300)
+	return route
 }
 
 /**
@@ -153,16 +175,15 @@ test.describe('experience-multilingual-apps: users see the app in their own lang
 	test.use({ storageState: { cookies: [], origins: [] } })
 
 	test.beforeAll(async ({ browser }) => {
-		const admin = await browser.newContext({ storageState: ADMIN_STORAGE_STATE })
-		const page = await admin.newPage()
+		const page = await adminPage(browser)
 		try {
 			await suppressSupportDialog(page)
-			await ensureApp(page, APP_SLUG, 'PW App Languages')
-			await grantAppRoles(page, APP_SLUG, { owners: [`user:${ADMIN_USER}`], viewers: [`user:${VIEWER_USER}`] })
-			await seedLabels(page)
+			app = await cloneTemplateApp(page, fixtureSlug('app-languages'), 'PW App Languages')
+			await grantAppRoles(page, app.slug, { owners: [`user:${ADMIN_USER}`], viewers: [`user:${VIEWER_USER}`] })
+			pageRoute = await seedLabels(page, app)
 			previousLanguage = await setLanguage(page, VIEWER_USER, 'nl')
 		} finally {
-			await admin.close()
+			await page.close()
 		}
 	})
 
@@ -172,6 +193,7 @@ test.describe('experience-multilingual-apps: users see the app in their own lang
 		try {
 			await page.goto(`${BASE_URL}/index.php/apps/buildiq/`, { waitUntil: 'domcontentloaded' })
 			await setLanguage(page, VIEWER_USER, previousLanguage || 'en')
+			await deleteApp(page, app?.uuid ?? '')
 		} finally {
 			await admin.close()
 		}
@@ -181,9 +203,12 @@ test.describe('experience-multilingual-apps: users see the app in their own lang
 		// @e2e openspec/changes/archive/2026-11-24-experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-an-app-user-sees-the-app-in-their-language-req-bqml-003
 		await loginAs(page, VIEWER_USER, VIEWER_PASS)
 		await suppressSupportDialog(page)
-		await page.goto(`${BASE_URL}/index.php/apps/buildiq/builder/${APP_SLUG}/${PAGE_ID}`, { waitUntil: 'domcontentloaded' })
+		expect(app, 'the fixture app was cloned').not.toBeNull()
+		await page.goto(`${BASE_URL}/index.php/apps/buildiq/builder/${app!.slug}/${pageRoute}`, { waitUntil: 'domcontentloaded' })
 
-		const navigation = page.locator('#app-navigation, nav').first()
+		// The app's own navigation (NcAppNavigation, the skip link's target):
+		// the first <nav> on the page is Nextcloud's header app menu.
+		const navigation = page.locator('#app-navigation-vue')
 		await expect(navigation.getByText(MENU_TRANSLATED_NL, { exact: true })).toBeVisible({ timeout: 30_000 })
 		await expect(navigation.getByText(MENU_UNTRANSLATED, { exact: true })).toBeVisible()
 		await expect(navigation.getByText(MENU_TRANSLATED, { exact: true })).toHaveCount(0)

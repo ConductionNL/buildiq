@@ -98,6 +98,10 @@ class BackgroundJobFailurePathsTest extends TestCase {
 		$this->time = $this->createMock(ITimeFactory::class);
 		$this->exportService = $this->createMock(ExportService::class);
 		$this->exportJobService = $this->createMock(ExportJobService::class);
+		// The pipeline runs inside the job owner's session; the mock runs it in place.
+		$this->exportJobService->method('runAsJobOwner')->willReturnCallback(
+			static fn (string $jobUuid, callable $work): mixed => $work()
+		);
 		$this->githubPushService = $this->createMock(GitHubPushService::class);
 	}//end setUp()
 

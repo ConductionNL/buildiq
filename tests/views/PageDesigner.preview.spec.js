@@ -202,6 +202,17 @@ describe('PageDesigner live-preview pane (REQ-OBPD-008)', () => {
 		expect(previewPropsMock).toHaveBeenCalledWith('hello-world', manifest)
 	})
 
+	it('hands the preview registry keys to the custom page editor (REQ-OBPD-007)', async () => {
+		previewAvailableRef.value = true
+		const wrapper = mountDesigner({ pages: [], menu: [] }, 'hello-world')
+		await wrapper.vm.$nextTick()
+		expect(wrapper.vm.stubEditorProps('custom')).toEqual({ componentKeys: ['SomePage'] })
+
+		previewAvailableRef.value = false
+		await wrapper.vm.$nextTick()
+		expect(wrapper.vm.stubEditorProps('custom')).toEqual({ componentKeys: [] })
+	})
+
 	it('keys the sandbox mount by the manifest content hash for clean re-mounts', async () => {
 		previewAvailableRef.value = true
 		previewPropsMock.mockImplementation((slug, manifest) => ({
