@@ -112,26 +112,51 @@ object cell SHALL link to the object.
 
 For an action that compiles to an artifact OpenRegister or integriq executes
 without buildiq (a notification, a typed lifecycle action, a schedule), the
-runs dialog SHALL list the action with the outcome "Runs in OpenRegister. No
-per-run record yet." and MUST NOT show a success or failure for it. When every
-action of an automation runs outside buildiq, the dialog SHALL say "This
-automation runs entirely in OpenRegister" and show no run rows. A schedule
-action SHALL link to the synchronization log in integriq.
+runs dialog MUST NOT show a success or failure that OpenRegister did not
+record. The compiler SHALL give each compiled notification the key
+`aut-<automation uuid>-<position>` and each typed lifecycle action the key
+`aut-<automation uuid>`, and the runs endpoint SHALL read OpenRegister's
+outcome records under that key (`GET /api/automation-outcomes`, under the
+caller's own access) and answer each as a run of its own with
+`source: openregister`, one step, the outcome (`sent` and `done` as succeeded,
+`partial` and `failed` as failed, `skipped` as skipped), the reason, and for a
+notification the number of people it reached. An outcome whose key belongs to
+another automation MUST NOT be shown. An action OpenRegister keeps no record of
+SHALL be listed with the outcome "Runs in OpenRegister. No per-run record
+yet." When every action of an automation runs outside buildiq and none leaves
+a record, the dialog SHALL say "This automation runs entirely in OpenRegister"
+and show no run rows. A schedule action SHALL link to the synchronization log
+in integriq.
 
 @e2e tests/e2e/automation-runs.spec.ts
 
-#### Scenario: A notification-only automation does not fake a log
+#### Scenario: A notification's runs come from OpenRegister's record
 
-- **GIVEN** an automation whose only action is "Send notification"
+- **GIVEN** an automation on object creation whose only action is "Send notification"
+- **AND** OpenRegister recorded that notification as sent to 2 people for object `T-7`
+- **WHEN** a maker opens its runs dialog
+- **THEN** a run row for `T-7` shows the outcome "succeeded" and no duration
+- **AND** its detail lists the step "send-notification" as "succeeded: Sent to 2 people"
+- **AND** the last-run line on the Automations page counts that run
+
+#### Scenario: An automation with no record anywhere does not fake a log
+
+- **GIVEN** an automation on object creation whose only action is a webhook
 - **WHEN** a maker opens its runs dialog
 - **THEN** the dialog says "This automation runs entirely in OpenRegister"
 - **AND** no run row is shown
 
+#### Scenario: Another automation's outcomes are not shown
+
+- **GIVEN** two automations whose uuids start with the same characters
+- **WHEN** a maker opens the runs of one of them
+- **THEN** no outcome recorded under the other automation's key is shown
+
 #### Scenario: A mixed automation labels the OpenRegister step
 
-- **GIVEN** an approval automation whose approve branch sends a notification
+- **GIVEN** an approval automation that also calls a webhook OpenRegister executes
 - **WHEN** a maker expands a run
-- **THEN** the notification step shows "Runs in OpenRegister. No per-run record yet."
+- **THEN** the webhook step shows "Runs in OpenRegister. No per-run record yet."
 
 ### Requirement: Old runs are pruned and the last run stays (REQ-BQRL-005)
 

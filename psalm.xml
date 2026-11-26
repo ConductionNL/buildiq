@@ -51,6 +51,11 @@
              lands on development the classes do not exist there; the stub is
              guarded, so the real ones win once they do. -->
         <file name="tests/stubs/openregister-form.stub.php" preloadClasses="true" />
+        <!-- OpenRegister's automation outcome records (AutomationRecordService,
+             AutomationRecordFilter, AutomationOutcome), read by
+             OpenRegisterAutomationOutcomeReader. Guarded, so the real classes
+             win once they are on the autoload path. -->
+        <file name="tests/stubs/openregister-automation-outcome.stub.php" preloadClasses="true" />
         <!--
             OpenRegister's data-access contract, which this app's lib/ typehints
             but does not own. OpenRegister supplies it at RUNTIME; these are
