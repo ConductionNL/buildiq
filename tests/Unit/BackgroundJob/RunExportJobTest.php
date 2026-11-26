@@ -84,6 +84,10 @@ final class RunExportJobTest extends TestCase {
 		$this->time = $this->createMock(ITimeFactory::class);
 		$this->exportService = $this->createMock(ExportService::class);
 		$this->exportJobService = $this->createMock(ExportJobService::class);
+		// The pipeline runs inside the job owner's session; the mock runs it in place.
+		$this->exportJobService->method('runAsJobOwner')->willReturnCallback(
+			static fn (string $jobUuid, callable $work): mixed => $work()
+		);
 		$this->githubPushService = $this->createMock(GitHubPushService::class);
 	}//end setUp()
 
@@ -182,6 +186,60 @@ final class RunExportJobTest extends TestCase {
 
 		$this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
 	}//end testRunTransitionsThroughRunningToSucceeded()
+
+	/**
+	 * The pipeline runs as the job's owner. A queued job has no session user,
+	 * and OpenRegister refuses an RBAC-checked read for Anonymous, so the
+	 * pipeline's own loadJob() failed and every export ended failed.
+	 *
+	 * @return void
+	 */
+	public function testThePipelineRunsAsTheJobOwner(): void {
+		$jobUuid = 'job-owner-uuid';
+		$inside  = false;
+		$seen    = [];
+
+		$service = $this->createMock(originalClassName: ExportJobService::class);
+		$service->method('transitionJob')->willReturn(true);
+		$service->method('loadJob')->willReturnCallback(
+			function () use (&$inside, &$seen): array {
+				$seen[] = $inside;
+				return $this->jobFixture();
+			}
+		);
+		$service->expects(self::once())
+			->method('runAsJobOwner')
+			->with(self::identicalTo(value: $jobUuid), self::isType(type: 'callable'))
+			->willReturnCallback(
+				static function (string $owned, callable $work) use (&$inside): mixed {
+					$inside = true;
+					try {
+						return $work();
+					} finally {
+						$inside = false;
+					}
+				}
+			);
+		$this->exportService->method('generateAppZip')->willReturnCallback(
+			static function () use (&$inside, &$seen, $jobUuid): string {
+				$seen[] = $inside;
+				return '/tmp/buildiq-exports/' . $jobUuid . '.zip';
+			}
+		);
+
+		$job = new RunExportJob(
+			time: $this->time,
+			exportService: $this->exportService,
+			exportJobService: $service,
+			githubPushService: $this->githubPushService,
+			logger: new NullLogger()
+		);
+		$this->invokeRun(job: $job, argument: ['jobUuid' => $jobUuid]);
+
+		// The still-queued check runs outside; the pipeline's own load and the
+		// archive run inside the owner's session.
+		self::assertSame(expected: [false, true, true], actual: $seen);
+	}//end testThePipelineRunsAsTheJobOwner()
 
 	/**
 	 * The job hands the application, its chosen version and the seed-data

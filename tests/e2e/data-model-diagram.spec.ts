@@ -185,10 +185,12 @@ test.describe('Data model diagram (REQ-BQMD-001, -003, -004)', () => {
 		const rows = page.getByTestId('data-model-relation-row')
 		const applicantRow = rows.filter({ hasText: 'applicant' }).filter({ hasText: 'Applicant' }).first()
 		await expect(applicantRow).toContainText('Permit')
-		await expect(applicantRow).toContainText(/\bone\b/)
+		// The cells' text runs together ("…Applicantone…"), so read the
+		// cardinality from its own cell (from, field, to, cardinality, open).
+		await expect(applicantRow.locator('td').nth(3)).toHaveText('one')
 		const documentsRow = rows.filter({ hasText: 'documents' }).first()
 		await expect(documentsRow).toContainText('Document')
-		await expect(documentsRow).toContainText(/\bmany\b/)
+		await expect(documentsRow.locator('td').nth(3)).toHaveText('many')
 
 		// Every row's "Open" button is reachable by keyboard.
 		const open = applicantRow.getByRole('button', { name: /open/i })
@@ -225,7 +227,11 @@ test.describe('Data model diagram (REQ-BQMD-001, -003, -004)', () => {
 	// @e2e data-model-diagram::a-maker-opens-the-document-schema-from-the-diagram
 	test('Enter on a focused box opens that schema in the designer', async ({ page }) => {
 		await openSchemaList(page, 'view=diagram')
-		const box = page.getByTestId('data-model-box').filter({ hasText: 'Document' }).first()
+		// By its title: the Permit box lists a `documents` field, so a text
+		// filter on 'Document' found Permit first.
+		const box = page.getByTestId('data-model-box').filter({
+			has: page.locator('.buildiq-data-model__box-title', { hasText: /^\s*Document\s*$/ }),
+		}).first()
 		await expect(box).toBeVisible({ timeout: 30_000 })
 
 		// The canvas makes each node focusable; focus the one holding the box.

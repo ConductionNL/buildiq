@@ -20,7 +20,9 @@ vi.mock('@nextcloud/router', async (importOriginal) => ({
 }))
 
 const {
+	embedShellProps,
 	embedSlots,
+	ensureEmbedSkipTarget,
 	embedSnippet,
 	embedUrl,
 	needsSignIn,
@@ -72,9 +74,28 @@ describe('embedded runtime', () => {
 
 		expect(embedSlots(false, slots)).toBe(slots)
 		const embedded = embedSlots(true, slots)
-		expect(embedded.menu()).toBeNull()
+		expect(embedded).not.toHaveProperty('menu')
 		expect(embedded.footer()).toBe('f')
-		expect(embedSlots(true, {}).menu()).toBeNull()
+		expect(embedSlots(true, {})).toEqual({})
+	})
+
+	it('gives an embedded page the skip-link target outside the mount, once', () => {
+		document.body.innerHTML = '<div id="content"><div id="content"></div></div>'
+		expect(ensureEmbedSkipTarget(false, document)).toBe(false)
+		expect(document.getElementById('skip-actions')).toBeNull()
+
+		expect(ensureEmbedSkipTarget(true, document)).toBe(true)
+		const target = document.getElementById('skip-actions')
+		expect(target.parentElement).toBe(document.body)
+		expect(target.closest('#content')).toBeNull()
+
+		expect(ensureEmbedSkipTarget(true, document)).toBe(false)
+		expect(document.querySelectorAll('#skip-actions')).toHaveLength(1)
+	})
+
+	it('hides the shell navigation in embed mode, since an empty menu slot falls back to it', () => {
+		expect(embedShellProps(true)).toEqual({ hideMenu: true })
+		expect(embedShellProps(false)).toEqual({})
 	})
 
 	it('asks to sign in only when an embedded app lost its session', () => {

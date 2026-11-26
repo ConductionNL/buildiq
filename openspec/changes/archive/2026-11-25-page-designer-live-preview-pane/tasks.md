@@ -45,16 +45,18 @@
 
 ## 4. Verify
 
-- [ ] 4.1 Manual: edit a page's `title` field in the Page Designer and
+- [x] 4.1 Manual: edit a page's `title` field in the Page Designer and
       confirm the right-hand preview re-renders the new title live, with
       no network PUT in the browser devtools Network tab. DEFERRED — needs a
       live instance with the arity-2 useAppManifest lib installed; the
       installed vitest stub ships arity-1. Covered structurally by the new
       Vitest preview spec (available branch + no-write invariant).
+      > Live 25 Nov 2026, Nextcloud 34.0.6 with @conduction/nextcloud-vue 2.212.0 (`useAppManifest` arity 3), in Chromium on `/apps/buildiq/builder/hello-world/pages`: the preview pane mounts (`.page-designer__preview`, no fallback). Typing `Live preview check` into the first page's Title made the preview show it at once, and no PUT, PATCH or POST went out during the edit.
 - [x] 4.2 `npm run lint`, `npm run build`, and `npm test` all pass.
-- [ ] 4.3 Confirm REQ-OBPD-007's registry-backed component picker in
+- [x] 4.3 Confirm REQ-OBPD-007's registry-backed component picker in
       `CustomPageEditor.vue` now lists real component keys when the
       preview pane is active. DEFERRED — same live-instance dependency; the
       registry is now wired into the sandbox (previewRegistry/previewFlatRegistry),
       so the live source exists, but confirming the picker's runtime read needs
       a running instance.
+      > Live 25 Nov 2026, same instance. The check found the picker empty: `CustomPageEditor` read `useLivePreview().componentRegistry`, which that composable never returns (the spec mocked it, so vitest stayed green). Fixed in this PR: PageDesigner passes the keys of the registry its preview sandbox resolves custom pages against (`previewComponentKeys`, sorted) as the `componentKeys` prop while the preview is live, and nothing without it. With the fix, a custom page opened in the designer offers 24 real registry keys (`AgentsPageView`, `AppDeleteDialogSlot`, `ApplicationApiTab`, …) and no free-form hint. Vitest: `PageDesigner.preview.spec.js` (keys while available, none while not), `CustomPageEditor.registry.spec.js` (the prop's keys become the datalist).

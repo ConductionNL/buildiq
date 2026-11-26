@@ -5117,7 +5117,7 @@
 					"openspec/specs/openconnector-api-sources :: REQ-OCAS-002 Builder step: bind an OpenConnector endpoint as a data source",
 					"openspec/changes/archive/2026-11-24-integrations-connector-bound-pages/specs/connector-bound-page-runtime :: A connector-bound index page renders its records (REQ-BQCB-001)"
 				],
-				"plan": "openspec/changes/openbuild-connector-widget-runtime"
+				"plan": "openspec/changes/archive/2026-11-25-openbuild-connector-widget-runtime"
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -8491,7 +8491,7 @@
 					"openspec/specs/first-time-setup :: Provisioning runs from the admin settings page",
 					"openspec/changes/capability-requirements-backfill/specs/settings-and-observability :: An administrator configures the builder on the admin settings page (REQ-BQCV-026)"
 				],
-				"plan": "openspec/changes/openbuild-admin-settings-abstraction"
+				"plan": "openspec/changes/archive/2026-11-25-openbuild-admin-settings-abstraction"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",

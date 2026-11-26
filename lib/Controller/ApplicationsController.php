@@ -72,6 +72,7 @@ use OCA\Buildiq\Service\SchemaExportFlag;
 use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCA\Buildiq\Service\TemplateInstall;
 use OCA\Buildiq\Support\ObjectRecord;
+use OCA\Buildiq\Support\PageRegisterBinding;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
@@ -253,7 +254,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-51
-	 * @spec openspec/changes/openbuild-admin-settings-abstraction/specs/admin-settings-owner-gating/spec.md#requirement-owner-signal-is-derived-from-existing-buildiq-primitives
+	 * @spec openspec/changes/archive/2026-11-25-openbuild-admin-settings-abstraction/tasks.md#task-4.1
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -1981,7 +1982,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 *
 	 * @return array<string, mixed> The manifest with `runtime.user.isOwner` set (boolean).
 	 *
-	 * @spec openspec/changes/openbuild-admin-settings-abstraction/specs/admin-settings-owner-gating/spec.md#requirement-owner-signal-is-derived-from-existing-buildiq-primitives
+	 * @spec openspec/changes/archive/2026-11-25-openbuild-admin-settings-abstraction/tasks.md#task-4.1
 	 */
 	private function injectOwnerSignal(array $manifest, ?array $applicationArray, ?IUser $caller): array {
 		$isOwner = false;
@@ -2501,6 +2502,10 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 * @param array{register:int,templateSchema:int,applicationSchema:int} $ctx Shared context.
 	 *
 	 * @return array{uuid:string|null,registerSlug:string,schemaIds:array<int,int>}|array{error:array<string,mixed>,status:int}
+	 *
+	 * @spec openspec/specs/openbuild-template-catalogue/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) PageRegisterBinding is a pure rule with no collaborators.
 	 */
 	private function materialiseApplication(TemplateInstall $install, string $ownerUid, array $ctx): array {
 		$template = $install->template;
@@ -2546,11 +2551,14 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		// before this fix.
 		$newAppUuid = (string)($persistResult['uuid'] ?? '');
 		if ($newAppUuid !== '') {
+			$registerSlug = $cloneResult['register']->getSlug();
 			$this->linkProductionVersion(
 				application: ($persistResult['application'] ?? []),
 				appUuid: $newAppUuid,
-				manifest: $manifest,
-				registerSlug: $cloneResult['register']->getSlug()
+				// The template's pages name `{{register}}` or no register at
+				// all; both mean this app's own register.
+				manifest: PageRegisterBinding::forManifest(manifest: $manifest, registerSlug: $registerSlug),
+				registerSlug: $registerSlug
 			);
 		}
 

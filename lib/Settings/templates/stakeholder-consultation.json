@@ -6,7 +6,7 @@
   "category": "citizen-engagement",
   "screenshotUrl": "img/templates/stakeholder-consultation.svg",
   "isSeeded": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "manifest": {
     "version": "1.0.0",
     "dependencies": ["openregister"],
@@ -96,14 +96,29 @@
         "route": "/submit",
         "type": "form",
         "title": "Start a new consultation",
-        "config": { "schema": "consultation" }
+        "config": {
+          "schema": "consultation",
+          "fields": [
+            { "key": "title", "label": "Title", "type": "string" },
+            { "key": "description", "label": "Description", "type": "string" },
+            { "key": "openFrom", "label": "Open from", "type": "string", "format": "date" },
+            { "key": "closeAt", "label": "Closes on", "type": "string", "format": "date" }
+          ]
+        }
       },
       {
         "id": "CommentForm",
         "route": "/comment",
         "type": "form",
         "title": "Add your comment",
-        "config": { "schema": "consultation-comment" }
+        "config": {
+          "schema": "consultation-comment",
+          "fields": [
+            { "key": "consultationUuid", "label": "Consultation", "type": "string", "format": "uuid" },
+            { "key": "authorName", "label": "Your name", "type": "string" },
+            { "key": "body", "label": "Comment", "type": "string" }
+          ]
+        }
       }
     ]
   },

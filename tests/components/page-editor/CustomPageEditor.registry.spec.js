@@ -63,6 +63,18 @@ describe('CustomPageEditor registry suggestions', () => {
 		expect(wrapper.text()).toContain('customComponents map')
 	})
 
+	it('offers the keys PageDesigner passes from its live preview', () => {
+		registry = null
+		const wrapper = mount(CustomPageEditor, {
+			propsData: { config: {}, pageType: 'custom', componentKeys: ['CaseBoard', 'TicketWall'] },
+			stubs: { InlineFieldMark: { template: '<span class="inline-field-stub" />' } },
+		})
+
+		const values = wrapper.findAll('datalist option').map((option) => option.attributes('value'))
+		expect(values).toEqual(['CaseBoard', 'TicketWall'])
+		expect(wrapper.text()).not.toContain('customComponents map')
+	})
+
 	it('offers an array registry as the suggestion list', () => {
 		registry = ['LaunchPadboard', 'TicketWall']
 		const wrapper = mountEditor({})

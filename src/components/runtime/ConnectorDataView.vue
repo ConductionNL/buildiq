@@ -158,7 +158,7 @@ export default {
 		 *
 		 * @return {void}
 		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006
-		 * @spec openspec/changes/openbuild-connector-widget-runtime/specs/openconnector-api-sources/spec.md#requirement-req-ocas-006-runtime-fetch-path-with-caching
+		 * @spec openspec/changes/archive/2026-11-25-openbuild-connector-widget-runtime/specs/openconnector-api-sources/spec.md#requirement-req-ocas-006-runtime-fetch-path-with-caching
 		 */
 		retry() {
 			this.resolver.retry()

@@ -240,7 +240,7 @@ final class AiStepNodes {
 					'register' => $this->register,
 					'schema' => $this->schema,
 					'operation' => 'update',
-					'match' => ['uuid' => '{{json.uuid}}'],
+					'match' => ['uuid' => AutomationFlowBuilder::RECORD_ID],
 					'fields' => $fields,
 				],
 			],
@@ -301,7 +301,7 @@ final class AiStepNodes {
 			$fields = [];
 			foreach ($this->prompts->names(values: (array)($action['fields'] ?? [])) as $field) {
 				self::assertNotSource(field: $field, sources: $sources);
-				$fields[$field] = '{{json.' . self::ANSWER_KEY . '.' . $field . '}}';
+				$fields[$field] = '{{' . self::ANSWER_KEY . '.' . $field . '}}';
 			}
 
 			if ($fields === []) {
@@ -320,10 +320,10 @@ final class AiStepNodes {
 		self::assertNotSource(field: $target, sources: $sources);
 		if ($preset === 'classify') {
 			$this->assertLabelsTarget(target: $target, labels: $this->prompts->names(values: (array)($action['labels'] ?? [])));
-			return [$target => '{{json.' . self::ANSWER_KEY . '.label}}'];
+			return [$target => '{{' . self::ANSWER_KEY . '.label}}'];
 		}
 
-		return [$target => '{{json.' . self::ANSWER_KEY . '}}'];
+		return [$target => '{{' . self::ANSWER_KEY . '}}'];
 	}//end writtenFields()
 
 	/**
