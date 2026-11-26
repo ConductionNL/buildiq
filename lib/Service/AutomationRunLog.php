@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+ * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use Throwable;
 /**
  * Records the runs buildiq dispatches.
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+ * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
  */
 final class AutomationRunLog {
 
@@ -64,7 +64,7 @@ final class AutomationRunLog {
 	 * @param LoggerInterface                $logger        Logs a run that could not be recorded.
 	 * @param RuleSetRunSteps                $steps         Reads the steps and reasons of a rule set run.
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	public function __construct(
 		private readonly AutomationRunRecorderInterface $recorder,
@@ -91,8 +91,8 @@ final class AutomationRunLog {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-manual-run-with-a-failing-action-is-recorded-with-the-failure
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-false-condition-is-a-skipped-run-with-its-reason
+	 * @spec openspec/specs/automation-designer/spec.md#scenario-a-manual-run-with-a-failing-action-is-recorded-with-the-failure
+	 * @spec openspec/specs/automation-designer/spec.md#scenario-a-false-condition-is-a-skipped-run-with-its-reason
 	 */
 	public function ruleSetRan(string $ruleSetSlug, array $payload, array $outcome, array $rules, string $actor): void {
 		if (str_starts_with($ruleSetSlug, self::RULE_SET_PREFIX) === false) {
@@ -145,7 +145,7 @@ final class AutomationRunLog {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-an-approval-run-waits-and-is-completed-by-the-decision
+	 * @spec openspec/specs/automation-designer/spec.md#scenario-an-approval-run-waits-and-is-completed-by-the-decision
 	 */
 	public function approvalRequested(array $automation, string $trigger, string $schemaSlug, string $objectUuid, string $actor): void {
 		try {
@@ -175,7 +175,7 @@ final class AutomationRunLog {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-an-approval-run-waits-and-is-completed-by-the-decision
+	 * @spec openspec/specs/automation-designer/spec.md#scenario-an-approval-run-waits-and-is-completed-by-the-decision
 	 */
 	public function approvalDecided(array $automation, string $objectUuid, bool $approved, array $followUps): void {
 		$decision = 'Rejected';
@@ -225,7 +225,7 @@ final class AutomationRunLog {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	public function documentGenerated(array $automation, string $trigger, string $schemaSlug, string $objectUuid, ?string $error): void {
 		try {
@@ -255,7 +255,7 @@ final class AutomationRunLog {
 	 *
 	 * @return array<string, mixed>|null
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */

@@ -5,7 +5,7 @@
  *
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
+ * @spec openspec/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 

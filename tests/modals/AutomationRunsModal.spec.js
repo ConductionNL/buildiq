@@ -1,12 +1,13 @@
 /**
  * The runs dialog reads the run log through buildiq, filters on outcome,
  * expands a run to its "Action | Outcome" table with the duration, says when
- * there is no run, and labels the steps OpenRegister runs instead of
- * inventing an outcome (logic-automation-run-log REQ-BQRL-003, REQ-BQRL-004).
+ * there is no run, shows a notification's runs from OpenRegister's record, and
+ * labels the steps OpenRegister runs without a record instead of inventing an
+ * outcome (logic-automation-run-log REQ-BQRL-003, REQ-BQRL-004).
  *
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md
+ * @spec openspec/specs/automation-designer/spec.md
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -45,7 +46,7 @@ const approvalAutomation = {
 	id: 'a1',
 	name: 'Klacht ter goedkeuring',
 	trigger: { type: 'lifecycle-transition', schema: 'klacht' },
-	actions: [{ type: 'approval', onApprove: [{ type: 'generateDocument' }] }, { type: 'send-notification' }],
+	actions: [{ type: 'approval', onApprove: [{ type: 'generateDocument' }] }, { type: 'webhook' }],
 }
 
 /**
@@ -81,7 +82,7 @@ describe('AutomationRunsModal', () => {
 		expect(steps).toEqual([
 			['approval', 'succeeded: Approved'],
 			['generateDocument', 'failed: Webhook answered 500'],
-			['send-notification', 'Runs in OpenRegister. No per-run record yet.'],
+			['webhook', 'Runs in OpenRegister. No per-run record yet.'],
 		])
 		expect(wrapper.get('[data-testid="run-detail"]').text()).toContain('Duration 184 ms')
 
@@ -108,12 +109,43 @@ describe('AutomationRunsModal', () => {
 		expect(wrapper.find('[data-testid="runs-table"]').exists()).toBe(false)
 	})
 
-	it('says a notification-only automation runs entirely in OpenRegister and reads nothing', async () => {
-		const wrapper = await open({ id: 'a2', trigger: { type: 'object-created', schema: 'ticket' }, actions: [{ type: 'send-notification' }] })
+	it('says an automation with no record anywhere runs entirely in OpenRegister and reads nothing', async () => {
+		const wrapper = await open({ id: 'a2', trigger: { type: 'object-created', schema: 'ticket' }, actions: [{ type: 'webhook' }] })
 
 		expect(wrapper.get('[data-testid="runs-entirely-in-openregister"]').text()).toBe('This automation runs entirely in OpenRegister')
 		expect(wrapper.find('[data-testid="run-row"]').exists()).toBe(false)
 		expect(axios.get).not.toHaveBeenCalled()
+	})
+
+	it('shows what OpenRegister sent for a notification-only automation, with no invented duration or label', async () => {
+		axios.get.mockResolvedValue({
+			data: {
+				results: [{
+					id: 'openregister:abc',
+					source: 'openregister',
+					startedAt: '2026-11-24T09:30:00Z',
+					trigger: 'object-created',
+					subject: { schema: 'ticket', uuid: 'T-7' },
+					outcome: 'succeeded',
+					durationMs: null,
+					steps: [{ action: 'send-notification', outcome: 'succeeded', message: '', recipients: 2 }],
+				}],
+				total: 1,
+			},
+		})
+
+		const wrapper = await open({ id: 'a3', trigger: { type: 'object-created', schema: 'ticket' }, actions: [{ type: 'send-notification' }, { type: 'webhook' }] })
+
+		expect(axios.get).toHaveBeenCalledWith('/apps/buildiq/api/automations/a3/runs', { params: {} })
+		expect(wrapper.find('[data-testid="runs-entirely-in-openregister"]').exists()).toBe(false)
+		const row = wrapper.get('[data-testid="run-row"]')
+		expect(row.text()).toContain('succeeded')
+		expect(row.text()).not.toContain('ms')
+
+		await row.trigger('click')
+		const steps = wrapper.findAll('[data-testid="run-step"]').map((step) => step.findAll('td').map((cell) => cell.text().replace(/\s+/g, ' ')))
+		expect(steps).toEqual([['send-notification', 'succeeded: Sent to 2 people']])
+		expect(wrapper.get('[data-testid="run-detail"]').text()).not.toContain('Duration')
 	})
 
 	it('says the runs could not be loaded when the read is refused', async () => {
