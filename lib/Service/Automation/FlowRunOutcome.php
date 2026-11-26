@@ -23,7 +23,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+ * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ namespace OCA\Buildiq\Service\Automation;
 /**
  * Maps a finished flow run onto an automation run's outcome and steps.
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+ * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
  */
 final class FlowRunOutcome {
 
@@ -69,7 +69,7 @@ final class FlowRunOutcome {
 	 *
 	 * @return array{outcome: string, reason: string|null, durationMs: int, steps: list<array{action: string, outcome: string, message: string}>}
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	public static function fromFlowRun(string $status, ?string $error, array $log, array $actions): array {
 		$succeeded = in_array($status, self::SUCCEEDED, true);

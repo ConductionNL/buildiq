@@ -385,7 +385,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	 *
 	 * @return AutomationRunLog|null
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	private function runLog(): ?AutomationRunLog {
 		if ($this->runLog !== null) {

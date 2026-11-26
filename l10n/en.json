@@ -1783,6 +1783,12 @@
         ],
         "asks for {count} field: {fields}": "asks for {count} field: {fields}",
         "asks for {count} fields: {fields}": "asks for {count} fields: {fields}",
+        "_Sent to {count} person_::_Sent to {count} people_": [
+            "Sent to {count} person",
+            "Sent to {count} people"
+        ],
+        "Sent to {count} person": "Sent to {count} person",
+        "Sent to {count} people": "Sent to {count} people",
         "_{count} field to fill in_::_{count} fields to fill in_": [
             "{count} field to fill in",
             "{count} fields to fill in"
