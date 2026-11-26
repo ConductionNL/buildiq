@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service\Automation;
 
 use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
+use OCA\Buildiq\Kernel\Contracts\ObjectSchemaSlugResolverInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Service\Flow\FlowRunOptions;
@@ -150,8 +151,12 @@ class ManualAutomationRun {
 	 *
 	 * @return array{uuid:string,register:string,schema:string}|null
 	 *
+	 * The record carries its schema as OpenRegister's numeric id, never the
+	 * slug a trigger names, so the slug is resolved before it is compared;
+	 * comparing the id refused every record of a manual automation that names
+	 * its schema.
+	 *
 	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
-	 * @SuppressWarnings(PHPMD.StaticAccess) AutomationRecords is a pure coercion with no collaborators.
 	 */
 	public function readableSubject(string $objectUuid, string $schemaSlug): ?array {
 		if ($objectUuid === '') {
@@ -168,9 +173,8 @@ class ManualAutomationRun {
 			return null;
 		}
 
-		$data   = AutomationRecords::toArray(object: $record);
 		$schema = (string)($record->getSchema() ?? '');
-		if ($schemaSlug !== '' && $schema !== $schemaSlug && (string)($data['@self']['schema'] ?? '') !== $schemaSlug) {
+		if ($schemaSlug !== '' && $this->schemaSlugOf(record: $record) !== $schemaSlug) {
 			return null;
 		}
 
@@ -180,6 +184,31 @@ class ManualAutomationRun {
 			'schema' => $schema,
 		];
 	}//end readableSubject()
+
+	/**
+	 * The schema slug of a record: its schema as OpenRegister stores it (an id)
+	 * resolved through the object schema slug resolver, or the stored value
+	 * when it is a slug already or the resolver is not there.
+	 *
+	 * @param object $record The record as the caller reads it.
+	 *
+	 * @return string The slug.
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
+	 */
+	private function schemaSlugOf(object $record): string {
+		try {
+			$slug = $this->container->get(ObjectSchemaSlugResolverInterface::class)->schemaSlug($record);
+		} catch (Throwable) {
+			$slug = '';
+		}
+
+		if (is_string($slug) === true && $slug !== '') {
+			return $slug;
+		}
+
+		return (string)($record->getSchema() ?? '');
+	}//end schemaSlugOf()
 
 	/**
 	 * Start the automation's flow on the record; the run is queued, not awaited.

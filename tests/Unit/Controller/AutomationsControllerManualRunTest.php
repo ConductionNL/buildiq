@@ -29,6 +29,7 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\AutomationsController;
 use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
+use OCA\Buildiq\Kernel\Contracts\ObjectSchemaSlugResolverInterface;
 use OCA\Buildiq\Service\Automation\ManualAutomationRun;
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\Buildiq\Service\AutomationWriteService;
@@ -128,7 +129,21 @@ final class AutomationsControllerManualRunTest extends TestCase {
 		$permissionResolver = new PermissionResolver($groupManager, $this->createMock(LoggerInterface::class));
 		$compiler           = $this->createMock(AutomationCompilerService::class);
 		$container          = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(FlowService::class)->willReturn($this->flows);
+		// OpenRegister stores a record's schema as its id: schema 43 is `vergunning`.
+		$slugs = $this->createMock(originalClassName: ObjectSchemaSlugResolverInterface::class);
+		$slugs->method('schemaSlug')->willReturnCallback(
+			static fn (object $entity): string => match ((string)$entity->getSchema()) {
+				'43' => 'vergunning',
+				'44' => 'melding',
+				default => '',
+			}
+		);
+		$container->method('get')->willReturnCallback(
+			fn (string $id): object => match ($id) {
+				FlowService::class => $this->flows,
+				ObjectSchemaSlugResolverInterface::class => $slugs,
+			}
+		);
 
 		$this->controller = new AutomationsController(
 			request: $this->request,
@@ -242,6 +257,36 @@ final class AutomationsControllerManualRunTest extends TestCase {
 		$this->assertSame(Http::STATUS_ACCEPTED, $response->getStatus());
 		$this->assertSame(['started' => true, 'flowUuid' => 'flow-9', 'run' => 'run-5'], $response->getData());
 	}//end testAUserOfTheAppStartsTheFlowOnTheRecord()
+
+	/**
+	 * A record whose schema OpenRegister stores as its id is matched on the
+	 * slug that id resolves to: schema 43 (`vergunning`) runs, 44 (`melding`)
+	 * is refused.
+	 *
+	 * @return void
+	 */
+	public function testTheRecordSchemaIdIsMatchedOnItsSlug(): void {
+		$this->signIn(uid: 'clerk');
+		$run = $this->createMock(originalClassName: FlowRun::class);
+		$run->method('jsonSerialize')->willReturn(['uuid' => 'run-6']);
+		$this->flows->expects($this->once())->method('runForAction')->willReturn($run);
+
+		$this->wireObjects(automation: self::AUTOMATION, record: $this->record(schema: '43'));
+		$this->assertSame(expected: Http::STATUS_ACCEPTED, actual: $this->controller->run(uuid: 'aut-1')->getStatus());
+	}//end testTheRecordSchemaIdIsMatchedOnItsSlug()
+
+	/**
+	 * A record of another schema, stored as its id, is refused.
+	 *
+	 * @return void
+	 */
+	public function testARecordOfAnotherSchemaIdIsRefused(): void {
+		$this->signIn(uid: 'clerk');
+		$this->flows->expects($this->never())->method('runForAction');
+
+		$this->wireObjects(automation: self::AUTOMATION, record: $this->record(schema: '44'));
+		$this->assertSame(expected: Http::STATUS_FORBIDDEN, actual: $this->controller->run(uuid: 'aut-1')->getStatus());
+	}//end testARecordOfAnotherSchemaIdIsRefused()
 
 	/**
 	 * The started run is recorded waiting, as the caller, naming its flow run;
