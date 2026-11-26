@@ -24,6 +24,7 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 use OCA\Buildiq\Controller\AutomationsController;
 use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
 use OCA\Buildiq\Service\AutomationCompilerService;
+use OCA\Buildiq\Service\AutomationRunHistory;
 use OCA\Buildiq\Service\AutomationWriteService;
 use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\ConditionActionExecutor;
@@ -117,7 +118,7 @@ final class AutomationsControllerRunsTest extends TestCase {
 			conditionExecutor: $this->createMock(ConditionActionExecutor::class),
 			caller: new CallerContext(userSession: $this->userSession, groupManager: $groupManager, permissionResolver: $permissionResolver),
 			writeService: $writeService,
-			runs: $this->runs
+			runs: new AutomationRunHistory(recorder: $this->runs)
 		);
 	}//end setUp()
 

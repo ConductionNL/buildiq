@@ -79,12 +79,11 @@ namespace OCA\Buildiq\Controller;
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
-use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
 use OCA\Buildiq\Kernel\Contracts\AutomationWriteServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ConditionActionExecutorInterface;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Service\Automation\ManualAutomationRun;
-use OCA\Buildiq\Service\AutomationOutcomeRuns;
+use OCA\Buildiq\Service\AutomationRunHistory;
 use OCA\Buildiq\Service\Automation\ScriptSteps;
 use OCA\Buildiq\Service\CallerContext;
 use OCP\AppFramework\Controller;
@@ -160,9 +159,8 @@ class AutomationsController extends Controller {
 	 * @param ConditionActionExecutorInterface $conditionExecutor Rules engine executor (dry-run panel).
 	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
 	 * @param AutomationWriteServiceInterface $writeService Create/update/delete write path.
-	 * @param AutomationRunRecorderInterface|null $runs The run log (logic-automation-run-log).
+	 * @param AutomationRunHistory|null $runs The run log, with what OpenRegister recorded (logic-automation-run-log).
 	 * @param ManualAutomationRun|null $manualRuns Lists and starts manual automations on a record (logic-automation-actions-that-run D8).
-	 * @param AutomationOutcomeRuns $outcomeRuns The run log's pages with the runs OpenRegister recorded for an automation's notifications and lifecycle actions.
 	 *
 	 * @return void
 	 *
@@ -175,9 +173,8 @@ class AutomationsController extends Controller {
 		private readonly ConditionActionExecutorInterface $conditionExecutor,
 		CallerContext $caller,
 		private readonly AutomationWriteServiceInterface $writeService,
-		private readonly ?AutomationRunRecorderInterface $runs = null,
+		private readonly ?AutomationRunHistory $runs = null,
 		private readonly ?ManualAutomationRun $manualRuns = null,
-		private readonly AutomationOutcomeRuns $outcomeRuns = new AutomationOutcomeRuns(),
 	) {
 		$this->userSession = $caller->userSession;
 		$this->permissionResolver = $caller->permissionResolver;
@@ -477,8 +474,7 @@ class AutomationsController extends Controller {
 				$offset = max(0, (int)($this->request->getParam('offset') ?? 0));
 
 				return new JSONResponse(
-					data: $this->outcomeRuns->pageFor(
-						recorder: $this->runs,
+					data: $this->runs->pageFor(
 						automation: $automation,
 						query: ['uuid' => $uuid, 'filters' => $filters, 'limit' => $limit, 'offset' => $offset]
 					),
@@ -522,7 +518,7 @@ class AutomationsController extends Controller {
 				roles: self::WRITE_ROLES,
 				productionRoles: null,
 				action: fn (array $automation): JSONResponse => new JSONResponse(
-					data: $this->outcomeRuns->summaryFor(recorder: $runs, automation: $automation, uuid: $uuid),
+					data: $runs->summaryFor(automation: $automation, uuid: $uuid),
 					statusCode: Http::STATUS_OK
 				)
 			);

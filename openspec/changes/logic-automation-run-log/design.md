@@ -104,7 +104,7 @@ on OpenRegister main), under the rule's or action's own `key`. The compiler
 writes `key: aut-<automation uuid>-<n>` on each notification and
 `key: aut-<automation uuid>` on each typed lifecycle action: the uuid, not the
 slug, so two apps with the same automation slug never read each other's
-outcomes. `AutomationOutcomeRuns` reads them through
+outcomes. `AutomationRunHistory` reads them through
 `OpenRegisterAutomationOutcomeReader` (OpenRegister's `AutomationRecordService`
 in-process, under the caller) and the runs endpoint pages them with the
 recorded runs, each as a run with `source: openregister` and one step. A

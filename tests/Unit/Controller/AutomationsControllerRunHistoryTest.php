@@ -23,7 +23,7 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\AutomationsController;
 use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
-use OCA\Buildiq\Service\AutomationOutcomeRuns;
+use OCA\Buildiq\Service\AutomationRunHistory;
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\Buildiq\Service\AutomationWriteService;
 use OCA\Buildiq\Service\CallerContext;
@@ -44,7 +44,7 @@ use Psr\Log\LoggerInterface;
 /**
  * The runs and the last run include what OpenRegister recorded for the automation's notifications; without a record the run log answers as before.
  */
-final class AutomationsControllerOutcomeRunsTest extends TestCase {
+final class AutomationsControllerRunHistoryTest extends TestCase {
 
 	/**
 	 * The automations and applications OpenRegister holds, by id.
@@ -149,8 +149,7 @@ final class AutomationsControllerOutcomeRunsTest extends TestCase {
 			conditionExecutor: $this->createMock(originalClassName: ConditionActionExecutor::class),
 			caller: new CallerContext(userSession: $this->userSession, groupManager: $groupManager, permissionResolver: $permissionResolver),
 			writeService: $writeService,
-			runs: $this->runs,
-			outcomeRuns: new AutomationOutcomeRuns(reader: $reader)
+			runs: new AutomationRunHistory(recorder: $this->runs, reader: $reader)
 		);
 	}//end setUp()
 
@@ -223,7 +222,7 @@ final class AutomationsControllerOutcomeRunsTest extends TestCase {
 			],
 		];
 		$this->runs->expects($this->once())->method('runsOf')
-			->with('aut-1', [], AutomationOutcomeRuns::RECORDED_LIMIT, 0)
+			->with('aut-1', [], AutomationRunHistory::RECORDED_LIMIT, 0)
 			->willReturn(['results' => [['id' => 'r1', 'startedAt' => '2026-11-20T10:00:00+00:00', 'outcome' => 'succeeded']], 'total' => 1, 'summary' => []]);
 
 		$response = $this->controller->runs(uuid: 'aut-1');

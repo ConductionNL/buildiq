@@ -1,11 +1,11 @@
 <?php
 
 /**
- * Buildiq AutomationOutcomeRuns
+ * Buildiq AutomationRunHistory
  *
- * Turns what OpenRegister recorded for an automation's notifications and
- * lifecycle actions into runs of the run log, and pages them together with
- * the runs buildiq recorded itself.
+ * The runs of one automation as the runs endpoint answers them: those the run
+ * log recorded, and what OpenRegister recorded for the automation's
+ * notifications and lifecycle actions, turned into runs.
  *
  * SPDX-License-Identifier: EUPL-1.2
  *
@@ -28,7 +28,7 @@ namespace OCA\Buildiq\Service;
 use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
 
 /**
- * The runs OpenRegister executed for an automation (logic-automation-run-log, design D4).
+ * The run log and the runs OpenRegister executed for an automation (logic-automation-run-log, design D4).
  *
  * Each outcome record is one run with one step. Nothing is invented: an
  * automation OpenRegister recorded nothing for answers the run log's own page,
@@ -37,7 +37,7 @@ use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
  *
  * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
  */
-final class AutomationOutcomeRuns {
+final class AutomationRunHistory {
 
 	/**
 	 * Where a run read from OpenRegister comes from.
@@ -78,13 +78,15 @@ final class AutomationOutcomeRuns {
 	/**
 	 * Constructor.
 	 *
-	 * @param OpenRegisterAutomationOutcomeReader|null $reader Reads OpenRegister's outcome records; null reads none.
-	 * @param AutomationOutcomeKeys                    $keys   Builds and matches the outcome keys.
-	 * @param AutomationRunPage                        $page   Orders, filters and summarises runs.
+	 * @param AutomationRunRecorderInterface           $recorder The run log.
+	 * @param OpenRegisterAutomationOutcomeReader|null $reader   Reads OpenRegister's outcome records; null reads none.
+	 * @param AutomationOutcomeKeys                    $keys     Builds and matches the outcome keys.
+	 * @param AutomationRunPage                        $page     Orders, filters and summarises runs.
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
 	 */
 	public function __construct(
+		private readonly AutomationRunRecorderInterface $recorder,
 		private readonly ?OpenRegisterAutomationOutcomeReader $reader = null,
 		private readonly AutomationOutcomeKeys $keys = new AutomationOutcomeKeys(),
 		private readonly AutomationRunPage $page = new AutomationRunPage(),
@@ -126,8 +128,7 @@ final class AutomationOutcomeRuns {
 	/**
 	 * One page of an automation's runs: those the run log recorded and those OpenRegister recorded.
 	 *
-	 * @param AutomationRunRecorderInterface $recorder   The run log.
-	 * @param array<string, mixed>           $automation The automation.
+	 * @param array<string, mixed> $automation The automation.
 	 * @param array{uuid: string, filters: array<string, string>, limit: int, offset: int} $query The page asked for.
 	 *
 	 * @return array{
@@ -138,14 +139,14 @@ final class AutomationOutcomeRuns {
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
 	 */
-	public function pageFor(AutomationRunRecorderInterface $recorder, array $automation, array $query): array {
+	public function pageFor(array $automation, array $query): array {
 		$outcomeRuns = $this->runsFor(automation: $automation);
 		if ($outcomeRuns === []) {
-			return $recorder->runsOf(automationUuid: $query['uuid'], filters: $query['filters'], limit: $query['limit'], offset: $query['offset']);
+			return $this->recorder->runsOf(automationUuid: $query['uuid'], filters: $query['filters'], limit: $query['limit'], offset: $query['offset']);
 		}
 
 		return $this->pageOf(
-			runs: array_merge($recorder->runsOf(automationUuid: $query['uuid'], limit: self::RECORDED_LIMIT)['results'], $outcomeRuns),
+			runs: array_merge($this->recorder->runsOf(automationUuid: $query['uuid'], limit: self::RECORDED_LIMIT)['results'], $outcomeRuns),
 			query: $query
 		);
 	}//end pageFor()
@@ -153,21 +154,20 @@ final class AutomationOutcomeRuns {
 	/**
 	 * The last run of an automation, over the run log's runs and OpenRegister's.
 	 *
-	 * @param AutomationRunRecorderInterface $recorder   The run log.
-	 * @param array<string, mixed>           $automation The automation.
-	 * @param string                         $uuid       The automation uuid.
+	 * @param array<string, mixed> $automation The automation.
+	 * @param string               $uuid       The automation uuid.
 	 *
 	 * @return array{lastRunAt: string|null, lastOutcome: string|null, lastError: string|null}
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
 	 */
-	public function summaryFor(AutomationRunRecorderInterface $recorder, array $automation, string $uuid): array {
+	public function summaryFor(array $automation, string $uuid): array {
 		$outcomeRuns = $this->runsFor(automation: $automation);
 		if ($outcomeRuns === []) {
-			return $recorder->summaryOf(automationUuid: $uuid);
+			return $this->recorder->summaryOf(automationUuid: $uuid);
 		}
 
-		$runs = array_merge($recorder->runsOf(automationUuid: $uuid, limit: self::RECORDED_LIMIT)['results'], $outcomeRuns);
+		$runs = array_merge($this->recorder->runsOf(automationUuid: $uuid, limit: self::RECORDED_LIMIT)['results'], $outcomeRuns);
 
 		return $this->page->summary(runs: $this->page->newestFirst(runs: $runs));
 	}//end summaryFor()
