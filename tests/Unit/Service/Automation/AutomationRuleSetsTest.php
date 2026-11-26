@@ -89,7 +89,7 @@ final class AutomationRuleSetsTest extends TestCase {
 			}
 		);
 		$this->tables->method('forRuleSet')->with($leges)->willReturn([['outputColumns' => [['name' => 'categorie'], ['name' => '']]]]);
-		$this->tables->method('keyOfRuleSet')->with($leges)->willReturn('buildiq.org-1.leges');
+		$this->tables->method('runnableKeyOf')->with($leges)->willReturn('buildiq.org-1.leges');
 
 		$this->assertSame(
 			[
@@ -108,7 +108,7 @@ final class AutomationRuleSetsTest extends TestCase {
 	public function testARuleSetWithoutAStoredTableHasNoTableRef(): void {
 		$this->objects->method('findAll')->willReturn([['slug' => 'leges', 'ruleType' => 'decision-table', 'version' => '1.0.0']]);
 		$this->tables->method('forRuleSet')->willReturn([]);
-		$this->tables->expects($this->never())->method('keyOfRuleSet');
+		$this->tables->expects($this->never())->method('runnableKeyOf');
 
 		$this->assertSame('', $this->lookup()->ruleSets(slugs: ['leges'])['leges']['tableRef']);
 	}//end testARuleSetWithoutAStoredTableHasNoTableRef()

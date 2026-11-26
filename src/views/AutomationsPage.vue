@@ -445,7 +445,7 @@ export default {
 		 * reads as having no run.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
+		 * @spec openspec/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
 		 */
 		async refreshRunSummaries() {
 			const uuids = this.automations.map((automation) => automation.id).filter(Boolean)
@@ -467,7 +467,7 @@ export default {
 		 *
 		 * @param {string} uuid - the automation's uuid.
 		 * @return {string}
-		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-failed-last-run-is-visible-on-the-list
+		 * @spec openspec/specs/automation-designer/spec.md#scenario-a-failed-last-run-is-visible-on-the-list
 		 */
 		lastRunLine(uuid) {
 			return lastRunText(this.runSummaries[uuid] || null)
@@ -478,7 +478,7 @@ export default {
 		 *
 		 * @param {string} uuid - the automation's uuid.
 		 * @return {boolean}
-		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-failed-last-run-is-visible-on-the-list
+		 * @spec openspec/specs/automation-designer/spec.md#scenario-a-failed-last-run-is-visible-on-the-list
 		 */
 		lastRunFailed(uuid) {
 			return this.runSummaries[uuid]?.lastOutcome === 'failed'
@@ -489,7 +489,7 @@ export default {
 		 *
 		 * @param {object} automation - the automation.
 		 * @return {void}
-		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
+		 * @spec openspec/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
 		 */
 		openRuns(automation) {
 			this.runsAutomation = automation
