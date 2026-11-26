@@ -497,10 +497,18 @@ test.describe('Exporting the flows an app is made of', () => {
 			'the App settings modal must be closed before Export is clickable — an open one silently intercepts every click',
 		).toHaveCount(0, { timeout: 20_000 })
 
-		await page
-			.getByRole('button', { name: /^export$/i })
-			.first()
-			.click()
+		// Export sits in the actions bar's overflow: only Open app and two
+		// inline actions (Settings, Edit) stay buttons, the rest collapse into
+		// "Actions". Open the overflow of the bar that holds Settings, then
+		// pick Export by its test id (cn-action-<entry id>).
+		const exportItem = page.locator('[data-testid="cn-action-app-export"]').first()
+		if (await exportItem.isVisible() === false) {
+			const bar = page.locator('.cn-action-buttons')
+				.filter({ has: page.locator('[data-testid="cn-action-app-settings-action"]') })
+				.first()
+			await bar.getByRole('button', { name: /^actions$/i }).last().click()
+		}
+		await exportItem.click()
 
 		const dialog = page.locator('.export-dialog')
 		await expect(dialog).toBeVisible({ timeout: 20_000 })

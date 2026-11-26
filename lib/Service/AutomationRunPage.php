@@ -16,7 +16,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
+ * @spec openspec/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use Throwable;
  * Pure: no storage and no clock. Runs are compared on their start time in
  * UTC, so a run written with another offset still sorts and filters right.
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
+ * @spec openspec/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
  */
 final class AutomationRunPage {
 
@@ -44,7 +44,7 @@ final class AutomationRunPage {
 	 *
 	 * @return list<array<string, mixed>>
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
 	 */
 	public function newestFirst(array $runs): array {
 		usort($runs, fn (array $one, array $two): int => strcmp($this->startOf(run: $two), $this->startOf(run: $one)));
@@ -59,7 +59,7 @@ final class AutomationRunPage {
 	 *
 	 * @return list<array<string, mixed>>
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
 	 */
 	public function select(array $runs, array $filters): array {
 		$outcome = (string)($filters['outcome'] ?? '');
@@ -84,7 +84,7 @@ final class AutomationRunPage {
 	 *
 	 * @return array{lastRunAt: string|null, lastOutcome: string|null, lastError: string|null}
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
 	 */
 	public function summary(array $runs): array {
 		$last = ($runs[0] ?? null);
@@ -107,7 +107,7 @@ final class AutomationRunPage {
 	 *
 	 * @return string Y-m-d\TH:i:s in UTC, or ''.
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
 	 */
 	public function startOf(array $run): string {
 		return ($this->utc(value: (string)($run['startedAt'] ?? '')) ?? '');
@@ -120,7 +120,7 @@ final class AutomationRunPage {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
 	 */
 	public function utc(string $value): ?string {
 		if ($value === '') {

@@ -4,8 +4,10 @@
   - (logic-automation-run-log REQ-BQRL-003, REQ-BQRL-004). Reads
   - `GET /api/automations/{uuid}/runs`, which applies the automation's own
   - access rules. Each run expands to the "Action | Outcome" table the test
-  - panel uses, with its duration under it. A step OpenRegister executes is
-  - labelled, never given a success or a failure.
+  - panel uses, with its duration under it. A notification OpenRegister sent
+  - comes back as a run of its own, from OpenRegister's record; a step
+  - OpenRegister executes without a record is labelled, never given a success
+  - or a failure.
   -->
 <template>
 	<NcModal size="large" @close="$emit('close')">
@@ -72,7 +74,7 @@
 								<td :class="`automation-runs__outcome--${run.outcome}`">
 									{{ outcomeLabel(run.outcome) }}
 								</td>
-								<td>{{ run.durationMs }} ms</td>
+								<td>{{ durationText(run) }}</td>
 							</tr>
 							<tr v-if="openRun === run.id" class="automation-runs__detail" data-testid="run-detail">
 								<td colspan="5">
@@ -93,13 +95,13 @@
 												data-testid="run-step">
 												<td>{{ step.action }}</td>
 												<td :class="`automation-runs__outcome--${step.outcome}`">
-													{{ outcomeLabel(step.outcome) }}<span v-if="step.message && step.outcome !== 'in-openregister'">: {{ step.message }}</span>
+													{{ outcomeLabel(step.outcome) }}<span v-if="stepDetail(step)">: {{ stepDetail(step) }}</span>
 												</td>
 											</tr>
 										</tbody>
 									</table>
-									<p class="automation-runs__duration">
-										{{ t('buildiq', 'Duration') }} {{ run.durationMs }} ms
+									<p v-if="durationText(run)" class="automation-runs__duration">
+										{{ t('buildiq', 'Duration') }} {{ durationText(run) }}
 									</p>
 								</td>
 							</tr>
@@ -116,7 +118,7 @@ import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcLoadingIcon, NcModal, NcNoteCard, NcSelect } from '@nextcloud/vue'
-import { openRegisterSteps, outcomeLabel, runsEntirelyInOpenRegister, runTime } from '../utils/automationRuns.js'
+import { durationText, OPENREGISTER_SOURCE, openRegisterSteps, outcomeLabel, runsEntirelyInOpenRegister, runTime, stepDetail } from '../utils/automationRuns.js'
 
 export default {
 	name: 'AutomationRunsModal',
@@ -148,7 +150,7 @@ export default {
 		 * The outcome filter's options; "All" sends no filter.
 		 *
 		 * @return {Array<{id: string, label: string}>}
-		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-filtering-on-failures
+		 * @spec openspec/specs/automation-designer/spec.md#scenario-filtering-on-failures
 		 */
 		outcomeOptions() {
 			return [
@@ -158,10 +160,10 @@ export default {
 		},
 
 		/**
-		 * Whether no action of the automation runs in buildiq, so there is no log to show.
+		 * Whether no action of the automation runs in buildiq or leaves a record in OpenRegister, so there is no log to show.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notification-only-automation-does-not-fake-a-log
+		 * @spec openspec/specs/automation-designer/spec.md#scenario-an-automation-with-no-record-anywhere-does-not-fake-a-log
 		 */
 		entirelyInOpenRegister() {
 			return runsEntirelyInOpenRegister(this.automation)
@@ -171,7 +173,7 @@ export default {
 	/**
 	 * Pick the default outcome filter and read the runs, unless the automation runs entirely in OpenRegister.
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
 	 */
 	mounted() {
 		this.outcomeFilter = this.outcomeOptions[0]
@@ -184,12 +186,14 @@ export default {
 		t,
 		runTime,
 		outcomeLabel,
+		stepDetail,
+		durationText,
 
 		/**
 		 * Read the runs, newest first, with the chosen outcome filter.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
+		 * @spec openspec/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
 		 */
 		async load() {
 			this.loading = true
@@ -215,21 +219,26 @@ export default {
 		 *
 		 * @param {string} id The run id.
 		 * @return {void}
-		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-the-run-detail-reads-like-a-test-result
+		 * @spec openspec/specs/automation-designer/spec.md#scenario-the-run-detail-reads-like-a-test-result
 		 */
 		toggle(id) {
 			this.openRun = this.openRun === id ? null : id
 		},
 
 		/**
-		 * A run's recorded steps, then the steps OpenRegister executed, labelled.
+		 * A run's recorded steps, then the steps OpenRegister executed without a
+		 * record, labelled. A run read from OpenRegister's own record shows only its step.
 		 *
 		 * @param {object} run The run.
 		 * @return {Array<{action: string, outcome: string, message: string}>}
-		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-mixed-automation-labels-the-openregister-step
+		 * @spec openspec/specs/automation-designer/spec.md#scenario-a-mixed-automation-labels-the-openregister-step
+		 * @spec openspec/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
 		 */
 		stepsOf(run) {
 			const recorded = Array.isArray(run?.steps) ? run.steps : []
+			if (run?.source === OPENREGISTER_SOURCE) {
+				return recorded
+			}
 			const named = new Set(recorded.map((step) => step.action))
 			return [...recorded, ...openRegisterSteps(this.automation).filter((step) => !named.has(step.action))]
 		},
@@ -239,7 +248,7 @@ export default {
 		 *
 		 * @param {object} run The run.
 		 * @return {string}
-		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
+		 * @spec openspec/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
 		 */
 		objectLink(run) {
 			const subject = run?.subject
