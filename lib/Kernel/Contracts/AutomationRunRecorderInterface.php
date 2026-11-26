@@ -106,6 +106,29 @@ interface AutomationRunRecorderInterface {
 	public function complete(string $runUuid, string $outcome, array $steps, ?string $reason = null): bool;
 
 	/**
+	 * Complete a waiting run from the flow run that executed it.
+	 *
+	 * @param string               $runUuid The waiting run.
+	 * @param array<string, mixed> $result  {outcome, reason, durationMs, steps}.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 */
+	public function completeFromFlowRun(string $runUuid, array $result): bool;
+
+	/**
+	 * The waiting runs of one automation that an OpenRegister flow run will complete.
+	 *
+	 * @param string $automationUuid The automation.
+	 *
+	 * @return list<array<string, mixed>> The waiting runs, each with its `id` and `flowRun`.
+	 *
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 */
+	public function waitingOnFlowRuns(string $automationUuid): array;
+
+	/**
 	 * The runs of one automation, newest first, with its summary.
 	 *
 	 * @param string                $automationUuid The automation.

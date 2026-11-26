@@ -4422,6 +4422,27 @@ namespace OCA\OpenRegister\Db {
 			protected ?string $uuid = null;
 
 			/**
+			 * Stub status column (queued, running, completed, failed, ...).
+			 *
+			 * @var string|null
+			 */
+			protected ?string $status = null;
+
+			/**
+			 * Stub error column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $error = null;
+
+			/**
+			 * Stub log column: one entry per node execution.
+			 *
+			 * @var array|null
+			 */
+			protected ?array $log = null;
+
+			/**
 			 * The run as JSON.
 			 *
 			 * @return array<string, mixed>
@@ -4429,6 +4450,26 @@ namespace OCA\OpenRegister\Db {
 			public function jsonSerialize(): array {
 				return ['uuid' => $this->uuid];
 			}//end jsonSerialize()
+		}//end class
+	}//end if
+
+	if (class_exists(FlowRunMapper::class, autoload: false) === false) {
+		/**
+		 * Stub FlowRunMapper: the one read buildiq makes of a flow run.
+		 */
+		class FlowRunMapper {
+			/**
+			 * One run by uuid.
+			 *
+			 * @param string $uuid The run.
+			 *
+			 * @return FlowRun
+			 *
+			 * @throws \OCP\AppFramework\Db\DoesNotExistException When there is none.
+			 */
+			public function findByUuid(string $uuid): FlowRun {
+				throw new \OCP\AppFramework\Db\DoesNotExistException('Stub FlowRunMapper has no run ' . $uuid);
+			}//end findByUuid()
 		}//end class
 	}//end if
 }
