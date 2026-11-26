@@ -25,13 +25,15 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use OCA\Buildiq\Kernel\Contracts\AutomationOutcomeReaderInterface;
+use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
 
 /**
  * The runs OpenRegister executed for an automation (logic-automation-run-log, design D4).
  *
  * Each outcome record is one run with one step. Nothing is invented: an
- * automation OpenRegister recorded nothing for answers no run.
+ * automation OpenRegister recorded nothing for answers the run log's own page,
+ * unchanged. Without a reader (no OpenRegister outcome records) it is only the
+ * run log.
  *
  * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
  */
@@ -76,13 +78,15 @@ final class AutomationOutcomeRuns {
 	/**
 	 * Constructor.
 	 *
-	 * @param AutomationOutcomeReaderInterface $reader Reads OpenRegister's outcome records.
-	 * @param AutomationRunPage                $page   Orders, filters and summarises runs.
+	 * @param OpenRegisterAutomationOutcomeReader|null $reader Reads OpenRegister's outcome records; null reads none.
+	 * @param AutomationOutcomeKeys                    $keys   Builds and matches the outcome keys.
+	 * @param AutomationRunPage                        $page   Orders, filters and summarises runs.
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
 	 */
 	public function __construct(
-		private readonly AutomationOutcomeReaderInterface $reader,
+		private readonly ?OpenRegisterAutomationOutcomeReader $reader = null,
+		private readonly AutomationOutcomeKeys $keys = new AutomationOutcomeKeys(),
 		private readonly AutomationRunPage $page = new AutomationRunPage(),
 	) {
 	}//end __construct()
@@ -102,14 +106,14 @@ final class AutomationOutcomeRuns {
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
 	 */
 	public function runsFor(array $automation): array {
-		$key = AutomationOutcomeKeys::forAutomation(automation: $automation);
-		if ($key === '' || self::executesInOpenRegister(automation: $automation) === false) {
+		$key = $this->keys->forAutomation(automation: $automation);
+		if ($this->reader === null || $key === '' || self::executesInOpenRegister(automation: $automation) === false) {
 			return [];
 		}
 
 		$runs = [];
 		foreach ($this->reader->outcomes(keyPrefix: $key) as $outcome) {
-			if (AutomationOutcomeKeys::belongsTo(key: (string)($outcome['key'] ?? ''), automationKey: $key) === false) {
+			if ($this->keys->belongsTo(key: (string)($outcome['key'] ?? ''), automationKey: $key) === false) {
 				continue;
 			}
 
@@ -120,13 +124,11 @@ final class AutomationOutcomeRuns {
 	}//end runsFor()
 
 	/**
-	 * One page of the recorded runs and OpenRegister's together, with the summary of both.
+	 * One page of an automation's runs: those the run log recorded and those OpenRegister recorded.
 	 *
-	 * @param list<array<string, mixed>> $recorded    The runs buildiq recorded.
-	 * @param list<array<string, mixed>> $outcomeRuns The runs read from OpenRegister.
-	 * @param array<string, string>      $filters     outcome, since, until.
-	 * @param int                        $limit       Page size.
-	 * @param int                        $offset      Page start.
+	 * @param AutomationRunRecorderInterface $recorder   The run log.
+	 * @param array<string, mixed>           $automation The automation.
+	 * @param array{uuid: string, filters: array<string, string>, limit: int, offset: int} $query The page asked for.
 	 *
 	 * @return array{
 	 *     results: list<array<string, mixed>>,
@@ -136,14 +138,60 @@ final class AutomationOutcomeRuns {
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
 	 */
-	public function pageOf(array $recorded, array $outcomeRuns, array $filters, int $limit, int $offset): array {
-		$runs     = $this->page->newestFirst(runs: array_merge($recorded, $outcomeRuns));
-		$selected = $this->page->select(runs: $runs, filters: $filters);
+	public function pageFor(AutomationRunRecorderInterface $recorder, array $automation, array $query): array {
+		$outcomeRuns = $this->runsFor(automation: $automation);
+		if ($outcomeRuns === []) {
+			return $recorder->runsOf(automationUuid: $query['uuid'], filters: $query['filters'], limit: $query['limit'], offset: $query['offset']);
+		}
+
+		return $this->pageOf(
+			runs: array_merge($recorder->runsOf(automationUuid: $query['uuid'], limit: self::RECORDED_LIMIT)['results'], $outcomeRuns),
+			query: $query
+		);
+	}//end pageFor()
+
+	/**
+	 * The last run of an automation, over the run log's runs and OpenRegister's.
+	 *
+	 * @param AutomationRunRecorderInterface $recorder   The run log.
+	 * @param array<string, mixed>           $automation The automation.
+	 * @param string                         $uuid       The automation uuid.
+	 *
+	 * @return array{lastRunAt: string|null, lastOutcome: string|null, lastError: string|null}
+	 *
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
+	 */
+	public function summaryFor(AutomationRunRecorderInterface $recorder, array $automation, string $uuid): array {
+		$outcomeRuns = $this->runsFor(automation: $automation);
+		if ($outcomeRuns === []) {
+			return $recorder->summaryOf(automationUuid: $uuid);
+		}
+
+		$runs = array_merge($recorder->runsOf(automationUuid: $uuid, limit: self::RECORDED_LIMIT)['results'], $outcomeRuns);
+
+		return $this->page->summary(runs: $this->page->newestFirst(runs: $runs));
+	}//end summaryFor()
+
+	/**
+	 * One page of runs from both sources, newest first, filtered, with the summary of all.
+	 *
+	 * @param list<array<string, mixed>>                                         $runs  The runs of both sources.
+	 * @param array{filters: array<string, string>, limit: int, offset: int} $query The page asked for.
+	 *
+	 * @return array{
+	 *     results: list<array<string, mixed>>,
+	 *     total: int,
+	 *     summary: array{lastRunAt: string|null, lastOutcome: string|null, lastError: string|null}
+	 * }
+	 */
+	private function pageOf(array $runs, array $query): array {
+		$ordered  = $this->page->newestFirst(runs: $runs);
+		$selected = $this->page->select(runs: $ordered, filters: $query['filters']);
 
 		return [
-			'results' => array_slice($selected, max(0, $offset), max(0, $limit)),
+			'results' => array_slice($selected, max(0, $query['offset']), max(0, $query['limit'])),
 			'total' => count($selected),
-			'summary' => $this->page->summary(runs: $runs),
+			'summary' => $this->page->summary(runs: $ordered),
 		];
 	}//end pageOf()
 
@@ -153,10 +201,8 @@ final class AutomationOutcomeRuns {
 	 * @param array<string, mixed> $automation The automation.
 	 *
 	 * @return bool
-	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
 	 */
-	public static function executesInOpenRegister(array $automation): bool {
+	private static function executesInOpenRegister(array $automation): bool {
 		$trigger = $automation['trigger'] ?? [];
 		if (is_array($trigger) === false || (string)($trigger['type'] ?? 'manual') === 'manual') {
 			return false;
@@ -194,13 +240,13 @@ final class AutomationOutcomeRuns {
 			$subject = [];
 		}
 
-		$trigger  = (array)($automation['trigger'] ?? []);
-		$kind     = (string)($outcome['kind'] ?? '');
-		$stored   = (string)($outcome['outcome'] ?? '');
-		$result   = (self::OUTCOMES[$stored] ?? $stored);
-		$reason   = trim((string)($outcome['reason'] ?? ''));
-		$objectId = (string)($subject['id'] ?? '');
-		$at       = (string)($outcome['at'] ?? '');
+		$trigger    = (array)($automation['trigger'] ?? []);
+		$kind       = (string)($outcome['kind'] ?? '');
+		$stored     = (string)($outcome['outcome'] ?? '');
+		$result     = (self::OUTCOMES[$stored] ?? $stored);
+		$reason     = trim((string)($outcome['reason'] ?? ''));
+		$objectId   = (string)($subject['id'] ?? '');
+		$recordedAt = (string)($outcome['at'] ?? '');
 
 		$step = ['action' => self::LIFECYCLE_STEP, 'outcome' => $result, 'message' => $reason];
 		if ($kind === 'notification') {
@@ -209,12 +255,12 @@ final class AutomationOutcomeRuns {
 		}
 
 		$run = [
-			'id' => self::SOURCE . ':' . sha1($kind . '|' . (string)($outcome['key'] ?? '') . '|' . $at . '|' . $objectId),
+			'id' => self::SOURCE . ':' . sha1($kind . '|' . (string)($outcome['key'] ?? '') . '|' . $recordedAt . '|' . $objectId),
 			'source' => self::SOURCE,
 			'automation' => (string)($automation['id'] ?? ($automation['uuid'] ?? '')),
 			'trigger' => (string)($trigger['type'] ?? ''),
 			'subject' => ['schema' => (string)($trigger['schema'] ?? ''), 'uuid' => $objectId],
-			'startedAt' => $at,
+			'startedAt' => $recordedAt,
 			'durationMs' => null,
 			'outcome' => $result,
 			'steps' => [$step],

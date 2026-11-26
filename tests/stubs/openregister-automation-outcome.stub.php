@@ -54,22 +54,25 @@ namespace OCA\OpenRegister\Db {
 		final class AutomationRecordFilter {
 
 			/**
-			 * @param array<string, mixed> $params The parameters it was built from.
+			 * @param string         $kind      The record kind, or ''.
+			 * @param string         $keyPrefix The automation key prefix, or ''.
+			 * @param string         $schema    The schema id, or ''.
+			 * @param string         $object    The object uuid, or ''.
+			 * @param \DateTime|null $since     The earliest moment.
+			 * @param \DateTime|null $until     The latest moment.
+			 * @param int            $limit     Page size.
+			 * @param int            $offset    Page start.
 			 */
 			public function __construct(
-				public readonly array $params = [],
+				public readonly string $kind = '',
+				public readonly string $keyPrefix = '',
+				public readonly string $schema = '',
+				public readonly string $object = '',
+				public readonly ?\DateTime $since = null,
+				public readonly ?\DateTime $until = null,
+				public readonly int $limit = 50,
+				public readonly int $offset = 0,
 			) {
-			}
-
-			/**
-			 * The filter of the outcomes route (`keyPrefix`, `kind`, `since`, `until`, `limit`, `offset`).
-			 *
-			 * @param array<string, mixed> $params The parameters.
-			 *
-			 * @return self
-			 */
-			public static function fromOutcomeParams(array $params): self {
-				return new self(params: $params);
 			}
 		}
 	}

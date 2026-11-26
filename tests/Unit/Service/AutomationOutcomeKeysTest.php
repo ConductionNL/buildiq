@@ -35,9 +35,9 @@ final class AutomationOutcomeKeysTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheAutomationKeyIsItsUuid(): void {
-		$this->assertSame('aut-7f3c', AutomationOutcomeKeys::forAutomation(automation: ['id' => '7f3c', 'uuid' => 'other']));
-		$this->assertSame('aut-9a9a', AutomationOutcomeKeys::forAutomation(automation: ['uuid' => '9a9a']));
-		$this->assertSame('', AutomationOutcomeKeys::forAutomation(automation: ['slug' => 'no-id']));
+		$this->assertSame(expected: 'aut-7f3c', actual: (new AutomationOutcomeKeys())->forAutomation(automation: ['id' => '7f3c', 'uuid' => 'other']));
+		$this->assertSame(expected: 'aut-9a9a', actual: (new AutomationOutcomeKeys())->forAutomation(automation: ['uuid' => '9a9a']));
+		$this->assertSame(expected: '', actual: (new AutomationOutcomeKeys())->forAutomation(automation: ['slug' => 'no-id']));
 	}//end testTheAutomationKeyIsItsUuid()
 
 	/**
@@ -46,8 +46,8 @@ final class AutomationOutcomeKeysTest extends TestCase {
 	 * @return void
 	 */
 	public function testANotificationKeyAddsItsPosition(): void {
-		$this->assertSame('aut-7f3c-2', AutomationOutcomeKeys::notification(automationKey: 'aut-7f3c', position: 2));
-		$this->assertSame('', AutomationOutcomeKeys::notification(automationKey: '', position: 1));
+		$this->assertSame(expected: 'aut-7f3c-2', actual: (new AutomationOutcomeKeys())->notification(automationKey: 'aut-7f3c', position: 2));
+		$this->assertSame(expected: '', actual: (new AutomationOutcomeKeys())->notification(automationKey: '', position: 1));
 	}//end testANotificationKeyAddsItsPosition()
 
 	/**
@@ -56,10 +56,10 @@ final class AutomationOutcomeKeysTest extends TestCase {
 	 * @return void
 	 */
 	public function testOnlyTheAutomationsOwnKeysMatch(): void {
-		$this->assertTrue(AutomationOutcomeKeys::belongsTo(key: 'aut-1234', automationKey: 'aut-1234'));
-		$this->assertTrue(AutomationOutcomeKeys::belongsTo(key: 'aut-1234-3', automationKey: 'aut-1234'));
-		$this->assertFalse(AutomationOutcomeKeys::belongsTo(key: 'aut-12345-1', automationKey: 'aut-1234'));
-		$this->assertFalse(AutomationOutcomeKeys::belongsTo(key: 'aut-1234-reminder', automationKey: 'aut-1234'));
-		$this->assertFalse(AutomationOutcomeKeys::belongsTo(key: 'aut-1234', automationKey: ''));
+		$this->assertTrue(condition: (new AutomationOutcomeKeys())->belongsTo(key: 'aut-1234', automationKey: 'aut-1234'));
+		$this->assertTrue(condition: (new AutomationOutcomeKeys())->belongsTo(key: 'aut-1234-3', automationKey: 'aut-1234'));
+		$this->assertFalse(condition: (new AutomationOutcomeKeys())->belongsTo(key: 'aut-12345-1', automationKey: 'aut-1234'));
+		$this->assertFalse(condition: (new AutomationOutcomeKeys())->belongsTo(key: 'aut-1234-reminder', automationKey: 'aut-1234'));
+		$this->assertFalse(condition: (new AutomationOutcomeKeys())->belongsTo(key: 'aut-1234', automationKey: ''));
 	}//end testOnlyTheAutomationsOwnKeysMatch()
 }//end class

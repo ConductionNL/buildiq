@@ -30,7 +30,7 @@ namespace OCA\Buildiq\Service;
  * An automation's key is `aut-` and its uuid, so two apps whose automations
  * share a slug never read each other's outcomes. A notification adds its
  * position (`aut-<uuid>-1`); a lifecycle action carries the automation key
- * itself. Pure: no storage.
+ * itself. Pure: no storage and no state.
  *
  * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
  */
@@ -50,7 +50,7 @@ final class AutomationOutcomeKeys {
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
 	 */
-	public static function forAutomation(array $automation): string {
+	public function forAutomation(array $automation): string {
 		$id = trim((string)($automation['id'] ?? ($automation['uuid'] ?? '')));
 		if ($id === '') {
 			return '';
@@ -69,7 +69,7 @@ final class AutomationOutcomeKeys {
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
 	 */
-	public static function notification(string $automationKey, int $position): string {
+	public function notification(string $automationKey, int $position): string {
 		if ($automationKey === '') {
 			return '';
 		}
@@ -89,7 +89,7 @@ final class AutomationOutcomeKeys {
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
 	 */
-	public static function belongsTo(string $key, string $automationKey): bool {
+	public function belongsTo(string $key, string $automationKey): bool {
 		if ($automationKey === '') {
 			return false;
 		}

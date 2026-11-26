@@ -24,7 +24,6 @@ namespace OCA\Buildiq\Service;
 use OCA\Buildiq\Kernel\Contracts\AppCatalogueInterface;
 use OCA\Buildiq\Kernel\Contracts\AppChannelApplierInterface;
 use OCA\Buildiq\Kernel\Contracts\AppHealthServiceInterface;
-use OCA\Buildiq\Kernel\Contracts\AutomationOutcomeReaderInterface;
 use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
 use OCA\Buildiq\Kernel\Contracts\ApplicationCreationServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ApplicationDeletionServiceInterface;
@@ -121,7 +120,6 @@ final class ContractBindings {
 		$context->registerServiceAlias(AppChannelApplierInterface::class, AppChannelApplier::class);
 		$context->registerServiceAlias(AppHealthServiceInterface::class, AppHealthService::class);
 		$context->registerServiceAlias(AutomationRunRecorderInterface::class, AutomationRunRecorder::class);
-		$context->registerServiceAlias(AutomationOutcomeReaderInterface::class, OpenRegisterAutomationOutcomeReader::class);
 		$context->registerServiceAlias(AppNavigationServiceInterface::class, AppNavigationService::class);
 		$context->registerServiceAlias(AppOverrideServiceInterface::class, AppOverrideService::class);
 		$context->registerServiceAlias(AppPackageImportServiceInterface::class, AppPackageImportService::class);

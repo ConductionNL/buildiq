@@ -21,8 +21,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\Buildiq\Kernel\Contracts\AutomationOutcomeReaderInterface;
+use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
 use OCA\Buildiq\Service\AutomationOutcomeRuns;
+use OCA\Buildiq\Service\OpenRegisterAutomationOutcomeReader;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -42,21 +43,66 @@ final class AutomationOutcomeRunsTest extends TestCase {
 	];
 
 	/**
+	 * A sent notification for object obj-1.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const SENT = [
+		'kind' => 'notification',
+		'key' => 'aut-7f3c-1',
+		'at' => '2026-11-24T09:30:00+00:00',
+		'subject' => ['register' => '7', 'schema' => '12', 'id' => 'obj-1'],
+		'outcome' => 'sent',
+		'reason' => null,
+		'recipients' => 2,
+	];
+
+	/**
+	 * A failed notification for object obj-2, a day later.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const FAILED = [
+		'kind' => 'notification',
+		'key' => 'aut-7f3c-1',
+		'at' => '2026-11-25T10:00:00+00:00',
+		'subject' => ['register' => '7', 'schema' => '12', 'id' => 'obj-2'],
+		'outcome' => 'failed',
+		'reason' => 'mail server down',
+		'recipients' => 0,
+	];
+
+	/**
 	 * A reader answering these outcomes, recording the prefixes it was asked for.
 	 *
 	 * @param list<array<string, mixed>> $outcomes The outcomes.
 	 * @param list<string>               $asked    The prefixes asked for (by reference).
 	 *
-	 * @return AutomationOutcomeReaderInterface
+	 * @return OpenRegisterAutomationOutcomeReader
 	 */
-	private function reader(array $outcomes, array &$asked = []): AutomationOutcomeReaderInterface {
-		$reader = $this->createMock(AutomationOutcomeReaderInterface::class);
-		$reader->method('outcomes')->willReturnCallback(static function (string $keyPrefix) use ($outcomes, &$asked): array {
-			$asked[] = $keyPrefix;
-			return $outcomes;
-		});
+	private function reader(array $outcomes, array &$asked = []): OpenRegisterAutomationOutcomeReader {
+		$reader = $this->createMock(originalClassName: OpenRegisterAutomationOutcomeReader::class);
+		$reader->method('outcomes')->willReturnCallback(
+			static function (string $keyPrefix) use ($outcomes, &$asked): array {
+				$asked[] = $keyPrefix;
+				return $outcomes;
+			}
+		);
 		return $reader;
 	}//end reader()
+
+	/**
+	 * A run log holding one succeeded run of 20 November.
+	 *
+	 * @return AutomationRunRecorderInterface
+	 */
+	private function recorder(): AutomationRunRecorderInterface {
+		$recorder = $this->createMock(originalClassName: AutomationRunRecorderInterface::class);
+		$recorder->method('runsOf')->willReturn(
+			['results' => [['id' => 'r1', 'startedAt' => '2026-11-20T10:00:00+00:00', 'outcome' => 'succeeded']], 'total' => 1, 'summary' => []]
+		);
+		return $recorder;
+	}//end recorder()
 
 	/**
 	 * A sent notification is a succeeded run with one step and its recipients; a failed one carries its reason.
@@ -65,28 +111,28 @@ final class AutomationOutcomeRunsTest extends TestCase {
 	 */
 	public function testANotificationOutcomeIsARun(): void {
 		$asked = [];
-		$runs  = new AutomationOutcomeRuns(reader: $this->reader(outcomes: [
-			['kind' => 'notification', 'key' => 'aut-7f3c-1', 'at' => '2026-11-24T09:30:00+00:00', 'subject' => ['register' => '7', 'schema' => '12', 'id' => 'obj-1'], 'outcome' => 'sent', 'reason' => null, 'recipients' => 2],
-			['kind' => 'notification', 'key' => 'aut-7f3c-1', 'at' => '2026-11-25T10:00:00+00:00', 'subject' => ['register' => '7', 'schema' => '12', 'id' => 'obj-2'], 'outcome' => 'failed', 'reason' => 'mail server down', 'recipients' => 0],
-		], asked: $asked));
+		$runs  = new AutomationOutcomeRuns(reader: $this->reader(outcomes: [self::SENT, self::FAILED], asked: $asked));
 
 		$result = $runs->runsFor(automation: self::NOTIFYING);
 
-		$this->assertSame(['aut-7f3c'], $asked);
-		$this->assertCount(2, $result);
-		$this->assertSame('failed', $result[0]['outcome']);
-		$this->assertSame('mail server down', $result[0]['reason']);
-		$this->assertSame('succeeded', $result[1]['outcome']);
-		$this->assertArrayNotHasKey('reason', $result[1]);
-		$this->assertSame('openregister', $result[1]['source']);
-		$this->assertSame('7f3c', $result[1]['automation']);
-		$this->assertSame('object-created', $result[1]['trigger']);
-		$this->assertSame(['schema' => 'permit', 'uuid' => 'obj-1'], $result[1]['subject']);
-		$this->assertSame('2026-11-24T09:30:00+00:00', $result[1]['startedAt']);
-		$this->assertNull($result[1]['durationMs']);
-		$this->assertSame([['action' => 'send-notification', 'outcome' => 'succeeded', 'message' => '', 'recipients' => 2]], $result[1]['steps']);
-		$this->assertStringStartsWith('openregister:', $result[1]['id']);
-		$this->assertNotSame($result[0]['id'], $result[1]['id']);
+		$this->assertSame(expected: ['aut-7f3c'], actual: $asked);
+		$this->assertCount(expectedCount: 2, haystack: $result);
+		$this->assertSame(expected: 'failed', actual: $result[0]['outcome']);
+		$this->assertSame(expected: 'mail server down', actual: $result[0]['reason']);
+		$this->assertSame(expected: 'succeeded', actual: $result[1]['outcome']);
+		$this->assertArrayNotHasKey(key: 'reason', array: $result[1]);
+		$this->assertSame(expected: 'openregister', actual: $result[1]['source']);
+		$this->assertSame(expected: '7f3c', actual: $result[1]['automation']);
+		$this->assertSame(expected: 'object-created', actual: $result[1]['trigger']);
+		$this->assertSame(expected: ['schema' => 'permit', 'uuid' => 'obj-1'], actual: $result[1]['subject']);
+		$this->assertSame(expected: '2026-11-24T09:30:00+00:00', actual: $result[1]['startedAt']);
+		$this->assertNull(actual: $result[1]['durationMs']);
+		$this->assertSame(
+			expected: [['action' => 'send-notification', 'outcome' => 'succeeded', 'message' => '', 'recipients' => 2]],
+			actual: $result[1]['steps']
+		);
+		$this->assertStringStartsWith(prefix: 'openregister:', string: $result[1]['id']);
+		$this->assertNotSame(expected: $result[0]['id'], actual: $result[1]['id']);
 	}//end testANotificationOutcomeIsARun()
 
 	/**
@@ -96,17 +142,22 @@ final class AutomationOutcomeRunsTest extends TestCase {
 	 */
 	public function testLifecycleOutcomesAreMapped(): void {
 		$automation = ['id' => '7f3c', 'trigger' => ['type' => 'lifecycle-transition', 'schema' => 'permit'], 'actions' => [['type' => 'webhook']]];
-		$runs       = new AutomationOutcomeRuns(reader: $this->reader(outcomes: [
-			['kind' => 'lifecycle', 'key' => 'aut-7f3c', 'at' => '2026-11-24T09:00:00+00:00', 'subject' => ['id' => 'a'], 'outcome' => 'done', 'reason' => null],
-			['kind' => 'lifecycle', 'key' => 'aut-7f3c', 'at' => '2026-11-24T08:00:00+00:00', 'subject' => ['id' => 'b'], 'outcome' => 'partial', 'reason' => 'one of two'],
-			['kind' => 'lifecycle', 'key' => 'aut-7f3c', 'at' => '2026-11-24T07:00:00+00:00', 'subject' => ['id' => 'c'], 'outcome' => 'skipped', 'reason' => 'condition is false'],
-		]));
+		$lifecycle  = ['kind' => 'lifecycle', 'key' => 'aut-7f3c'];
+		$runs       = new AutomationOutcomeRuns(
+			reader: $this->reader(
+				outcomes: [
+					$lifecycle + ['at' => '2026-11-24T09:00:00+00:00', 'subject' => ['id' => 'a'], 'outcome' => 'done', 'reason' => null],
+					$lifecycle + ['at' => '2026-11-24T08:00:00+00:00', 'subject' => ['id' => 'b'], 'outcome' => 'partial', 'reason' => 'one of two'],
+					$lifecycle + ['at' => '2026-11-24T07:00:00+00:00', 'subject' => ['id' => 'c'], 'outcome' => 'skipped', 'reason' => 'condition is false'],
+				]
+			)
+		);
 
 		$result = $runs->runsFor(automation: $automation);
 
-		$this->assertSame(['succeeded', 'failed', 'skipped'], array_column($result, 'outcome'));
-		$this->assertSame([['action' => 'lifecycle-action', 'outcome' => 'failed', 'message' => 'one of two']], $result[1]['steps']);
-		$this->assertSame('condition is false', $result[2]['reason']);
+		$this->assertSame(expected: ['succeeded', 'failed', 'skipped'], actual: array_column($result, 'outcome'));
+		$this->assertSame(expected: [['action' => 'lifecycle-action', 'outcome' => 'failed', 'message' => 'one of two']], actual: $result[1]['steps']);
+		$this->assertSame(expected: 'condition is false', actual: $result[2]['reason']);
 	}//end testLifecycleOutcomesAreMapped()
 
 	/**
@@ -115,27 +166,30 @@ final class AutomationOutcomeRunsTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnotherAutomationsOutcomeIsLeftOut(): void {
-		$runs = new AutomationOutcomeRuns(reader: $this->reader(outcomes: [
-			['kind' => 'notification', 'key' => 'aut-7f3cd-1', 'at' => '2026-11-24T09:30:00+00:00', 'subject' => ['id' => 'x'], 'outcome' => 'sent'],
-		]));
+		$runs = new AutomationOutcomeRuns(reader: $this->reader(outcomes: [['key' => 'aut-7f3cd-1'] + self::SENT]));
 
-		$this->assertSame([], $runs->runsFor(automation: self::NOTIFYING));
+		$this->assertSame(expected: [], actual: $runs->runsFor(automation: self::NOTIFYING));
 	}//end testAnotherAutomationsOutcomeIsLeftOut()
 
 	/**
-	 * A manual automation, one without an action OpenRegister executes, and one without an id are never looked up.
+	 * A manual automation, one without an action OpenRegister executes, one without an id, and no reader are never looked up.
 	 *
 	 * @return void
 	 */
 	public function testOpenRegisterIsAskedOnlyForWhatItExecutes(): void {
-		$asked = [];
-		$runs  = new AutomationOutcomeRuns(reader: $this->reader(outcomes: [], asked: $asked));
+		$asked  = [];
+		$runs   = new AutomationOutcomeRuns(reader: $this->reader(outcomes: [self::SENT], asked: $asked));
+		$notify = [['type' => 'send-notification']];
 
-		$this->assertSame([], $runs->runsFor(automation: ['id' => 'm'] + ['trigger' => ['type' => 'manual'], 'actions' => [['type' => 'send-notification']]]));
-		$this->assertSame([], $runs->runsFor(automation: ['id' => 'g', 'trigger' => ['type' => 'object-created'], 'actions' => [['type' => 'generate-document']]]));
-		$this->assertSame([], $runs->runsFor(automation: ['trigger' => ['type' => 'object-created'], 'actions' => [['type' => 'send-notification']]]));
-		$this->assertSame([], $runs->runsFor(automation: ['id' => 'b', 'trigger' => 'broken', 'actions' => 'broken']));
-		$this->assertSame([], $asked);
+		$this->assertSame(expected: [], actual: $runs->runsFor(automation: ['id' => 'm', 'trigger' => ['type' => 'manual'], 'actions' => $notify]));
+		$this->assertSame(
+			expected: [],
+			actual: $runs->runsFor(automation: ['id' => 'g', 'trigger' => ['type' => 'object-created'], 'actions' => [['type' => 'generate-document']]])
+		);
+		$this->assertSame(expected: [], actual: $runs->runsFor(automation: ['trigger' => ['type' => 'object-created'], 'actions' => $notify]));
+		$this->assertSame(expected: [], actual: $runs->runsFor(automation: ['id' => 'b', 'trigger' => 'broken', 'actions' => 'broken']));
+		$this->assertSame(expected: [], actual: $asked);
+		$this->assertSame(expected: [], actual: (new AutomationOutcomeRuns())->runsFor(automation: self::NOTIFYING));
 	}//end testOpenRegisterIsAskedOnlyForWhatItExecutes()
 
 	/**
@@ -144,22 +198,51 @@ final class AutomationOutcomeRunsTest extends TestCase {
 	 * @return void
 	 */
 	public function testThePageMergesBothSources(): void {
-		$runs     = new AutomationOutcomeRuns(reader: $this->reader(outcomes: []));
-		$recorded = [
-			['id' => 'r1', 'startedAt' => '2026-11-20T10:00:00+00:00', 'outcome' => 'succeeded'],
-		];
-		$outcomes = [
-			['id' => 'o1', 'startedAt' => '2026-11-22T10:00:00+00:00', 'outcome' => 'failed', 'reason' => 'mail server down'],
-			['id' => 'o2', 'startedAt' => '2026-11-18T10:00:00+00:00', 'outcome' => 'succeeded'],
-		];
+		$runs = new AutomationOutcomeRuns(reader: $this->reader(outcomes: [self::FAILED, self::SENT]));
 
-		$all = $runs->pageOf(recorded: $recorded, outcomeRuns: $outcomes, filters: [], limit: 2, offset: 0);
-		$this->assertSame(['o1', 'r1'], array_column($all['results'], 'id'));
-		$this->assertSame(3, $all['total']);
-		$this->assertSame(['lastRunAt' => '2026-11-22T10:00:00+00:00', 'lastOutcome' => 'failed', 'lastError' => 'mail server down'], $all['summary']);
+		$query = ['uuid' => '7f3c', 'filters' => [], 'limit' => 2, 'offset' => 0];
+		$all   = $runs->pageFor(recorder: $this->recorder(), automation: self::NOTIFYING, query: $query);
+		$this->assertSame(expected: ['2026-11-25T10:00:00+00:00', '2026-11-24T09:30:00+00:00'], actual: array_column($all['results'], 'startedAt'));
+		$this->assertSame(expected: 3, actual: $all['total']);
+		$this->assertSame(
+			expected: ['lastRunAt' => '2026-11-25T10:00:00+00:00', 'lastOutcome' => 'failed', 'lastError' => 'mail server down'],
+			actual: $all['summary']
+		);
 
-		$succeeded = $runs->pageOf(recorded: $recorded, outcomeRuns: $outcomes, filters: ['outcome' => 'succeeded'], limit: 10, offset: 1);
-		$this->assertSame(['o2'], array_column($succeeded['results'], 'id'));
-		$this->assertSame(2, $succeeded['total']);
+		$query     = ['uuid' => '7f3c', 'filters' => ['outcome' => 'succeeded'], 'limit' => 10, 'offset' => 1];
+		$succeeded = $runs->pageFor(recorder: $this->recorder(), automation: self::NOTIFYING, query: $query);
+		$this->assertSame(expected: ['r1'], actual: array_column($succeeded['results'], 'id'));
+		$this->assertSame(expected: 2, actual: $succeeded['total']);
 	}//end testThePageMergesBothSources()
+
+	/**
+	 * Without an OpenRegister record the run log's own page and summary are answered unchanged.
+	 *
+	 * @return void
+	 */
+	public function testWithoutARecordTheRunLogAnswersUnchanged(): void {
+		$page     = ['results' => [['id' => 'r1']], 'total' => 1, 'summary' => ['lastRunAt' => 'x', 'lastOutcome' => 'failed', 'lastError' => 'boom']];
+		$recorder = $this->createMock(originalClassName: AutomationRunRecorderInterface::class);
+		$recorder->expects($this->once())->method('runsOf')->with('7f3c', ['outcome' => 'failed'], 25, 5)->willReturn($page);
+		$recorder->expects($this->once())->method('summaryOf')->with('7f3c')->willReturn($page['summary']);
+		$runs = new AutomationOutcomeRuns(reader: $this->reader(outcomes: []));
+
+		$query = ['uuid' => '7f3c', 'filters' => ['outcome' => 'failed'], 'limit' => 25, 'offset' => 5];
+		$this->assertSame(expected: $page, actual: $runs->pageFor(recorder: $recorder, automation: self::NOTIFYING, query: $query));
+		$this->assertSame(expected: $page['summary'], actual: $runs->summaryFor(recorder: $recorder, automation: self::NOTIFYING, uuid: '7f3c'));
+	}//end testWithoutARecordTheRunLogAnswersUnchanged()
+
+	/**
+	 * The last run counts OpenRegister's record when it is newer than the run log's.
+	 *
+	 * @return void
+	 */
+	public function testTheSummaryCountsOpenRegistersRecord(): void {
+		$runs = new AutomationOutcomeRuns(reader: $this->reader(outcomes: [self::SENT]));
+
+		$this->assertSame(
+			expected: ['lastRunAt' => '2026-11-24T09:30:00+00:00', 'lastOutcome' => 'succeeded', 'lastError' => null],
+			actual: $runs->summaryFor(recorder: $this->recorder(), automation: self::NOTIFYING, uuid: '7f3c')
+		);
+	}//end testTheSummaryCountsOpenRegistersRecord()
 }//end class

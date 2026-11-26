@@ -24,7 +24,6 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use OCA\Buildiq\Kernel\Contracts\AutomationOutcomeReaderInterface;
 use OCA\OpenRegister\Db\AutomationRecordFilter;
 use OCA\OpenRegister\Service\AutomationOutcome;
 use OCA\OpenRegister\Service\AutomationRecordService;
@@ -36,12 +35,18 @@ use Throwable;
  * The outcome reader over OpenRegister's AutomationRecordService.
  *
  * OpenRegister applies its own access rule: an admin reads every record,
- * anyone else only records of objects they may read. An OpenRegister without
- * outcome records answers an empty list, never an error.
+ * anyone else only records of objects they may read. Reading never throws:
+ * an OpenRegister without outcome records, or a read that fails, answers an
+ * empty list and the runs dialog keeps its label.
  *
  * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
  */
-final class OpenRegisterAutomationOutcomeReader implements AutomationOutcomeReaderInterface {
+class OpenRegisterAutomationOutcomeReader {
+
+	/**
+	 * The most outcomes one read asks for.
+	 */
+	public const READ_LIMIT = 500;
 
 	/**
 	 * Constructor.
@@ -60,13 +65,17 @@ final class OpenRegisterAutomationOutcomeReader implements AutomationOutcomeRead
 	/**
 	 * The outcomes whose key starts with the prefix, newest first.
 	 *
+	 * Each outcome is `{kind, key, at, subject: {register, schema, id}, outcome, reason, recipients?}`,
+	 * the shape OpenRegister's own `GET /api/automation-outcomes` answers.
+	 *
 	 * @param string $keyPrefix The key prefix.
 	 *
 	 * @return list<array<string, mixed>>
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AutomationOutcome::fromRecord() is OpenRegister's one mapping to the outcome shape; it has no instance form.
+	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
 	 */
-	#[\Override]
 	public function outcomes(string $keyPrefix): array {
 		if ($keyPrefix === '' || $this->available() === false) {
 			return [];
@@ -78,9 +87,7 @@ final class OpenRegisterAutomationOutcomeReader implements AutomationOutcomeRead
 				return [];
 			}
 
-			$records = $service->find(
-				AutomationRecordFilter::fromOutcomeParams(params: ['keyPrefix' => $keyPrefix, 'limit' => self::READ_LIMIT])
-			);
+			$records = $service->find(new AutomationRecordFilter(keyPrefix: $keyPrefix, limit: self::READ_LIMIT));
 
 			$outcomes = [];
 			foreach ($records as $record) {

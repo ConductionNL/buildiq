@@ -22,13 +22,13 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\AutomationsController;
-use OCA\Buildiq\Kernel\Contracts\AutomationOutcomeReaderInterface;
 use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
 use OCA\Buildiq\Service\AutomationOutcomeRuns;
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\Buildiq\Service\AutomationWriteService;
 use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\ConditionActionExecutor;
+use OCA\Buildiq\Service\OpenRegisterAutomationOutcomeReader;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -52,8 +52,20 @@ final class AutomationsControllerOutcomeRunsTest extends TestCase {
 	 * @var array<string, array<string, mixed>>
 	 */
 	private const OBJECTS = [
-		'aut-1' => ['id' => 'aut-1', 'applicationSlug' => 'pipelinq', 'versionUuid' => 'v-1', 'trigger' => ['type' => 'object-created', 'schema' => 'lead'], 'actions' => [['type' => 'send-notification']]],
-		'aut-2' => ['id' => 'aut-2', 'applicationSlug' => 'pipelinq', 'versionUuid' => 'v-1', 'trigger' => ['type' => 'manual'], 'actions' => [['type' => 'send-notification']]],
+		'aut-1' => [
+			'id' => 'aut-1',
+			'applicationSlug' => 'pipelinq',
+			'versionUuid' => 'v-1',
+			'trigger' => ['type' => 'object-created', 'schema' => 'lead'],
+			'actions' => [['type' => 'send-notification']],
+		],
+		'aut-2' => [
+			'id' => 'aut-2',
+			'applicationSlug' => 'pipelinq',
+			'versionUuid' => 'v-1',
+			'trigger' => ['type' => 'manual'],
+			'actions' => [['type' => 'send-notification']],
+		],
 		'pipelinq' => ['id' => 'app-1', 'slug' => 'pipelinq', 'permissions' => ['owners' => ['user:alice'], 'editors' => ['user:bob']]],
 		'other' => ['id' => 'app-2', 'slug' => 'other', 'permissions' => ['owners' => ['user:carol']]],
 	];
@@ -99,23 +111,31 @@ final class AutomationsControllerOutcomeRunsTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->request     = $this->createMock(IRequest::class);
-		$this->userSession = $this->createMock(IUserSession::class);
-		$this->runs        = $this->createMock(AutomationRunRecorderInterface::class);
-		$groupManager      = $this->createMock(IGroupManager::class);
+		$this->request     = $this->createMock(originalClassName: IRequest::class);
+		$this->userSession = $this->createMock(originalClassName: IUserSession::class);
+		$this->runs        = $this->createMock(originalClassName: AutomationRunRecorderInterface::class);
+		$groupManager      = $this->createMock(originalClassName: IGroupManager::class);
 		$groupManager->method('getUserGroups')->willReturn([]);
 		$groupManager->method('isAdmin')->willReturn(false);
 
-		$objects = $this->createMock(ObjectServiceInterface::class);
-		$objects->method('find')->willReturnCallback(fn (int|string $id): ?ObjectEntity => isset(self::OBJECTS[$id]) ? $this->entity(payload: self::OBJECTS[$id]) : null);
+		$objects = $this->createMock(originalClassName: ObjectServiceInterface::class);
+		$objects->method('find')->willReturnCallback(
+			function (int|string $id): ?ObjectEntity {
+				if (isset(self::OBJECTS[$id]) === false) {
+					return null;
+				}
 
-		$reader = $this->createMock(AutomationOutcomeReaderInterface::class);
+				return $this->entity(payload: self::OBJECTS[$id]);
+			}
+		);
+
+		$reader = $this->createMock(originalClassName: OpenRegisterAutomationOutcomeReader::class);
 		$reader->method('outcomes')->willReturnCallback(fn (): array => $this->outcomes);
 
-		$compiler           = $this->createMock(AutomationCompilerService::class);
-		$permissionResolver = new PermissionResolver($groupManager, $this->createMock(LoggerInterface::class));
+		$compiler           = $this->createMock(originalClassName: AutomationCompilerService::class);
+		$permissionResolver = new PermissionResolver(groupManager: $groupManager, logger: $this->createMock(originalClassName: LoggerInterface::class));
 		$writeService       = new AutomationWriteService(
-			logger: $this->createMock(LoggerInterface::class),
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
 			objectService: $objects,
 			compiler: $compiler,
 			permissionResolver: $permissionResolver,
@@ -124,9 +144,9 @@ final class AutomationsControllerOutcomeRunsTest extends TestCase {
 
 		$this->controller = new AutomationsController(
 			request: $this->request,
-			logger: $this->createMock(LoggerInterface::class),
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
 			compiler: $compiler,
-			conditionExecutor: $this->createMock(ConditionActionExecutor::class),
+			conditionExecutor: $this->createMock(originalClassName: ConditionActionExecutor::class),
 			caller: new CallerContext(userSession: $this->userSession, groupManager: $groupManager, permissionResolver: $permissionResolver),
 			writeService: $writeService,
 			runs: $this->runs,
@@ -167,7 +187,7 @@ final class AutomationsControllerOutcomeRunsTest extends TestCase {
 	 * @return void
 	 */
 	private function signIn(string $uid): void {
-		$user = $this->createMock(IUser::class);
+		$user = $this->createMock(originalClassName: IUser::class);
 		$user->method('getUID')->willReturn($uid);
 		$this->userSession->method('getUser')->willReturn($user);
 	}//end signIn()
@@ -192,7 +212,15 @@ final class AutomationsControllerOutcomeRunsTest extends TestCase {
 		$this->signIn(uid: 'bob');
 		$this->query(params: []);
 		$this->outcomes = [
-			['kind' => 'notification', 'key' => 'aut-aut-1-1', 'at' => '2026-11-24T09:30:00+00:00', 'subject' => ['id' => 'lead-7'], 'outcome' => 'sent', 'reason' => null, 'recipients' => 2],
+			[
+				'kind' => 'notification',
+				'key' => 'aut-aut-1-1',
+				'at' => '2026-11-24T09:30:00+00:00',
+				'subject' => ['id' => 'lead-7'],
+				'outcome' => 'sent',
+				'reason' => null,
+				'recipients' => 2,
+			],
 		];
 		$this->runs->expects($this->once())->method('runsOf')
 			->with('aut-1', [], AutomationOutcomeRuns::RECORDED_LIMIT, 0)
@@ -201,12 +229,12 @@ final class AutomationsControllerOutcomeRunsTest extends TestCase {
 		$response = $this->controller->runs(uuid: 'aut-1');
 		$data     = $response->getData();
 
-		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertSame(2, $data['total']);
-		$this->assertSame('openregister', $data['results'][0]['source']);
-		$this->assertSame(['schema' => 'lead', 'uuid' => 'lead-7'], $data['results'][0]['subject']);
-		$this->assertSame('r1', $data['results'][1]['id']);
-		$this->assertSame('2026-11-24T09:30:00+00:00', $data['summary']['lastRunAt']);
+		$this->assertSame(expected: Http::STATUS_OK, actual: $response->getStatus());
+		$this->assertSame(expected: 2, actual: $data['total']);
+		$this->assertSame(expected: 'openregister', actual: $data['results'][0]['source']);
+		$this->assertSame(expected: ['schema' => 'lead', 'uuid' => 'lead-7'], actual: $data['results'][0]['subject']);
+		$this->assertSame(expected: 'r1', actual: $data['results'][1]['id']);
+		$this->assertSame(expected: '2026-11-24T09:30:00+00:00', actual: $data['summary']['lastRunAt']);
 	}//end testTheRunsIncludeOpenRegistersRecord()
 
 	/**
@@ -220,7 +248,7 @@ final class AutomationsControllerOutcomeRunsTest extends TestCase {
 		$page = ['results' => [['id' => 'r1']], 'total' => 1, 'summary' => ['lastRunAt' => 'x', 'lastOutcome' => 'failed', 'lastError' => 'boom']];
 		$this->runs->expects($this->once())->method('runsOf')->with('aut-1', ['outcome' => 'failed'], 25, 0)->willReturn($page);
 
-		$this->assertSame($page, $this->controller->runs(uuid: 'aut-1')->getData());
+		$this->assertSame(expected: $page, actual: $this->controller->runs(uuid: 'aut-1')->getData());
 	}//end testWithoutARecordTheRunLogAnswersAsBefore()
 
 	/**
@@ -232,15 +260,26 @@ final class AutomationsControllerOutcomeRunsTest extends TestCase {
 		$this->signIn(uid: 'bob');
 		$this->query(params: ['uuids' => 'aut-1,aut-2']);
 		$this->outcomes = [
-			['kind' => 'notification', 'key' => 'aut-aut-1-1', 'at' => '2026-11-24T09:30:00+00:00', 'subject' => ['id' => 'lead-7'], 'outcome' => 'failed', 'reason' => 'mail server down'],
+			[
+				'kind' => 'notification',
+				'key' => 'aut-aut-1-1',
+				'at' => '2026-11-24T09:30:00+00:00',
+				'subject' => ['id' => 'lead-7'],
+				'outcome' => 'failed',
+				'reason' => 'mail server down',
+			],
 		];
-		$this->runs->method('runsOf')->willReturn(['results' => [['id' => 'r1', 'startedAt' => '2026-11-20T10:00:00+00:00', 'outcome' => 'succeeded']], 'total' => 1, 'summary' => []]);
+		$recorded = [['id' => 'r1', 'startedAt' => '2026-11-20T10:00:00+00:00', 'outcome' => 'succeeded']];
+		$this->runs->method('runsOf')->willReturn(['results' => $recorded, 'total' => 1, 'summary' => []]);
 		$manual = ['lastRunAt' => null, 'lastOutcome' => null, 'lastError' => null];
 		$this->runs->expects($this->once())->method('summaryOf')->with('aut-2')->willReturn($manual);
 
 		$summaries = (array)$this->controller->runsSummary()->getData()['summaries'];
 
-		$this->assertSame(['lastRunAt' => '2026-11-24T09:30:00+00:00', 'lastOutcome' => 'failed', 'lastError' => 'mail server down'], $summaries['aut-1']);
-		$this->assertSame($manual, $summaries['aut-2']);
+		$this->assertSame(
+			expected: ['lastRunAt' => '2026-11-24T09:30:00+00:00', 'lastOutcome' => 'failed', 'lastError' => 'mail server down'],
+			actual: $summaries['aut-1']
+		);
+		$this->assertSame(expected: $manual, actual: $summaries['aut-2']);
 	}//end testTheSummaryCountsOpenRegistersRecord()
 }//end class

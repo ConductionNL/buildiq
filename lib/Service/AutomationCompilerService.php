@@ -1102,7 +1102,8 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 */
 	private function compileDialectBackend(CompileInput $input, array &$plan): void {
 		$notifIndex    = 0;
-		$automationKey = AutomationOutcomeKeys::forAutomation(automation: $input->automation);
+		$outcomeKeys   = new AutomationOutcomeKeys();
+		$automationKey = $outcomeKeys->forAutomation(automation: $input->automation);
 
 		foreach ($input->actions as $action) {
 			$type = (string)($action['type'] ?? '');
@@ -1114,7 +1115,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 					'key' => 'aut-' . $input->slug . '-' . $notifIndex,
 					'entry' => self::withOutcomeKey(
 						entry: $this->notificationEntry(input: $input, action: $action),
-						key: AutomationOutcomeKeys::notification(automationKey: $automationKey, position: $notifIndex)
+						key: $outcomeKeys->notification(automationKey: $automationKey, position: $notifIndex)
 					),
 				];
 				continue;
@@ -1219,7 +1220,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 			'schema' => (string)($input->trigger['schema'] ?? ''),
 			'transition' => (string)($input->trigger['transition'] ?? ''),
 			'marker' => $marker,
-			'action' => self::withOutcomeKey(entry: $body, key: AutomationOutcomeKeys::forAutomation(automation: $input->automation)),
+			'action' => self::withOutcomeKey(entry: $body, key: (new AutomationOutcomeKeys())->forAutomation(automation: $input->automation)),
 		];
 	}//end lifecycleActionEntry()
 
