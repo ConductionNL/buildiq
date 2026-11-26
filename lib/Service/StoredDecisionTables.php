@@ -138,9 +138,44 @@ class StoredDecisionTables implements StoredDecisionTablesInterface {
 	 * @spec openspec/changes/decision-tables-live-in-openregister/specs/business-rules-engine/spec.md
 	 */
 	public function forRuleSet(array $ruleSet): array {
+		$found = $this->findStored(ruleSet: $ruleSet);
+		if ($found === null) {
+			return [];
+		}
+
+		return [$this->shape->fromStored(row: $found['row'], ruleSetSlug: (string)$ruleSet['slug'])];
+
+	}//end forRuleSet()
+
+	/**
+	 * The key of the table forRuleSet() reads for a rule set: its own key, or
+	 * else the shared `buildiq.<rule-set-slug>` a seed ships. A compiled
+	 * decision step must name the table that exists; the rule set's own key
+	 * alone named no table for a seeded rule set, whose import stamps an
+	 * organisation the seed's table key cannot carry.
+	 *
+	 * @param array<string,mixed> $ruleSet The resolved rule set.
+	 *
+	 * @return string|null The key, or null when the rule set has no runnable table.
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
+	 */
+	public function runnableKeyOf(array $ruleSet): ?string {
+		return $this->findStored(ruleSet: $ruleSet)['key'] ?? null;
+
+	}//end runnableKeyOf()
+
+	/**
+	 * The first runnable stored table of a rule set, under its own key or the shared one.
+	 *
+	 * @param array<string,mixed> $ruleSet The resolved rule set.
+	 *
+	 * @return array{key:string,row:mixed}|null The key and the stored row, or null.
+	 */
+	private function findStored(array $ruleSet): ?array {
 		$slug = (string)($ruleSet['slug'] ?? '');
 		if ($slug === '') {
-			return [];
+			return null;
 		}
 
 		$keys = [$this->keyOfRuleSet(ruleSet: $ruleSet)];
@@ -151,23 +186,20 @@ class StoredDecisionTables implements StoredDecisionTablesInterface {
 
 		foreach ($keys as $key) {
 			try {
-				$row = $this->store->find(reference: $key);
+				return ['key' => $key, 'row' => $this->store->find(reference: $key)];
 			} catch (UnexpectedValueException $e) {
 				$this->logger->debug(
 					'Buildiq: no runnable decision table under "' . $key . '"',
 					['ruleSet' => $slug, 'reason' => $e->getMessage()]
 				);
-				continue;
 			}
-
-			return [$this->shape->fromStored(row: $row, ruleSetSlug: $slug)];
 		}
 
 		$this->logger->info('Buildiq: rule set "' . $slug . '" has no runnable decision table in OpenRegister', ['keys' => $keys]);
 
-		return [];
+		return null;
 
-	}//end forRuleSet()
+	}//end findStored()
 
 	/**
 	 * Write a rule set's table into OpenRegister, replacing the one it had.

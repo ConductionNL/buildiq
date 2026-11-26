@@ -87,7 +87,9 @@ class AutomationRuleSets {
 			if ($ruleType === 'decision-table') {
 				$table = ($this->tables->forRuleSet(ruleSet: $ruleSet)[0] ?? null);
 				if (is_array($table) === true) {
-					$tableRef = $this->tables->keyOfRuleSet(ruleSet: $ruleSet);
+					// The key of the table that exists: a seeded rule set's
+					// table carries the shared key, not the organisation's.
+					$tableRef = (string)($this->tables->runnableKeyOf(ruleSet: $ruleSet) ?? '');
 					$outputs = self::columnNames(columns: (array)($table['outputColumns'] ?? []));
 				}
 			}
