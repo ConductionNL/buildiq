@@ -164,6 +164,27 @@ artifact (e.g. tweaking a schedules entry directly in the page designer)
 shows a **drift** badge; **Recompile (overwrite)** restores it — the
 automation definition always wins.
 
+## Runs
+
+*Runs* on an automation row opens its run log: every run buildiq dispatched
+itself (a manual run, an approval and its decision, a generated document), and
+the notifications and typed lifecycle actions OpenRegister executed for it.
+
+The compiler gives each notification the key `aut-<automation uuid>-<n>` and
+each typed lifecycle action the key `aut-<automation uuid>`. OpenRegister
+records an outcome under that key each time it sends the notification or runs
+the action, and buildiq reads those records back (OpenRegister's
+`/api/automation-outcomes`, under your own access), so such a run shows what
+really happened: sent, failed or skipped, the reason, and how many people a
+notification reached. OpenRegister keeps these records for 90 days and does not
+time them, so these rows have no duration.
+
+An action OpenRegister keeps no record of shows "Runs in OpenRegister. No
+per-run record yet." in a run's detail, and an automation where every action is
+like that says "This automation runs entirely in OpenRegister" instead of a run
+table. An automation compiled before the keys existed starts showing its
+notifications after its next save or recompile.
+
 ## Enable / disable
 
 Disabling an automation recompiles with every artifact's own enabled switch

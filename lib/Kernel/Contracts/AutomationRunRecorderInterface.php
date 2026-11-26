@@ -13,7 +13,7 @@
  * @version   GIT: <git_id>
  * @link      https://github.com/ConductionNL/buildiq
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+ * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -37,7 +37,7 @@ namespace OCA\Buildiq\Kernel\Contracts;
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/buildiq
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+ * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
  */
 interface AutomationRunRecorderInterface {
 
@@ -60,7 +60,7 @@ interface AutomationRunRecorderInterface {
 	 *
 	 * @return array<string, mixed> The run, not yet written.
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	public function start(array $automation, string $trigger, ?array $subject, string $actor): array;
 
@@ -74,7 +74,7 @@ interface AutomationRunRecorderInterface {
 	 *
 	 * @return array<string, mixed> The run with the step.
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	public function step(array $run, string $action, string $outcome, string $message = ''): array;
 
@@ -87,7 +87,7 @@ interface AutomationRunRecorderInterface {
 	 *
 	 * @return string|null The run's uuid, or null when it could not be written.
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	public function finish(array $run, string $outcome, ?string $reason = null): ?string;
 
@@ -101,9 +101,32 @@ interface AutomationRunRecorderInterface {
 	 *
 	 * @return bool Whether the run was found and written.
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
 	public function complete(string $runUuid, string $outcome, array $steps, ?string $reason = null): bool;
+
+	/**
+	 * Complete a waiting run from the flow run that executed it.
+	 *
+	 * @param string               $runUuid The waiting run.
+	 * @param array<string, mixed> $result  {outcome, reason, durationMs, steps}.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 */
+	public function completeFromFlowRun(string $runUuid, array $result): bool;
+
+	/**
+	 * The waiting runs of one automation that an OpenRegister flow run will complete.
+	 *
+	 * @param string $automationUuid The automation.
+	 *
+	 * @return list<array<string, mixed>> The waiting runs, each with its `id` and `flowRun`.
+	 *
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 */
+	public function waitingOnFlowRuns(string $automationUuid): array;
 
 	/**
 	 * The runs of one automation, newest first, with its summary.
@@ -119,7 +142,7 @@ interface AutomationRunRecorderInterface {
 	 *     summary: array{lastRunAt: string|null, lastOutcome: string|null, lastError: string|null}
 	 * }
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
 	 */
 	public function runsOf(string $automationUuid, array $filters = [], int $limit = 25, int $offset = 0): array;
 
@@ -130,7 +153,7 @@ interface AutomationRunRecorderInterface {
 	 *
 	 * @return array{lastRunAt: string|null, lastOutcome: string|null, lastError: string|null}
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
 	 */
 	public function summaryOf(string $automationUuid): array;
 
@@ -141,7 +164,7 @@ interface AutomationRunRecorderInterface {
 	 *
 	 * @return int How many runs were deleted.
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-old-runs-are-pruned-and-the-last-run-stays-req-bqrl-005
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-old-runs-are-pruned-and-the-last-run-stays-req-bqrl-005
 	 */
 	public function prune(int $now): int;
 }//end interface
