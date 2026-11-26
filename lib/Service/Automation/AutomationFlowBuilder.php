@@ -42,6 +42,16 @@ use OCA\Buildiq\Service\FeelToJsonLogic;
 final class AutomationFlowBuilder {
 
 	/**
+	 * The triggering record's identifier as an object-write template reads it:
+	 * OpenRegister resolves `{{ }}` against the item's record itself and renders
+	 * the uuid there as `id` (there is no `uuid` key). Every update step that
+	 * changes the triggering record matches on this.
+	 *
+	 * @var string
+	 */
+	public const RECORD_ID = '{{id}}';
+
+	/**
 	 * Action kinds that only a flow runs (D1).
 	 *
 	 * @var array<int, string>
@@ -523,18 +533,27 @@ final class AutomationFlowBuilder {
 	}//end sourceCallConfig()
 
 	/**
-	 * A field mapping with `{{field}}` read from the triggering record, as the
-	 * flow keeps it under `json` (D4). Values without a placeholder stay as they are.
+	 * A field mapping with `{{field}}` read from the triggering record. An
+	 * object-write step resolves each placeholder against the item's record
+	 * itself (OpenRegister docs/features/flows.md: `{{ title }}` reads the
+	 * item's `title`), so a placeholder keeps its field name; a `json.` prefix
+	 * (the earlier D4 reading) is dropped, because it would look for a `json`
+	 * field inside the record and never resolve. `{{uuid}}` names the record's
+	 * own identifier and compiles to {@see self::RECORD_ID}. Values without a
+	 * placeholder stay as they are.
 	 *
 	 * @param array<string, mixed> $mapping The mapping.
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 */
 	private static function templated(array $mapping): array {
 		$out = [];
 		foreach ($mapping as $field => $value) {
 			if (is_string($value) === true) {
-				$value = preg_replace('/\{\{\s*(?!json\.)([A-Za-z0-9_.@-]+)\s*\}\}/', '{{json.$1}}', $value);
+				$value = preg_replace('/\{\{\s*(?:json\.)?uuid\s*\}\}/', self::RECORD_ID, $value);
+				$value = preg_replace('/\{\{\s*(?:json\.)?([A-Za-z0-9_.@-]+)\s*\}\}/', '{{$1}}', $value);
 			}
 
 			$out[(string)$field] = $value;

@@ -3161,6 +3161,40 @@
               "value": "node_modules/@nextcloud/vue/node_modules/vue-router"
             }
           ]
+        },
+        {
+          "type": "library",
+          "name": "pinia",
+          "version": "4.1.0",
+          "bom-ref": "buildiq@0.2.0|@nextcloud/vue@9.13.1|pinia@4.1.0",
+          "scope": "optional",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/pinia@4.1.0",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/pinia/-/pinia-4.1.0.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "fb9fc732e5636107ca9420f9c50ef37d79f5c54cd81446bba5dd0340ae5268c7d909a1514c795a1ff734d8dd45a0639d9734a2c1fe4438f809c7fff5403c3a83"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/@nextcloud/vue/node_modules/pinia"
+            }
+          ]
         }
       ]
     },
@@ -3380,6 +3414,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@parcel/watcher-android-arm64"
         }
@@ -3414,6 +3452,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@parcel/watcher-darwin-arm64"
@@ -3450,6 +3492,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@parcel/watcher-darwin-x64"
         }
@@ -3484,6 +3530,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@parcel/watcher-freebsd-x64"
@@ -3520,6 +3570,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@parcel/watcher-linux-arm-glibc"
         }
@@ -3554,6 +3608,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@parcel/watcher-linux-arm-musl"
@@ -3590,6 +3648,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@parcel/watcher-linux-arm64-glibc"
         }
@@ -3624,6 +3686,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@parcel/watcher-linux-arm64-musl"
@@ -3660,6 +3726,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@parcel/watcher-linux-x64-glibc"
         }
@@ -3694,6 +3764,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@parcel/watcher-linux-x64-musl"
@@ -3730,6 +3804,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@parcel/watcher-win32-arm64"
         }
@@ -3764,6 +3842,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@parcel/watcher-win32-x64"
@@ -3800,6 +3882,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@parcel/watcher"
         }
@@ -3834,6 +3920,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rolldown/binding-android-arm-eabi"
@@ -3870,6 +3960,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rolldown/binding-android-arm64"
         }
@@ -3904,6 +3998,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rolldown/binding-darwin-arm64"
@@ -3940,6 +4038,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rolldown/binding-darwin-x64"
         }
@@ -3974,6 +4076,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rolldown/binding-freebsd-x64"
@@ -4010,6 +4116,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rolldown/binding-linux-arm-gnueabihf"
         }
@@ -4044,6 +4154,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rolldown/binding-linux-arm64-gnu"
@@ -4080,6 +4194,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rolldown/binding-linux-arm64-musl"
         }
@@ -4114,6 +4232,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rolldown/binding-linux-ppc64-gnu"
@@ -4150,6 +4272,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rolldown/binding-linux-s390x-gnu"
         }
@@ -4184,6 +4310,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rolldown/binding-linux-x64-gnu"
@@ -4220,6 +4350,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rolldown/binding-linux-x64-musl"
         }
@@ -4254,6 +4388,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rolldown/binding-openharmony-arm64"
@@ -4290,6 +4428,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rolldown/binding-win32-arm64-msvc"
         }
@@ -4324,6 +4466,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rolldown/binding-win32-x64-msvc"
@@ -16758,6 +16904,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/lightningcss-android-arm64"
         }
@@ -16791,6 +16941,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/lightningcss-darwin-arm64"
@@ -16826,6 +16980,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/lightningcss-darwin-x64"
         }
@@ -16859,6 +17017,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/lightningcss-freebsd-x64"
@@ -16894,6 +17056,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/lightningcss-linux-arm-gnueabihf"
         }
@@ -16927,6 +17093,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/lightningcss-linux-arm64-gnu"
@@ -16962,6 +17132,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/lightningcss-linux-arm64-musl"
         }
@@ -16995,6 +17169,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/lightningcss-linux-x64-gnu"
@@ -17030,6 +17208,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/lightningcss-linux-x64-musl"
         }
@@ -17064,6 +17246,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/lightningcss-win32-arm64-msvc"
         }
@@ -17097,6 +17283,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/lightningcss-win32-x64-msvc"
@@ -19563,6 +19753,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/node-addon-api"
@@ -24135,8 +24329,8 @@
     {
       "type": "library",
       "name": "stylelint-config-recommended-scss",
-      "version": "18.0.0",
-      "bom-ref": "buildiq@0.2.0|stylelint-config-recommended-scss@18.0.0",
+      "version": "17.0.1",
+      "bom-ref": "buildiq@0.2.0|stylelint-config-recommended-scss@17.0.1",
       "licenses": [
         {
           "license": {
@@ -24144,15 +24338,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/stylelint-config-recommended-scss@18.0.0",
+      "purl": "pkg:npm/stylelint-config-recommended-scss@17.0.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/stylelint-config-recommended-scss/-/stylelint-config-recommended-scss-18.0.0.tgz",
+          "url": "https://registry.npmjs.org/stylelint-config-recommended-scss/-/stylelint-config-recommended-scss-17.0.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "8668cf51a5c207386b9708d8ff83aee48e323de0541dd533c0d808b998129b759aa323da3082abbf3736a07e16895d28fd455c9463af906aa160ea733bc5b609"
+              "content": "c790d57a1cc9b9d730174a1ddec1a9824967d8f2cbada9c513bb70c1ba7b76a0c8342c99bf0cc590c73a4cb84d3af6b346254125801340ba2e258d313c607c58"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -24166,45 +24360,6 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/stylelint-config-recommended-scss"
-        }
-      ],
-      "components": [
-        {
-          "type": "library",
-          "name": "stylelint-config-recommended",
-          "version": "19.0.0",
-          "bom-ref": "buildiq@0.2.0|stylelint-config-recommended-scss@18.0.0|stylelint-config-recommended@19.0.0",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/stylelint-config-recommended@19.0.0",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/stylelint-config-recommended/-/stylelint-config-recommended-19.0.0.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "635e57075f5131a9ea04ea5b442e36b45f11fc77dedf5e3160bcde7519679d8c58cd9d3befb45a90340819ca987ebcfd8d61a85728da1937694a5f45faba0e3b"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:development",
-              "value": "true"
-            },
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/stylelint-config-recommended-scss/node_modules/stylelint-config-recommended"
-            }
-          ]
         }
       ]
     },
@@ -26351,6 +26506,10 @@
             }
           ],
           "properties": [
+            {
+              "name": "cdx:npm:package:development",
+              "value": "true"
+            },
             {
               "name": "cdx:npm:package:path",
               "value": "node_modules/vite/node_modules/fsevents"
