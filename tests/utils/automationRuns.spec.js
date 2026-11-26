@@ -7,16 +7,41 @@
  * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md
  */
 import { describe, expect, it } from 'vitest'
-import { lastRunText, openRegisterSteps, outcomeLabel, runsEntirelyInOpenRegister, runsInOpenRegister, runTime } from '../../src/utils/automationRuns.js'
+import { durationText, lastRunText, openRegisterSteps, outcomeLabel, runsEntirelyInOpenRegister, runsInOpenRegister, runTime, stepDetail, unrecordedInOpenRegister } from '../../src/utils/automationRuns.js'
 
 const onCreate = (actions) => ({ trigger: { type: 'object-created', schema: 'ticket' }, actions })
 
 describe('automationRuns', () => {
-	it('says a notification-only automation runs entirely in OpenRegister', () => {
-		expect(runsEntirelyInOpenRegister(onCreate([{ type: 'send-notification' }]))).toBe(true)
-		expect(runsEntirelyInOpenRegister(onCreate([{ type: 'send-notification' }, { type: 'approval' }]))).toBe(false)
+	it('says an automation runs entirely in OpenRegister only when nothing it does leaves a record', () => {
+		expect(runsEntirelyInOpenRegister(onCreate([{ type: 'webhook' }]))).toBe(true)
+		expect(runsEntirelyInOpenRegister(onCreate([{ type: 'send-notification' }]))).toBe(false)
+		expect(runsEntirelyInOpenRegister(onCreate([{ type: 'webhook' }, { type: 'approval' }]))).toBe(false)
 		expect(runsEntirelyInOpenRegister(onCreate([]))).toBe(false)
-		expect(runsEntirelyInOpenRegister({ trigger: { type: 'manual' }, actions: [{ type: 'send-notification' }] })).toBe(false)
+		expect(runsEntirelyInOpenRegister({ trigger: { type: 'manual' }, actions: [{ type: 'webhook' }] })).toBe(false)
+	})
+
+	it('counts a notification as recorded by OpenRegister, and a webhook as not', () => {
+		const automation = onCreate([{ type: 'send-notification' }, { type: 'webhook' }])
+		expect(unrecordedInOpenRegister(automation, { type: 'send-notification' })).toBe(false)
+		expect(unrecordedInOpenRegister(automation, { type: 'webhook' })).toBe(true)
+		expect(unrecordedInOpenRegister(automation, { type: 'approval' })).toBe(false)
+		expect(openRegisterSteps(automation)).toEqual([{ action: 'webhook', outcome: 'in-openregister', message: '' }])
+	})
+
+	it('words a step after its outcome: its message, the people a notification reached, or nothing', () => {
+		expect(stepDetail({ outcome: 'failed', message: 'mail server down', recipients: 0 })).toBe('mail server down')
+		expect(stepDetail({ outcome: 'succeeded', message: '', recipients: 1 })).toBe('Sent to 1 person')
+		expect(stepDetail({ outcome: 'succeeded', message: '', recipients: 3 })).toBe('Sent to 3 people')
+		expect(stepDetail({ outcome: 'succeeded', message: '', recipients: 0 })).toBe('')
+		expect(stepDetail({ outcome: 'in-openregister', message: 'ignored' })).toBe('')
+		expect(stepDetail(null)).toBe('')
+	})
+
+	it('shows a duration only when the run has one', () => {
+		expect(durationText({ durationMs: 184 })).toBe('184 ms')
+		expect(durationText({ durationMs: 0 })).toBe('0 ms')
+		expect(durationText({ durationMs: null })).toBe('')
+		expect(durationText(undefined)).toBe('')
 	})
 
 	it('counts an approve or reject follow-up as buildiq\'s own', () => {

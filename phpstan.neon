@@ -40,3 +40,6 @@ parameters:
         # they are registered on. The stub was already loaded by the unit-test
         # bootstrap; phpstan simply never saw it.
         - tests/stubs/openregister-leaf.stub.php
+        # OpenRegister's automation outcome records, read by
+        # OpenRegisterAutomationOutcomeReader (logic-automation-run-log D4).
+        - tests/stubs/openregister-automation-outcome.stub.php

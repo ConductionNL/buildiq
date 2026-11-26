@@ -79,11 +79,11 @@ namespace OCA\Buildiq\Controller;
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
-use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
 use OCA\Buildiq\Kernel\Contracts\AutomationWriteServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ConditionActionExecutorInterface;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Service\Automation\ManualAutomationRun;
+use OCA\Buildiq\Service\AutomationRunHistory;
 use OCA\Buildiq\Service\Automation\ScriptSteps;
 use OCA\Buildiq\Service\CallerContext;
 use OCP\AppFramework\Controller;
@@ -159,10 +159,12 @@ class AutomationsController extends Controller {
 	 * @param ConditionActionExecutorInterface $conditionExecutor Rules engine executor (dry-run panel).
 	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
 	 * @param AutomationWriteServiceInterface $writeService Create/update/delete write path.
-	 * @param AutomationRunRecorderInterface|null $runs The run log (logic-automation-run-log).
+	 * @param AutomationRunHistory|null $runs The run log, with what OpenRegister recorded (logic-automation-run-log).
 	 * @param ManualAutomationRun|null $manualRuns Lists and starts manual automations on a record (logic-automation-actions-that-run D8).
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
 	 */
 	public function __construct(
 		IRequest $request,
@@ -171,7 +173,7 @@ class AutomationsController extends Controller {
 		private readonly ConditionActionExecutorInterface $conditionExecutor,
 		CallerContext $caller,
 		private readonly AutomationWriteServiceInterface $writeService,
-		private readonly ?AutomationRunRecorderInterface $runs = null,
+		private readonly ?AutomationRunHistory $runs = null,
 		private readonly ?ManualAutomationRun $manualRuns = null,
 	) {
 		$this->userSession = $caller->userSession;
@@ -448,6 +450,7 @@ class AutomationsController extends Controller {
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
 	 */
 	#[NoAdminRequired]
 	public function runs(string $uuid): JSONResponse {
@@ -455,7 +458,7 @@ class AutomationsController extends Controller {
 			uuid: $uuid,
 			roles: self::WRITE_ROLES,
 			productionRoles: null,
-			action: function () use ($uuid): JSONResponse {
+			action: function (array $automation) use ($uuid): JSONResponse {
 				if ($this->runs === null) {
 					return $this->error(code: 'unavailable', detail: 'The run log is not available', status: Http::STATUS_SERVICE_UNAVAILABLE);
 				}
@@ -473,7 +476,10 @@ class AutomationsController extends Controller {
 				$this->manualRuns?->reconcile(automationUuid: $uuid);
 
 				return new JSONResponse(
-					data: $this->runs->runsOf(automationUuid: $uuid, filters: $filters, limit: $limit, offset: $offset),
+					data: $this->runs->pageFor(
+						automation: $automation,
+						query: ['uuid' => $uuid, 'filters' => $filters, 'limit' => $limit, 'offset' => $offset]
+					),
 					statusCode: Http::STATUS_OK
 				);
 			}
@@ -507,15 +513,16 @@ class AutomationsController extends Controller {
 			self::RUNS_MAX_LIMIT
 		);
 
+		$runs      = $this->runs;
 		$summaries = [];
 		foreach ($uuids as $uuid) {
 			$answer = $this->withAutomation(
 				uuid: $uuid,
 				roles: self::WRITE_ROLES,
 				productionRoles: null,
-				action: function () use ($uuid): JSONResponse {
+				action: function (array $automation) use ($runs, $uuid): JSONResponse {
 					$this->manualRuns?->reconcile(automationUuid: $uuid);
-					return new JSONResponse(data: $this->runs->summaryOf(automationUuid: $uuid), statusCode: Http::STATUS_OK);
+					return new JSONResponse(data: $runs->summaryFor(automation: $automation, uuid: $uuid), statusCode: Http::STATUS_OK);
 				}
 			);
 			if ($answer->getStatus() === Http::STATUS_OK) {
