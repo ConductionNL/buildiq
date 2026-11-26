@@ -98,6 +98,21 @@ typed lifecycle actions. When those land, the recorder reads them into the same
 run shape. Schedules link to the synchronization log in integriq, whose app id
 `fleetAppId.js` resolves.
 
+Since 26 Nov 2026 (T11): OpenRegister records an outcome per notification run
+and per typed lifecycle action run (`a-consuming-app-reads-what-a-notification-and-a-lifecycle-action-did`,
+on OpenRegister main), under the rule's or action's own `key`. The compiler
+writes `key: aut-<automation uuid>-<n>` on each notification and
+`key: aut-<automation uuid>` on each typed lifecycle action: the uuid, not the
+slug, so two apps with the same automation slug never read each other's
+outcomes. `AutomationRunHistory` reads them through
+`OpenRegisterAutomationOutcomeReader` (OpenRegister's `AutomationRecordService`
+in-process, under the caller) and the runs endpoint pages them with the
+recorded runs, each as a run with `source: openregister` and one step. A
+notification is no longer labelled `in-openregister`. A webhook or object
+operation keeps the label until OpenRegister main executes buildiq's typed
+lifecycle actions (`related-object-upsert`, `webhook-dispatch`), which it does
+not yet; once it does, their outcomes show without a buildiq change.
+
 ## D5. Retention
 
 A background job `AutomationRunPruneJob` (daily) deletes `automation-run`

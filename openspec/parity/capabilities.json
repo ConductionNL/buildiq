@@ -4938,16 +4938,16 @@
 			"mendix": "partial",
 			"power-apps": "yes",
 			"built": {
-				"state": "building",
-				"evidence": "Building in openspec/changes/logic-automation-run-log: T01 to T06 are merged (the automation-run schema in lib/Settings/register.d, AutomationRunRecorder called from RuleEngineService, AutomationsController::runs() and ::runsSummary(), src/modals/AutomationRunsModal.vue and the last-run line in src/views/AutomationsPage.vue). T09: tests/e2e/automation-runs.spec.ts is written and runs in the nightly, not yet verified live. Open: the cross-repo notification outcome (T11).",
+				"state": "built",
+				"evidence": "Built by change logic-automation-run-log (archived 2026-11-26): the automation-run schema in lib/Settings/register.d, AutomationRunRecorder called from RuleEngineService and the approval and document listeners, AutomationsController::runs() and ::runsSummary() through AutomationRunHistory, which also pages what OpenRegister recorded for an automation's notifications (OpenRegisterAutomationOutcomeReader over OpenRegister main's automation-outcome records, keys aut-<automation uuid>-<n>), src/modals/AutomationRunsModal.vue and the last-run line in src/views/AutomationsPage.vue. tests/e2e/automation-runs.spec.ts is written, not yet verified live.",
 				"reachedOn": "app detail /applications/{slug}, Flows widget rows open OpenRegister's flow page in a new tab",
-				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/rules-engine-operability (openregister lane, OpenSpec pass 2026-09-27). Spec round part 3 (2026-10-07): openregister/rules-engine-operability is delivered (OpenRegister rule run log) but logs no buildiq automation; the buildiq run log is specified in logic-automation-run-log.",
+				"owner": "ConductionNL/buildiq",
+				"note": "Partial, not yes: a webhook or object operation on a lifecycle transition still shows \"Runs in OpenRegister. No per-run record yet.\" because OpenRegister main does not execute buildiq's typed lifecycle actions; their outcomes show without a buildiq change once it does. Earlier: specified in ConductionNL/openregister openspec/changes/rules-engine-operability; the buildiq run log was specified in logic-automation-run-log.",
 				"change": "logic-automation-run-log",
-				"readOn": "2026-10-07",
+				"readOn": "2026-11-26",
 				"requirement": [
-					"openspec/changes/logic-automation-run-log/specs/automation-designer :: Every run of an automation that buildiq dispatches is recorded (REQ-BQRL-001)",
-					"openspec/changes/logic-automation-run-log/specs/automation-designer :: The Automations page shows the last run and opens the run log (REQ-BQRL-003)"
+					"openspec/changes/archive/2026-11-26-logic-automation-run-log/specs/automation-designer :: Every run of an automation that buildiq dispatches is recorded (REQ-BQRL-001)",
+					"openspec/changes/archive/2026-11-26-logic-automation-run-log/specs/automation-designer :: The Automations page shows the last run and opens the run log (REQ-BQRL-003)"
 				]
 			},
 			"provider": "openregister",
