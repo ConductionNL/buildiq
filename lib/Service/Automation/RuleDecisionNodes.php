@@ -142,7 +142,7 @@ final class RuleDecisionNodes {
 	private function writeNode(string $id, array $outputMapping): array {
 		$fields = [];
 		foreach ($outputMapping as $field) {
-			$fields[$field] = '{{json.' . $field . '}}';
+			$fields[$field] = '{{' . $field . '}}';
 		}
 
 		ksort($fields);
@@ -154,7 +154,7 @@ final class RuleDecisionNodes {
 				'register' => $this->register,
 				'schema' => $this->schema,
 				'operation' => 'update',
-				'match' => ['uuid' => '{{json.uuid}}'],
+				'match' => ['uuid' => AutomationFlowBuilder::RECORD_ID],
 				'fields' => $fields,
 			],
 		];
