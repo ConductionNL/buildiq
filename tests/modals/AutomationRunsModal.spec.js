@@ -7,7 +7,7 @@
  *
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md
+ * @spec openspec/specs/automation-designer/spec.md
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

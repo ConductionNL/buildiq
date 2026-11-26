@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
+ * @spec openspec/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ namespace OCA\Buildiq\Service;
  * position (`aut-<uuid>-1`); a lifecycle action carries the automation key
  * itself. Pure: no storage and no state.
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
+ * @spec openspec/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
  */
 final class AutomationOutcomeKeys {
 
@@ -48,7 +48,7 @@ final class AutomationOutcomeKeys {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
 	 */
 	public function forAutomation(array $automation): string {
 		$id = trim((string)($automation['id'] ?? ($automation['uuid'] ?? '')));
@@ -67,7 +67,7 @@ final class AutomationOutcomeKeys {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
 	 */
 	public function notification(string $automationKey, int $position): string {
 		if ($automationKey === '') {
@@ -87,7 +87,7 @@ final class AutomationOutcomeKeys {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-a-step-that-openregister-executes-is-labelled-never-invented-req-bqrl-004
 	 */
 	public function belongsTo(string $key, string $automationKey): bool {
 		if ($automationKey === '') {

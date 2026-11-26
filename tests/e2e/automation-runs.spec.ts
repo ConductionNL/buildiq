@@ -46,7 +46,7 @@
  * NOTE: Playwright binaries are NOT installed by `npm install`. Run
  * `npm run test:e2e:install` once before invoking `npm run test:e2e`.
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md
+ * @spec openspec/specs/automation-designer/spec.md
  * @e2e automation-designer/requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002/an-editor-reads-the-runs
  * @e2e automation-designer/requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002/filtering-on-failures
  * @e2e automation-designer/requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002/a-user-who-may-not-edit-the-application-reads-nothing

@@ -14,7 +14,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
+ * @spec openspec/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
  */
 
 declare(strict_types=1);

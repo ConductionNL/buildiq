@@ -4,7 +4,7 @@
  *
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md
+ * @spec openspec/specs/automation-designer/spec.md
  */
 import { describe, expect, it } from 'vitest'
 import { durationText, lastRunText, openRegisterSteps, outcomeLabel, runsEntirelyInOpenRegister, runsInOpenRegister, runTime, stepDetail, unrecordedInOpenRegister } from '../../src/utils/automationRuns.js'
