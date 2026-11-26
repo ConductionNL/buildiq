@@ -1101,7 +1101,9 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @return void
 	 */
 	private function compileDialectBackend(CompileInput $input, array &$plan): void {
-		$notifIndex = 0;
+		$notifIndex    = 0;
+		$outcomeKeys   = new AutomationOutcomeKeys();
+		$automationKey = $outcomeKeys->forAutomation(automation: $input->automation);
 
 		foreach ($input->actions as $action) {
 			$type = (string)($action['type'] ?? '');
@@ -1111,7 +1113,10 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 				$plan['notifications'][] = [
 					'schema' => (string)($input->trigger['schema'] ?? ''),
 					'key' => 'aut-' . $input->slug . '-' . $notifIndex,
-					'entry' => $this->notificationEntry(input: $input, action: $action),
+					'entry' => self::withOutcomeKey(
+						entry: $this->notificationEntry(input: $input, action: $action),
+						key: $outcomeKeys->notification(automationKey: $automationKey, position: $notifIndex)
+					),
 				];
 				continue;
 			}
@@ -1215,9 +1220,28 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 			'schema' => (string)($input->trigger['schema'] ?? ''),
 			'transition' => (string)($input->trigger['transition'] ?? ''),
 			'marker' => $marker,
-			'action' => $body,
+			'action' => self::withOutcomeKey(entry: $body, key: (new AutomationOutcomeKeys())->forAutomation(automation: $input->automation)),
 		];
 	}//end lifecycleActionEntry()
+
+	/**
+	 * A compiled notification or lifecycle action with the key OpenRegister
+	 * records its outcomes under, or unchanged without one.
+	 *
+	 * @param array<string,mixed> $entry The compiled entry.
+	 * @param string              $key   The outcome key, or ''.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @spec openspec/specs/automation-designer/spec.md#scenario-a-notifications-runs-come-from-openregisters-record
+	 */
+	private static function withOutcomeKey(array $entry, string $key): array {
+		if ($key !== '') {
+			$entry['key'] = $key;
+		}
+
+		return $entry;
+	}//end withOutcomeKey()
 
 	/**
 	 * Map an object-event trigger type to the notifications dialect's event

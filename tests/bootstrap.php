@@ -206,6 +206,9 @@ require_once __DIR__ . '/stubs/openregister-leaf.stub.php';
 // OpenRegister main's object-API value objects (ObjectSaveOptions and friends). Same guards.
 require_once __DIR__ . '/stubs/openregister-object-options.stub.php';
 
+// OpenRegister's automation outcome records (logic-automation-run-log D4). Same guards.
+require_once __DIR__ . '/stubs/openregister-automation-outcome.stub.php';
+
 // Same guard for the IMcpToolProvider interface which ships with OR but may
 // not be present until OR#1466 merges.
 require_once __DIR__ . '/Stubs/Mcp/IMcpToolProvider.php';
