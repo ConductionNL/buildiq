@@ -69,7 +69,7 @@ class AppListOrganisationScopeTest extends TestCase {
 	 */
 	public function testTheApplicationSchemaSharesOnlyAllScopedAppsAcrossOrganisations(): void {
 		$schema = $this->applicationSchema();
-		$this->assertNotSame([], $schema, 'The merged register has no Application schema (slug built-app).');
+		$this->assertNotSame(expected: [], actual: $schema, message: 'The merged register has no Application schema (slug built-app).');
 
 		$authorization = ($schema['authorization'] ?? []);
 		foreach ($authorization as $action => $rules) {
@@ -79,8 +79,8 @@ class AppListOrganisationScopeTest extends TestCase {
 				}
 
 				$this->assertTrue(
-					$this->ruleLimitsToSharedApps(rule: $rule),
-					'Application.' . $action . ' grants a cross-organisation rule that would expose a `holder` app: ' . json_encode($rule)
+					condition: $this->ruleLimitsToSharedApps(rule: $rule),
+					message: 'Application.' . $action . ' grants a cross-organisation rule that would expose a `holder` app: ' . json_encode($rule)
 				);
 			}
 		}
@@ -93,12 +93,16 @@ class AppListOrganisationScopeTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheRuleCheckRefusesAWiderCrossOrganisationRule(): void {
-		$this->assertTrue($this->ruleLimitsToSharedApps(rule: ['crossOrganisation' => true, 'match' => ['organisationScope' => 'all']]));
-		$this->assertTrue($this->ruleLimitsToSharedApps(rule: ['crossOrganisation' => true, 'match' => ['organisationScope' => ['$exists' => false]]]));
-		$this->assertFalse($this->ruleLimitsToSharedApps(rule: ['crossOrganisation' => true]));
-		$this->assertFalse($this->ruleLimitsToSharedApps(rule: ['crossOrganisation' => true, 'match' => ['status' => 'published']]));
-		$this->assertFalse($this->ruleLimitsToSharedApps(rule: ['crossOrganisation' => true, 'match' => ['organisationScope' => 'holder']]));
-		$this->assertFalse($this->ruleLimitsToSharedApps(rule: ['crossOrganisation' => true, 'match' => ['organisationScope' => ['$ne' => 'holder']]]));
+		$this->assertTrue(condition: $this->ruleLimitsToSharedApps(rule: ['crossOrganisation' => true, 'match' => ['organisationScope' => 'all']]));
+		$this->assertTrue(condition: $this->ruleLimitsToSharedApps(
+			rule: ['crossOrganisation' => true, 'match' => ['organisationScope' => ['$exists' => false]]]
+		));
+		$this->assertFalse(condition: $this->ruleLimitsToSharedApps(rule: ['crossOrganisation' => true]));
+		$this->assertFalse(condition: $this->ruleLimitsToSharedApps(rule: ['crossOrganisation' => true, 'match' => ['status' => 'published']]));
+		$this->assertFalse(condition: $this->ruleLimitsToSharedApps(rule: ['crossOrganisation' => true, 'match' => ['organisationScope' => 'holder']]));
+		$this->assertFalse(condition: $this->ruleLimitsToSharedApps(
+			rule: ['crossOrganisation' => true, 'match' => ['organisationScope' => ['$ne' => 'holder']]]
+		));
 	}//end testTheRuleCheckRefusesAWiderCrossOrganisationRule()
 
 	/**
@@ -110,7 +114,7 @@ class AppListOrganisationScopeTest extends TestCase {
 	 */
 	public function testNoManifestPageReadsApplicationsPastTheOrganisationFilter(): void {
 		$manifest = json_decode((string)file_get_contents($this->root() . '/src/manifest.json'), true);
-		$this->assertIsArray($manifest);
+		$this->assertIsArray(actual: $manifest);
 
 		$listPage = null;
 		foreach (($manifest['pages'] ?? []) as $page) {
@@ -119,13 +123,13 @@ class AppListOrganisationScopeTest extends TestCase {
 			}
 		}
 
-		$this->assertIsArray($listPage, 'The app list page VirtualApps is missing from src/manifest.json.');
-		$this->assertSame('buildiq', ($listPage['config']['register'] ?? null));
-		$this->assertSame(self::APPLICATION_SCHEMA, ($listPage['config']['schema'] ?? null));
+		$this->assertIsArray(actual: $listPage, message: 'The app list page VirtualApps is missing from src/manifest.json.');
+		$this->assertSame(expected: 'buildiq', actual: ($listPage['config']['register'] ?? null));
+		$this->assertSame(expected: self::APPLICATION_SCHEMA, actual: ($listPage['config']['schema'] ?? null));
 
 		$offenders = [];
 		$this->collectBypasses(node: $manifest, path: 'manifest', offenders: $offenders);
-		$this->assertSame([], $offenders, 'A manifest node lists Application objects past the organisation filter.');
+		$this->assertSame(expected: [], actual: $offenders, message: 'A manifest node lists Application objects past the organisation filter.');
 	}//end testNoManifestPageReadsApplicationsPastTheOrganisationFilter()
 
 	/**
@@ -147,7 +151,7 @@ class AppListOrganisationScopeTest extends TestCase {
 			}
 		}
 
-		$this->assertSame([], $offenders, 'These frontend files read Application objects and drop the organisation filter.');
+		$this->assertSame(expected: [], actual: $offenders, message: 'These frontend files read Application objects and drop the organisation filter.');
 	}//end testNoFrontendReaderOfApplicationsDropsTheOrganisationFilter()
 
 	/**
