@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: EUPL-1.2
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 /**
- * offline — app-side validation of the manifest's `offline` block until the
- * library manifest schema carries it (pages-installable-offline-and-mobile
- * T04, T07). Errors are `<pointer>: <code>` strings, like the sibling
- * validators, so the page designer marks the offending entry.
+ * offline — app-side validation of the manifest's `offline` block
+ * (pages-installable-offline-and-mobile T04, T07). The library manifest schema
+ * carries the block since @conduction/nextcloud-vue 2.233.0; this check keeps
+ * the same caps and adds what the schema cannot see, such as `forms` naming
+ * form pages of this manifest. Errors are `<pointer>: <code>` strings, like the
+ * sibling validators, so the page designer marks the offending entry.
  *
  * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
  */
 
-import { OFFLINE_LIMIT_MAX, OFFLINE_TTL_MAX } from '../offlineManifest.js'
+import { OFFLINE_LIMIT_MAX, OFFLINE_TAKE_ALONG_MAX, OFFLINE_TTL_MAX } from '../offlineManifest.js'
 
 const BLOCK_KEYS = ['takeAlong', 'forms']
 const ENTRY_KEYS = ['schema', 'filter', 'limit', 'ttlHours']
@@ -94,6 +96,21 @@ function listErrors(list, pointer, itemErrors) {
 }
 
 /**
+ * A `too-many` error when the take-along list is longer than the library's
+ * manifest schema allows.
+ *
+ * @param {unknown} list - the take-along list.
+ * @return {string[]}
+ *
+ * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+ */
+function takeAlongCountErrors(list) {
+	return Array.isArray(list) && list.length > OFFLINE_TAKE_ALONG_MAX
+		? ['/offline/takeAlong: buildiq.offline.error.too-many']
+		: []
+}
+
+/**
  * The ids of the manifest's form pages.
  *
  * @param {object} manifest - the manifest.
@@ -110,7 +127,8 @@ function formPageIds(manifest) {
 /**
  * The errors of a manifest's `offline` block; [] when it has none.
  *
- * `forms` must name form pages of this manifest.
+ * `forms` must name form pages of this manifest, and `takeAlong` holds at most
+ * OFFLINE_TAKE_ALONG_MAX entries.
  *
  * @param {object} manifest - the manifest.
  * @return {string[]}
@@ -128,6 +146,7 @@ export function validateOffline(manifest) {
 	const formPages = formPageIds(manifest)
 	return [
 		...unknownKeyErrors(block, BLOCK_KEYS, '/offline'),
+		...takeAlongCountErrors(block.takeAlong),
 		...listErrors(block.takeAlong, '/offline/takeAlong', entryErrors),
 		...listErrors(block.forms, '/offline/forms', (id, pointer) => (
 			formPages.has(id) ? [] : [`${pointer}: buildiq.offline.error.not-a-form-page`]

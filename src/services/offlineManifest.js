@@ -22,6 +22,12 @@ export const OFFLINE_LIMIT_MAX = 500
 /** The longest a taken-along copy may be used, in hours. */
 export const OFFLINE_TTL_MAX = 72
 
+/**
+ * The most take-along entries one manifest may declare, as the library's
+ * manifest schema caps `offline.takeAlong` (@conduction/nextcloud-vue 2.233.0).
+ */
+export const OFFLINE_TAKE_ALONG_MAX = 20
+
 /** A new take-along's record limit. */
 export const OFFLINE_LIMIT_DEFAULT = 50
 
