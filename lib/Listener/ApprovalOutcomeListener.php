@@ -40,26 +40,25 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-approval-steps/tasks.md#2.1
- * @spec openspec/changes/automation-approval-steps/tasks.md#2.2
- * @spec openspec/specs/automation-designer/spec.md#req-autd-004
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#2.1
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#2.2
+ * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Listener;
 
-use OCA\Buildiq\Service\AutomationCompilerService;
-use OCA\Buildiq\Service\RuleActionDispatcher;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\RuleActionDispatcherInterface;
+use OCA\Buildiq\Service\AutomationRunLog;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
 use Throwable;
 
 /**
@@ -67,7 +66,7 @@ use Throwable;
  *
  * @template-implements IEventListener<Event>
  *
- * @spec openspec/changes/automation-approval-steps/tasks.md#2.1
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#2.1
  */
 class ApprovalOutcomeListener implements IEventListener {
 	/**
@@ -77,24 +76,33 @@ class ApprovalOutcomeListener implements IEventListener {
 	private const PROVENANCE_PREFIX = 'aut-';
 
 	/**
+	 * OpenRegister's object service, resolved at call time.
+	 *
+	 * @var LazyObjectService
+	 */
+	private readonly LazyObjectService $objects;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ContainerInterface $container Resolves OpenRegister's object service at USE time —
-	 *                                      see objectService() for why a listener cannot inject it.
-	 * @param AutomationCompilerService $compiler Reuses `mapActionToRuleAction()` — the SAME
+	 *                                      see LazyObjectService for why a listener cannot inject it.
+	 * @param AutomationCompilerServiceInterface $compiler Reuses `mapActionToRuleAction()` — the SAME
 	 *                                            action→typed-action mapping the rules backend uses.
-	 * @param RuleActionDispatcher $actionDispatcher Shared side-effect dispatcher (same one `RuleEngineService` wires).
+	 * @param RuleActionDispatcherInterface $actionDispatcher Shared side-effect dispatcher (same one `RuleEngineService` wires).
 	 * @param LoggerInterface $logger PSR logger.
+	 * @param AutomationRunLog|null $runLog Completes the automation's waiting run with the decision; built at use time when not given.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ContainerInterface $container,
-		private readonly AutomationCompilerService $compiler,
-		private readonly RuleActionDispatcher $actionDispatcher,
+		private readonly AutomationCompilerServiceInterface $compiler,
+		private readonly RuleActionDispatcherInterface $actionDispatcher,
 		private readonly LoggerInterface $logger,
+		private ?AutomationRunLog $runLog = null,
 	) {
-
+		$this->objects = new LazyObjectService(container: $container);
 	}//end __construct()
 
 	/**
@@ -152,60 +160,6 @@ class ApprovalOutcomeListener implements IEventListener {
 	}//end chainKeyForSequence()
 
 	/**
-	 * Resolve OpenRegister's object service, lazily.
-	 *
-	 * ⚠️ An event listener CANNOT constructor-inject a published interface.
-	 * Nextcloud's `ServiceEventListener` builds the listener from the SERVER
-	 * container ("TODO: fetch from the app containers" — its own source), which
-	 * never sees this app's `registerServiceAlias()`. The constructor parameter
-	 * therefore could not be built, and the exception propagated out of
-	 * `dispatch()` into whichever app emitted the event.
-	 *
-	 * Resolves the CONCRETE class on purpose — asking the same container for
-	 * `ObjectServiceInterface::class` here would fail identically. Nextcloud
-	 * autowires concrete classes across apps; the declared type stays the
-	 * published contract.
-	 *
-	 * @return ObjectServiceInterface OpenRegister's published object contract.
-	 *
-	 * @throws ContainerExceptionInterface When OpenRegister is absent or disabled.
-	 */
-	private function objectService(): ObjectServiceInterface {
-		// ADR-083: establish availability before reaching. class_exists()
-		// rather than SettingsService, because this listener injects no
-		// settings service and adding a constructor dependency purely to ask a
-		// yes/no question is the wrong trade — it answers the same question the
-		// container would otherwise have answered fatally.
-		//
-		// Behaviour is unchanged: every caller already wraps this in a catch
-		// that logs and returns null, so an instance without OpenRegister
-		// degrades exactly as it does today. What changes is that the
-		// dependency is now declared where a reader — and the gate — can see
-		// it, instead of being implied by a catch several methods away.
-		//
-		// Untestable in a unit test: the stub OpenRegister classes the test
-		// bootstrap declares (tests/stubs/openregister-stubs.php) make
-		// class_exists() true unconditionally in this suite, so this branch
-		// only ever fires on a real instance genuinely missing OpenRegister.
-		// @codeCoverageIgnoreStart
-		if (class_exists('OCA\OpenRegister\Service\ObjectService') === false) {
-			throw new RuntimeException(
-				'buildiq requires the OpenRegister app, which is not installed on this instance.'
-			);
-		}
-		// @codeCoverageIgnoreEnd
-
-		$service = $this->container->get('OCA\OpenRegister\Service\ObjectService');
-		// An assert(), not a `/** @var */` docblock: phpcs forbids an inline doc
-		// block inside a method body, while psalm needs the narrowing or the
-		// declared return type is a MixedReturnStatement. assert() satisfies
-		// both, and costs nothing in production where zend.assertions is off.
-		assert($service instanceof ObjectServiceInterface);
-
-		return $service;
-	}//end objectService()
-
-	/**
 	 * Handle an approval outcome event, dispatching the resolved automation's
 	 * follow-up actions for that outcome.
 	 *
@@ -213,8 +167,9 @@ class ApprovalOutcomeListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/automation-approval-steps/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#2.1
 	 */
+	#[\Override]
 	public function handle(Event $event): void {
 		// APPROVE: the sequence completing IS the approval concluding, so the
 		// chain key and anchor come straight off it.
@@ -262,7 +217,7 @@ class ApprovalOutcomeListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/automation-approval-steps/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#2.2
 	 */
 	private function dispatchFollowUp(string $chainName, string $objectUuid, string $outcomeKey): void {
 		if (str_starts_with($chainName, self::PROVENANCE_PREFIX) === false) {
@@ -286,9 +241,17 @@ class ApprovalOutcomeListener implements IEventListener {
 			return;
 		}
 
+		$steps = [];
 		foreach ($this->collectFollowUps(automation: $automation, outcomeKey: $outcomeKey) as $followUp) {
-			$this->dispatchOne(action: $followUp, objectUuid: $objectUuid);
+			$steps[] = $this->dispatchOne(action: $followUp, objectUuid: $objectUuid);
 		}
+
+		$this->runLog()?->approvalDecided(
+			automation: $automation,
+			objectUuid: $objectUuid,
+			approved: $outcomeKey === 'onApprove',
+			followUps: $steps
+		);
 
 	}//end dispatchFollowUp()
 
@@ -340,14 +303,14 @@ class ApprovalOutcomeListener implements IEventListener {
 	 * @param array<string,mixed> $action The raw follow-up action record.
 	 * @param string $objectUuid The approved/rejected object's uuid.
 	 *
-	 * @return void
+	 * @return array{action: string, outcome: string, message: string} What the follow-up did, for the run log.
 	 */
-	private function dispatchOne(array $action, string $objectUuid): void {
+	private function dispatchOne(array $action, string $objectUuid): array {
 		try {
 			$mapped = $this->compiler->mapActionToRuleAction(action: $action);
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq: ApprovalOutcomeListener could not map follow-up action: ' . $e->getMessage());
-			return;
+			return ['action' => (string)($action['type'] ?? ''), 'outcome' => 'failed', 'message' => $e->getMessage()];
 		}
 
 		$type = (string)($mapped['type'] ?? '');
@@ -364,7 +327,10 @@ class ApprovalOutcomeListener implements IEventListener {
 			($this->actionDispatcher)($type, $params, []);
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq: ApprovalOutcomeListener follow-up dispatch failed for action "' . $type . '": ' . $e->getMessage());
+			return ['action' => (string)($action['type'] ?? $type), 'outcome' => 'failed', 'message' => $e->getMessage()];
 		}
+
+		return ['action' => (string)($action['type'] ?? $type), 'outcome' => 'succeeded', 'message' => ''];
 
 	}//end dispatchOne()
 
@@ -375,14 +341,15 @@ class ApprovalOutcomeListener implements IEventListener {
 	 * @param string $slug The automation slug (chain name minus the `aut-` prefix).
 	 *
 	 * @return array<string,mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findAutomationBySlug(string $slug): ?array {
 		try {
-			$results = $this->objectService()->findAll(
+			$results = $this->objects->get()->findAll(
 				config: [
 					'filters' => [
-						'register' => AutomationCompilerService::REGISTER_SLUG,
-						'schema' => AutomationCompilerService::AUTOMATION_SCHEMA,
+						'register' => AutomationCompilerServiceInterface::REGISTER_SLUG,
+						'schema' => AutomationCompilerServiceInterface::AUTOMATION_SCHEMA,
 						'slug' => $slug,
 					],
 					'limit' => 1,
@@ -397,35 +364,34 @@ class ApprovalOutcomeListener implements IEventListener {
 			return null;
 		}
 
-		return $this->normalise(object: $results[0]);
+		return ObjectRecord::toArray(object: $results[0]);
 	}//end findAutomationBySlug()
-
 	/**
-	 * Coerce an OR result entry to a plain associative array.
+	 * The run log, resolved from the container at use time: a listener cannot
+	 * constructor-inject the recorder's published dependencies (see
+	 * LazyObjectService). Null when it cannot be resolved.
 	 *
-	 * @param mixed $object The OR object/result entry.
+	 * @return AutomationRunLog|null
 	 *
-	 * @return array<string,mixed>
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
+	private function runLog(): ?AutomationRunLog {
+		if ($this->runLog !== null) {
+			return $this->runLog;
 		}
 
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
+		try {
+			$runLog = $this->container->get(AutomationRunLog::class);
+			if (($runLog instanceof AutomationRunLog) === false) {
+				return null;
 			}
+
+			$this->runLog = $runLog;
+		} catch (Throwable $e) {
+			$this->logger->error('Buildiq: automation runs cannot be recorded: ' . $e->getMessage());
+			return null;
 		}
 
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normalise()
+		return $this->runLog;
+	}//end runLog()
 }//end class

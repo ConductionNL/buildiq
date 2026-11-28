@@ -37,13 +37,13 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-9
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-9
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
  */
 
 declare(strict_types=1);
@@ -51,12 +51,19 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\WizardCreationException;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\Buildiq\Kernel\Contracts\ApplicationCreationServiceInterface;
+use OCA\Buildiq\Support\ApplicationStories;
+use OCA\Buildiq\Support\ObjectRecord;
+use OCA\Buildiq\Support\PageRegisterBinding;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use InvalidArgumentException;
 use Throwable;
 
 /**
@@ -67,7 +74,7 @@ use Throwable;
  * N register provisions simultaneously, so we implement a careful-sequencing
  * + reverse-delete rollback strategy.
  */
-class ApplicationCreationService {
+class ApplicationCreationService implements ApplicationCreationServiceInterface {
 	/**
 	 * Four canonical presets and their hardcoded version chains.
 	 * Each entry is [name => string, slug => string] in chain order
@@ -106,26 +113,35 @@ class ApplicationCreationService {
 	private const BUILT_APP_ROUTE_SCHEMA = 'built-app-route';
 
 	/**
+	 * The refusal of a taken slug. It names neither the slug's app nor its
+	 * organisation, so a slug held by another organisation's scoped app tells
+	 * the maker nothing about who holds it (REQ-BQOS-004).
+	 *
+	 * @var string
+	 */
+	public const SLUG_TAKEN = 'This slug is taken. Choose another.';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger PSR logger for diagnostics
-	 * @param ObjectServiceInterface $objectService OpenRegister object service
+	 * @param RegisterStore $store OpenRegister's object service, register and schema mappers and audit trail.
 	 * @param RegisterService $registerService OpenRegister register-level service
-	 * @param RegisterMapper $registerMapper Resolves register slugs
-	 * @param SchemaMapper $schemaMapper Resolves schema slugs
 	 * @param IUserSession $userSession Current Nextcloud user session
 	 * @param SlugValidator $slugValidator Slug validation helper
+	 * @param AppStartSources|null $sources The starting points beside the default app: a connected database or a spreadsheet.
+	 * @param AppOrganisationGuard|null $organisationGuard Gives a new app its default organisation scope; null leaves it absent.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly ObjectServiceInterface $objectService,
+		private readonly RegisterStore $store,
 		private readonly RegisterService $registerService,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
 		private readonly IUserSession $userSession,
 		private readonly SlugValidator $slugValidator,
+		private readonly ?AppStartSources $sources = null,
+		private readonly ?AppOrganisationGuard $organisationGuard = null,
 	) {
 	}//end __construct()
 
@@ -139,11 +155,12 @@ class ApplicationCreationService {
 	 * @throws WizardCreationException On validation failure (failedAtStep=validate)
 	 *                                 or on any mid-flight creation failure (with rollback)
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
 	 */
+	#[\Override]
 	public function createApplication(array $payload): string {
 		// M2: Acquire a per-slug advisory lock before the slug-uniqueness check so
 		// the check and the saveObject are atomic with respect to concurrent callers
@@ -152,289 +169,15 @@ class ApplicationCreationService {
 		// to avoid colliding with real object locks in the OR lock table.
 		$appSlug = (string)($payload['slug'] ?? '');
 		$lockKey = 'createApp:' . $appSlug;
-		$locked = false;
-
-		if ($appSlug !== '') {
-			try {
-				$this->objectService->lockObject(
-					identifier: $lockKey,
-					process: 'buildiq.createApplication',
-					duration: 10,
-					advisory: true
-				);
-				$locked = true;
-			} catch (Throwable $lockError) {
-				throw new WizardCreationException(
-					errorCode: 'app_slug_conflict',
-					failedAtStep: 'validate',
-					message: sprintf(
-						'An Application with slug "%s" is being created by another request.',
-						$appSlug
-					),
-					rollbackStatus: 'none',
-					previous: $lockError
-				);
-			}
-		}//end if
+		$locked = $this->acquireSlugLock(appSlug: $appSlug, lockKey: $lockKey);
 
 		try {
-			// ---- Step 1: Validate -----------------------------------------------
-			$this->validatePayload(payload: $payload);
-			$appName = (string)($payload['name'] ?? '');
-			$description = (string)($payload['description'] ?? '');
-			$versions = $this->resolveVersionChain(payload: $payload);
-
-			// ---- State tracker for rollback -------------------------------------
-			// Indexed by version slug.
-			$state = [
-				'applicationUuid' => null,
-				'versionUuids' => [],
-				'registerSlugs' => [],
-				'versionPayloads' => [],
-				'routeUuids' => [],
-			];
-
-			// ---- Step 2: Create Application -------------------------------------
-			$caller = $this->resolveCallerUid();
-			$permissions = [
-				'owners' => ['user:' . $caller],
-				'editors' => [],
-				'viewers' => [],
-			];
-
-			$applicationPayload = [
-				'slug' => $appSlug,
-				'name' => $appName,
-				'description' => $description,
-				'permissions' => $permissions,
-			];
-
-			try {
-				$created = $this->objectService->saveObject(
-					object: $applicationPayload,
-					register: ApplicationVersionService::REGISTER_SLUG,
-					schema: ApplicationVersionService::APPLICATION_SCHEMA
-				);
-				$appData = $this->normaliseObject(object: $created);
-				$state['applicationUuid'] = (string)($appData['id'] ?? $appData['uuid'] ?? '');
-			} catch (Throwable $e) {
-				// Detect TOCTOU duplicate-slug races: two concurrent createApp calls both
-				// passed appSlugExists() then both tried saveObject — the second one will
-				// receive a unique-constraint violation (issue #163).
-				$errorMsg = $e->getMessage();
-				$isSlugConflict = (
-					str_contains($errorMsg, 'Duplicate')
-					|| str_contains($errorMsg, 'duplicate')
-					|| str_contains($errorMsg, 'unique constraint')
-					|| str_contains($errorMsg, 'UNIQUE')
-				);
-				if ($isSlugConflict === true) {
-					throw new WizardCreationException(
-						errorCode: 'app_slug_conflict',
-						failedAtStep: 'validate',
-						message: sprintf('An Application with slug "%s" already exists.', $appSlug),
-						rollbackStatus: 'none',
-						previous: $e
-					);
-				}
-
-				$this->logger->error(
-					'Buildiq: wizard create-application failed for slug ' . $appSlug . ': ' . $errorMsg,
-					['exception' => $e]
-				);
-				throw new WizardCreationException(
-					errorCode: 'wizard_rollback',
-					failedAtStep: 'create-application',
-					message: $errorMsg,
-					rollbackStatus: 'complete',
-					previous: $e
-				);
-			}//end try
-
-			if ($state['applicationUuid'] === '') {
-				$this->rollbackAndThrow(
-					state: $state,
-					failedAtStep: 'create-application',
-					cause: 'Application record was not assigned a UUID by OR.'
-				);
-			}
-
-			// ---- Step 3: Create ApplicationVersions + provision registers -------
-			$defaultManifest = $this->loadDefaultManifest();
-			$defaultSchemas = $this->loadDefaultSchemas();
-
-			foreach ($versions as $versionDef) {
-				$versionSlug = (string)($versionDef['slug'] ?? '');
-				$versionName = (string)($versionDef['name'] ?? '');
-				$registerSlug = 'openbuild-' . $appSlug . '-' . $versionSlug;
-
-				// 3a: Create ApplicationVersion
-				$versionManifest = $this->substituteVersionContext(
-					manifest: $defaultManifest,
-					registerSlug: $registerSlug,
-					schemaSlugPrefix: $appSlug . '-' . $versionSlug . '-'
-				);
-
-				$versionPayload = [
-					'name' => $versionName,
-					'slug' => $versionSlug,
-					'manifest' => $versionManifest,
-					'register' => $registerSlug,
-					'semver' => self::INITIAL_SEMVER,
-					'status' => 'draft',
-					'application' => $state['applicationUuid'],
-				];
-
-				try {
-					$createdVersion = $this->objectService->saveObject(
-						object: $versionPayload,
-						register: ApplicationVersionService::REGISTER_SLUG,
-						schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
-					);
-					$versionData = $this->normaliseObject(object: $createdVersion);
-					$versionUuid = (string)($versionData['id'] ?? $versionData['uuid'] ?? '');
-					$state['versionUuids'][$versionSlug] = $versionUuid;
-					$state['registerSlugs'][$versionSlug] = $registerSlug;
-					// Keep the full payload so we can do the chain-wiring patch
-					// below without OR rejecting a partial payload against the
-					// schema's `required[]` validator (issue #71).
-					$state['versionPayloads'][$versionSlug] = $versionPayload;
-				} catch (Throwable $e) {
-					$this->logger->error(
-						'Buildiq: wizard create-version failed for ' . $versionSlug . ': ' . $e->getMessage(),
-						['exception' => $e]
-					);
-					$this->rollbackAndThrow(state: $state, failedAtStep: 'create-version-' . $versionSlug, cause: $e);
-				}//end try
-
-				// 3b: Provision per-version register
-				try {
-					$this->provisionRegister(
-						registerSlug: $registerSlug,
-						appSlug: $appSlug,
-						versionSlug: $versionSlug,
-						defaultSchemas: $defaultSchemas
-					);
-				} catch (Throwable $e) {
-					$this->logger->error(
-						'Buildiq: wizard register-provision failed for ' . $registerSlug . ': ' . $e->getMessage(),
-						['exception' => $e]
-					);
-					$this->rollbackAndThrow(state: $state, failedAtStep: 'register-provision-' . $versionSlug, cause: $e);
-				}//end try
-			}//end foreach
-
-			// ---- Step 4: Wire promotesTo chain ----------------------------------
-			$versionSlugs = array_column($versions, 'slug');
-			$lastIdx = count($versionSlugs) - 1;
-
-			for ($i = 0; $i < $lastIdx; $i++) {
-				$currentSlug = $versionSlugs[$i];
-				$nextSlug = $versionSlugs[$i + 1];
-
-				$currentUuid = (string)($state['versionUuids'][$currentSlug] ?? '');
-				$nextUuid = (string)($state['versionUuids'][$nextSlug] ?? '');
-
-				if ($currentUuid === '' || $nextUuid === '') {
-					continue;
-				}
-
-				try {
-					// OR's saveObject runs full-schema validation against `required[]`
-					// even when a UUID is passed (no separate PATCH semantics for an
-					// ApplicationVersion in this OR floor). Merge `promotesTo` into
-					// the full payload we kept from the create step so the validator
-					// sees all required fields.
-					$fullPayload = ($state['versionPayloads'][$currentSlug] ?? []);
-					$fullPayload['promotesTo'] = $nextUuid;
-
-					$this->objectService->saveObject(
-						object: $fullPayload,
-						register: ApplicationVersionService::REGISTER_SLUG,
-						schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
-						uuid: $currentUuid
-					);
-				} catch (Throwable $e) {
-					$this->logger->error(
-						'Buildiq: wizard chain-wiring failed for ' . $currentSlug . ' → ' . $nextSlug . ': ' . $e->getMessage(),
-						['exception' => $e]
-					);
-					$this->rollbackAndThrow(state: $state, failedAtStep: 'wire-chain-' . $currentSlug . '-to-' . $nextSlug, cause: $e);
-				}//end try
-			}//end for
-
-			// ---- Step 5: Set productionVersion on Application -------------------
-			$terminalSlug = $versionSlugs[$lastIdx];
-			$terminalUuid = (string)($state['versionUuids'][$terminalSlug] ?? '');
-
-			try {
-				// OR runs full-schema validation on saveObject even with UUID set;
-				// build a full Application payload with the productionVersion field
-				// patched, mirroring the chain-wiring fix above (issue #71).
-				$fullPayload = [
-					'slug' => $appSlug,
-					'name' => $appName,
-					'description' => $description,
-					'permissions' => [
-						'owners' => ['user:' . $this->resolveCallerUid()],
-						'editors' => [],
-						'viewers' => [],
-					],
-					'productionVersion' => $terminalUuid,
-				];
-
-				$this->objectService->saveObject(
-					object: $fullPayload,
-					register: ApplicationVersionService::REGISTER_SLUG,
-					schema: ApplicationVersionService::APPLICATION_SCHEMA,
-					uuid: $state['applicationUuid']
-				);
-			} catch (Throwable $e) {
-				$this->logger->error(
-					'Buildiq: wizard set-productionVersion failed: ' . $e->getMessage(),
-					['exception' => $e]
-				);
-				$this->rollbackAndThrow(state: $state, failedAtStep: 'set-production-version', cause: $e);
-			}//end try
-
-			// ---- Step 6: Publish the BuiltAppRoute index -----------------------
-			// The manifest endpoint (ApplicationsController::getManifest →
-			// resolveApplicationBySlug) resolves a virtual-app slug to its
-			// Application UUID through a BuiltAppRoute object. Without this step
-			// the wizard-built app is unreachable by slug and the manifest
-			// endpoint returns 404 `not_found` even though the app, its versions
-			// and its productionVersion pointer all exist (buildiq publish gap).
-			try {
-				$createdRoute = $this->objectService->saveObject(
-					object: ['slug' => $appSlug, 'applicationUuid' => $state['applicationUuid']],
-					register: ApplicationVersionService::REGISTER_SLUG,
-					schema: self::BUILT_APP_ROUTE_SCHEMA
-				);
-				$routeData = $this->normaliseObject(object: $createdRoute);
-				$routeUuid = (string)($routeData['id'] ?? $routeData['uuid'] ?? '');
-				if ($routeUuid !== '') {
-					$state['routeUuids'][] = $routeUuid;
-				}
-			} catch (Throwable $e) {
-				$this->logger->error(
-					'Buildiq: wizard built-app-route publish failed for slug ' . $appSlug . ': ' . $e->getMessage(),
-					['exception' => $e]
-				);
-				$this->rollbackAndThrow(state: $state, failedAtStep: 'publish-route', cause: $e);
-			}//end try
-
-			$versionCount = count($versions);
-			$this->logger->info(
-				'Buildiq: wizard successfully created Application ' . $appSlug
-				. ' (uuid: ' . $state['applicationUuid'] . ') with ' . $versionCount . ' version(s).'
-			);
-
-			return $state['applicationUuid'];
+			return $this->runCreation(payload: $payload);
 		} finally {
 			// M2: Release the per-slug advisory lock regardless of outcome.
 			if ($locked === true) {
 				try {
-					$this->objectService->unlockObject(identifier: $lockKey, advisory: true);
+					$this->store->objectService->unlockObject(new UnlockRequest(identifier: $lockKey, advisory: true));
 				} catch (Throwable $unlockError) {
 					$this->logger->warning(
 						'Buildiq: failed to release slug lock ' . $lockKey,
@@ -447,18 +190,629 @@ class ApplicationCreationService {
 	}//end createApplication()
 
 	/**
+	 * Take the per-slug advisory lock; a lock held by another request is a slug conflict.
+	 *
+	 * @param string $appSlug The requested Application slug ('' takes no lock)
+	 * @param string $lockKey The lock identifier
+	 *
+	 * @return bool Whether a lock was taken
+	 *
+	 * @throws WizardCreationException When another request holds the lock
+	 */
+	private function acquireSlugLock(string $appSlug, string $lockKey): bool {
+		if ($appSlug === '') {
+			return false;
+		}
+
+		try {
+			$this->store->objectService->lockObject(
+				new LockRequest(identifier: $lockKey, process: 'buildiq.createApplication', duration: 10),
+				advisory: true
+			);
+		} catch (Throwable $lockError) {
+			throw new WizardCreationException(
+				errorCode: 'app_slug_conflict',
+				failedAtStep: 'validate',
+				message: sprintf(
+					'An Application with slug "%s" is being created by another request.',
+					$appSlug
+				),
+				rollbackStatus: 'none',
+				previous: $lockError
+			);
+		}
+
+		return true;
+	}//end acquireSlugLock()
+
+	/**
+	 * Validate the payload, then create the Application, its versions, the
+	 * promotion chain, the production pointer and the route, in that order.
+	 *
+	 * @param array<string,mixed> $payload The wizard POST payload
+	 *
+	 * @return string The newly-created Application's UUID
+	 *
+	 * @throws WizardCreationException On validation failure or on any creation failure (with rollback)
+	 */
+	private function runCreation(array $payload): string {
+		// ---- Step 1: Validate -----------------------------------------------
+		$database = $this->validatePayload(payload: $payload);
+		$plan = [
+			'slug' => (string)($payload['slug'] ?? ''),
+			'database' => $database,
+			'file' => $this->validateFile(payload: $payload, database: $database),
+			'name' => (string)($payload['name'] ?? ''),
+			'description' => (string)($payload['description'] ?? ''),
+			'versions' => $this->resolveVersionChain(payload: $payload),
+			'stories' => ApplicationStories::sanitise(stories: ($payload['stories'] ?? [])),
+		];
+
+		// ---- State tracker for rollback -------------------------------------
+		// Indexed by version slug.
+		$state = [
+			'applicationUuid' => null,
+			'versionUuids' => [],
+			'registerSlugs' => [],
+			'versionPayloads' => [],
+			'routeUuids' => [],
+			'fileSchemas' => [],
+			'importJobId' => null,
+		];
+
+		// ---- Step 2: Create Application -------------------------------------
+		$state['applicationUuid'] = $this->createApplicationRecord(plan: $plan);
+		if ($state['applicationUuid'] === '') {
+			$this->rollbackAndThrow(
+				state: $state,
+				failedAtStep: 'create-application',
+				cause: 'Application record was not assigned a UUID by OR.'
+			);
+		}
+
+		$this->createVersions(plan: $plan, state: $state);
+		$this->importFile(plan: $plan, state: $state);
+		$this->wirePromotionChain(plan: $plan, state: $state);
+		$this->setProductionVersion(plan: $plan, state: $state);
+		$this->publishRoute(plan: $plan, state: $state);
+
+		$versionCount = count($plan['versions']);
+		$this->logger->info(
+			'Buildiq: wizard successfully created Application ' . $plan['slug']
+			. ' (uuid: ' . $state['applicationUuid'] . ') with ' . $versionCount . ' version(s).'
+		);
+
+		return $state['applicationUuid'];
+	}//end runCreation()
+
+	/**
+	 * The Application payload with the plan's stories, when the plan has any;
+	 * a plan without stories leaves the payload as it is.
+	 *
+	 * @param array<string, mixed> $payload The Application payload.
+	 * @param array<string, mixed> $plan    The resolved creation plan.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
+	 */
+	private function withStories(array $payload, array $plan): array {
+		if (($plan['stories'] ?? []) !== []) {
+			$payload['stories'] = $plan['stories'];
+		}
+
+		return $payload;
+	}//end withStories()
+
+	/**
+	 * Create the Application record with the caller as sole owner.
+	 *
+	 * @param array<string,mixed> $plan The validated slug, name, description and versions
+	 *
+	 * @return string The UUID OpenRegister assigned ('' when none)
+	 *
+	 * @throws WizardCreationException On a slug conflict or any other save failure
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function createApplicationRecord(array $plan): string {
+		$caller = $this->resolveCallerUid();
+		$permissions = [
+			'owners' => ['user:' . $caller],
+			'editors' => [],
+			'viewers' => [],
+		];
+
+		$applicationPayload = [
+			'slug' => $plan['slug'],
+			'name' => $plan['name'],
+			'description' => $plan['description'],
+			'permissions' => $permissions,
+		];
+		$applicationPayload = $this->withStories(payload: $applicationPayload, plan: $plan);
+
+		if ($plan['database'] !== null) {
+			// REQ-BQDB-003: the database is bound as a data register; whether it
+			// takes writes is read from OpenRegister each time, never stored here.
+			$applicationPayload['dataRegisters'] = [
+				['register' => $plan['database']['register'], 'label' => $plan['database']['label']],
+			];
+		}
+
+		// A new app starts as "This organisation only" while multitenancy is on;
+		// OpenRegister holds it in the creator's active organisation (REQ-BQOS-001).
+		if ($this->organisationGuard !== null) {
+			$applicationPayload['organisationScope'] = $this->organisationGuard->defaultScope();
+		}
+
+		try {
+			$created = $this->store->objectService->saveObject(
+				object: $applicationPayload,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: ApplicationVersionService::REGISTER_SLUG,
+						schema: ApplicationVersionService::APPLICATION_SCHEMA
+					))
+			);
+			$appData = ObjectRecord::toArray(object: $created);
+			return (string)($appData['id'] ?? $appData['uuid'] ?? '');
+		} catch (Throwable $e) {
+			// Detect TOCTOU duplicate-slug races: two concurrent createApp calls both
+			// passed appSlugExists() then both tried saveObject — the second one will
+			// receive a unique-constraint violation (issue #163).
+			$errorMsg = $e->getMessage();
+			if (self::isSlugConflict(errorMsg: $errorMsg) === true) {
+				throw new WizardCreationException(
+					errorCode: 'app_slug_conflict',
+					failedAtStep: 'validate',
+					message: self::SLUG_TAKEN,
+					rollbackStatus: 'none',
+					previous: $e
+				);
+			}
+
+			$this->logger->error(
+				'Buildiq: wizard create-application failed for slug ' . $plan['slug'] . ': ' . $errorMsg,
+				['exception' => $e]
+			);
+			throw new WizardCreationException(
+				errorCode: 'wizard_rollback',
+				failedAtStep: 'create-application',
+				message: $errorMsg,
+				rollbackStatus: 'complete',
+				previous: $e
+			);
+		}//end try
+	}//end createApplicationRecord()
+
+	/**
+	 * Whether a save failure is a unique-constraint violation on the slug.
+	 *
+	 * @param string $errorMsg The message of the save failure.
+	 *
+	 * @return bool True for a duplicate-slug race.
+	 */
+	private static function isSlugConflict(string $errorMsg): bool {
+		return str_contains($errorMsg, 'Duplicate')
+			|| str_contains($errorMsg, 'duplicate')
+			|| str_contains($errorMsg, 'unique constraint')
+			|| str_contains($errorMsg, 'UNIQUE');
+	}//end isSlugConflict()
+
+	/**
+	 * Step 3: create each ApplicationVersion and provision its register, in chain order.
+	 *
+	 * @param array<string,mixed> $plan The validated slug, name, description and versions
+	 * @param array<string,mixed> $state Creation state tracker (by ref)
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException On any failure (with rollback)
+	 */
+	private function createVersions(array $plan, array &$state): void {
+		$defaultManifest = $this->versionManifest(plan: $plan, state: $state);
+		$defaultSchemas = $this->loadWizardFixture(fixture: ['name' => 'schemas', 'shape' => 'array']);
+		$dataRegisters = [];
+		if ($plan['database'] !== null) {
+			$dataRegisters[] = $plan['database']['register'];
+		}
+
+		if (($plan['file'] ?? null) !== null) {
+			$defaultSchemas[] = $plan['file']['schema'];
+		}
+
+		foreach ($plan['versions'] as $versionDef) {
+			$versionSlug = (string)($versionDef['slug'] ?? '');
+			$version = [
+				'appSlug' => $plan['slug'],
+				'slug' => $versionSlug,
+				'name' => (string)($versionDef['name'] ?? ''),
+				// Prefix from the constant, never typed: see
+				// ApplicationVersionService::VERSION_REGISTER_PREFIX.
+				'registerSlug' => ApplicationVersionService::VERSION_REGISTER_PREFIX . $plan['slug'] . '-' . $versionSlug,
+				'manifest' => $defaultManifest,
+				'schemas' => $defaultSchemas,
+				'dataRegisters' => $dataRegisters,
+			];
+
+			$this->createVersionRecord(version: $version, state: $state);
+			if (($plan['file'] ?? null) !== null) {
+				$state['fileSchemas'][] = $plan['slug'] . '-' . $versionSlug . '-' . $plan['file']['schema']['slug'];
+			}
+
+			$this->provisionVersionRegister(version: $version, state: $state);
+		}
+	}//end createVersions()
+
+	/**
+	 * The manifest every version starts from: the database's pages for "Start
+	 * from a database", else the default manifest.
+	 *
+	 * @param array<string,mixed> $plan The validated plan (`database` is null or the read database).
+	 * @param array<string,mixed> $state Creation state tracker, for the rollback when the build fails
+	 *
+	 * @return array<string,mixed> The manifest
+	 *
+	 * @throws WizardCreationException When the database's pages cannot be built (with rollback)
+	 *
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
+	 */
+	private function versionManifest(array $plan, array $state): array {
+		if (($plan['file'] ?? null) !== null) {
+			return $this->fileManifest(plan: $plan, state: $state);
+		}
+
+		if ($plan['database'] === null) {
+			return $this->loadWizardFixture(fixture: ['name' => 'manifest', 'shape' => 'object']);
+		}
+
+		$builder = ($this->sources ?? new AppStartSources())->manifests();
+		try {
+			return $builder->build(
+				register: $plan['database']['register'],
+				schemas: $plan['database']['schemas'],
+				writable: $plan['database']['writable']
+			);
+		} catch (Throwable $e) {
+			$this->rollbackAndThrow(state: $state, failedAtStep: 'build-database-manifest', cause: $e);
+		}
+	}//end versionManifest()
+
+	/**
+	 * The manifest of an app started from a spreadsheet: a list page (first, so the
+	 * app opens on it) and a detail page bound to the schema the header row made.
+	 *
+	 * @param array<string,mixed> $plan  The validated plan (`file` is the read spreadsheet).
+	 * @param array<string,mixed> $state Creation state tracker, for the rollback when the build fails
+	 *
+	 * @return array<string,mixed> The manifest; `{registerSlug}` and the schema prefix are filled in per version.
+	 *
+	 * @throws WizardCreationException When the pages cannot be built (with rollback)
+	 *
+	 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
+	 */
+	private function fileManifest(array $plan, array $state): array {
+		$builder = ($this->sources ?? new AppStartSources())->manifests();
+		try {
+			return $builder->build(register: '{registerSlug}', schemas: [$plan['file']['schema']], writable: true);
+		} catch (Throwable $e) {
+			$this->rollbackAndThrow(state: $state, failedAtStep: 'build-file-manifest', cause: $e);
+		}
+	}//end fileManifest()
+
+	/**
+	 * Load the spreadsheet's rows into the first version's register, as records of
+	 * the schema its header row made. Any import error rolls the whole app back.
+	 *
+	 * @param array<string,mixed> $plan  The validated plan.
+	 * @param array<string,mixed> $state Creation state tracker (by ref; keeps the import job for the rollback)
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException With failedAtStep=import-file when the import fails (with rollback)
+	 *
+	 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
+	 */
+	private function importFile(array $plan, array &$state): void {
+		$spreadsheets = $this->sources?->spreadsheets;
+		if (($plan['file'] ?? null) === null || $spreadsheets === null) {
+			return;
+		}
+
+		$firstSlug = (string)($plan['versions'][0]['slug'] ?? '');
+		try {
+			$register = $this->store->registerMapper->find($state['registerSlugs'][$firstSlug], _multitenancy: false);
+			$schema = $this->store->schemaMapper->find($state['fileSchemas'][0], _multitenancy: false);
+			$summary = $spreadsheets->import(
+				file: $plan['file'],
+				register: $register,
+				schema: $schema,
+				user: $this->userSession->getUser()
+			);
+		} catch (Throwable $e) {
+			$this->rollbackAndThrow(state: $state, failedAtStep: 'import-file', cause: 'The file could not be imported: ' . $e->getMessage());
+		}
+
+		$state['importJobId'] = $summary['importJobId'];
+		if ($summary['errors'] !== []) {
+			$cause = sprintf('The file could not be imported: %d row(s) were refused.', count($summary['errors']));
+			$this->rollbackAndThrow(
+				state: $state,
+				failedAtStep: 'import-file',
+				cause: trim($cause . ' ' . self::firstError(errors: $summary['errors']))
+			);
+		}
+	}//end importFile()
+
+	/**
+	 * The first import error as one line for the wizard.
+	 *
+	 * @param list<mixed> $errors The import's errors.
+	 *
+	 * @return string
+	 */
+	private static function firstError(array $errors): string {
+		$first = $errors[0] ?? '';
+		if (is_array($first) === true) {
+			$first = ($first['error'] ?? $first['message'] ?? json_encode($first));
+		}
+
+		return trim((string)$first);
+	}//end firstError()
+
+	/**
+	 * 3a: create one ApplicationVersion and track it for rollback and chain wiring.
+	 *
+	 * @param array<string,mixed> $version The app slug, version slug, name, register slug, manifest and schemas
+	 * @param array<string,mixed> $state Creation state tracker (by ref)
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException On failure (with rollback)
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function createVersionRecord(array $version, array &$state): void {
+		$versionSlug = $version['slug'];
+		$registerSlug = $version['registerSlug'];
+		$versionManifest = $this->substituteVersionContext(
+			manifest: $version['manifest'],
+			registerSlug: $registerSlug,
+			schemaSlugPrefix: $version['appSlug'] . '-' . $versionSlug . '-',
+			dataRegisters: ($version['dataRegisters'] ?? [])
+		);
+
+		$versionPayload = [
+			'name' => $version['name'],
+			'slug' => $versionSlug,
+			'manifest' => $versionManifest,
+			'register' => $registerSlug,
+			'semver' => self::INITIAL_SEMVER,
+			'status' => 'draft',
+			'application' => $state['applicationUuid'],
+		];
+
+		try {
+			$createdVersion = $this->store->objectService->saveObject(
+				object: $versionPayload,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: ApplicationVersionService::REGISTER_SLUG,
+						schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+					))
+			);
+			$versionData = ObjectRecord::toArray(object: $createdVersion);
+			$versionUuid = (string)($versionData['id'] ?? $versionData['uuid'] ?? '');
+			$state['versionUuids'][$versionSlug] = $versionUuid;
+			$state['registerSlugs'][$versionSlug] = $registerSlug;
+			// Keep the full payload so we can do the chain-wiring patch
+			// below without OR rejecting a partial payload against the
+			// schema's `required[]` validator (issue #71).
+			$state['versionPayloads'][$versionSlug] = $versionPayload;
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'Buildiq: wizard create-version failed for ' . $versionSlug . ': ' . $e->getMessage(),
+				['exception' => $e]
+			);
+			$this->rollbackAndThrow(state: $state, failedAtStep: 'create-version-' . $versionSlug, cause: $e);
+		}//end try
+	}//end createVersionRecord()
+
+	/**
+	 * 3b: provision the per-version register.
+	 *
+	 * @param array<string,mixed> $version The app slug, version slug, name, register slug, manifest and schemas
+	 * @param array<string,mixed> $state Creation state tracker
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException On failure (with rollback)
+	 */
+	private function provisionVersionRegister(array $version, array $state): void {
+		$registerSlug = $version['registerSlug'];
+		try {
+			$this->provisionRegister(version: $version);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'Buildiq: wizard register-provision failed for ' . $registerSlug . ': ' . $e->getMessage(),
+				['exception' => $e]
+			);
+			$this->rollbackAndThrow(state: $state, failedAtStep: 'register-provision-' . $version['slug'], cause: $e);
+		}//end try
+	}//end provisionVersionRegister()
+
+	/**
+	 * Step 4: wire `promotesTo` on every non-terminal version.
+	 *
+	 * @param array<string,mixed> $plan The validated slug, name, description and versions
+	 * @param array<string,mixed> $state Creation state tracker
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException On failure (with rollback)
+	 */
+	private function wirePromotionChain(array $plan, array $state): void {
+		$versionSlugs = array_column($plan['versions'], 'slug');
+		$lastIdx = count($versionSlugs) - 1;
+
+		for ($i = 0; $i < $lastIdx; $i++) {
+			$this->wirePromotion(link: ['from' => $versionSlugs[$i], 'to' => $versionSlugs[$i + 1]], state: $state);
+		}
+	}//end wirePromotionChain()
+
+	/**
+	 * Point one version's `promotesTo` at the next version.
+	 *
+	 * @param array{from:string,to:string} $link The version slug and its successor's slug
+	 * @param array<string,mixed> $state Creation state tracker
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException On failure (with rollback)
+	 */
+	private function wirePromotion(array $link, array $state): void {
+		$currentSlug = $link['from'];
+		$nextSlug = $link['to'];
+
+		$currentUuid = (string)($state['versionUuids'][$currentSlug] ?? '');
+		$nextUuid = (string)($state['versionUuids'][$nextSlug] ?? '');
+
+		if ($currentUuid === '' || $nextUuid === '') {
+			return;
+		}
+
+		try {
+			// OR's saveObject runs full-schema validation against `required[]`
+			// even when a UUID is passed (no separate PATCH semantics for an
+			// ApplicationVersion in this OR floor). Merge `promotesTo` into
+			// the full payload we kept from the create step so the validator
+			// sees all required fields.
+			$fullPayload = ($state['versionPayloads'][$currentSlug] ?? []);
+			$fullPayload['promotesTo'] = $nextUuid;
+
+			$this->store->objectService->saveObject(
+				object: $fullPayload,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: ApplicationVersionService::REGISTER_SLUG,
+							schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+						),
+					uuid: $currentUuid
+				)
+			);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'Buildiq: wizard chain-wiring failed for ' . $currentSlug . ' → ' . $nextSlug . ': ' . $e->getMessage(),
+				['exception' => $e]
+			);
+			$this->rollbackAndThrow(state: $state, failedAtStep: 'wire-chain-' . $currentSlug . '-to-' . $nextSlug, cause: $e);
+		}//end try
+	}//end wirePromotion()
+
+	/**
+	 * Step 5: set Application.productionVersion to the terminal version.
+	 *
+	 * @param array<string,mixed> $plan The validated slug, name, description and versions
+	 * @param array<string,mixed> $state Creation state tracker
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException On failure (with rollback)
+	 */
+	private function setProductionVersion(array $plan, array $state): void {
+		$versionSlugs = array_column($plan['versions'], 'slug');
+		$terminalSlug = $versionSlugs[count($versionSlugs) - 1];
+		$terminalUuid = (string)($state['versionUuids'][$terminalSlug] ?? '');
+
+		try {
+			// OR runs full-schema validation on saveObject even with UUID set;
+			// build a full Application payload with the productionVersion field
+			// patched, mirroring the chain-wiring fix above (issue #71).
+			$fullPayload = [
+				'slug' => $plan['slug'],
+				'name' => $plan['name'],
+				'description' => $plan['description'],
+				'permissions' => [
+					'owners' => ['user:' . $this->resolveCallerUid()],
+					'editors' => [],
+					'viewers' => [],
+				],
+				'productionVersion' => $terminalUuid,
+			];
+			$fullPayload = $this->withStories(payload: $fullPayload, plan: $plan);
+
+			$this->store->objectService->saveObject(
+				object: $fullPayload,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: ApplicationVersionService::REGISTER_SLUG,
+							schema: ApplicationVersionService::APPLICATION_SCHEMA
+						),
+					uuid: $state['applicationUuid']
+				)
+			);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'Buildiq: wizard set-productionVersion failed: ' . $e->getMessage(),
+				['exception' => $e]
+			);
+			$this->rollbackAndThrow(state: $state, failedAtStep: 'set-production-version', cause: $e);
+		}//end try
+	}//end setProductionVersion()
+
+	/**
+	 * Step 6: publish the BuiltAppRoute index.
+	 *
+	 * The manifest endpoint (ApplicationsController::getManifest →
+	 * resolveApplicationBySlug) resolves a virtual-app slug to its
+	 * Application UUID through a BuiltAppRoute object. Without this step
+	 * the wizard-built app is unreachable by slug and the manifest
+	 * endpoint returns 404 `not_found` even though the app, its versions
+	 * and its productionVersion pointer all exist (buildiq publish gap).
+	 *
+	 * @param array<string,mixed> $plan The validated slug, name, description and versions
+	 * @param array<string,mixed> $state Creation state tracker (by ref)
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException On failure (with rollback)
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function publishRoute(array $plan, array &$state): void {
+		try {
+			$createdRoute = $this->store->objectService->saveObject(
+				object: ['slug' => $plan['slug'], 'applicationUuid' => $state['applicationUuid']],
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: ApplicationVersionService::REGISTER_SLUG,
+						schema: self::BUILT_APP_ROUTE_SCHEMA
+					))
+			);
+			$routeData = ObjectRecord::toArray(object: $createdRoute);
+			$routeUuid = (string)($routeData['id'] ?? $routeData['uuid'] ?? '');
+			if ($routeUuid !== '') {
+				$state['routeUuids'][] = $routeUuid;
+			}
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'Buildiq: wizard built-app-route publish failed for slug ' . $plan['slug'] . ': ' . $e->getMessage(),
+				['exception' => $e]
+			);
+			$this->rollbackAndThrow(state: $state, failedAtStep: 'publish-route', cause: $e);
+		}//end try
+	}//end publishRoute()
+
+	/**
 	 * Validate the wizard payload before any persistence.
 	 *
 	 * @param array<string,mixed> $payload The wizard POST payload
 	 *
-	 * @return void
+	 * @return array{register: string, label: string, writable: bool, schemas: list<array<string, mixed>>}|null
+	 *         The connected database to build from (`fromDatabase`), or null for the default path
 	 *
 	 * @throws WizardCreationException With failedAtStep=validate on any failure
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
-	private function validatePayload(array $payload): void {
+	private function validatePayload(array $payload): ?array {
 		$appSlug = (string)($payload['slug'] ?? '');
 		$appName = (string)($payload['name'] ?? '');
 
@@ -495,30 +849,203 @@ class ApplicationCreationService {
 
 		// Validate each version slug.
 		foreach ($versions as $versionDef) {
-			$versionSlug = (string)($versionDef['slug'] ?? '');
-			$versionName = (string)($versionDef['name'] ?? '');
-
-			if ($versionName === '') {
-				throw new WizardCreationException(
-					errorCode: 'validation_error',
-					failedAtStep: 'validate',
-					message: 'Version name must not be empty.',
-					rollbackStatus: 'none'
-				);
-			}
-
-			$slugError = $this->slugValidator->validateVersionSlug(slug: $versionSlug);
-			if ($slugError !== []) {
-				throw new WizardCreationException(
-					errorCode: (string)($slugError['code'] ?? 'validation_error'),
-					failedAtStep: 'validate',
-					message: (string)($slugError['message'] ?? 'Invalid version slug.'),
-					rollbackStatus: 'none'
-				);
-			}
-		}//end foreach
+			$this->validateVersionDef(versionDef: $versionDef);
+		}
 
 		// Validate no duplicate version slugs in chain.
+		$this->validateChainSlugs(versions: $versions);
+
+		// Check app slug uniqueness across existing Applications.
+		$this->assertAppSlugFree(appSlug: $appSlug);
+
+		return $this->validateDatabase(payload: $payload);
+	}//end validatePayload()
+
+	/**
+	 * Check a `fromFile` block (`{name, mime?, content}`) before anything is created.
+	 *
+	 * @param array<string,mixed>       $payload  The wizard POST payload
+	 * @param array<string,mixed>|null  $database The checked `fromDatabase` choice, if any
+	 *
+	 * @return array<string,mixed>|null The read spreadsheet (see SpreadsheetAppSource::read()), or null without one
+	 *
+	 * @throws WizardCreationException With failedAtStep=validate when the file cannot be used
+	 *
+	 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
+	 */
+	private function validateFile(array $payload, ?array $database): ?array {
+		if (($payload['fromFile'] ?? null) === null) {
+			return null;
+		}
+
+		$spreadsheets = $this->sources?->spreadsheets;
+		try {
+			if ($database !== null) {
+				throw new InvalidArgumentException('Start from a database or from a spreadsheet, not both.');
+			}
+
+			if ($spreadsheets === null) {
+				throw new InvalidArgumentException('Spreadsheets cannot be imported on this instance.');
+			}
+
+			$reserved = array_values(array_filter(array_map(
+				static fn ($schema): string => (string)($schema['slug'] ?? ''),
+				$this->loadWizardFixture(fixture: ['name' => 'schemas', 'shape' => 'array'])
+			)));
+			return $spreadsheets->read(block: $payload['fromFile'], reservedSlugs: $reserved);
+		} catch (InvalidArgumentException $e) {
+			throw new WizardCreationException(
+				errorCode: 'validation_error',
+				failedAtStep: 'validate',
+				message: $e->getMessage(),
+				rollbackStatus: 'none',
+				previous: $e
+			);
+		}
+	}//end validateFile()
+
+	/**
+	 * Check a `fromDatabase` block (`{register, schemas[]}`) against the live register.
+	 *
+	 * @param array<string,mixed> $payload The wizard POST payload
+	 *
+	 * @return array{register: string, label: string, writable: bool, schemas: list<array<string, mixed>>}|null
+	 *         The database to build from, or null for the default path
+	 *
+	 * @throws WizardCreationException With failedAtStep=validate when the block is malformed, or the
+	 *                                 register is not a connected database the caller can read
+	 *
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 */
+	private function validateDatabase(array $payload): ?array {
+		if (array_key_exists('fromDatabase', $payload) === false || $payload['fromDatabase'] === null) {
+			return null;
+		}
+
+		$block = $payload['fromDatabase'];
+		$tables = self::databaseTables(block: $block);
+
+		$databases = $this->sources?->databases;
+		if ($databases === null) {
+			throw new WizardCreationException(
+				errorCode: 'validation_error',
+				failedAtStep: 'validate',
+				message: 'Connected databases cannot be read on this instance.',
+				rollbackStatus: 'none'
+			);
+		}
+
+		try {
+			return $databases->read(register: $block['register'], tables: array_values(array_filter($tables, 'is_string')));
+		} catch (InvalidArgumentException $e) {
+			throw new WizardCreationException(
+				errorCode: 'validation_error',
+				failedAtStep: 'validate',
+				message: $e->getMessage(),
+				rollbackStatus: 'none',
+				previous: $e
+			);
+		}
+	}//end validateDatabase()
+
+	/**
+	 * The ticked tables of a `fromDatabase` block, once its shape is checked.
+	 *
+	 * @param mixed $block The `fromDatabase` block.
+	 *
+	 * @return array<mixed> The block's `schemas` list.
+	 *
+	 * @throws WizardCreationException With failedAtStep=validate when the block has no register or no list of tables
+	 *
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 */
+	private static function databaseTables(mixed $block): array {
+		$tables = null;
+		if (is_array($block) === true && is_string($block['register'] ?? null) === true) {
+			$tables = ($block['schemas'] ?? null);
+		}
+
+		if (is_array($tables) === false) {
+			throw new WizardCreationException(
+				errorCode: 'validation_error',
+				failedAtStep: 'validate',
+				message: 'fromDatabase needs a register and a list of tables.',
+				rollbackStatus: 'none'
+			);
+		}
+
+		return $tables;
+	}//end databaseTables()
+
+	/**
+	 * Refuse an app slug that an existing Application already uses.
+	 *
+	 * @param string $appSlug The app slug.
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException With failedAtStep=validate on a conflict
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
+	 */
+	private function assertAppSlugFree(string $appSlug): void {
+		if ($this->appSlugExists(slug: $appSlug) === true) {
+			throw new WizardCreationException(
+				errorCode: 'app_slug_conflict',
+				failedAtStep: 'validate',
+				message: self::SLUG_TAKEN,
+				rollbackStatus: 'none'
+			);
+		}
+	}//end assertAppSlugFree()
+
+	/**
+	 * Validate one version definition: a name, and a valid version slug.
+	 *
+	 * @param array<string,mixed> $versionDef The version definition.
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException With failedAtStep=validate on any failure
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+	 */
+	private function validateVersionDef(array $versionDef): void {
+		$versionSlug = (string)($versionDef['slug'] ?? '');
+		$versionName = (string)($versionDef['name'] ?? '');
+
+		if ($versionName === '') {
+			throw new WizardCreationException(
+				errorCode: 'validation_error',
+				failedAtStep: 'validate',
+				message: 'Version name must not be empty.',
+				rollbackStatus: 'none'
+			);
+		}
+
+		$slugError = $this->slugValidator->validateVersionSlug(slug: $versionSlug);
+		if ($slugError !== []) {
+			throw new WizardCreationException(
+				errorCode: (string)($slugError['code'] ?? 'validation_error'),
+				failedAtStep: 'validate',
+				message: (string)($slugError['message'] ?? 'Invalid version slug.'),
+				rollbackStatus: 'none'
+			);
+		}
+	}//end validateVersionDef()
+
+	/**
+	 * Refuse a version chain that repeats a slug.
+	 *
+	 * @param array<int,array<string,mixed>> $versions The version chain.
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException With failedAtStep=validate on a duplicate
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+	 */
+	private function validateChainSlugs(array $versions): void {
 		$slugList = array_column($versions, 'slug');
 		$chainError = $this->slugValidator->validateChainSlugs(slugs: $slugList);
 		if ($chainError !== []) {
@@ -533,17 +1060,7 @@ class ApplicationCreationService {
 				rollbackStatus: 'none'
 			);
 		}
-
-		// Check app slug uniqueness across existing Applications.
-		if ($this->appSlugExists(slug: $appSlug) === true) {
-			throw new WizardCreationException(
-				errorCode: 'app_slug_conflict',
-				failedAtStep: 'validate',
-				message: sprintf('An Application with slug "%s" already exists.', $appSlug),
-				rollbackStatus: 'none'
-			);
-		}
-	}//end validatePayload()
+	}//end validateChainSlugs()
 
 	/**
 	 * Resolve the version chain from the payload.
@@ -555,8 +1072,8 @@ class ApplicationCreationService {
 	 *
 	 * @return array<int,array<string,string>> Version definitions [{name, slug}, ...]
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-9
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-9
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
 	 */
 	public function resolveVersionChain(array $payload): array {
 		$preset = (string)($payload['preset'] ?? '');
@@ -593,18 +1110,18 @@ class ApplicationCreationService {
 	 *
 	 * @return bool True when a conflicting row exists
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
 	 */
 	private function appSlugExists(string $slug): bool {
 		try {
 			// Pin _multitenancy: false throughout so all three calls operate in
 			// the same scope and a slug taken in one org cannot appear free to
 			// another (issue #163 — cross-org multitenancy flag mismatch).
-			$registerId = $this->registerMapper->find(
+			$registerId = $this->store->registerMapper->find(
 				ApplicationVersionService::REGISTER_SLUG,
 				_multitenancy: false
 			)->getId();
-			$schemaId = $this->schemaMapper->find(
+			$schemaId = $this->store->schemaMapper->find(
 				ApplicationVersionService::APPLICATION_SCHEMA,
 				_multitenancy: false
 			)->getId();
@@ -627,7 +1144,7 @@ class ApplicationCreationService {
 			// an RBAC-filtered search run as `admin` would not see it and would
 			// again report the slug as free. A uniqueness check must see every
 			// row, exactly as AppNavigationService does when it enumerates apps.
-			$rows = $this->objectService->searchObjects(
+			$rows = $this->store->objectService->searchObjects(
 				query: [
 					'@self' => [
 						'register' => $registerId,
@@ -658,61 +1175,80 @@ class ApplicationCreationService {
 	/**
 	 * Provision a per-version OR register and seed its schema set.
 	 *
-	 * @param string $registerSlug The register slug to create
-	 * @param string $appSlug Parent application slug (for labels)
-	 * @param string $versionSlug Version slug (for labels)
-	 * @param array<int,array<string,mixed>> $defaultSchemas Seed schema blobs from default-schemas.json
+	 * @param array<string,mixed> $version The version plan: `registerSlug` (the register to create), `appSlug` and
+	 *                                     `slug` (for labels and the schema prefix), and `schemas` (seed schema
+	 *                                     blobs from default-schemas.json).
 	 *
 	 * @return void
 	 *
 	 * @throws Throwable When register creation or schema seeding fails
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
 	 */
-	private function provisionRegister(
-		string $registerSlug,
-		string $appSlug,
-		string $versionSlug,
-		array $defaultSchemas,
-	): void {
-		$register = $this->registerMapper->createFromArray(
-			[
-				'slug' => $registerSlug,
-				'title' => 'Buildiq — ' . $appSlug . ' (' . $versionSlug . ')',
-				'description' => 'Per-version schema namespace for Buildiq app `' . $appSlug . '` version `' . $versionSlug . '`.',
-				'version' => '0.1.0',
-				'schemas' => [],
-			]
-		);
+	private function provisionRegister(array $version): void {
+		$register = $this->store->registerMapper->createFromArray($this->versionRegisterFields(version: $version));
 
-		// Seed the default schema set into the freshly-provisioned register.
-		// Schema slugs are unique per organisation, so namespace each seed slug
-		// with the app+version prefix to avoid colliding with the same seed
-		// already installed in another register (e.g. the global `buildiq`
-		// register or another wizard-provisioned app's register).
-		$slugPrefix = $appSlug . '-' . $versionSlug . '-';
+		$createdIds = $this->seedVersionSchemas(version: $version);
+		if ($createdIds === []) {
+			return;
+		}
+
+		$existing = $register->getSchemas();
+		if (is_array($existing) === false) {
+			$existing = [];
+		}
+
+		$register->setSchemas(array_values(array_unique(array_merge($existing, $createdIds))));
+		$this->store->registerMapper->update($register);
+	}//end provisionRegister()
+
+	/**
+	 * The fields a per-version register is created with.
+	 *
+	 * @param array<string,mixed> $version The version plan (`registerSlug`, `appSlug`, `slug`).
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function versionRegisterFields(array $version): array {
+		$appSlug = $version['appSlug'];
+		$versionSlug = $version['slug'];
+		return [
+			'slug' => $version['registerSlug'],
+			'title' => 'Buildiq — ' . $appSlug . ' (' . $versionSlug . ')',
+			'description' => 'Per-version schema namespace for Buildiq app `' . $appSlug . '` version `' . $versionSlug . '`.',
+			'version' => '0.1.0',
+			'schemas' => [],
+		];
+	}//end versionRegisterFields()
+
+	/**
+	 * Seed the default schema set for a freshly-provisioned register.
+	 *
+	 * Schema slugs are unique per organisation, so each seed slug is namespaced
+	 * with the app+version prefix to avoid colliding with the same seed already
+	 * installed in another register (e.g. the global `buildiq` register or
+	 * another wizard-provisioned app's register).
+	 *
+	 * @param array<string,mixed> $version The version plan (`appSlug`, `slug`, `schemas`).
+	 *
+	 * @return array<int,mixed> The created schemas' ids.
+	 */
+	private function seedVersionSchemas(array $version): array {
+		$slugPrefix = $version['appSlug'] . '-' . $version['slug'] . '-';
 		$createdIds = [];
-		foreach ($defaultSchemas as $schemaBlob) {
+		foreach ($version['schemas'] as $schemaBlob) {
 			$blob = $schemaBlob;
 			$originalSlug = (string)($blob['slug'] ?? '');
 			if ($originalSlug !== '') {
 				$blob['slug'] = $slugPrefix . $originalSlug;
 			}
 
-			$schema = $this->schemaMapper->createFromArray(object: $blob);
+			$schema = $this->store->schemaMapper->createFromArray(object: $blob);
 			$createdIds[] = $schema->getId();
 		}
 
-		if ($createdIds !== []) {
-			$existing = $register->getSchemas();
-			if (is_array($existing) === false) {
-				$existing = [];
-			}
-
-			$register->setSchemas(array_values(array_unique(array_merge($existing, $createdIds))));
-			$this->registerMapper->update($register);
-		}
-	}//end provisionRegister()
+		return $createdIds;
+	}//end seedVersionSchemas()
 
 	/**
 	 * Delete a per-version register as part of rollback.
@@ -723,11 +1259,11 @@ class ApplicationCreationService {
 	 *
 	 * @return bool True on success, false on failure
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
 	 */
 	private function deleteRegister(string $registerSlug): bool {
 		try {
-			$register = $this->registerMapper->find($registerSlug, _multitenancy: false);
+			$register = $this->store->registerMapper->find($registerSlug, _multitenancy: false);
 			$this->registerService->delete(register: $register);
 			return true;
 		} catch (Throwable $e) {
@@ -754,7 +1290,7 @@ class ApplicationCreationService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
 	 */
 	private function rollback(array $state, array &$orphaned): void {
 		// 0. BuiltAppRoute objects first (last created, first torn down).
@@ -764,6 +1300,9 @@ class ApplicationCreationService {
 			prefix: 'route:',
 			orphaned: $orphaned
 		);
+
+		// 0b. Records an import wrote, then the schemas a spreadsheet made.
+		$this->rollbackFile(state: $state, orphaned: $orphaned);
 
 		// 1. Delete registers (reverse order of creation).
 		$registerSlugs = array_reverse(array_values((array)($state['registerSlugs'] ?? [])));
@@ -791,6 +1330,43 @@ class ApplicationCreationService {
 	}//end rollback()
 
 	/**
+	 * Undo a spreadsheet import and delete the schemas its header row made.
+	 *
+	 * A schema that was never created is skipped; one that cannot be deleted is orphaned.
+	 *
+	 * @param array<string,mixed> $state    Creation state tracker
+	 * @param array<int,string>   $orphaned Accumulates resources that could not be cleaned (by ref)
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
+	 */
+	private function rollbackFile(array $state, array &$orphaned): void {
+		$jobId = ($state['importJobId'] ?? null);
+		$spreadsheets = $this->sources?->spreadsheets;
+		if (is_string($jobId) === true && $jobId !== '' && $spreadsheets !== null
+			&& $spreadsheets->undo(importJobId: $jobId) === false
+		) {
+			$orphaned[] = 'import:' . $jobId;
+		}
+
+		foreach (array_reverse((array)($state['fileSchemas'] ?? [])) as $slug) {
+			try {
+				$schema = $this->store->schemaMapper->find((string)$slug, _multitenancy: false);
+			} catch (Throwable $e) {
+				continue;
+			}
+
+			try {
+				$this->store->schemaMapper->delete($schema);
+			} catch (Throwable $e) {
+				$this->logger->error('Buildiq: wizard rollback failed to delete schema ' . $slug . ': ' . $e->getMessage());
+				$orphaned[] = 'schema:' . $slug;
+			}
+		}
+	}//end rollbackFile()
+
+	/**
 	 * Roll back all created state, then throw a wizard_rollback exception.
 	 *
 	 * Collapses the repeated "best-effort rollback → derive partial/complete
@@ -805,7 +1381,7 @@ class ApplicationCreationService {
 	 *
 	 * @throws WizardCreationException Always — with the rollback status derived from orphaned resources
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
 	 */
 	private function rollbackAndThrow(array $state, string $failedAtStep, string|Throwable $cause): never {
 		$orphaned = [];
@@ -846,7 +1422,7 @@ class ApplicationCreationService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
 	 */
 	private function rollbackObjects(array $uuids, string $label, string $prefix, array &$orphaned): void {
 		$ordered = array_reverse(array_values($uuids));
@@ -857,7 +1433,7 @@ class ApplicationCreationService {
 			}
 
 			try {
-				$this->objectService->deleteObject(uuid: $uuid);
+				$this->store->objectService->deleteObject(new ObjectDeletion(uuid: $uuid));
 			} catch (Throwable $e) {
 				$this->logger->error(
 					'Buildiq: wizard rollback failed to delete ' . $label . ' ' . $uuid . ': ' . $e->getMessage(),
@@ -869,21 +1445,27 @@ class ApplicationCreationService {
 	}//end rollbackObjects()
 
 	/**
-	 * Load the default manifest from the static fixture file.
+	 * Read and decode one of the wizard's static fixture files
+	 * (`Resources/wizard/default-<name>.json`): the default manifest (a JSON
+	 * object) or the default schema set (a JSON array).
 	 *
-	 * @return array<string,mixed> The parsed manifest blob
+	 * @param array{name: string, shape: string} $fixture The fixture name and the JSON shape named in its error.
 	 *
-	 * @throws WizardCreationException When the fixture cannot be read or decoded
+	 * @return array<int|string,mixed> The decoded fixture
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
+	 * @throws WizardCreationException When the fixture cannot be found, read or decoded
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
 	 */
-	private function loadDefaultManifest(): array {
-		$path = __DIR__ . '/../Resources/wizard/default-manifest.json';
+	private function loadWizardFixture(array $fixture): array {
+		$name = $fixture['name'];
+		$step = 'load-default-' . $name;
+		$path = __DIR__ . '/../Resources/wizard/default-' . $name . '.json';
 		if (file_exists($path) === false) {
 			throw new WizardCreationException(
 				errorCode: 'wizard_rollback',
-				failedAtStep: 'load-default-manifest',
-				message: 'Default manifest fixture not found at ' . $path,
+				failedAtStep: $step,
+				message: 'Default ' . $name . ' fixture not found at ' . $path,
 				rollbackStatus: 'none'
 			);
 		}
@@ -892,8 +1474,8 @@ class ApplicationCreationService {
 		if ($raw === false) {
 			throw new WizardCreationException(
 				errorCode: 'wizard_rollback',
-				failedAtStep: 'load-default-manifest',
-				message: 'Could not read default manifest fixture.',
+				failedAtStep: $step,
+				message: 'Could not read default ' . $name . ' fixture.',
 				rollbackStatus: 'none'
 			);
 		}
@@ -902,57 +1484,14 @@ class ApplicationCreationService {
 		if (is_array($decoded) === false) {
 			throw new WizardCreationException(
 				errorCode: 'wizard_rollback',
-				failedAtStep: 'load-default-manifest',
-				message: 'Default manifest fixture is not a JSON object.',
+				failedAtStep: $step,
+				message: 'Default ' . $name . ' fixture is not a JSON ' . $fixture['shape'] . '.',
 				rollbackStatus: 'none'
 			);
 		}
 
 		return $decoded;
-	}//end loadDefaultManifest()
-
-	/**
-	 * Load the default schema set from the static fixture file.
-	 *
-	 * @return array<int,array<string,mixed>> The parsed schema blobs
-	 *
-	 * @throws WizardCreationException When the fixture cannot be read or decoded
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
-	 */
-	private function loadDefaultSchemas(): array {
-		$path = __DIR__ . '/../Resources/wizard/default-schemas.json';
-		if (file_exists($path) === false) {
-			throw new WizardCreationException(
-				errorCode: 'wizard_rollback',
-				failedAtStep: 'load-default-schemas',
-				message: 'Default schemas fixture not found at ' . $path,
-				rollbackStatus: 'none'
-			);
-		}
-
-		$raw = file_get_contents($path);
-		if ($raw === false) {
-			throw new WizardCreationException(
-				errorCode: 'wizard_rollback',
-				failedAtStep: 'load-default-schemas',
-				message: 'Could not read default schemas fixture.',
-				rollbackStatus: 'none'
-			);
-		}
-
-		$decoded = json_decode($raw, associative: true, flags: JSON_THROW_ON_ERROR);
-		if (is_array($decoded) === false) {
-			throw new WizardCreationException(
-				errorCode: 'wizard_rollback',
-				failedAtStep: 'load-default-schemas',
-				message: 'Default schemas fixture is not a JSON array.',
-				rollbackStatus: 'none'
-			);
-		}
-
-		return $decoded;
-	}//end loadDefaultSchemas()
+	}//end loadWizardFixture()
 
 	/**
 	 * Substitute the `{registerSlug}` placeholder in a manifest template.
@@ -965,7 +1504,7 @@ class ApplicationCreationService {
 	 *
 	 * @return array<string,mixed> The manifest with the token substituted
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
 	 */
 	public function substituteRegisterSlug(array $manifest, string $registerSlug): array {
 		return $this->substituteVersionContext(
@@ -989,46 +1528,83 @@ class ApplicationCreationService {
 	 * @param array<string,mixed> $manifest The manifest template blob
 	 * @param string $registerSlug The per-version register slug
 	 * @param string $schemaSlugPrefix Namespaced prefix for schema slugs (e.g. `permit-flow-development-`)
+	 * @param array<int,string> $dataRegisters Register slugs the Application binds in `dataRegisters`;
+	 *                                         a page on one of them keeps its schema slug
 	 *
 	 * @return array<string,mixed> The manifest with tokens substituted
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
 	 */
 	public function substituteVersionContext(
 		array $manifest,
 		string $registerSlug,
 		string $schemaSlugPrefix,
+		array $dataRegisters = [],
 	): array {
 		if (isset($manifest['pages']) === false || is_array($manifest['pages']) === false) {
 			return $manifest;
 		}
 
-		foreach ($manifest['pages'] as &$page) {
-			if (is_array($page) === false) {
+		foreach ($manifest['pages'] as $index => $page) {
+			if (is_array($page) === false || is_array($page['config'] ?? null) === false) {
 				continue;
 			}
 
-			if (isset($page['config']) === false || is_array($page['config']) === false) {
-				continue;
-			}
+			$config = $this->withVersionRegister(config: $page['config'], registerSlug: $registerSlug);
+			$manifest['pages'][$index]['config'] = $this->withSchemaPrefix(
+				config: $config,
+				schemaSlugPrefix: $schemaSlugPrefix,
+				dataRegisters: $dataRegisters
+			);
+		}
 
-			if (isset($page['config']['register']) === true && $page['config']['register'] === '{registerSlug}') {
-				$page['config']['register'] = $registerSlug;
-			}
-
-			if ($schemaSlugPrefix !== ''
-				&& isset($page['config']['schema']) === true
-				&& is_string($page['config']['schema']) === true
-				&& $page['config']['schema'] !== ''
-				&& str_starts_with($page['config']['schema'], $schemaSlugPrefix) === false
-			) {
-				$page['config']['schema'] = $schemaSlugPrefix . $page['config']['schema'];
-			}
-		}//end foreach
-
-		unset($page);
 		return $manifest;
 	}//end substituteVersionContext()
+
+	/**
+	 * Point a page config at the version's own register: replace a register
+	 * token, and give a page that names a schema but no register the
+	 * version's register, where withSchemaPrefix() already puts its schema
+	 * ({@see PageRegisterBinding}).
+	 *
+	 * @param array<string,mixed> $config       The page config.
+	 * @param string              $registerSlug The per-version register slug.
+	 *
+	 * @return array<string,mixed> The config with the register substituted.
+	 *
+	 * @spec openspec/specs/openbuild-template-catalogue/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) PageRegisterBinding is a pure rule with no collaborators.
+	 */
+	private function withVersionRegister(array $config, string $registerSlug): array {
+		return PageRegisterBinding::forConfig(config: $config, registerSlug: $registerSlug);
+	}//end withVersionRegister()
+
+	/**
+	 * Prefix a page config's schema slug with the namespaced seed prefix.
+	 *
+	 * A page on a bound data register keeps its schema (REQ-BQDB-004), as
+	 * does an empty schema or one that already carries the prefix.
+	 *
+	 * @param array<string,mixed> $config           The page config.
+	 * @param string              $schemaSlugPrefix Namespaced prefix for schema slugs.
+	 * @param array<int,string>   $dataRegisters    Register slugs bound in `dataRegisters`.
+	 *
+	 * @return array<string,mixed> The config with the schema prefixed where it applies.
+	 */
+	private function withSchemaPrefix(array $config, string $schemaSlugPrefix, array $dataRegisters): array {
+		if ($schemaSlugPrefix === '' || in_array(($config['register'] ?? null), $dataRegisters, true) === true) {
+			return $config;
+		}
+
+		$schema = $config['schema'] ?? null;
+		if (is_string($schema) === true && $schema !== '' && str_starts_with($schema, $schemaSlugPrefix) === false) {
+			$config['schema'] = $schemaSlugPrefix . $schema;
+		}
+
+		return $config;
+	}//end withSchemaPrefix()
 
 	/**
 	 * Get the UID of the currently authenticated user.
@@ -1043,33 +1619,4 @@ class ApplicationCreationService {
 
 		return $user->getUID();
 	}//end resolveCallerUid()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array.
-	 *
-	 * @param mixed $object The OR object / result entry
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
 }//end class

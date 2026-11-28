@@ -96,6 +96,97 @@ keys on that field are replaced. Fields you never touch keep their flat
 keys exactly as they were; this is opt-in, per field, never a bulk
 rewrite of the whole form.
 
+### Dutch formats
+
+Next to the pattern, the Validation block has a **Format** select with eight
+Dutch formats: BSN (the eleven test), IBAN (the check digits), licence plate
+(with or without dashes), phone number (Dutch, ten digits starting with 0 or
++31), phone number (international, + and the country code), postcode
+(1234 AB), KvK number (eight digits) and branch number (twelve digits). The
+choice is stored on the field as `format` with the names portaliq uses:
+`bsn`, `iban`, `nl-licence-plate`, `phone-nl`, `phone-international`,
+`postcode`, `kvk` and `kvk-branch`.
+
+- A field checks either a format or a pattern: choosing a format clears the
+  pattern and disables it, with "The format already checks this field."
+- A form field on a schema property that has a Dutch format shows that
+  format, disabled, with "Comes from the schema". The schema field editor
+  lists the same eight under **Dutch formats**, after the JSON Schema ones.
+- The server checks the value when a published app form saves (the form
+  save listener), with the rules in `lib/Settings/dutch-formats.json`, the
+  same file the browser-side check in `src/services/dutchFormats.js` reads.
+  A value that fails is refused with the format's message; a licence plate
+  is stored without dashes in capitals and a postcode without its space.
+
+## Prefilled, calculated and checked while it is filled in
+
+A form can fill in what is already known, work out what follows from the
+answers, and tell the person filling it in straight away why they do not
+qualify. Calculations and checks come from a rule set you already built and
+tested under **Rules**. There is no formula language to learn.
+
+**Filled in when the form opens.** In a field's **Details**, pick what it
+starts with: a fixed value, the user name of the person filling it in, their
+name, their e-mail, today, or a field of the record the form opens from (for
+example `title`). The field stores a token such as `@me.email`; the person
+can still change the value.
+
+**Calculated.** Pick the rule set that works the value out, the outcome to
+show, and the answers it reads. The field shows the outcome read-only and
+works it out again when one of those answers changes. A rule set that is not
+active is marked, because the field stays empty until it is.
+
+**Eligibility check.** On the form page, pick a rule set, the outcome and
+value that mean the person qualifies (for `loan-eligibility`: `decision` is
+`approved`), and the outcome that explains why not (`reason`). With **Wait
+for a pass before the form can be sent** the submit button stays disabled
+until the check passes.
+
+While the form is filled in, buildiq evaluates these rule sets in preview
+mode, which writes nothing to the execution log. When the record is saved,
+buildiq evaluates every calculated field again with the saved values and
+stores its own answer, so a value changed in the browser never lands. A
+blocking check that fails refuses the save with its explanation.
+
+> Showing these values while the form is filled in needs the matching hooks
+> in `@conduction/nextcloud-vue`'s `CnFormPage`. Until the app's renderer has
+> them, the form shows the fields as plain inputs; the server still
+> recomputes and checks on save.
+
+## Field types, files, tables and answers that fill other answers
+
+The designer's palette lists every field type it offers: text, number, yes
+or no, choice, long text, date, file and table of records. Drag a type onto
+the form and drop it where it should go, or drag a field's handle to move
+it. Without a mouse, pick a type in the palette and press Enter: the field
+is added at the end and gets focus, and **Move field up** / **Move field
+down** put it in place.
+
+A **file** field has its own settings under **Details**:
+
+- **Allowed file types**, written as `accept` (for example `.pdf,image/*`).
+- **Maximum size (MB)**, written as `maxSize` in bytes (10 MB is
+  `10485760`).
+- **Several files**, written as `multiple: true`.
+- **Camera**: off, back camera (`capture: "environment"`) or front camera
+  (`capture: "user"`). Off removes `capture`.
+
+A **table of records** field edits another schema's records inside the form,
+such as order lines on an order. Pick the child schema from the form's
+register; the designer then offers the child's fields that point back at the
+form's schema (`parentField`) and the columns to show (`columns`). A schema
+with no field pointing back is named as unusable and is not saved on the
+field. Saving a form whose table has no schema or no parent field lists it as
+a finding.
+
+**Fill in from another answer** writes a field's `assign` rules. Each rule
+is a condition on another field (the same operators as a condition) and a
+value: a fixed value, another answer (`@answer.<field>`) or a token such as
+`@me` or `@today`. The first rule whose condition holds fills the field; once
+the person types in it themselves, the rules stop. A rule may not read the
+field it fills: the designer refuses it, and a rule naming a field the form
+does not have is listed as a finding.
+
 ## The dangling-reference warning
 
 Deleting a field that's still referenced by another field's condition,
@@ -105,6 +196,82 @@ references removed field '…'" / a similar note on the step) right where
 the stale reference lives, so you can decide what to do — re-add the
 field, or edit the condition/step yourself. The reference stays in the
 manifest until you resolve it.
+
+## Filling a form from pasted text
+
+Under **Fill from pasted text** you can let the users of a form fill it
+from text they paste, such as an email or a letter. Switch it on, tick the
+fields the AI may fill, and optionally write a hint for the paste box. The
+page config then carries:
+
+```json
+"smartPaste": { "enabled": true, "fields": ["naam", "adres", "telefoon"], "hint": "Paste an email or letter", "handler": "buildiq-smart-paste" }
+```
+
+What the user gets:
+
+- A **Paste to fill** control, shown only when Hermiq's form fill is switched
+  on (an administrator acknowledges the `form-fill` AI feature in Hermiq). The
+  pasted text and the ticked fields' names, labels, types and choices go to
+  Hermiq, never the other answers. The AI proposes values for the ticked
+  fields only, and only for fields that are empty and visible; the other
+  fields stay as they are.
+- Every proposed value is marked as a suggestion, still passes the field's
+  own validation, and nothing is submitted until the user clicks Submit.
+
+The checks the designer runs:
+
+- Smart paste is only for signed-in forms. On a form in `public` mode (the
+  default when no mode is set) the switch stays off and says "Only
+  signed-in forms can use AI.", so no anonymous visitor ever reaches a
+  language model.
+- A ticked field must exist on the form. Delete a ticked field and the
+  fieldset is marked with the unknown key until you untick it.
+- Files, signatures and relations cannot be filled from text and are not
+  offered.
+- Switched on with no fields ticked is an error.
+
+The preview shows the control with a fixed sample answer, so you can see
+the behaviour without calling a model. In built apps the control appears
+once the form renderer and the AI fill service support it; until then the
+setting is saved but has no effect.
+
+## Letting another app call a rule set
+
+A rule set can also decide a value for another app — for example a portal
+form step that asks "which permit applies?" on the server, where the
+resident has no Nextcloud account. By default nobody outside buildiq may
+call a rule set; you allow it per rule set:
+
+1. Open **Business rules**, find the rule set and choose **Callers**.
+2. Under **May be called by** pick the apps that may call it (the enabled
+   apps are offered; an app id can also be typed). Save.
+3. Activate the rule set. Only the active version answers.
+
+What the other app gets:
+
+- The outputs, the ids of the rules that matched and the version — never
+  the decision table itself.
+- Its form designer can list the rule sets it may use with
+  `GET /api/rules?callableBy=<app>`: slug, title, version, inputs and
+  outputs.
+- Its server asks through the typed command
+  `OCA\Buildiq\Event\RuleEvaluationRequestedEvent` (app, rule set slug,
+  inputs). The answer is `{ ok: true, result, triggeredRules, version }`, or
+  `{ ok: false, reason }` with `unknown-rule-set`, `not-allowed`,
+  `invalid-input`, `timeout` or `evaluation-failed`.
+
+What buildiq does with the call:
+
+- Only the declared inputs of the table are used; anything else the app
+  sends is dropped, a declared input that is missing counts as empty, and
+  an input of the wrong type is refused as `invalid-input`.
+- No action runs: a rule that would send a notification or start a flow
+  only answers. Each call writes one line in the rule execution log, with
+  the calling app and the version, so an auditor can see which app used
+  which version.
+- Remove an app from **May be called by** and its next call is refused as
+  `not-allowed`.
 
 ## See also
 

@@ -357,3 +357,35 @@ state unchanged.
 - **THEN** the dialog's **Delete** button is disabled until the user
   types the schema's slug exactly
 - **AND** cancelling the dialog leaves the schema in the list
+
+### Requirement: A text field can be an automatic number (REQ-OBSD-009)
+
+The schema designer SHALL let the maker turn a string field into an automatic number, written as OpenRegister's `x-openregister-generated` keyword with `sequence`, `format` and `resetOn`. The designer SHALL show an example of the next number, SHALL refuse a format without a `{seq:n}` placeholder, and SHALL remove the keyword when the setting is switched off.
+
+**ID:** REQ-OBSD-009
+
+#### Scenario: Invoice numbers
+- **GIVEN** a schema Factuur with a text field `nummer`
+- **WHEN** the maker switches on Automatic number with format `INV-{year}-{seq:4}` and restart each year
+- **THEN** the property carries `x-openregister-generated: { sequence: "factuur", format: "INV-{year}-{seq:4}", resetOn: "year" }`
+- **AND** the designer shows the example `INV-2026-0001`
+
+#### Scenario: A format without a counter
+- **WHEN** the maker enters the format `INV-{year}`
+- **THEN** the designer says the format needs a counter such as `{seq:4}` and does not save it
+
+### Requirement: Icon-only action buttons carry an accessible name
+
+Every `NcButton` in the schema designer's sub-editors (`LifecycleEditor.vue`, `WidgetEditor.vue`, `RelationEditor.vue`, and the shared editor pattern they follow) that renders only an icon in its `#icon` template slot — with no visible text label — SHALL carry an `:aria-label` (or equivalent accessible-name prop) describing the action, sourced through `t('buildiq', '...')` with an English-language key.
+
+#### Scenario: Remove-state button exposes its action to assistive technology
+
+- **GIVEN** the Lifecycle sub-editor rendering a list of states
+- **WHEN** a screen reader user tabs to the remove-state icon button
+- **THEN** the accessible name SHALL announce "Remove state" (or the localized equivalent), not a bare "button"
+
+#### Scenario: Remove-transition, remove-action, remove-widget, remove-relation buttons are equally labelled
+
+- **GIVEN** the Lifecycle, Widget, and Relation sub-editors
+- **WHEN** a screen reader user reaches any icon-only remove button in these editors
+- **THEN** each SHALL announce a distinct, action-specific accessible name ("Remove transition", "Remove action", "Remove widget", "Remove relation")

@@ -3,6 +3,9 @@
 /**
  * Buildiq RenameAgentSchemaSlug repair step.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Moves this app's agent schema slug from `agent` to `buildAgent` IN PLACE, before
  * InitializeSettings imports the register.
  *
@@ -34,9 +37,6 @@
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *
@@ -101,6 +101,7 @@ class RenameAgentSchemaSlug implements IRepairStep {
 	 *
 	 * @spec exclude No canonical spec covers the cross-app slug namespacing pass.
 	 */
+	#[\Override]
 	public function getName(): string {
 		return 'Namespace the buildiq agent schema slug so it stops colliding with hermiq';
 	}//end getName()
@@ -114,6 +115,7 @@ class RenameAgentSchemaSlug implements IRepairStep {
 	 *
 	 * @spec exclude No canonical spec covers the cross-app slug namespacing pass.
 	 */
+	#[\Override]
 	public function run(IOutput $output): void {
 		$old = $this->schemaIds(slug: self::OLD_SLUG);
 		$new = $this->schemaIds(slug: self::NEW_SLUG);

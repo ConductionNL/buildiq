@@ -1,0 +1,177 @@
+{
+	"_comment": "ADR-037 register fragment: form library (reuse-gallery-categories-and-form-library, REQ-BQGL-002). Adds a NEW disjoint schema key `formTemplate` to the shared `buildiq` register's components.schemas map; no existing schema is touched. A form template is a form page config or a registration form, captured with the definitions of the schema properties its fields bind to, so another app (or another organisation) can add it with what it needs. It never carries object data. Access follows OpenRegister's RBAC on the object, like component blocks.",
+	"components": {
+		"schemas": {
+			"formTemplate": {
+				"x-schema-org": "schema:CreativeWork",
+				"slug": "form-template",
+				"icon": "FileDocumentMultipleOutline",
+				"version": "0.1.0",
+				"title": "Form Template",
+				"description": "A form saved to the form library: a form page or a registration form with its fields, steps, logic, presets and confirmation text, and the definitions of the schema properties its fields bind to. Never contains records.",
+				"authorization": {
+					"read": [
+						"authenticated"
+					],
+					"create": [
+						"admin"
+					],
+					"update": [
+						"admin"
+					],
+					"delete": [
+						"admin"
+					]
+				},
+				"type": "object",
+				"required": [
+					"slug",
+					"name",
+					"category",
+					"kind",
+					"form",
+					"schemaFragment"
+				],
+				"properties": {
+					"uuid": {
+						"title": "UUID",
+						"type": "string",
+						"description": "OpenRegister-assigned unique identifier for this library form. Not supplied by the client on create."
+					},
+					"slug": {
+						"title": "Slug",
+						"type": "string",
+						"description": "Kebab-case slug of the library form, unique within its organisation.",
+						"pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+						"maxLength": 64,
+						"example": "aanvraag-energiesubsidie"
+					},
+					"name": {
+						"title": "Name",
+						"type": "string",
+						"description": "The name a maker finds the form by.",
+						"maxLength": 255,
+						"example": "Aanvraag energiesubsidie"
+					},
+					"description": {
+						"title": "Description",
+						"type": "string",
+						"description": "What the form asks and who it is for.",
+						"maxLength": 2000
+					},
+					"category": {
+						"title": "Category",
+						"type": "string",
+						"description": "The template category the form is filed under, the same four the app store filters templates by.",
+						"enum": [
+							"government-services",
+							"internal-operations",
+							"citizen-engagement",
+							"field-work"
+						],
+						"example": "citizen-engagement"
+					},
+					"kind": {
+						"title": "Kind",
+						"type": "string",
+						"description": "Where the form came from and where it can go: a form page of an app, or a registration form for a schema and type value.",
+						"enum": [
+							"form-page",
+							"registration-form"
+						],
+						"example": "registration-form"
+					},
+					"form": {
+						"title": "Form",
+						"type": "object",
+						"description": "The form config: fields, steps, logic, presets, sections and the confirmation text. For a form page, the page's config; for a registration form, those parts of the registrationForm object. Schema references are de-namespaced. Never object data.",
+						"properties": {
+							"fields": {
+								"title": "Fields",
+								"type": "array",
+								"description": "The fields, in order.",
+								"items": {
+									"type": "object"
+								}
+							},
+							"steps": {
+								"title": "Steps",
+								"type": "array",
+								"description": "The steps of a multi-step form.",
+								"items": {
+									"type": "object"
+								}
+							},
+							"sections": {
+								"title": "Sections",
+								"type": "array",
+								"description": "The groups the fields are arranged into.",
+								"items": {
+									"type": "object"
+								}
+							},
+							"formLogic": {
+								"title": "Form logic",
+								"type": "object",
+								"description": "Conditional visibility and validation."
+							},
+							"presets": {
+								"title": "Presets",
+								"type": "array",
+								"description": "Values the form sets on the object it creates.",
+								"items": {
+									"type": "object"
+								}
+							},
+							"confirmationText": {
+								"title": "Confirmation text",
+								"type": "string",
+								"description": "What the filer reads after submitting."
+							}
+						},
+						"required": [
+							"fields"
+						]
+					},
+					"schemaFragment": {
+						"title": "Schema fragment",
+						"type": "object",
+						"description": "The definitions of the schema properties the form's fields bind to, keyed by property name, copied from the source schema. Used to add the properties a target schema lacks.",
+						"additionalProperties": {
+							"type": "object"
+						}
+					},
+					"sourceSchema": {
+						"title": "Source schema",
+						"type": "string",
+						"description": "The de-namespaced slug of the schema the form wrote to. Provenance and the default of the schema mapping; never a live link.",
+						"example": "aanvraag"
+					},
+					"publisher": {
+						"title": "Publisher",
+						"type": "string",
+						"description": "The organisation that published the form, as free text.",
+						"maxLength": 255,
+						"example": "Gemeente Voorbeeld"
+					},
+					"version": {
+						"title": "Version",
+						"type": "string",
+						"description": "The version of the library form, raised by its publisher.",
+						"example": "1.0.0"
+					},
+					"sourceApplicationSlug": {
+						"title": "Source app",
+						"type": "string",
+						"description": "The app the form was saved from. Provenance only."
+					},
+					"createdBy": {
+						"title": "Created by",
+						"type": "string",
+						"description": "The Nextcloud user who saved the form to the library."
+					}
+				}
+			}
+		}
+	}
+}

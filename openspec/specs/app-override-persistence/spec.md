@@ -12,7 +12,7 @@ repoints storage to a hybrid `Application` + delta-only `ApplicationVersion` and
 the three endpoints as compatibility shims so live fleet apps stay byte-for-byte
 compatible.
 
-**OpenSpec changes**: [layered-versioned-app-deltas](../../changes/layered-versioned-app-deltas/), [buildiq-inline-edit-persistence](../../changes/buildiq-inline-edit-persistence/), [unify-apps-with-app-type](../../changes/archive/2026-06-20-unify-apps-with-app-type/) _(archived 2026-06-20)_
+**OpenSpec changes**: [layered-versioned-app-deltas](../../changes/layered-versioned-app-deltas/), [openbuild-inline-edit-persistence](../../changes/archive/2026-11-25-openbuild-inline-edit-persistence/) _(archived 2026-11-25)_, [unify-apps-with-app-type](../../changes/archive/2026-06-20-unify-apps-with-app-type/) _(archived 2026-06-20)_
 
 **Status**: in-progress
 
@@ -36,18 +36,48 @@ The system SHALL persist a fleet app's manifest customization as a **hybrid `App
 
 ### Requirement: Read endpoint returns the raw delta for client-side merge
 
-The system SHALL keep `GET /index.php/apps/buildiq/api/app-overrides/{appId}` as a **compatibility shim** returning the stored `manifestDelta` for that `appId` unchanged, now sourced from the hybrid `Application`'s production `ApplicationVersion` (resolved by `baseRef.id == {appId}` or `slug == {appId}`). The fleet app's `@conduction/nextcloud-vue` loader configured with `mergeStrategy:'delta'` and `options.endpoint` pointed at this URL SHALL apply the delta over its own bundled manifest via `mergeManifestDelta(bundledManifest, delta)`. When no hybrid Application exists for the `appId`, the endpoint SHALL return an empty delta so the merge is a no-op and the bundled manifest passes through unchanged. The endpoint SHALL require an authenticated session. The system SHALL NOT merge a fleet app's manifest server-side, because Buildiq does not hold the fleet app's bundled base manifest.
+The system SHALL keep `GET /index.php/apps/buildiq/api/app-overrides/{appId}` as
+a **compatibility shim** returning the stored `manifestDelta` for that `appId`,
+now extended to be **scope-aware**: when the resolved hybrid `Application` has
+`allowUserOverrides == true` AND the authenticated caller owns a `scope: user`
+`ApplicationVersion` chained (via `baseRef`) to that app's admin delta, the
+endpoint SHALL return the layered delta chain so the fleet app's loader resolves
+`base ⊕ admin-delta ⊕ user-delta` client-side. When `allowUserOverrides` is
+`false`, or no user delta exists for the caller, the endpoint SHALL return exactly
+the admin delta as today (the user layer is never applied). The endpoint SHALL
+NOT merge the fleet app's bundled base server-side (Buildiq does not hold it).
+When no hybrid Application exists for the `appId`, the endpoint SHALL return an
+empty delta so the merge is a no-op. The endpoint SHALL require an authenticated
+session. A caller SHALL never receive another user's delta.
 
 #### Scenario: Existing override returns the stored delta from the hybrid Application
 
-- **WHEN** an authenticated user GETs `/api/app-overrides/opencatalogi` and a hybrid Application exists for it
-- **THEN** the response SHALL be `200 application/json` with the hybrid Application's production-version `manifestDelta` body
+- **WHEN** an authenticated user GETs `/api/app-overrides/opencatalogi` and a
+  hybrid Application exists for it with `allowUserOverrides: false`
+- **THEN** the response SHALL be `200 application/json` with the hybrid
+  Application's production-version (admin) `manifestDelta` body
 - **AND** the body SHALL be a keyed delta consumable by `mergeManifestDelta`
+
+#### Scenario: Caller's user delta is layered when overrides are enabled
+
+- **WHEN** an authenticated user who owns a `scope: user` delta GETs
+  `/api/app-overrides/{appId}` and the app has `allowUserOverrides: true`
+- **THEN** the response SHALL carry the layered admin + caller's-user delta chain
+- **AND** the body SHALL remain consumable by `mergeManifestDelta`
 
 #### Scenario: No override returns an empty delta
 
-- **WHEN** an authenticated user GETs `/api/app-overrides/somefleetapp` and no hybrid Application exists
-- **THEN** the response SHALL be `200` with an empty delta so the loader's merge is a no-op
+- **WHEN** an authenticated user GETs `/api/app-overrides/somefleetapp` and no
+  hybrid Application exists
+- **THEN** the response SHALL be `200` with an empty delta so the loader's merge
+  is a no-op
+
+#### Scenario: Another user's delta is never returned
+
+- **WHEN** user B GETs `/api/app-overrides/{appId}` for an app where user A owns a
+  user delta and B owns none
+- **THEN** the response SHALL carry only the admin delta (and B's own delta if
+  any) — never user A's delta
 
 ### Requirement: Write endpoint upserts the delta and records who saved
 
@@ -78,3 +108,84 @@ The system SHALL keep `DELETE /index.php/apps/buildiq/api/app-overrides/{appId}`
 
 - **WHEN** an authenticated user DELETEs `/api/app-overrides/neverhadone`
 - **THEN** the endpoint SHALL respond success without error (no record to clear)
+
+### Requirement: User-delta write is owner-scoped and flag-gated
+
+The system SHALL allow an authenticated user to create or update their OWN
+`scope: user` manifest delta for an `appId` ONLY when the hybrid
+`Application.allowUserOverrides` is `true`. The write SHALL set `owner` to the
+calling UID, set `scope: user`, set the user delta's `baseRef` to point at the
+admin delta version, and validate the delta shape and non-blank guard exactly as
+the admin write path does (reusing `AppOverrideService` delta validation). A write
+that targets `allowUserOverrides: false`, or that supplies an `owner` other than
+the caller, SHALL be rejected fail-closed. CSRF SHALL be enforced and anonymous
+callers SHALL be rejected. A user SHALL never write another user's delta.
+
+@e2e exclude backend write contract — the owner-scoped, flag-gated user-delta write reuses the AppOverrideService validation path and is verified by PHPUnit + a no-admin-idor cross-user test; the in-app create flow is covered by the application-delta-layers-ui spec
+
+**ID:** REQ-AOP-008
+
+#### Scenario: Owner writes their own user delta when enabled
+
+- **WHEN** an authenticated user PUTs a valid user delta for an `appId` with
+  `allowUserOverrides: true`
+- **THEN** the system upserts a `scope: user` `ApplicationVersion` owned by the
+  caller and responds `2xx`
+
+#### Scenario: User-delta write rejected when overrides disabled
+
+- **WHEN** an authenticated user PUTs a user delta for an `appId` with
+  `allowUserOverrides: false`
+- **THEN** the request is rejected and no `scope: user` row is persisted
+
+#### Scenario: Cannot write a delta owned by another user
+
+- **WHEN** an authenticated user PUTs a user delta whose `owner` is a different
+  UID
+- **THEN** the request is rejected fail-closed
+
+### Requirement: Delta-shape validation rejects malformed or app-blanking deltas
+
+The system SHALL validate, before persisting, that the request body is a keyed delta, and SHALL reject a malformed delta, or one that would resolve to a manifest with no renderable pages or menu (an app-blanking delta), with a `422` without persisting it. A stored delta SHALL NOT cause the read endpoint to error.
+
+#### Scenario: Malformed body is rejected with 422
+
+- **WHEN** a PUT body is not a keyed delta (e.g. a whole manifest, or `null`)
+- **THEN** the endpoint SHALL respond `422` and SHALL NOT persist an `AppOverride`
+
+#### Scenario: A keyed delta has the contract's ids and markers
+
+- **WHEN** a PUT body is a plain object whose page and widget entries carry the ids the contract requires, whose `$op` values are the known deletion marker, and whose `__order` value, when present, is an array of ids
+- **THEN** the shape check SHALL accept it
+- **AND** a body whose `$op` is an unknown value, or whose `__order` is not an array of ids, SHALL be answered `422`
+
+#### Scenario: App-blanking delta is rejected
+
+- **WHEN** a PUT body is a delta that removes every page and leaves no menu
+- **THEN** the endpoint SHALL respond `422` and SHALL NOT persist it
+
+#### Scenario: A stored delta against a drifted base still reads
+
+- **WHEN** a stored delta patches a page the fleet app's bundled manifest no longer has, and an authenticated user GETs its override
+- **THEN** the read endpoint SHALL return the stored delta without error
+- **AND** the orphaned patch SHALL be surfaced client-side by the loader's `orphanedDeltaPaths`, not by failing the read
+
+### Requirement: Override writes require Buildiq access, not an admin role
+
+The system SHALL gate the write and delete endpoints on the caller having Buildiq access (the Buildiq app is enabled and the caller is within its Nextcloud app group-restriction) rather than on per-object ownership, because an `AppOverride` is a per-instance shared customization with no per-object owner.
+
+#### Scenario: User with Buildiq access may write
+
+- **WHEN** a logged-in user who can reach the enabled Buildiq app saves a valid delta
+- **THEN** the write SHALL be permitted
+
+#### Scenario: Logged-in user outside Buildiq scope is forbidden
+
+- **WHEN** a logged-in user who is NOT within Buildiq's app group-restriction PUTs a delta
+- **THEN** the endpoint SHALL respond forbidden and SHALL NOT persist the override
+
+#### Scenario: The routes need a login, not an admin role
+
+- **WHEN** the write and delete methods of the override controller are read
+- **THEN** each SHALL be declared `#[NoAdminRequired]` (login required, not admin-only)
+- **AND** each SHALL carry the Buildiq-access guard in its method body, so a non-admin user with Buildiq access may write and a logged-in user outside Buildiq's scope is forbidden

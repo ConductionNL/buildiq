@@ -28,8 +28,8 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
  */
 
 declare(strict_types=1);
@@ -80,7 +80,7 @@ class SlugValidator {
 	 *
 	 * @return array<string,mixed> Empty array on success; error array on failure
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
 	 */
 	public function validateAppSlug(string $slug): array {
 		if ($slug === '') {
@@ -92,19 +92,10 @@ class SlugValidator {
 
 		if (preg_match('/' . self::SLUG_PATTERN . '/', $slug) !== 1) {
 			if (str_starts_with($slug, '_') === true) {
-				return [
-					'code' => 'slug_leading_underscore',
-					'message' => 'Version slugs cannot start with `_` (reserved for buildiq system use).',
-				];
+				return $this->leadingUnderscoreError();
 			}
 
-			return [
-				'code' => 'slug_invalid',
-				'message' => sprintf(
-					'Slug must match `%s` — lowercase letters, digits, and hyphens only.',
-					self::SLUG_PATTERN
-				),
-			];
+			return $this->patternError();
 		}
 
 		if (str_ends_with($slug, self::RESERVED_APP_SLUG_SUFFIX) === true) {
@@ -128,7 +119,7 @@ class SlugValidator {
 	 *
 	 * @return array<string,mixed> Empty array on success; error array on failure
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
 	 */
 	public function validateVersionSlug(string $slug): array {
 		if ($slug === '') {
@@ -139,24 +130,42 @@ class SlugValidator {
 		}
 
 		if (str_starts_with($slug, '_') === true) {
-			return [
-				'code' => 'slug_leading_underscore',
-				'message' => 'Version slugs cannot start with `_` (reserved for buildiq system use).',
-			];
+			return $this->leadingUnderscoreError();
 		}
 
 		if (preg_match('/' . self::SLUG_PATTERN . '/', $slug) !== 1) {
-			return [
-				'code' => 'slug_invalid',
-				'message' => sprintf(
-					'Slug must match `%s` — lowercase letters, digits, and hyphens only.',
-					self::SLUG_PATTERN
-				),
-			];
+			return $this->patternError();
 		}
 
 		return [];
 	}//end validateVersionSlug()
+
+	/**
+	 * The error for a slug that starts with `_`.
+	 *
+	 * @return array{code: string, message: string}
+	 */
+	private function leadingUnderscoreError(): array {
+		return [
+			'code' => 'slug_leading_underscore',
+			'message' => 'Version slugs cannot start with `_` (reserved for buildiq system use).',
+		];
+	}//end leadingUnderscoreError()
+
+	/**
+	 * The error for a slug that does not match SLUG_PATTERN.
+	 *
+	 * @return array{code: string, message: string}
+	 */
+	private function patternError(): array {
+		return [
+			'code' => 'slug_invalid',
+			'message' => sprintf(
+				'Slug must match `%s` — lowercase letters, digits, and hyphens only.',
+				self::SLUG_PATTERN
+			),
+		];
+	}//end patternError()
 
 	/**
 	 * Validate that no two slugs in the same chain are identical.
@@ -168,7 +177,7 @@ class SlugValidator {
 	 *
 	 * @return array<string,mixed> Empty array on success; error array identifying the collision
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
 	 */
 	public function validateChainSlugs(array $slugs): array {
 		$seen = [];

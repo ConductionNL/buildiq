@@ -27,14 +27,17 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/business-rules-engine/tasks.md#6.1
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#6.1
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Service\Automation\RuleSetActivationRecompiler;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
@@ -57,6 +60,8 @@ class RuleSetVersioningService {
 	 * @param ObjectServiceInterface $objectService OpenRegister object service.
 	 * @param RuleEngineService $ruleEngineService Used to evaluate TestCase payloads.
 	 * @param LoggerInterface $logger PSR logger.
+	 * @param RuleSetActivationRecompiler|null $recompiler Recompiles the automations that use an activated rule set
+	 *                                                     (logic-automation-actions-that-run D7).
 	 *
 	 * @return void
 	 */
@@ -64,6 +69,7 @@ class RuleSetVersioningService {
 		private readonly ObjectServiceInterface $objectService,
 		private readonly RuleEngineService $ruleEngineService,
 		private readonly LoggerInterface $logger,
+		private readonly ?RuleSetActivationRecompiler $recompiler=null,
 	) {
 
 	}//end __construct()
@@ -127,8 +133,10 @@ class RuleSetVersioningService {
 		try {
 			$this->objectService->saveObject(
 				object: $ruleSet,
-				register: RuleEngineService::REGISTER_SLUG,
-				schema: RuleEngineService::RULE_SET_SCHEMA
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: RuleEngineService::REGISTER_SLUG,
+						schema: RuleEngineService::RULE_SET_SCHEMA
+					))
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
@@ -137,6 +145,11 @@ class RuleSetVersioningService {
 			);
 			throw new RuntimeException('Failed to persist promoted RuleSet: ' . $e->getMessage(), 0, $e);
 		}
+
+		// Logic-automation-actions-that-run D7: a flow holds the version it was
+		// compiled against, so the automations that use this rule set follow
+		// the version just activated. The recompiler never throws.
+		$this->recompiler?->recompileReferencing(slug: (string)($ruleSet['slug'] ?? ''), version: (string)$ruleSet['version']);
 
 		return $ruleSet;
 	}//end promoteToActive()

@@ -1,0 +1,11 @@
+# Tasks: forms-fee-on-submit
+
+- [x] **T01**: Add `fee` (`amount` number > 0, `currency` ISO 4217 string default `EUR`, `description` string) to the `registrationForm` schema in `lib/Settings/register.d/50-registration-forms.json`, with a register version bump (REQ-OBRF-010). Verify: PHPUnit on the fragment accepting a fee and refusing a negative amount.
+- [x] **T02**: A "Fee on submit" section in `RegistrationFormEditor.vue` beside the sign-in level: switch, amount, currency, description; switching it on with a sign-in level below `substantial` shows why it cannot be saved (REQ-OBRF-010). Verify: vitest `tests/components/RegistrationFormEditorFee.spec.js`.
+- [x] **T03**: `lib/Service/RegistrationFormValidator.php`: refuse a form with a fee and `minTrust` missing or below `substantial` (order from `RegistrationFormSignInLevel::LEVELS`) (REQ-OBRF-010). Verify: PHPUnit cases.
+- [x] **T04**: `lib/Service/RegistrationFormPresenter.php` `serve()`: add `fee` (or null) beside `minTrust` (REQ-OBRF-010). Verify: PHPUnit that the served payload carries the fee.
+- [x] **T05**: Provider half for the portaliq lane: portaliq's form binding resolver takes the served `fee` as `portalFee` when the bound case type declares none. Drafted as `for-ruben/portaliq-registration-form-fee.md` in the build-all workspace; stays open until portaliq ships it.
+  > Shipped 25 Nov 2026 in ConductionNL/portaliq#2791 (intake-pay-on-submit T09), per Ruben's decision of 25 Nov 13:50 CET: the form's served `fee` sets the amount, currency and description, and `payAction` always comes from the case type's `portalFee` (a form fee on a case type without one is no fee). The form page, the catalogue and the pay route read the same fee (`PortalFee::forBinding($binding, $form)`, `PublishedFormFee`); PHPUnit there. T07 (live check on the dev portal with integriq's `log` provider) is next.
+- [x] **T06**: English and Dutch strings in `l10n/en.json` and `l10n/nl.json`.
+- [ ] **T07**: Live check after T05: a form with a fee of 25 EUR on the dev portal, signed in at `substantial`, submits, shows "Pay €25.00 now", and returns as paid with integriq's `log` provider.
+- [ ] **T08**: When done, set `form-payment` to `built` in `openspec/parity/capabilities.json` and archive this change.

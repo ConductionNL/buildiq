@@ -1,0 +1,86 @@
+{
+	"_comment": "ADR-037 register fragment, openbuild-mcp-adoption. Adds the AgentPlan schema (agent-plan): the steps an outside MCP agent wants to run through the builder tools for one app, which a person with an owners or editors role on that app approves or rejects in Buildiq. A builder write over MCP must name an approved plan and match one unused step (AgentPlanService). The object API is closed to everyone but admins, and an approval is additionally an HMAC with the instance secret over the plan id, its app, submitter, approver and steps, so editing a plan through the object API cannot approve it or change an approved step.",
+	"components": {
+		"schemas": {
+			"AgentPlan": {
+				"x-schema-org": "schema:Action",
+				"x-openregister-demo-data": "Written when an outside agent asks to build. A generated plan is approved by nobody and lets no write through.",
+				"slug": "agent-plan",
+				"icon": "ClipboardCheckOutline",
+				"version": "1.0.0",
+				"title": "Agent plan",
+				"description": "The builder steps an outside MCP agent asked to run for one app, and whether a person with a write role on that app approved them. Each approved step can be used by one matching write call, once.",
+				"authorization": {
+					"read": [
+						"admin"
+					],
+					"create": [
+						"admin"
+					],
+					"update": [
+						"admin"
+					],
+					"delete": [
+						"admin"
+					]
+				},
+				"type": "object",
+				"required": [
+					"appSlug",
+					"steps",
+					"status",
+					"submittedBy"
+				],
+				"properties": {
+					"appSlug": {
+						"title": "App slug",
+						"type": "string",
+						"description": "Slug of the Application every step targets."
+					},
+					"steps": {
+						"title": "Steps",
+						"type": "array",
+						"description": "The {tool, arguments} write calls the agent asked to make, in order.",
+						"items": {
+							"type": "object"
+						}
+					},
+					"status": {
+						"title": "Status",
+						"type": "string",
+						"enum": [
+							"pending",
+							"approved",
+							"rejected"
+						],
+						"default": "pending",
+						"description": "pending until a person with a write role on the app approves or rejects it."
+					},
+					"submittedBy": {
+						"title": "Submitted by",
+						"type": "string",
+						"description": "Nextcloud UID the agent acts as. Only calls as this user can use the plan."
+					},
+					"decidedBy": {
+						"title": "Decided by",
+						"type": "string",
+						"description": "Nextcloud UID of the person who approved or rejected the plan."
+					},
+					"usedSteps": {
+						"title": "Used steps",
+						"type": "array",
+						"items": {
+							"type": "integer"
+						},
+						"description": "Indexes of the steps a write call has already used."
+					},
+					"approval": {
+						"title": "Approval signature",
+						"type": "string",
+						"description": "HMAC of the approval; empty unless approved."
+					}
+				}
+			}
+		}
+	}
+}

@@ -3,6 +3,10 @@
   - DetailPageEditor — register + schema picker, route-param derivation
   - from parent page route, sidebar config (boolean OR object shape both
   - supported), `sidebarProps.tabs` list. Implements REQ-OBPD-005.
+  - Related items (`relatedCollections`, `relationLinks`) and the sidebar's
+  - Files choice: REQ-BQRI-001..003 (pages-detail-related-items).
+  - Widgets (`config.widgets`), one of which may be a code component:
+  - REQ-BQCC-001 (pages-custom-code).
   -->
 <template>
 	<div class="detail-page-editor">
@@ -10,43 +14,18 @@
 			{{ t('buildiq', 'Detail page') }}
 		</h3>
 		<div class="detail-page-editor__group">
-			<label>
-				{{ t('buildiq', 'Register') }}
-				<select
-					:value="config.register || ''"
-					:aria-invalid="isInvalid('register')"
-					@change="update('register', $event.target.value)">
-					<option value="">
-						{{ t('buildiq', '— select register —') }}
-					</option>
-					<option
-						v-for="r in registers"
-						:key="r.slug || r.id"
-						:value="r.slug">
-						{{ r.title || r.slug }}
-					</option>
-				</select>
-				<InlineFieldMark :error="markFor('register')" />
-			</label>
-			<label>
-				{{ t('buildiq', 'Schema') }}
-				<select
-					:value="config.schema || ''"
-					:disabled="!config.register"
-					:aria-invalid="isInvalid('schema')"
-					@change="update('schema', $event.target.value)">
-					<option value="">
-						{{ t('buildiq', '— select schema —') }}
-					</option>
-					<option
-						v-for="s in schemas"
-						:key="s.slug || s.id"
-						:value="s.slug">
-						{{ s.title || s.slug }}
-					</option>
-				</select>
-				<InlineFieldMark :error="markFor('schema')" />
-			</label>
+			<RegisterSchemaFields
+				:config="config"
+				:registers="registers"
+				:schemas="schemas"
+				:databaseRegisters="databaseRegisters"
+				@register="update('register', $event)"
+				@schema="update('schema', $event)" />
+			<WriteActionSwitches
+				:config="config"
+				:actions="writeActions"
+				:readOnly="databaseReadOnly"
+				@set="setWriteAction" />
 		</div>
 
 		<p v-if="!routeHasParam" class="detail-page-editor__warn" role="alert">
@@ -122,7 +101,82 @@
 					:modelValue="(config.sidebar && config.sidebar.tabs) || []"
 					@update:modelValue="updateSidebarKey('tabs', $event)" />
 			</div>
+			<label
+				v-if="sidebarShape !== 'none'"
+				class="detail-page-editor__inline detail-page-editor__files">
+				<input
+					type="checkbox"
+					:checked="filesShown"
+					@change="setFilesShown($event.target.checked)" />
+				{{ t('buildiq', 'Files') }}
+			</label>
 			<InlineFieldMark :error="markFor('sidebar')" />
+		</fieldset>
+
+		<fieldset class="detail-page-editor__fieldset">
+			<legend>{{ t('buildiq', 'Related items') }}</legend>
+			<p class="detail-page-editor__note">
+				{{ t('buildiq', 'Lists of records that point at the open record.') }}
+			</p>
+			<RelatedCollectionBuilder
+				:modelValue="config.relatedCollections || []"
+				:registers="registers"
+				:picker="picker"
+				:defaultRegister="config.register || ''"
+				@update:modelValue="updateList('relatedCollections', $event)" />
+			<InlineFieldMark :error="markFor('relatedCollections')" />
+			<p class="detail-page-editor__note">
+				{{ t('buildiq', 'Buttons that link an existing record to the open record.') }}
+			</p>
+			<RelationLinkBuilder
+				:modelValue="config.relationLinks || []"
+				:registers="registers"
+				:picker="picker"
+				:hostRegister="config.register || ''"
+				:hostSchema="config.schema || ''"
+				@update:modelValue="updateList('relationLinks', $event)" />
+			<InlineFieldMark :error="markFor('relationLinks')" />
+		</fieldset>
+
+		<fieldset class="detail-page-editor__fieldset">
+			<legend>{{ t('buildiq', 'Widgets') }}</legend>
+			<p class="detail-page-editor__note">
+				{{ t('buildiq', 'Widgets shown with the open record. A custom widget can be written by hand.') }}
+			</p>
+			<WidgetBuilder
+				:modelValue="config.widgets || []"
+				withoutConnectors
+				@update:modelValue="updateList('widgets', $event)" />
+			<InlineFieldMark :error="markFor('widgets')" />
+		</fieldset>
+
+		<fieldset class="detail-page-editor__fieldset">
+			<legend>{{ t('buildiq', 'Record history') }}</legend>
+			<label class="detail-page-editor__inline">
+				<input
+					type="checkbox"
+					data-testid="record-history-show"
+					:checked="showHistory"
+					@change="setShowHistory($event.target.checked)" />
+				{{ t('buildiq', 'Show record history') }}
+			</label>
+			<label class="detail-page-editor__inline">
+				<input
+					type="checkbox"
+					data-testid="record-history-restore"
+					:checked="allowRestore"
+					:disabled="!showHistory"
+					@change="setAllowRestore($event.target.checked)" />
+				{{ t('buildiq', 'Let users restore an earlier version') }}
+			</label>
+			<p class="detail-page-editor__note">
+				{{
+					t(
+						'buildiq',
+						'Only users who may edit a record can restore it. A restore is saved as a new version; records that point at it are not changed.',
+					)
+				}}
+			</p>
 		</fieldset>
 
 		<fieldset class="detail-page-editor__fieldset">
@@ -134,90 +188,295 @@
 				@update:modelValue="updateSidebarPropsTabs($event)" />
 			<InlineFieldMark :error="markFor('sidebarProps')" />
 		</fieldset>
+
+		<fieldset class="detail-page-editor__fieldset" data-testid="detail-page-codes">
+			<legend>{{ t('buildiq', 'Codes') }}</legend>
+			<CodeWidgetBuilder
+				:modelValue="config.widgets || []"
+				@update:modelValue="updateWidgets($event)" />
+			<InlineFieldMark :error="markFor('widgets')" />
+		</fieldset>
+
+		<fieldset class="detail-page-editor__fieldset detail-page-editor__buttons">
+			<legend>{{ t('buildiq', 'Buttons') }}</legend>
+			<p class="detail-page-editor__note">
+				{{ t('buildiq', 'Buttons in the page header that act on the open record.') }}
+			</p>
+			<ActionBuilder
+				:modelValue="config.headerActions || []"
+				:pages="pages"
+				:flows="flows"
+				:fieldOptions="recordFields"
+				:lifecycleFields="[statusField]"
+				@update:modelValue="update('headerActions', $event.length > 0 ? $event : '')" />
+			<InlineFieldMark :error="markFor('headerActions')" />
+		</fieldset>
+
+		<fieldset class="detail-page-editor__fieldset detail-page-editor__status-buttons">
+			<legend>{{ t('buildiq', 'Status buttons') }}</legend>
+			<label class="detail-page-editor__inline">
+				<input
+					type="checkbox"
+					class="detail-page-editor__status-toggle"
+					:checked="Boolean(config.lifecycleActions)"
+					@change="setStatusButtons($event.target.checked)">
+				{{ t('buildiq', 'Show the status changes the lifecycle allows') }}
+			</label>
+			<template v-if="config.lifecycleActions">
+				<label class="detail-page-editor__inline">
+					{{ t('buildiq', 'Status field') }}
+					<input
+						:value="statusField"
+						type="text"
+						class="detail-page-editor__status-field"
+						:aria-label="t('buildiq', 'Status field')"
+						@input="updateLifecycle('field', $event.target.value || 'status')">
+				</label>
+				<p class="detail-page-editor__note">
+					{{ transitions.length === 0
+						? t('buildiq', 'Every change the lifecycle allows from the record\'s status is offered, as OpenRegister reports it.')
+						: t('buildiq', 'Only the changes listed here are offered, and only from the status they start from.') }}
+				</p>
+				<div
+					v-for="(transition, index) in transitions"
+					:key="index"
+					class="detail-page-editor__transition">
+					<input
+						:value="transition.action || ''"
+						type="text"
+						:placeholder="t('buildiq', 'Transition (e.g. approve)')"
+						:aria-label="t('buildiq', 'Transition (e.g. approve)')"
+						@input="updateTransition(index, 'action', $event.target.value)">
+					<input
+						:value="transition.label || ''"
+						type="text"
+						:placeholder="t('buildiq', 'Button label')"
+						:aria-label="t('buildiq', 'Button label')"
+						@input="updateTransition(index, 'label', $event.target.value)">
+					<input
+						:value="transition.confirm || ''"
+						type="text"
+						:placeholder="t('buildiq', 'Confirm question (optional)')"
+						:aria-label="t('buildiq', 'Confirm question (optional)')"
+						@input="updateTransition(index, 'confirm', $event.target.value)">
+					<button
+						type="button"
+						class="detail-page-editor__remove"
+						:title="t('buildiq', 'Remove status button')"
+						:aria-label="t('buildiq', 'Remove status button')"
+						@click="removeTransition(index)">
+						✕
+					</button>
+				</div>
+				<button type="button" class="detail-page-editor__add-transition" @click="addTransition">
+					+ {{ t('buildiq', 'List a status button') }}
+				</button>
+			</template>
+			<InlineFieldMark :error="markFor('lifecycleActions')" />
+		</fieldset>
+
+		<AppliesToPanel
+			:modelValue="config.pageLayout || {}"
+			:register="config.register || ''"
+			:schema="config.schema || ''"
+			:targetApp="appSlug"
+			@update:modelValue="update('pageLayout', $event)"
+			@saved="$refs.overrideList && $refs.overrideList.reload()" />
+
+		<ScreenOverrideList
+			ref="overrideList"
+			:register="config.register || ''"
+			:schema="config.schema || ''" />
+
+		<RegistrationFormList
+			:register="config.register || ''"
+			:schema="config.schema || ''"
+			:typeProperty="(config.pageLayout || {}).typeProperty || ''"
+			:typeValue="(config.pageLayout || {}).typeValue || ''"
+			:targetApp="appSlug" />
 	</div>
 </template>
 
 <script>
+import ActionBuilder from './fields/ActionBuilder.vue'
+import AppliesToPanel from './fields/AppliesToPanel.vue'
+import CodeWidgetBuilder from './fields/CodeWidgetBuilder.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import RegisterSchemaFields from './fields/RegisterSchemaFields.vue'
+import RegistrationFormList from './fields/RegistrationFormList.vue'
+import RelatedCollectionBuilder from './fields/RelatedCollectionBuilder.vue'
+import RelationLinkBuilder from './fields/RelationLinkBuilder.vue'
+import ScreenOverrideList from './fields/ScreenOverrideList.vue'
 import SidebarTabBuilder from './fields/SidebarTabBuilder.vue'
-import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
+import WidgetBuilder from './fields/WidgetBuilder.vue'
+import WriteActionSwitches from './fields/WriteActionSwitches.vue'
+import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
+import {
+	pageEditorBaseMixin,
+	pageEditorPickerMixin,
+	pageEditorRegisterPropsMixin,
+	pageEditorRegisterWatchMixin,
+} from '../../mixins/pageEditorBase.js'
+import { pageEditorDatabaseMixin } from '../../mixins/pageEditorDatabase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
+
+/**
+ * The stable id of the record-history tab, so the section finds it again.
+ */
+const HISTORY_TAB_ID = 'history'
+
+/**
+ * A new record-history tab: one audit widget, restore as given.
+ *
+ * @param {boolean} allowRestore - whether app users may restore an earlier version.
+ * @return {object} The tab.
+ */
+function historyTabFor(allowRestore) {
+	return {
+		id: HISTORY_TAB_ID,
+		label: 'History',
+		icon: 'History',
+		widgets: [{ type: 'audit', props: { allowRestore } }],
+	}
+}
+
+/**
+ * The audit widget of a tab, or null.
+ *
+ * @param {object|null} tab - the tab.
+ * @return {object|null} The widget.
+ */
+function auditWidget(tab) {
+	if (!tab || !Array.isArray(tab.widgets)) {
+		return null
+	}
+	return tab.widgets.find((w) => w && w.type === 'audit') || null
+}
 
 export default {
 	name: 'DetailPageEditor',
-	components: { SidebarTabBuilder, InlineFieldMark },
-	mixins: [pageEditorValidationMixin],
+	components: {
+		ActionBuilder,
+		AppliesToPanel,
+		CodeWidgetBuilder,
+		InlineFieldMark,
+		RegisterSchemaFields,
+		RegistrationFormList,
+		RelatedCollectionBuilder,
+		RelationLinkBuilder,
+		ScreenOverrideList,
+		SidebarTabBuilder,
+		WidgetBuilder,
+		WriteActionSwitches,
+	},
+
+	mixins: [
+		pageEditorBaseMixin,
+		pageEditorRegisterPropsMixin,
+		pageEditorValidationMixin,
+		pageEditorPickerMixin,
+		pageEditorRegisterWatchMixin,
+		pageEditorDatabaseMixin,
+	],
+
 	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
-		},
-
-		parentRoute: {
-			type: String,
-			default: '',
-		},
-
-		// Current Application slug. Drives the hybrid register model so the
-		// register picker hoists `buildiq-{slug}` to the top of the list.
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
-		// The Application's declared `dataRegisters` bindings, forwarded into
-		// useRegisterPicker so the register picker labels/hoists them.
-		dataRegisters: {
-			type: Array,
-			default: () => [],
-		},
-
 		pageType: {
 			type: String,
 			default: 'detail',
 		},
+
+		/** This app's pages, for a "go to a page" button. */
+		pages: {
+			type: Array,
+			default: () => [],
+		},
+
+		/** The app's declared flows (`{flow, label?}`), for a "start a flow" button. */
+		flows: {
+			type: Array,
+			default: () => [],
+		},
 	},
 
-	emits: ['update:config'],
-	/**
-	 * Build the register/schema picker for this editor. Options-API `data`
-	 * cannot see props at construction time, so the picker is created here
-	 * from the resolved props and exposed as `this.picker`.
-	 *
-	 * @param {{appSlug: string, dataRegisters: Array<{register: string, label?: string}>, config: object, pageType: string, parentRoute: string}} props - the resolved component props; only `appSlug` (hoists `buildiq-{slug}` in the register list) and `dataRegisters` (labels/hoists the Application's declared bindings) are read.
-	 * @return {{picker: object}} - bindings merged into the instance; `picker` exposes fetchRegisters/fetchSchemas.
-	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-2.1
-	 */
-	setup(props) {
-		const picker = useRegisterPicker({
-			appSlug: props.appSlug,
-			dataRegisters: props.dataRegisters,
-		})
-		return { picker }
-	},
-
-	data() {
-		return {
-			registers: [],
-			schemas: [],
-		}
-	},
+	setup: useEditorRegisterPicker,
 
 	computed: {
 		/**
+		 * The config key a read-only database switches off on a detail page.
+		 *
+		 * @return {string[]}
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 */
+		writeActionKeys() {
+			return ['showEditAction']
+		},
+
+		/**
+		 * The write action switch of a detail page.
+		 *
+		 * @return {Array<{key: string, label: string}>}
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 */
+		writeActions() {
+			return [{ key: 'showEditAction', label: this.t('buildiq', 'Edit button') }]
+		},
+
+		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		validatedConfigKeys() {
-			return ['register', 'schema', 'sidebar', 'sidebarProps']
+			return [
+				'register',
+				'schema',
+				'sidebar',
+				'sidebarProps',
+				'relatedCollections',
+				'relationLinks',
+				'widgets',
+				'headerActions',
+				'lifecycleActions',
+			]
+		},
+
+		/**
+		 * The field the status buttons move (`config.lifecycleActions.field`, `status` by default).
+		 *
+		 * @spec openspec/specs/page-action-authoring/spec.md#requirement-status-buttons-follow-the-lifecycle-req-bqab-003
+		 */
+		statusField() {
+			const config = this.config.lifecycleActions
+			return (config && typeof config === 'object' && config.field) || 'status'
+		},
+
+		/**
+		 * The status buttons listed by hand; none means the live list.
+		 *
+		 * @spec openspec/specs/page-action-authoring/spec.md#requirement-status-buttons-follow-the-lifecycle-req-bqab-003
+		 */
+		transitions() {
+			const config = this.config.lifecycleActions
+			return (config && Array.isArray(config.transitions)) ? config.transitions : []
+		},
+
+		/**
+		 * The bound schema's fields, for a button's "show only when".
+		 *
+		 * @spec openspec/specs/page-action-authoring/spec.md#requirement-a-button-can-depend-on-the-record-req-bqab-005
+		 */
+		recordFields() {
+			const wanted = this.config.schema
+			const match = (this.schemas || []).find((entry) => entry
+				&& (entry.slug === wanted || String(entry.id) === String(wanted) || entry.uuid === wanted))
+			const keys = Object.keys((match && match.properties) || {})
+			return keys.length > 0 ? keys : [this.statusField]
 		},
 
 		/**
 		 * Observed behaviour of `routeParams` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		routeParams() {
 			const matches =
@@ -228,7 +487,7 @@ export default {
 		/**
 		 * Observed behaviour of `routeHasParam` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		routeHasParam() {
 			return this.routeParams.length > 0
@@ -237,8 +496,43 @@ export default {
 		/**
 		 * Observed behaviour of `sidebarShape` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
+		/**
+		 * The page's record-history tab: the sidebar tab with the stable id
+		 * `history`, or null when the page has none.
+		 *
+		 * @return {object|null} The tab.
+		 * @spec openspec/changes/archive/2026-11-24-data-restore-record-version/specs/record-history-restore/spec.md
+		 */
+		historyTab() {
+			const sidebar = this.config.sidebar
+			const tabs = (sidebar && typeof sidebar === 'object' && Array.isArray(sidebar.tabs)) ? sidebar.tabs : []
+			return tabs.find((tab) => tab && tab.id === HISTORY_TAB_ID) || null
+		},
+
+		/**
+		 * Whether the page shows its record history.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/archive/2026-11-24-data-restore-record-version/specs/record-history-restore/spec.md
+		 */
+		showHistory() {
+			return this.historyTab !== null
+		},
+
+		/**
+		 * Whether app users may restore an earlier version: the `allowRestore`
+		 * prop of the history tab's audit widget, off unless set to true.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/archive/2026-11-24-data-restore-record-version/specs/record-history-restore/spec.md
+		 */
+		allowRestore() {
+			const widget = auditWidget(this.historyTab)
+			return Boolean(widget && widget.props && widget.props.allowRestore === true)
+		},
+
 		sidebarShape() {
 			const s = this.config.sidebar
 			if (s === undefined) {
@@ -249,33 +543,37 @@ export default {
 			}
 			return 'object'
 		},
-	},
 
-	watch: {
-		'config.register': {
-			immediate: true,
-			/**
-			 * Reload the schema dropdown whenever the bound register changes
-			 * (also fires immediately on mount for an already-bound page).
-			 *
-			 * @param {string} val - the newly selected register slug; empty when the binding was cleared, which empties the schema list instead of fetching.
-			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-			 */
-			handler(val) {
-				if (val) {
-					this.fetchSchemas(val)
-				} else {
-					this.schemas = []
-				}
-			},
+		/**
+		 * Whether the sidebar's files tab shows: on unless `files` is in
+		 * `sidebar.hiddenTabs`.
+		 *
+		 * @spec openspec/changes/archive/2026-11-24-pages-detail-related-items/tasks.md#task-T03
+		 */
+		filesShown() {
+			const s = this.config.sidebar
+			const hidden = (s && typeof s === 'object' && s.hiddenTabs) || []
+			return !(Array.isArray(hidden) && hidden.includes('files'))
 		},
 	},
 
-	async mounted() {
-		await this.fetchRegisters()
-	},
-
 	methods: {
+		/**
+		 * Write the page's widget list; an empty list deletes `config.widgets`.
+		 *
+		 * @param {Array<object>} widgets - the whole widget list.
+		 * @spec openspec/changes/archive/2026-11-24-pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-detail-pages-can-show-a-code-req-bqqr-003
+		 */
+		updateWidgets(widgets) {
+			const next = { ...this.config }
+			if (Array.isArray(widgets) && widgets.length > 0) {
+				next.widgets = widgets
+			} else {
+				delete next.widgets
+			}
+			this.$emit('update:config', next)
+		},
+
 		/**
 		 * Write one key on the page's `config` block and emit the whole block
 		 * back to PageDesigner. Only the named key is touched, so config keys
@@ -283,7 +581,7 @@ export default {
 		 *
 		 * @param {string} key - the config key being written: `register`, `schema`, or `sidebar` in its legacy boolean form. Writing `register` also drops `schema`, since a schema is only meaningful inside its register.
 		 * @param {string|boolean} value - the new value: a slug from a `<select>`, or the checkbox state for the boolean-shaped sidebar. An empty string or `null` deletes the key; `false` is stored, so `sidebar: false` survives as an explicit "off".
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
 			const next = { ...this.config }
@@ -304,7 +602,7 @@ export default {
 		 * object form's keys do not survive a trip through `boolean`/`none`.
 		 *
 		 * @param {'none'|'boolean'|'object'} shape - the radio's value: `none` deletes `sidebar`, `boolean` writes the legacy `true`, `object` seeds the preferred `{ enabled: true }`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setSidebarShape(shape) {
 			const next = { ...this.config }
@@ -324,7 +622,7 @@ export default {
 		 *
 		 * @param {string} key - the sidebar key being written: `enabled`, `show` or `tabs`.
 		 * @param {boolean|Array<object>} value - the checkbox state for `enabled`/`show`, or the rebuilt tab list from SidebarTabBuilder for `tabs`. Falsy values are stored, not deleted, so `enabled: false` is preserved as an explicit "off".
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		updateSidebarKey(key, value) {
 			const next = { ...this.config }
@@ -336,13 +634,111 @@ export default {
 		},
 
 		/**
+		 * Add or remove the record-history tab. Adding it switches an unset or
+		 * boolean sidebar to its object shape and starts with restore off;
+		 * removing it leaves every other tab as it was.
+		 *
+		 * @param {boolean} on - whether the page shows its record history.
+		 * @spec openspec/changes/archive/2026-11-24-data-restore-record-version/specs/record-history-restore/spec.md
+		 */
+		setShowHistory(on) {
+			const sidebar = this.config.sidebar
+			const tabs = (sidebar && typeof sidebar === 'object' && Array.isArray(sidebar.tabs)) ? sidebar.tabs : []
+			const others = tabs.filter((tab) => !(tab && tab.id === HISTORY_TAB_ID))
+			if (on === true) {
+				if (this.showHistory) {
+					return
+				}
+				this.updateSidebarKey('tabs', [...others, historyTabFor(false)])
+				return
+			}
+			if (!this.showHistory) {
+				return
+			}
+			this.updateSidebarKey('tabs', others)
+		},
+
+		/**
+		 * Turn restoring on or off on the history tab's audit widget, keeping
+		 * the tab's other keys and widgets.
+		 *
+		 * @param {boolean} on - whether app users may restore an earlier version.
+		 * @spec openspec/changes/archive/2026-11-24-data-restore-record-version/specs/record-history-restore/spec.md
+		 */
+		setAllowRestore(on) {
+			if (!this.showHistory) {
+				return
+			}
+			const tabs = this.config.sidebar.tabs.map((tab) => {
+				if (!(tab && tab.id === HISTORY_TAB_ID)) {
+					return tab
+				}
+				const widgets = Array.isArray(tab.widgets) ? tab.widgets : []
+				const hasAudit = widgets.some((w) => w && w.type === 'audit')
+				const nextWidgets = hasAudit
+					? widgets.map((w) => (w && w.type === 'audit')
+						? { ...w, props: { ...(w.props || {}), allowRestore: on === true } }
+						: w)
+					: [...widgets, { type: 'audit', props: { allowRestore: on === true } }]
+				return { ...tab, widgets: nextWidgets }
+			})
+			this.updateSidebarKey('tabs', tabs)
+		},
+
+		/**
+		 * Write a list key of the config; an empty list removes the key, so a
+		 * page that never had related items round-trips unchanged.
+		 *
+		 * @param {'relatedCollections'|'relationLinks'} key - the config key.
+		 * @param {Array<object>} list - the rebuilt list from its builder.
+		 * @spec openspec/changes/archive/2026-11-24-pages-detail-related-items/tasks.md#task-T01
+		 */
+		updateList(key, list) {
+			const next = { ...this.config }
+			if (!Array.isArray(list) || list.length === 0) {
+				delete next[key]
+			} else {
+				next[key] = list
+			}
+			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Show or hide the sidebar's files tab through `sidebar.hiddenTabs`.
+		 *
+		 * Hiding it from the boolean form converts the sidebar to the object
+		 * form (`true` becomes `{ enabled: true, hiddenTabs: ['files'] }`), so
+		 * the choice survives (design D4). Showing it removes `files`, and
+		 * `hiddenTabs` itself when nothing else is hidden.
+		 *
+		 * @param {boolean} shown - the Files checkbox state.
+		 * @spec openspec/changes/archive/2026-11-24-pages-detail-related-items/tasks.md#task-T03
+		 */
+		setFilesShown(shown) {
+			const next = { ...this.config }
+			const current =
+				typeof next.sidebar === 'object' && next.sidebar
+					? next.sidebar
+					: { enabled: next.sidebar !== false }
+			const hidden = (Array.isArray(current.hiddenTabs) ? current.hiddenTabs : []).filter(
+				(tab) => tab !== 'files',
+			)
+			if (!shown) {
+				hidden.push('files')
+			}
+			const { hiddenTabs: _h, ...rest } = current
+			next.sidebar = hidden.length === 0 ? rest : { ...rest, hiddenTabs: hidden }
+			this.$emit('update:config', next)
+		},
+
+		/**
 		 * Write the alternate `config.sidebarProps.tabs` path. Emptying the
 		 * list removes just the `tabs` key, and removes `sidebarProps`
 		 * entirely when nothing else lived there — so a manifest that never
 		 * used this path round-trips byte-identically.
 		 *
 		 * @param {Array<{id: string, label: string, icon?: string, component?: string}>} tabs - the rebuilt tab list from SidebarTabBuilder; empty or missing means "no tabs".
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		updateSidebarPropsTabs(tabs) {
 			const next = { ...this.config }
@@ -362,29 +758,76 @@ export default {
 		},
 
 		/**
-		 * Observed behaviour of `fetchRegisters` (retrofit annotation).
+		 * Switch status buttons on (`{field: 'status'}`, the live transitions)
+		 * or off.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @param {boolean} on - Whether status buttons show.
+		 * @spec openspec/specs/page-action-authoring/spec.md#requirement-status-buttons-follow-the-lifecycle-req-bqab-003
 		 */
-		async fetchRegisters() {
-			this.registers = await this.picker.fetchRegisters()
+		setStatusButtons(on) {
+			this.update('lifecycleActions', on ? { field: 'status' } : '')
 		},
 
 		/**
-		 * Load the schemas of one register into the schema dropdown.
+		 * Write one key of `config.lifecycleActions`.
 		 *
-		 * @param {string} register - slug of the register to list schemas for, i.e. `config.register`.
-		 * @return {Promise<void>} - resolves once `this.schemas` holds the result (`[]` when the request fails).
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @param {string} key - `field` or `transitions`.
+		 * @param {*} value - The value; an empty transitions list is removed.
+		 * @spec openspec/specs/page-action-authoring/spec.md#requirement-status-buttons-follow-the-lifecycle-req-bqab-003
 		 */
-		async fetchSchemas(register) {
-			this.schemas = await this.picker.fetchSchemas(register)
+		updateLifecycle(key, value) {
+			const next = { ...(this.config.lifecycleActions || { field: 'status' }) }
+			if (Array.isArray(value) && value.length === 0) {
+				delete next[key]
+			} else {
+				next[key] = value
+			}
+			this.update('lifecycleActions', next)
+		},
+
+		/**
+		 * Edit one listed status button.
+		 *
+		 * @param {number} index - Position of the transition.
+		 * @param {string} key - `action`, `label` or `confirm`.
+		 * @param {string} value - The new value; empty removes the key.
+		 */
+		updateTransition(index, key, value) {
+			const list = this.transitions.slice()
+			const current = { ...(list[index] || {}) }
+			if (value === '') {
+				delete current[key]
+			} else {
+				current[key] = value
+			}
+			list[index] = current
+			this.updateLifecycle('transitions', list)
+		},
+
+		/**
+		 * List one more status button.
+		 */
+		addTransition() {
+			this.updateLifecycle('transitions', [...this.transitions, { action: '', label: '' }])
+		},
+
+		/**
+		 * Drop one listed status button; with none left the live list applies again.
+		 *
+		 * @param {number} index - Position of the transition.
+		 */
+		removeTransition(index) {
+			const list = this.transitions.slice()
+			list.splice(index, 1)
+			this.updateLifecycle('transitions', list)
 		},
 	},
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .detail-page-editor {
 	display: flex;
 	flex-direction: column;
@@ -412,11 +855,7 @@ export default {
 }
 
 .detail-page-editor__group select {
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .detail-page-editor__fieldset {

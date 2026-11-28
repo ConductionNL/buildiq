@@ -98,8 +98,12 @@ async function flush(wrapper) {
 }
 
 // Default happy-path router for GET across the several endpoints.
-function installGet({ app, userDelta, overrides, versions } = {}) {
+function installGet({ app, userDelta, overrides, versions, manifestBase } = {}) {
 	axiosGetMock.mockImplementation((url) => {
+		if (url.includes('/manifest-base')) {
+			if (manifestBase === 'forbidden') return Promise.reject(new Error('403'))
+			return Promise.resolve({ data: manifestBase ?? { base: null, orphanedDeltaPaths: [] } })
+		}
 		if (url.includes('/user-deltas')) {
 			if (overrides === 'forbidden') return Promise.reject(new Error('403'))
 			return Promise.resolve({ data: { overrides: overrides ?? [] } })
@@ -189,6 +193,35 @@ describe('ManifestLayersDetail', () => {
 		expect(wrapper.findAll('.ob-manifest-detail__override')).toHaveLength(1)
 	})
 
+	it('warns the maintainers about delta paths that no longer match the base (app-delta-override 5.3)', async () => {
+		installGet({
+			app: APP,
+			manifestBase: { base: { pages: [] }, orphanedDeltaPaths: ['pages[id=gone].title', 'menu[id=old]'] },
+		})
+		const wrapper = mountDetail()
+		await flush(wrapper)
+		const asked = axiosGetMock.mock.calls.find(([url]) => url.includes('/manifest-base'))
+		expect(asked[0]).toContain('/apps/buildiq/api/applications/petstore/manifest-base')
+		expect(asked[1]).toEqual({ params: {} })
+		const note = wrapper.find('[data-testid="orphaned-delta-paths"]')
+		expect(note.exists()).toBe(true)
+		expect(note.text()).toContain('pages[id=gone].title, menu[id=old]')
+	})
+
+	it('shows no orphan warning without orphans or for a caller the endpoint refuses', async () => {
+		installGet({ app: APP })
+		const clean = mountDetail()
+		await flush(clean)
+		expect(clean.vm.orphanedDeltaPaths).toEqual([])
+		expect(clean.find('[data-testid="orphaned-delta-paths"]').exists()).toBe(false)
+
+		installGet({ app: APP, manifestBase: 'forbidden' })
+		const refused = mountDetail()
+		await flush(refused)
+		expect(refused.vm.orphanedDeltaPaths).toEqual([])
+		expect(refused.find('[data-testid="orphaned-delta-paths"]').exists()).toBe(false)
+	})
+
 	it('sets an error when the app fails to load', async () => {
 		installGet({ app: 'error' })
 		const wrapper = mountDetail()
@@ -204,6 +237,20 @@ describe('ManifestLayersDetail', () => {
 		expect(wrapper.vm.canViewUserOverrides).toBe(false)
 		expect(wrapper.vm.userOverrides).toEqual([])
 		expect(wrapper.find('.ob-manifest-detail__overrides').exists()).toBe(false)
+	})
+
+	it('falls back to an empty user delta when it cannot be read', async () => {
+		installGet({ app: APP, userDelta: 'error' })
+		const wrapper = mountDetail()
+		await flush(wrapper)
+		expect(wrapper.vm.userDelta).toEqual({
+			allowed: false,
+			exists: false,
+			versionUuid: null,
+			manifestDelta: {},
+		})
+		expect(axiosGetMock).toHaveBeenCalledWith('/apps/buildiq/api/app-overrides/petstore/user')
+		expect(axiosGetMock).toHaveBeenCalledWith('/apps/buildiq/api/app-overrides/petstore/user-deltas')
 	})
 
 	describe('computeds & RBAC', () => {
@@ -418,30 +465,18 @@ describe('ManifestLayersDetail', () => {
 	})
 
 	describe('navigation', () => {
-		it('openInOpenRegister deep-links to the OR object page (no-op on empty)', async () => {
+		// An href, not a click handler: the control has to BE a link, so
+		// middle-click and "open in new tab" work. Null for an empty uuid
+		// renders the anchor without an href — inert, not a broken link.
+		it('openRegisterUrl builds the OR object page URL (null on empty)', async () => {
 			installGet({ app: APP })
 			const wrapper = mountDetail()
 			await flush(wrapper)
-			const original = window.location
-			Object.defineProperty(window, 'location', {
-				configurable: true,
-				writable: true,
-				value: { href: 'about:blank' },
-			})
-			try {
-				wrapper.vm.openInOpenRegister('')
-				expect(window.location.href).toBe('about:blank')
-				wrapper.vm.openInOpenRegister('ver-9')
-				expect(window.location.href).toBe(
-					'/apps/openregister/objects/buildiq/applicationVersion/ver-9',
-				)
-			} finally {
-				Object.defineProperty(window, 'location', {
-					configurable: true,
-					writable: true,
-					value: original,
-				})
-			}
+
+			expect(wrapper.vm.openRegisterUrl('')).toBeNull()
+			expect(wrapper.vm.openRegisterUrl('ver-9')).toBe(
+				'/apps/openregister/objects/buildiq/applicationVersion/ver-9',
+			)
 		})
 
 		it('goBack pushes to the app detail route', async () => {

@@ -1,0 +1,4106 @@
+[
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": false,
+            "save": "ok",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": false,
+            "save": "ok",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": false,
+            "save": "throws",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "loan-eligibility",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": false,
+            "save": "throws",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "loan-eligibility",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": true,
+            "save": "ok",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": true,
+            "save": "ok",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": true,
+            "save": "throws",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "loan-eligibility",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": true,
+            "save": "throws",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "loan-eligibility",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": false,
+            "save": "ok",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": false,
+            "save": "ok",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": false,
+            "save": "throws",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "loan-eligibility",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": false,
+            "save": "throws",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "loan-eligibility",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": true,
+            "save": "ok",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "***",
+                    "email": "***"
+                },
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": true,
+            "save": "ok",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "***",
+                    "email": "***"
+                },
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": true,
+            "save": "throws",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "***",
+                    "email": "***"
+                },
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "loan-eligibility",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": true,
+            "save": "throws",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "***",
+                    "email": "***"
+                },
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "loan-eligibility",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": [],
+            "maskPii": false,
+            "save": "ok",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": [],
+            "maskPii": false,
+            "save": "ok",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": [],
+            "maskPii": false,
+            "save": "throws",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "loan-eligibility",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": [],
+            "maskPii": false,
+            "save": "throws",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "loan-eligibility",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": [],
+            "maskPii": true,
+            "save": "ok",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": [],
+            "maskPii": true,
+            "save": "ok",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": [],
+            "maskPii": true,
+            "save": "throws",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "loan-eligibility",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "loan-eligibility",
+            "payload": [],
+            "maskPii": true,
+            "save": "throws",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "loan-eligibility",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": {
+                    "decision": "approve"
+                },
+                "triggeredRules": [
+                    "approve"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "loan-eligibility",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "decision": "approve"
+            },
+            "triggeredRules": [
+                "approve"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": false,
+            "save": "ok",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": false,
+            "save": "ok",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": false,
+            "save": "throws",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "escalate",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": false,
+            "save": "throws",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "escalate",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": true,
+            "save": "ok",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": true,
+            "save": "ok",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": true,
+            "save": "throws",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "escalate",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": true,
+            "save": "throws",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "escalate",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": false,
+            "save": "ok",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": false,
+            "save": "ok",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": false,
+            "save": "throws",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "escalate",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": false,
+            "save": "throws",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "escalate",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": true,
+            "save": "ok",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "***",
+                    "email": "***"
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": true,
+            "save": "ok",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "***",
+                    "email": "***"
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": true,
+            "save": "throws",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "***",
+                    "email": "***"
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "escalate",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": true,
+            "save": "throws",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "***",
+                    "email": "***"
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "escalate",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": [],
+            "maskPii": false,
+            "save": "ok",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": [],
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": [],
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": [],
+            "maskPii": false,
+            "save": "ok",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": [],
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": [],
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": [],
+            "maskPii": false,
+            "save": "throws",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": [],
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "escalate",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": [],
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": [],
+            "maskPii": false,
+            "save": "throws",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": [],
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "escalate",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": [],
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": [],
+            "maskPii": true,
+            "save": "ok",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": [],
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": [],
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": [],
+            "maskPii": true,
+            "save": "ok",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": [],
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": [],
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": [],
+            "maskPii": true,
+            "save": "throws",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": [],
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "escalate",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": [],
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "escalate",
+            "payload": [],
+            "maskPii": true,
+            "save": "throws",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "escalate",
+                "ruleSetVersion": "1.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": [],
+                "triggeredRules": [
+                    "always-notify"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "escalate",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": [],
+            "triggeredRules": [
+                "always-notify"
+            ],
+            "executionTime": "<duration>",
+            "errors": []
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": false,
+            "save": "ok",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": false,
+            "save": "ok",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": false,
+            "save": "throws",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "broken",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": false,
+            "save": "throws",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "broken",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": true,
+            "save": "ok",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": true,
+            "save": "ok",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": true,
+            "save": "throws",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "broken",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "maskPii": true,
+            "save": "throws",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30,
+                        "monthlyIncome": 3000,
+                        "creditScore": 700
+                    }
+                },
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "broken",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30,
+                    "monthlyIncome": 3000,
+                    "creditScore": 700
+                }
+            },
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": false,
+            "save": "ok",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": false,
+            "save": "ok",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": false,
+            "save": "throws",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "broken",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": false,
+            "save": "throws",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "broken",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": true,
+            "save": "ok",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "***",
+                    "email": "***"
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": true,
+            "save": "ok",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "***",
+                    "email": "***"
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": true,
+            "save": "throws",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "***",
+                    "email": "***"
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "broken",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "maskPii": true,
+            "save": "throws",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "***",
+                    "email": "***"
+                },
+                "outputResult": {
+                    "applicant": {
+                        "age": 30
+                    },
+                    "bsn": "123456789",
+                    "email": "a@example.org"
+                },
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "broken",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": {
+                "applicant": {
+                    "age": 30
+                },
+                "bsn": "123456789",
+                "email": "a@example.org"
+            },
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": [],
+            "maskPii": false,
+            "save": "ok",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": [],
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": [],
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": [],
+            "maskPii": false,
+            "save": "ok",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": [],
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": [],
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": [],
+            "maskPii": false,
+            "save": "throws",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": [],
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "broken",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": [],
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": [],
+            "maskPii": false,
+            "save": "throws",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": [],
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "broken",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": [],
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": [],
+            "maskPii": true,
+            "save": "ok",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": [],
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": [],
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": [],
+            "maskPii": true,
+            "save": "ok",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": [],
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [],
+        "answer": {
+            "result": [],
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": [],
+            "maskPii": true,
+            "save": "throws",
+            "uid": "alice"
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": [],
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "alice",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "broken",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": [],
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    },
+    {
+        "case": {
+            "slug": "broken",
+            "payload": [],
+            "maskPii": true,
+            "save": "throws",
+            "uid": null
+        },
+        "saved": [
+            {
+                "ruleSetId": "broken",
+                "ruleSetVersion": "2.0.0",
+                "timestamp": "<timestamp>",
+                "triggerContext": "api",
+                "inputPayload": [],
+                "outputResult": [],
+                "triggeredRules": [
+                    "8"
+                ],
+                "executionDurationMs": "<duration>",
+                "errors": [
+                    "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+                ],
+                "userId": "",
+                "archived": false,
+                "(register buildiq)": true,
+                "(schema rule-execution-log)": true
+            }
+        ],
+        "logged": [
+            [
+                "Buildiq: failed to persist RuleExecutionLog",
+                {
+                    "ruleSet": "broken",
+                    "exception": "save failed"
+                }
+            ]
+        ],
+        "answer": {
+            "result": [],
+            "triggeredRules": [
+                "8"
+            ],
+            "executionTime": "<duration>",
+            "errors": [
+                "Condition error in rule \"7\": Syntax error at position 3: unexpected token \"\"."
+            ]
+        }
+    }
+]

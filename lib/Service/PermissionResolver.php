@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -54,18 +55,20 @@ use Psr\Log\LoggerInterface;
  * ManifestResolverService::bucketContainsUid) are replaced by
  * PermissionResolver::matchesCaller().
  */
-class PermissionResolver {
+class PermissionResolver implements PermissionResolverInterface {
 	/**
 	 * Constructor.
 	 *
 	 * @param IGroupManager $groupManager Group membership resolver.
 	 * @param LoggerInterface $logger PSR logger for bare-principal warnings.
+	 * @param AppOrganisationGuard|null $organisationGuard Hides another organisation's scoped app; without it a scoped app is hidden from everyone.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
+		private readonly ?AppOrganisationGuard $organisationGuard = null,
 	) {
 	}//end __construct()
 
@@ -96,6 +99,7 @@ class PermissionResolver {
 	 *
 	 * @return bool True when the caller matches any entry in any of the given roles.
 	 */
+	#[\Override]
 	public function matchesCaller(
 		array $permissions,
 		IUser $caller,
@@ -159,6 +163,7 @@ class PermissionResolver {
 	 *
 	 * @return array<int, string> Group GID list.
 	 */
+	#[\Override]
 	public function resolveUserGroups(IUser $user): array {
 		$groups = $this->groupManager->getUserGroups($user);
 		$ids = [];
@@ -187,6 +192,7 @@ class PermissionResolver {
 	 *
 	 * @return bool True when the caller owns the user-scoped row (or is an admin under bypass).
 	 */
+	#[\Override]
 	public function matchesUserScopeOwner(array $version, IUser $caller, bool $allowAdminBypass = true): bool {
 		$owner = ($version['owner'] ?? null);
 		if (is_string($owner) === false || $owner === '') {
@@ -219,9 +225,36 @@ class PermissionResolver {
 	 *
 	 * @return bool True when the caller belongs to the NC `admin` group.
 	 */
+	#[\Override]
 	public function isAdmin(IUser $caller): bool {
 		return $this->groupManager->isAdmin($caller->getUID());
 	}//end isAdmin()
+
+	/**
+	 * Whether the caller may see this Application at all, before any role.
+	 *
+	 * A shared app is visible to everyone; a scoped app only to members of the
+	 * organisation that holds it (or a child of it). Administrators get no
+	 * bypass. Without the guard a scoped app is hidden from everyone, so the
+	 * check fails closed.
+	 *
+	 * @param array<string, mixed> $application The Application, as OpenRegister renders it.
+	 * @param IUser|null           $caller      The caller; null sees only shared apps.
+	 *
+	 * @return bool
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AppOrganisationGuard::isShared() is a pure scope check with no collaborators.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	#[\Override]
+	public function seesApplication(array $application, ?IUser $caller): bool {
+		if (AppOrganisationGuard::isShared(application: $application) === true) {
+			return true;
+		}
+
+		return $this->organisationGuard?->canSee(application: $application, user: $caller) === true;
+	}//end seesApplication()
 
 	/**
 	 * Classify a single principal string into the UID or GID accumulator maps.

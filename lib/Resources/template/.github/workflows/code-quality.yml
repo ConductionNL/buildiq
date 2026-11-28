@@ -14,7 +14,9 @@ jobs:
       app-name: app-template
       php-version: "8.3"
       php-test-versions: '["8.3", "8.4"]'
-      nextcloud-test-refs: '["stable31", "stable32", "stable33"]'
+      # No `nextcloud-test-refs` override: the shared quality.yml derives the
+      # Nextcloud matrix from appinfo/info.xml (min/max-version), so every
+      # declared major (32..35) gets a leg without editing this file.
       enable-psalm: true
       enable-phpstan: true
       enable-phpmetrics: true

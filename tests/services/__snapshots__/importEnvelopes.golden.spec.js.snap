@@ -1,0 +1,279 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`import envelopes golden > parseBlockImport reads every input as recorded 1`] = `
+[
+  {
+    "ok": {
+      "fragment": {},
+      "name": "B",
+      "slug": "b",
+    },
+  },
+  {
+    "ok": {},
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "ok": {
+      "fragment": {},
+      "name": "B",
+      "slug": "b",
+    },
+  },
+  {
+    "ok": {},
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-json",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-json",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+  {
+    "code": "invalid-shape",
+    "refused": "BlockImportError",
+  },
+]
+`;
+
+exports[`import envelopes golden > parseFormImport reads every input as recorded 1`] = `
+[
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "invalid-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "invalid-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "invalid-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "invalid-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "invalid-json",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "invalid-json",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+  {
+    "code": "not-a-form",
+    "refused": "FormImportError",
+  },
+]
+`;

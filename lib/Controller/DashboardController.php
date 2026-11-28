@@ -23,18 +23,27 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
-use OCA\Buildiq\Service\AppNavigationService;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\AppNavigationServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\DeviceFeaturesInterface;
+use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\PublishedApplicationProviderInterface;
+use OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface;
+use OCA\Buildiq\Service\Icon\SvgRasteriser;
+use OCA\Buildiq\Service\AppOrganisationGuard;
+use OCA\Buildiq\Service\EmbedOrigins;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\FeaturePolicy;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\IGroupManager;
@@ -45,7 +54,10 @@ use OCP\IUserSession;
 /**
  * Controller for the main Buildiq dashboard page.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+ * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-003
+ * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-004
+ * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-012
  */
 class DashboardController extends Controller {
 	/**
@@ -56,6 +68,13 @@ class DashboardController extends Controller {
 	 * @param IUserSession $userSession Current Nextcloud user session
 	 * @param IGroupManager $groupManager Group membership resolver
 	 * @param INavigationManager $navigationManager Top-bar navigation manager
+	 * @param PublishedApplicationProviderInterface|null $publishedApps The published apps, to read a served app's device features
+	 * @param DeviceFeaturesInterface|null $deviceFeatures Turns device features into the page's feature policy
+	 * @param SvgRasteriser $rasteriser Whether the run page can offer a PNG touch icon
+	 * @param SettingsServiceInterface|null $settings Whether the instance lets apps work offline.
+	 * @param AppOrganisationGuard|null $organisationGuard Tells the settings whether an app can be kept to its organisation
+	 * @param ManifestResolverServiceInterface|null $manifestResolver Reads an app's embedding setting; null serves no embed
+	 * @param EmbedOrigins|null $embedOrigins The sites an embedded app may be framed by; null serves no embed
 	 *
 	 * @return void
 	 */
@@ -65,8 +84,15 @@ class DashboardController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly INavigationManager $navigationManager,
+		private readonly ?PublishedApplicationProviderInterface $publishedApps=null,
+		private readonly ?DeviceFeaturesInterface $deviceFeatures=null,
+		private readonly SvgRasteriser $rasteriser=new SvgRasteriser(),
+		private readonly ?SettingsServiceInterface $settings=null,
+		private readonly ?AppOrganisationGuard $organisationGuard=null,
+		private readonly ?ManifestResolverServiceInterface $manifestResolver=null,
+		private readonly ?EmbedOrigins $embedOrigins=null,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -79,13 +105,22 @@ class DashboardController extends Controller {
 	 *
 	 * @return TemplateResponse
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function page(): TemplateResponse {
 		$this->publishCurrentUserGroups();
-		return new TemplateResponse(Application::APP_ID, 'index');
+		$this->publishOfflineAllowed();
+		$this->publishScriptStepsAllowed();
+		// The organisation scope is only offered while OpenRegister's
+		// multitenancy is on (REQ-BQOS-001).
+		$this->initialState->provideInitialState(
+			'organisationScopeAvailable',
+			$this->organisationGuard?->multitenancyOn() === true
+		);
+		return new TemplateResponse(AppIdentity::APP_ID, 'index');
 	}//end page()
 
 	/**
@@ -93,7 +128,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return TemplateResponse
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -118,7 +153,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return TemplateResponse
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -127,15 +162,155 @@ class DashboardController extends Controller {
 		// Application by AppNavigationService) as active — otherwise Nextcloud
 		// resolves the active entry from the URL's app id and the top bar
 		// shows Buildiq's name and icon instead of the virtual app's.
-		$this->navigationManager->setActiveEntry(AppNavigationService::ENTRY_ID_PREFIX . $slug);
+		$this->navigationManager->setActiveEntry(AppNavigationServiceInterface::ENTRY_ID_PREFIX . $slug);
 		$this->publishCurrentUserGroups();
+		$this->publishOfflineAllowed();
 		$this->initialState->provideInitialState('builderSlug', $slug);
 		$this->initialState->provideInitialState(
 			'builderVersion',
 			(string)$this->request->getParam('_version', '')
 		);
-		return new TemplateResponse(Application::APP_ID, 'builder');
+
+		// Change apps-embed-in-other-sites D2: `embed=1` on an app with embedding on
+		// renders without the Nextcloud header and lets exactly the listed
+		// sites frame it. Anything else is served as before, framing refused.
+		$origins = $this->embedOriginsFor(slug: $slug);
+		$this->initialState->provideInitialState('builderEmbed', $origins !== []);
+		if ($origins === []) {
+			$response = new TemplateResponse(AppIdentity::APP_ID, 'builder');
+		} else {
+			$response = new TemplateResponse(AppIdentity::APP_ID, 'builder', [], TemplateResponse::RENDER_AS_BASE);
+			$framing  = new ContentSecurityPolicy();
+			foreach ($origins as $origin) {
+				$framing->addAllowedFrameAncestorDomain($origin);
+			}
+
+			$response->setContentSecurityPolicy($framing);
+		}
+
+		$policy = $this->deviceFeaturePolicy(slug: $slug);
+		if ($policy !== null) {
+			$response->setFeaturePolicy($policy);
+		}
+
+		return $response;
 	}//end builder()
+
+	/**
+	 * The sites an `embed=1` request for this app may be framed by: none when
+	 * the request is no embed request or the app has embedding off.
+	 *
+	 * @param string $slug The virtual app slug.
+	 *
+	 * @return array<int,string> The origins.
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-only-listed-sites-can-frame-the-app-req-bqem-002
+	 */
+	private function embedOriginsFor(string $slug): array {
+		if ((string)$this->request->getParam('embed', '') !== '1'
+			|| $this->manifestResolver === null
+			|| $this->embedOrigins === null
+		) {
+			return [];
+		}
+
+		return $this->embedOrigins->allowedFor(application: $this->manifestResolver->findApplication(appSlug: $slug));
+	}//end embedOriginsFor()
+
+	/**
+	 * The feature policy a built app's page needs: `'self'` for the devices its
+	 * production version uses, or null to keep Nextcloud's default policy.
+	 *
+	 * The version's stored `deviceFeatures` are read; a version saved before
+	 * they were stored has them derived from its manifest.
+	 *
+	 * @param string $slug The built app's slug.
+	 *
+	 * @return FeaturePolicy|null
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 */
+	private function deviceFeaturePolicy(string $slug): ?FeaturePolicy {
+		if ($this->publishedApps === null || $this->deviceFeatures === null) {
+			return null;
+		}
+
+		try {
+			$applications = $this->publishedApps->getPublishedApplications();
+		} catch (\Throwable) {
+			// The page still renders; it only keeps Nextcloud's default policy.
+			return null;
+		}
+
+		$version = $this->productionVersionOf(applications: $applications, slug: $slug);
+		if ($version === null) {
+			return null;
+		}
+
+		return $this->deviceFeatures->policyFor(features: $this->deviceFeaturesOf(version: $version));
+	}//end deviceFeaturePolicy()
+
+	/**
+	 * The production version of the first published application with this slug that has one.
+	 *
+	 * @param array<mixed> $applications The published applications.
+	 * @param string       $slug         The virtual app slug.
+	 *
+	 * @return array<string,mixed>|null
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 */
+	private function productionVersionOf(array $applications, string $slug): ?array {
+		foreach ($applications as $application) {
+			if (($application['slug'] ?? null) === $slug && is_array($application['productionVersion'] ?? null) === true) {
+				return $application['productionVersion'];
+			}
+		}
+
+		return null;
+	}//end productionVersionOf()
+
+	/**
+	 * The device features a version uses: its stored list, else derived from its manifest.
+	 *
+	 * @param array<string,mixed> $version The production version.
+	 *
+	 * @return array<int,string>
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 */
+	private function deviceFeaturesOf(array $version): array {
+		if (array_key_exists('deviceFeatures', $version) === true) {
+			return $this->deviceFeatures->normalise(features: $version['deviceFeatures']);
+		}
+
+		return $this->deviceFeatures->fromManifest(manifest: ($version['manifest'] ?? null));
+	}//end deviceFeaturesOf()
+
+	/**
+	 * The installable runtime of a virtual app, under a path of its own.
+	 *
+	 * The same runtime as {@see builder()}, at `/run/{slug}/`, so a service
+	 * worker scoped to it controls this app's runtime and nothing else: not
+	 * the designer under `/builder/{slug}/pages` and not another app whose
+	 * slug starts the same (design D1). The page links its web app manifest.
+	 *
+	 * @param string $slug The virtual app slug (path param).
+	 *
+	 * @return TemplateResponse
+	 *
+	 * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function run(string $slug): TemplateResponse {
+		$response = $this->builder(slug: $slug);
+		// A PNG touch icon only when the server can rasterise the app's SVG
+		// icon; otherwise the page offers none and iOS shows a screenshot tile.
+		$response->setParams(['webManifest' => true, 'touchIcon' => $this->rasteriser->available(), 'slug' => $slug]);
+
+		return $response;
+	}//end run()
 
 	/**
 	 * Trailing-slash alias of {@see builder()}.
@@ -151,7 +326,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return TemplateResponse
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -236,7 +411,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
 	 */
 	private function publishCurrentUserGroups(): void {
 		$user = $this->userSession->getUser();
@@ -253,4 +428,49 @@ class DashboardController extends Controller {
 
 		$this->initialState->provideInitialState('currentUserGroups', $gids);
 	}//end publishCurrentUserGroups()
+
+	/**
+	 * Publish whether this instance lets apps work offline.
+	 *
+	 * The app settings show the maker's Offline section only when it is on,
+	 * and the runtime registers no worker while it is off (design D3). Off
+	 * when the setting cannot be read: nothing is kept on a device unless an
+	 * administrator said so.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
+	 */
+	private function publishOfflineAllowed(): void {
+		$allowed = false;
+		try {
+			$allowed = ($this->settings?->offlineAppsAllowed() === true);
+		} catch (\Throwable $e) {
+			$allowed = false;
+		}
+
+		$this->initialState->provideInitialState('offlineAppsAllowed', $allowed);
+	}//end publishOfflineAllowed()
+
+	/**
+	 * Publish whether this instance lets app owners add script steps.
+	 *
+	 * The automation composer offers "Run a script" only while it is on
+	 * (REQ-BQSS-001). Off when the setting cannot be read; the server refuses a
+	 * script step on its own, so this only decides what the composer offers.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
+	 */
+	private function publishScriptStepsAllowed(): void {
+		$allowed = false;
+		try {
+			$allowed = ($this->settings?->scriptStepsAllowed() === true);
+		} catch (\Throwable $e) {
+			$allowed = false;
+		}
+
+		$this->initialState->provideInitialState('scriptStepsAllowed', $allowed);
+	}//end publishScriptStepsAllowed()
 }//end class

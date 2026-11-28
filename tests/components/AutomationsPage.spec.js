@@ -113,6 +113,22 @@ describe('AutomationsPage', () => {
 		})
 	})
 
+	it.each(['new', 'flow-1'])('REQ-AUTD-001: opens flow %s on the flow page of the selected application, in list mode', async (id) => {
+		const push = vi.fn()
+		const wrapper = mount(AutomationsPage, { global: { stubs, mocks: { $router: { push } } } })
+		await flush()
+		wrapper.vm.selectedApp = application
+		wrapper.vm.openFlows()
+		wrapper.vm.onFlowPicked(id)
+
+		expect(wrapper.vm.flowPickerOpen).toBe(false)
+		expect(push).toHaveBeenCalledWith({
+			name: 'ApplicationFlow',
+			params: { app: 'permit-tracker', id },
+			query: { view: 'list' },
+		})
+	})
+
 	it('REQ-AUTD-001: renders each automation with name/trigger/action summary for the selected version', async () => {
 		const wrapper = mount(AutomationsPage, { stubs })
 		await flush()
@@ -175,6 +191,91 @@ describe('AutomationsPage', () => {
 			expect.stringContaining('/apps/buildiq/api/automations/aut-1/disable'),
 			{},
 		)
+	})
+
+	it('REQ-BQLS-004: an AI field automation is not listed; the schema designer edits it', async () => {
+		axios.get.mockImplementation((url) => {
+			if (url.includes('/api/applications') && !url.includes('versions')) {
+				return Promise.resolve({ data: { results: [application] } })
+			}
+			if (url.includes('/versions')) {
+				return Promise.resolve({ data: { results: [version] } })
+			}
+			if (url.includes('/status')) {
+				return Promise.resolve({ data: { drift: false } })
+			}
+			if (url.includes('/automation')) {
+				return Promise.resolve({
+					data: {
+						results: [
+							automation({ id: 'aut-composer', origin: 'composer' }),
+							automation({ id: 'aut-ai', name: 'AI field summary_en', origin: 'ai-field' }),
+							automation({ id: 'aut-old' }),
+						],
+					},
+				})
+			}
+			return Promise.resolve({ data: { results: [] } })
+		})
+
+		const wrapper = mount(AutomationsPage, { stubs })
+		await flush()
+		wrapper.vm.selectedApp = application
+		wrapper.vm.onAppChange()
+		await flush()
+		wrapper.vm.selectedVersion = version
+		wrapper.vm.onVersionChange()
+		await flush()
+		await flush()
+
+		expect(wrapper.vm.automations.map((a) => a.id)).toEqual(['aut-composer', 'aut-old'])
+		expect(wrapper.text()).not.toContain('AI field summary_en')
+	})
+
+	it('REQ-BQAR-007: a disabled automation says why it was disabled', async () => {
+		const reason = 'Record and webhook steps cannot run on a lifecycle transition yet.'
+		axios.get.mockImplementation((url) => {
+			if (url.includes('/api/applications') && !url.includes('versions')) {
+				return Promise.resolve({ data: { results: [application] } })
+			}
+			if (url.includes('/versions')) {
+				return Promise.resolve({ data: { results: [version] } })
+			}
+			if (url.includes('/status')) {
+				return Promise.resolve({ data: { drift: false } })
+			}
+			if (url.includes('/automation')) {
+				return Promise.resolve({
+					data: {
+						results: [
+							automation({ id: 'aut-off', enabled: false, disabledReason: ` ${reason} ` }),
+							automation({ id: 'aut-on', enabled: true, disabledReason: 'stale' }),
+							automation({ id: 'aut-quiet', enabled: false }),
+						],
+					},
+				})
+			}
+			return Promise.resolve({ data: { results: [] } })
+		})
+
+		const wrapper = mount(AutomationsPage, { stubs })
+		await flush()
+		wrapper.vm.selectedApp = application
+		wrapper.vm.onAppChange()
+		await flush()
+		wrapper.vm.selectedVersion = version
+		wrapper.vm.onVersionChange()
+		await flush()
+		await flush()
+
+		const rows = wrapper.findAll('[data-testid="automation-row"]')
+		expect(rows).toHaveLength(3)
+		const shown = rows.at(0).find('[data-testid="disabled-reason"]')
+		expect(shown.find('strong').text()).toBe('Disabled')
+		expect(shown.text()).toBe(`Disabled ${reason}`)
+		expect(rows.at(1).find('[data-testid="disabled-reason"]').exists()).toBe(false)
+		expect(rows.at(2).find('[data-testid="disabled-reason"]').exists()).toBe(false)
+		expect(wrapper.vm.disabledReasonFor({ enabled: false, disabledReason: 42 })).toBe('')
 	})
 
 	it('drift badge renders when status reports drift', async () => {
@@ -265,5 +366,47 @@ describe('AutomationsPage', () => {
 		await flush()
 		await flush()
 		expect(wrapper.vm.automations.map((a) => a.id)).toEqual(['aut-2'])
+	})
+
+	it('lands on the app and version the link names, and keeps them in the URL', async () => {
+		const $router = { replace: vi.fn().mockResolvedValue(undefined) }
+		const $route = { query: { app: 'permit-tracker', version: 'version-1' } }
+		const wrapper = mount(AutomationsPage, {
+			stubs,
+			global: { mocks: { $router, $route } },
+		})
+		await flush()
+		await flush()
+		await flush()
+
+		// Before this, the page opened with both pickers empty whatever the
+		// link said, so a reload meant picking the app again every time.
+		expect(wrapper.vm.selectedApp.slug).toBe('permit-tracker')
+		expect(wrapper.vm.selectedVersionId).toBe('version-1')
+		expect(wrapper.findAll('[data-testid="automation-row"]')).toHaveLength(1)
+	})
+
+	it('asks the register for this app version\u2019s automations, not for every automation', async () => {
+		const wrapper = mount(AutomationsPage, { stubs })
+		await flush()
+		wrapper.vm.selectedApp = application
+		wrapper.vm.onAppChange()
+		await flush()
+		wrapper.vm.selectedVersion = version
+		wrapper.vm.onVersionChange()
+		await flush()
+		await flush()
+
+		// An unfiltered read is one default page long, so on a busy instance
+		// an app's own automations fell off the end and the page said it had
+		// none. `limit` would be read as a filter, hence `_limit`.
+		const call = axios.get.mock.calls.find(([url]) =>
+			String(url).includes('/objects/buildiq/automation'),
+		)
+		expect(call[1].params).toEqual({
+			_limit: 200,
+			applicationSlug: 'permit-tracker',
+			versionUuid: 'version-1',
+		})
 	})
 })

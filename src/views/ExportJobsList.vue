@@ -46,7 +46,7 @@
 						<NcButton
 							v-if="
 								job.status === 'succeeded'
-								&& job.target === 'zip'
+								&& (job.target === 'zip' || job.target === 'server')
 								&& job.downloadUrl
 							"
 							:href="job.downloadUrl">
@@ -87,6 +87,12 @@ import { generateUrl } from '@nextcloud/router'
 import { NcButton } from '@nextcloud/vue'
 import ExportDialog from '../dialogs/ExportDialog.vue'
 
+/** Job states that are still changing, so worth polling for. */
+const ACTIVE_STATUSES = ['queued', 'running']
+
+/** How long to wait between polls while a job is active. */
+const POLL_INTERVAL_MS = 5000
+
 export default {
 	name: 'ExportJobsList',
 	components: {
@@ -113,35 +119,34 @@ export default {
 			jobs: [],
 			showDialog: false,
 			poller: null,
+			destroyed: false,
 		}
 	},
 
 	/**
 	 * Observed behaviour of `mounted` (retrofit annotation).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-2
 	 */
 	mounted() {
 		this.fetchJobs()
-		this.poller = setInterval(this.fetchJobs, 2000)
 	},
 
 	/**
 	 * Observed behaviour of `beforeDestroy` (retrofit annotation).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-2
 	 */
 	beforeUnmount() {
-		if (this.poller) {
-			clearInterval(this.poller)
-		}
+		this.destroyed = true
+		this.stopPolling()
 	},
 
 	methods: {
 		/**
 		 * Observed behaviour of `openDialog` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-2
 		 */
 		openDialog() {
 			this.showDialog = true
@@ -150,18 +155,67 @@ export default {
 		/**
 		 * Observed behaviour of `onQueued` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-2
 		 */
 		onQueued() {
 			this.fetchJobs()
 		},
 
 		/**
+		 * Whether any job is still queued or running.
+		 *
+		 * @return {boolean}
+		 *
+		 * @spec openspec/specs/exporter-ui/spec.md
+		 */
+		hasActiveJob() {
+			return this.jobs.some((job) =>
+				ACTIVE_STATUSES.includes(job && job.status),
+			)
+		},
+
+		/**
+		 * Poll again later, but only while a job is queued or running.
+		 *
+		 * This used to poll every two seconds for as long as the page was
+		 * open, with or without a job: about 25 requests in 30 seconds on an
+		 * idle app detail page.
+		 *
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/exporter-ui/spec.md
+		 */
+		schedulePoll() {
+			this.stopPolling()
+			if (this.destroyed || !this.hasActiveJob()) {
+				return
+			}
+			this.poller = setTimeout(this.fetchJobs, POLL_INTERVAL_MS)
+		},
+
+		/**
+		 * Cancel a pending poll.
+		 *
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/exporter-ui/spec.md
+		 */
+		stopPolling() {
+			if (this.poller) {
+				clearTimeout(this.poller)
+				this.poller = null
+			}
+		},
+
+		/**
 		 * Observed behaviour of `fetchJobs` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-2
 		 */
 		async fetchJobs() {
+			if (!this.applicationUuid) {
+				return
+			}
 			// Polls OR REST per ADR-022; the controller deliberately does not
 			// expose CRUD on ExportJob. The schema's JSON key in
 			// openbuild_register.json is `exportJob`, but its declared `slug`
@@ -192,13 +246,15 @@ export default {
 					+ encodeURIComponent(this.applicationUuid)
 				const response = await fetch(url)
 				if (!response.ok) {
+					this.schedulePoll()
 					return
 				}
 				const data = await response.json()
 				this.jobs = Array.isArray(data?.results) ? data.results : []
 			} catch (e) {
-				// Silent fail; polling will retry.
+				// Silent fail; an active job keeps polling below.
 			}
+			this.schedulePoll()
 		},
 
 		/**
@@ -210,7 +266,7 @@ export default {
 		 *   state this build does not know about (so a new backend state degrades to
 		 *   untranslated rather than to a blank cell).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-2
 		 */
 		statusLabel(status) {
 			const map = {

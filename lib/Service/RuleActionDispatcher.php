@@ -3,6 +3,9 @@
 /**
  * Buildiq RuleActionDispatcher
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Completes the ADR-031 §Exceptions rules-engine code path: the concrete
  * side-effect dispatcher `ConditionActionExecutor` has always accepted as an
  * optional `?callable $dispatcher` but that `RuleEngineService` never wired
@@ -25,7 +28,10 @@
  *     {@see JobOwnerImpersonator} is used so the write is attributed the
  *     same way OR attributes any other write.
  *   - `webhook` — POSTs the compiled target via `OCP\Http\Client\IClientService`.
- *     Params: `url` (required), `payload` (object, default `[]`).
+ *     Params: `url` (required), `payload` (object, default `[]`). The URL is
+ *     typed by a maker, so it passes OpenRegister's shared egress guard
+ *     (`SecurityService::assertSafeFetchUrl()`, ADR-067) first: only http(s)
+ *     to a public address, and redirects are never followed.
  *   - `start-workflow` — reserved: no workflow engine exists in buildiq
  *     (design.md non-goal); logged and treated as a no-op so the action type
  *     stays declaratively valid without inventing a new imperative engine.
@@ -41,9 +47,6 @@
  * actions when `continueOnError` is false but the type itself is merely
  * unsupported rather than a hard failure.
  *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- *
  * @category Service
  * @package  OCA\Buildiq\Service
  *
@@ -55,7 +58,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-designer/tasks.md#2.3
+ * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.3
  * @spec openspec/specs/automation-designer/spec.md#req-autd-010
  */
 
@@ -64,7 +67,13 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use DateTime;
+use OCA\Buildiq\Kernel\Contracts\RuleActionDispatcherInterface;
+use OCA\Buildiq\Service\Connection\ConnectionReporter;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Service\SecurityService;
 use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
 use OCP\Notification\IManager;
@@ -74,8 +83,13 @@ use Throwable;
 
 /**
  * Wired dispatcher for ConditionActionExecutor side-effecting actions.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One dispatcher per action type is
+ *   the point of this class: each side effect brings its own boundary (notifications,
+ *   OpenRegister objects, the HTTP client and its egress guard, the rule engine), and
+ *   the egress guard ADR-067 requires on the webhook is what tipped the count over.
  */
-class RuleActionDispatcher {
+class RuleActionDispatcher implements RuleActionDispatcherInterface {
 	/**
 	 * App identifier stamped on every created NC notification.
 	 */
@@ -92,8 +106,11 @@ class RuleActionDispatcher {
 	 * @param ContainerInterface $container PSR container — lazily resolves RuleEngineService
 	 *                                      for `call-rule-set` to avoid a constructor cycle.
 	 * @param LoggerInterface $logger PSR logger.
+	 * @param ConnectionReporter|null $connectionReporter Tells integriq what a webhook call met, or nothing when absent.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
@@ -103,6 +120,7 @@ class RuleActionDispatcher {
 		private readonly JobOwnerImpersonator $ownerImpersonator,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
+		private readonly ?ConnectionReporter $connectionReporter = null,
 	) {
 
 	}//end __construct()
@@ -149,19 +167,7 @@ class RuleActionDispatcher {
 			$subject = 'Automation notification';
 		}
 
-		$recipients = [];
-		if (isset($params['recipientUid']) === true && is_string($params['recipientUid']) === true && $params['recipientUid'] !== '') {
-			$recipients[] = $params['recipientUid'];
-		}
-
-		if (isset($params['recipientUids']) === true && is_array($params['recipientUids']) === true) {
-			foreach ($params['recipientUids'] as $uid) {
-				if (is_string($uid) === true && $uid !== '') {
-					$recipients[] = $uid;
-				}
-			}
-		}
-
+		$recipients = $this->notificationRecipients(params: $params);
 		if ($recipients === []) {
 			$this->logger->info('Buildiq: send-notification action had no resolvable recipient — skipped.');
 			return 0;
@@ -184,11 +190,33 @@ class RuleActionDispatcher {
 	}//end dispatchNotification()
 
 	/**
+	 * The recipients of a send-notification action: `recipientUid`, then every `recipientUids` entry.
+	 *
+	 * @param array<string,mixed> $params Action parameters.
+	 *
+	 * @return array<int,string> The non-empty uids, in order, duplicates kept.
+	 */
+	private function notificationRecipients(array $params): array {
+		$candidates = [$params['recipientUid'] ?? null];
+		if (is_array($params['recipientUids'] ?? null) === true) {
+			$candidates = array_merge($candidates, array_values($params['recipientUids']));
+		}
+
+		return array_values(
+			array_filter(
+				$candidates,
+				static fn (mixed $uid): bool => is_string($uid) === true && $uid !== ''
+			)
+		);
+	}//end notificationRecipients()
+
+	/**
 	 * Object-op — create or update an object via OpenRegister's ObjectService.
 	 *
 	 * @param array<string,mixed> $params Action parameters.
 	 *
 	 * @return array<string,mixed>|null The saved object, normalised, or null on skip.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function dispatchObjectOp(array $params): ?array {
 		$schema = (string)($params['schema'] ?? '');
@@ -213,10 +241,16 @@ class RuleActionDispatcher {
 
 		$write = function () use ($object, $register, $schema, $operation, $id) {
 			if ($operation === 'update') {
-				return $this->objectService->saveObject(object: $object, register: $register, schema: $schema, uuid: $id);
+				return $this->objectService->saveObject(
+					object: $object,
+					options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: $id)
+				);
 			}
 
-			return $this->objectService->saveObject(object: $object, register: $register, schema: $schema);
+			return $this->objectService->saveObject(
+				object: $object,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
+			);
 		};
 
 		if ($this->userSession->getUser() === null && $id !== '') {
@@ -225,15 +259,34 @@ class RuleActionDispatcher {
 			$saved = $write();
 		}
 
-		return $this->normalise(object: $saved);
+		return ObjectRecord::arrayOrNull(object: $saved);
 	}//end dispatchObjectOp()
 
 	/**
 	 * Webhook — POST the compiled target via NC's HTTP client service.
 	 *
+	 * What the call met is reported to integriq's connection registry as the
+	 * one `rule-webhooks` family row, at most once an hour while it stays the
+	 * same (adopt-connection-registry). A failed post still throws, exactly as
+	 * before, into {@see __invoke()}.
+	 *
 	 * @param array<string,mixed> $params Action parameters.
 	 *
+	 * The URL is typed by a maker, so it goes through OpenRegister's shared
+	 * egress guard before anything is sent (ADR-067, buildiq#987): a scheme
+	 * other than http(s), or a host that resolves to a loopback, private,
+	 * link-local (cloud metadata) or reserved address, throws here and no
+	 * request leaves the server. The guard checks the address once, so the
+	 * post does not follow redirects: a public URL cannot bounce the request
+	 * on to an address the guard would have refused.
+	 *
 	 * @return int|null The response status code, or null on skip/failure.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SecurityService::assertSafeFetchUrl is static upstream;
+	 *   OpenRegister's store plane calls it the same way.
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
+	 * @spec openspec/specs/automation-designer/spec.md#req-autd-010
 	 */
 	private function dispatchWebhook(array $params): ?int {
 		$url = (string)($params['url'] ?? '');
@@ -242,15 +295,25 @@ class RuleActionDispatcher {
 			return null;
 		}
 
+		SecurityService::assertSafeFetchUrl($url);
+
 		$payload = [];
 		if (is_array($params['payload'] ?? null) === true) {
 			$payload = $params['payload'];
 		}
 
 		$client = $this->httpClientService->newClient();
-		$response = $client->post($url, ['json' => $payload, 'timeout' => 10]);
+		try {
+			$response = $client->post($url, ['json' => $payload, 'timeout' => 10, 'allow_redirects' => false]);
+		} catch (Throwable $e) {
+			$this->connectionReporter?->reportWebhookCall(url: $url, httpStatus: $this->connectionReporter->httpStatusOf(exception: $e));
+			throw $e;
+		}
 
-		return $response->getStatusCode();
+		$status = $response->getStatusCode();
+		$this->connectionReporter?->reportWebhookCall(url: $url, httpStatus: $status);
+
+		return $status;
 	}//end dispatchWebhook()
 
 	/**
@@ -310,26 +373,4 @@ class RuleActionDispatcher {
 		$this->logger->warning('Buildiq: RuleActionDispatcher received an unrecognised action type "' . $type . '".');
 		return null;
 	}//end logUnknown()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>|null
-	 */
-	private function normalise(mixed $object): ?array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		return null;
-	}//end normalise()
 }//end class

@@ -28,16 +28,19 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/business-rules-engine/tasks.md#5.1
- * @spec openspec/changes/business-rules-engine/tasks.md#5.2
- * @spec openspec/changes/business-rules-engine/tasks.md#5.3
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#5.1
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#5.2
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#5.3
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\RuleEngineServiceInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -46,25 +49,9 @@ use Throwable;
 /**
  * Runtime rule-evaluation orchestrator.
  */
-class RuleEngineService {
+class RuleEngineService implements RuleEngineServiceInterface {
 
-	/**
-	 * Shared Buildiq register slug.
-	 */
-	public const REGISTER_SLUG = 'buildiq';
-
-	/**
-	 * Schema slugs for the rules-engine objects.
-	 */
-	public const RULE_SET_SCHEMA = 'rule-set';
-	public const DECISION_TABLE_SCHEMA = 'decision-table';
 	public const CONDITION_RULE_SCHEMA = 'condition-action-rule';
-	public const EXECUTION_LOG_SCHEMA = 'rule-execution-log';
-
-	/**
-	 * Soft evaluation timeout in milliseconds (design.md Decision 10).
-	 */
-	public const TIMEOUT_MS = 500;
 
 	/**
 	 * Maximum `call-rule-set` chain depth (DoS hardening, harden-xss-dos-csrf).
@@ -105,30 +92,62 @@ class RuleEngineService {
 	private array $activeSlugs = [];
 
 	/**
+	 * DMN table evaluator.
+	 *
+	 * @var DecisionTableEvaluator
+	 */
+	private readonly DecisionTableEvaluator $decisionEvaluator;
+
+	/**
+	 * Condition-action chain executor.
+	 *
+	 * @var ConditionActionExecutor
+	 */
+	private readonly ConditionActionExecutor $conditionExecutor;
+
+	/**
+	 * Wired side-effect dispatcher (spec REQ-AUTD-010 — fixes the verified defect where side-effecting
+	 * actions silently no-op in wet runs because no dispatcher was ever passed to the executor).
+	 *
+	 * @var RuleActionDispatcher
+	 */
+	private readonly RuleActionDispatcher $actionDispatcher;
+
+	/**
+	 * Hot-reload bundle cache.
+	 *
+	 * @var RuleSetCacheManager
+	 */
+	private readonly RuleSetCacheManager $cacheManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectServiceInterface $objectService OpenRegister object service.
-	 * @param DecisionTableEvaluator $decisionEvaluator DMN table evaluator.
-	 * @param ConditionActionExecutor $conditionExecutor Condition-action chain executor.
-	 * @param RuleSetCacheManager $cacheManager Hot-reload bundle cache.
+	 * @param RuleEvaluators $evaluators The decision table evaluator, condition executor, action dispatcher and rule cache.
 	 * @param IUserSession $userSession Current user session.
 	 * @param LoggerInterface $logger PSR logger.
-	 * @param RuleActionDispatcher $actionDispatcher Wired side-effect dispatcher (spec REQ-AUTD-010 —
-	 *                                               fixes the verified defect where side-effecting
-	 *                                               actions silently no-op in wet runs because no
-	 *                                               dispatcher was ever passed to the executor).
+	 * @param RuleObjectReader $reader Organisation-scoped reads of rule-engine objects (REQ-BRE-007).
+	 * @param StoredDecisionTables $tables A rule set's decision table, held in OpenRegister's decision-tables register (decision 196).
+	 * @param AutomationRunLog|null $runLog Records a wet run of an automation's `aut-` rule set (logic-automation-run-log).
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-007-per-tenant-isolation-and-multitenancy
 	 */
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
-		private readonly DecisionTableEvaluator $decisionEvaluator,
-		private readonly ConditionActionExecutor $conditionExecutor,
-		private readonly RuleSetCacheManager $cacheManager,
+		RuleEvaluators $evaluators,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
-		private readonly RuleActionDispatcher $actionDispatcher,
+		private readonly RuleObjectReader $reader,
+		private readonly StoredDecisionTables $tables,
+		private readonly ?AutomationRunLog $runLog = null,
 	) {
+		$this->decisionEvaluator = $evaluators->decisionEvaluator;
+		$this->conditionExecutor = $evaluators->conditionExecutor;
+		$this->actionDispatcher = $evaluators->actionDispatcher;
+		$this->cacheManager = $evaluators->cacheManager;
 
 	}//end __construct()
 
@@ -140,21 +159,192 @@ class RuleEngineService {
 	 * @param string|null $version Optional pinned version (default: active).
 	 * @param bool $dryRun When true, side-effecting actions are suppressed.
 	 * @param bool $maskPii When true, mask PII fields in the audit log.
+	 * @param bool $preview When true, a live preview for a form being filled
+	 *                      in: no execution log entry is written and no side-effecting action runs
+	 *                      (REQ-BQLV-004). A preview answer is never trusted for a save.
 	 *
 	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>}
 	 *
 	 * @throws RuntimeException When the RuleSet is not found / not owned, or on timeout.
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-live-evaluation-leaves-no-log-trail-req-bqlv-004
 	 */
+	#[\Override]
 	public function evaluate(
 		string $ruleSetSlug,
 		array $payload,
 		?string $version = null,
 		bool $dryRun = false,
 		bool $maskPii = true,
+		bool $preview = false,
 	): array {
+		$options = new RuleEvaluationOptions(version: $version, dryRun: ($dryRun === true || $preview === true), maskPii: $maskPii, preview: $preview);
+		return $this->evaluateGuarded(evaluation: new RuleSetEvaluation(ruleSetSlug: $ruleSetSlug, payload: $payload, options: $options));
+
+	}//end evaluate()
+
+	/**
+	 * Resolve the active rule set another app asks for, and whether that app may call it.
+	 *
+	 * The one read of rule sets outside a person's scope (design D1): the rule
+	 * set is read as the system, so this method alone decides what the app
+	 * gets. `not-allowed` unless the app is listed in `callableBy`;
+	 * `unknown-rule-set` when no active rule set has the slug, or when more
+	 * than one does (two organisations' rule sets are never guessed between).
+	 *
+	 * @param string $app  The calling app id.
+	 * @param string $slug The rule set slug.
+	 *
+	 * @return array{status:'ok'|'unknown-rule-set'|'not-allowed',ruleSet:array<string,mixed>|null}
+	 *
+	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-another-app-evaluates-a-rule-set-through-a-typed-command-req-bqrx-002
+	 */
+	#[\Override]
+	public function resolveForApp(string $app, string $slug): array {
+		if (trim($slug) === '') {
+			return ['status' => 'unknown-rule-set', 'ruleSet' => null];
+		}
+
+		$active = array_values(
+			array_filter(
+				$this->reader->findAsSystem(schema: self::RULE_SET_SCHEMA, filters: ['slug' => $slug]),
+				static fn (array $row): bool => ($row['slug'] ?? null) === $slug && ($row['status'] ?? '') === 'active'
+			)
+		);
+		if (count($active) !== 1) {
+			if (count($active) > 1) {
+				$this->logger->warning('Buildiq: more than one active rule set has slug "' . $slug . '"; another app is not given either');
+			}
+
+			return ['status' => 'unknown-rule-set', 'ruleSet' => null];
+		}
+
+		$callableBy = $active[0]['callableBy'] ?? [];
+		if (trim($app) === '' || is_array($callableBy) === false || in_array($app, $callableBy, true) === false) {
+			return ['status' => 'not-allowed', 'ruleSet' => null];
+		}
+
+		return ['status' => 'ok', 'ruleSet' => $active[0]];
+
+	}//end resolveForApp()
+
+	/**
+	 * Evaluate a rule set that {@see resolveForApp()} gave another app.
+	 *
+	 * Every action is suppressed (as a dry run), and one execution log line is
+	 * written naming the calling app and the version (design D2 steps 3 and 4).
+	 * The rule set is not read again: its tables come from the decision-tables
+	 * register under its own key, its condition-action rules from its own
+	 * organisation.
+	 *
+	 * @param string              $app     The calling app id.
+	 * @param array<string,mixed> $ruleSet The rule set resolveForApp() answered.
+	 * @param array<string,mixed> $payload The checked inputs.
+	 *
+	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>,version:string}
+	 *
+	 * @throws RuntimeException On a cycle or an over-deep chain.
+	 *
+	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-another-app-evaluates-a-rule-set-through-a-typed-command-req-bqrx-002
+	 */
+	#[\Override]
+	public function evaluateForApp(string $app, array $ruleSet, array $payload): array {
+		$options = new RuleEvaluationOptions(dryRun: true, callerApp: $app);
+		$evaluation = new RuleSetEvaluation(ruleSetSlug: (string)($ruleSet['slug'] ?? ''), payload: $payload, options: $options);
+
+		$outcome = $this->evaluateGuarded(evaluation: $evaluation, resolved: $ruleSet);
+		$outcome['version'] = (string)($ruleSet['version'] ?? '');
+
+		return $outcome;
+
+	}//end evaluateForApp()
+
+	/**
+	 * The bundle of a rule set resolved for a calling app, read without a person's scope.
+	 *
+	 * Condition-action rules are kept only when they belong to the rule set's
+	 * own organisation, so another organisation's rules under the same slug
+	 * never join the evaluation.
+	 *
+	 * @param array<string,mixed> $ruleSet The resolved rule set.
+	 *
+	 * @return array{ruleSet:array<string,mixed>,decisionTables:array<int,mixed>,conditionRules:array<int,mixed>}
+	 *
+	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-another-app-evaluates-a-rule-set-through-a-typed-command-req-bqrx-002
+	 */
+	private function resolvedBundle(array $ruleSet): array {
+		$organisation = self::organisationOf(row: $ruleSet);
+		$rules = array_values(
+			array_filter(
+				$this->reader->findAsSystem(schema: self::CONDITION_RULE_SCHEMA, filters: ['ruleSetId' => (string)($ruleSet['slug'] ?? '')]),
+				static fn (array $rule): bool => self::organisationOf(row: $rule) === $organisation
+			)
+		);
+
+		return [
+			'ruleSet' => $ruleSet,
+			'decisionTables' => $this->tables->forRuleSet(ruleSet: $ruleSet),
+			'conditionRules' => $rules,
+		];
+
+	}//end resolvedBundle()
+
+	/**
+	 * The organisation an OpenRegister object belongs to, or '' when it names none.
+	 *
+	 * @param array<string,mixed> $row The object.
+	 *
+	 * @return string
+	 */
+	private static function organisationOf(array $row): string {
+		$self = $row['@self'] ?? [];
+		if (is_array($self) === false) {
+			return '';
+		}
+
+		return (string)($self['organisation'] ?? '');
+
+	}//end organisationOf()
+
+	/**
+	 * Evaluate a RuleSet inside the re-entry and depth guards of a call-rule-set chain.
+	 *
+	 * @param RuleSetEvaluation        $evaluation The rule set, payload and options.
+	 * @param array<string,mixed>|null $resolved   A rule set already resolved by {@see resolveForApp()},
+	 *                                             or null to resolve it in the caller's scope.
+	 *
+	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>}
+	 *
+	 * @throws RuntimeException On a cycle, an over-deep chain, a missing RuleSet or a timeout.
+	 */
+	private function evaluateGuarded(RuleSetEvaluation $evaluation, ?array $resolved = null): array {
+		$this->assertCanEnter(ruleSetSlug: $evaluation->ruleSetSlug);
+
+		++$this->callDepth;
+		$this->activeSlugs[] = $evaluation->ruleSetSlug;
+		try {
+			return $this->evaluateChain(evaluation: $evaluation, resolved: $resolved);
+		} finally {
+			--$this->callDepth;
+			array_pop($this->activeSlugs);
+		}
+
+	}//end evaluateGuarded()
+
+	/**
+	 * Refuse a rule set that is already active in this chain, or a chain that is too deep.
+	 *
+	 * Thrown before any state mutation, log write, or side effect for this level.
+	 *
+	 * @param string $ruleSetSlug The RuleSet slug about to be evaluated.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException With code 508 on a cycle or an over-deep chain.
+	 */
+	private function assertCanEnter(string $ruleSetSlug): void {
 		// Re-entry cycle guard: a rule set already active in this chain must not
-		// be re-evaluated (self- or mutually-referential call-rule-set). Thrown
-		// before any state mutation, log write, or side effect for this level.
+		// be re-evaluated (self- or mutually-referential call-rule-set).
 		if (in_array($ruleSetSlug, $this->activeSlugs, true) === true) {
 			throw new RuntimeException(
 				'Rule-set cycle detected: "' . $ruleSetSlug . '" is already being evaluated in this chain.',
@@ -170,125 +360,185 @@ class RuleEngineService {
 			);
 		}
 
-		++$this->callDepth;
-		$this->activeSlugs[] = $ruleSetSlug;
-		try {
-			return $this->evaluateChain(
-				ruleSetSlug: $ruleSetSlug,
-				payload: $payload,
-				version: $version,
-				dryRun: $dryRun,
-				maskPii: $maskPii
-			);
-		} finally {
-			--$this->callDepth;
-			array_pop($this->activeSlugs);
-		}
-
-	}//end evaluate()
+	}//end assertCanEnter()
 
 	/**
-	 * Run a single RuleSet evaluation (re-entry-guarded by {@see evaluate()}).
+	 * Run a single RuleSet evaluation (re-entry-guarded by {@see evaluateGuarded()}).
 	 *
-	 * @param string $ruleSetSlug The RuleSet slug.
-	 * @param array<string,mixed> $payload The input payload.
-	 * @param string|null $version Optional pinned version (default: active).
-	 * @param bool $dryRun When true, side-effecting actions are suppressed.
-	 * @param bool $maskPii When true, mask PII fields in the audit log.
+	 * @param RuleSetEvaluation        $evaluation The rule set, payload and options.
+	 * @param array<string,mixed>|null $resolved   A rule set resolved for a calling app, or null.
 	 *
 	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>}
 	 *
 	 * @throws RuntimeException When the RuleSet is not found / not owned, or on timeout.
 	 */
-	private function evaluateChain(
-		string $ruleSetSlug,
-		array $payload,
-		?string $version = null,
-		bool $dryRun = false,
-		bool $maskPii = true,
-	): array {
+	private function evaluateChain(RuleSetEvaluation $evaluation, ?array $resolved = null): array {
 		$startedAt = microtime(true);
 
-		$bundle = $this->loadBundle(slug: $ruleSetSlug, version: $version);
-		if ($bundle === null) {
-			throw new RuntimeException('RuleSet "' . $ruleSetSlug . '" not found.', 404);
+		if ($resolved !== null) {
+			$bundle = $this->resolvedBundle(ruleSet: $resolved);
 		}
 
-		$errors = [];
-		$result = [];
-		$triggeredRules = [];
+		if ($resolved === null) {
+			$bundle = $this->loadBundle(slug: $evaluation->ruleSetSlug, version: $evaluation->options->version);
+		}
+		if ($bundle === null) {
+			throw new RuntimeException('RuleSet "' . $evaluation->ruleSetSlug . '" not found.', 404);
+		}
 
+		$answer = $this->runBundle(bundle: $bundle, evaluation: $evaluation);
+		$outcome = $this->timedOutcome(answer: $answer, startedAt: $startedAt);
+
+		if ($evaluation->options->preview === false) {
+			$this->persistLog(run: $this->runRecord(evaluation: $evaluation, bundle: $bundle), outcome: $outcome);
+		}
+
+		if ($evaluation->options->dryRun === false) {
+			$this->runLog?->ruleSetRan(
+				ruleSetSlug: $evaluation->ruleSetSlug,
+				payload: $evaluation->payload,
+				outcome: $outcome,
+				rules: $bundle['conditionRules'],
+				actor: (string)($this->userSession->getUser()?->getUID() ?? '')
+			);
+		}
+
+		return $outcome;
+	}//end evaluateChain()
+
+	/**
+	 * Evaluate a loaded bundle by its rule type; a throwing evaluator becomes an error.
+	 *
+	 * @param array<string,mixed> $bundle     The RuleSet bundle.
+	 * @param RuleSetEvaluation   $evaluation The rule set, payload and options.
+	 *
+	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,errors:array<int,string>}
+	 */
+	private function runBundle(array $bundle, RuleSetEvaluation $evaluation): array {
 		try {
 			$ruleType = (string)($bundle['ruleSet']['ruleType'] ?? 'decision-table');
 
 			if ($ruleType === 'decision-table' && $bundle['decisionTables'] !== []) {
-				$table = $bundle['decisionTables'][0];
-				$outcome = $this->decisionEvaluator->evaluate($table, $payload);
-				$result = $outcome['outputColumns'];
-				if ($outcome['triggeredRuleId'] !== null) {
-					$triggeredRules[] = $outcome['triggeredRuleId'];
-				}
-			} elseif ($ruleType === 'condition-action') {
-				// Pass the wired dispatcher (spec REQ-AUTD-010) — the executor
-				// itself suppresses dispatch when $dryRun is true, so it is
-				// always safe to hand the real dispatcher through here.
-				$outcome = $this->conditionExecutor->execute($bundle['conditionRules'], $payload, $dryRun, $this->actionDispatcher);
-				$result = $outcome['result'];
-				$errors = $outcome['errors'];
-				$triggeredRules = array_column($outcome['triggeredRules'], 'name');
+				return $this->runDecisionTable(table: $bundle['decisionTables'][0], payload: $evaluation->payload);
+			}
+
+			if ($ruleType === 'condition-action') {
+				return $this->runConditionRules(rules: $bundle['conditionRules'], evaluation: $evaluation);
 			}
 		} catch (Throwable $e) {
-			$errors[] = $e->getMessage();
-		}//end try
+			return ['result' => [], 'triggeredRules' => [], 'errors' => [$e->getMessage()]];
+		}
 
-		$durationMs = (int)round((microtime(true) - $startedAt) * 1000);
+		return ['result' => [], 'triggeredRules' => [], 'errors' => []];
+	}//end runBundle()
 
+	/**
+	 * Evaluate the first decision table of a RuleSet.
+	 *
+	 * @param array<string,mixed> $table   The decision table.
+	 * @param array<string,mixed> $payload The input payload.
+	 *
+	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,errors:array<int,string>}
+	 */
+	private function runDecisionTable(array $table, array $payload): array {
+		$outcome = $this->decisionEvaluator->evaluate($table, $payload);
+		$result = $outcome['outputColumns'];
+		$triggeredRules = [];
+		if ($outcome['triggeredRuleId'] !== null) {
+			$triggeredRules[] = $outcome['triggeredRuleId'];
+		}
+
+		return ['result' => $result, 'triggeredRules' => $triggeredRules, 'errors' => []];
+	}//end runDecisionTable()
+
+	/**
+	 * Execute the condition-action rules of a RuleSet.
+	 *
+	 * Pass the wired dispatcher (spec REQ-AUTD-010) — the executor itself
+	 * suppresses dispatch when dry-run is set, so it is always safe to hand the
+	 * real dispatcher through here.
+	 *
+	 * @param array<int,mixed>  $rules      The condition-action rules.
+	 * @param RuleSetEvaluation $evaluation The rule set, payload and options.
+	 *
+	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,errors:array<int,string>}
+	 */
+	private function runConditionRules(array $rules, RuleSetEvaluation $evaluation): array {
+		$outcome = $this->conditionExecutor->execute($rules, $evaluation->payload, $evaluation->options->dryRun, $this->actionDispatcher);
+
+		return [
+			'result' => $outcome['result'],
+			'triggeredRules' => array_column($outcome['triggeredRules'], 'name'),
+			'errors' => $outcome['errors'],
+		];
+	}//end runConditionRules()
+
+	/**
+	 * The evaluation answer with its duration, flagging a run over the soft timeout.
+	 *
+	 * @param array{result:array<string,mixed>,triggeredRules:array<int,mixed>,errors:array<int,string>} $answer    What the evaluators answered.
+	 * @param float                                                                                       $startedAt When the evaluation started.
+	 *
+	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>}
+	 */
+	private function timedOutcome(array $answer, float $startedAt): array {
+		$durationMs = (int)round((microtime(true) - $startedAt) * 1000.0);
+
+		$errors = $answer['errors'];
 		if ($durationMs > self::TIMEOUT_MS) {
 			$errors[] = 'Evaluation exceeded the ' . self::TIMEOUT_MS . 'ms soft timeout (' . $durationMs . 'ms).';
 		}
 
-		$this->persistLog(
-			ruleSetSlug: $ruleSetSlug,
-			version: (string)($bundle['ruleSet']['version'] ?? ''),
-			payload: $payload,
-			result: $result,
-			triggeredRules: $triggeredRules,
-			durationMs: $durationMs,
-			errors: $errors,
-			maskPii: $maskPii
-		);
-
 		return [
-			'result' => $result,
-			'triggeredRules' => $triggeredRules,
+			'result' => $answer['result'],
+			'triggeredRules' => $answer['triggeredRules'],
 			'executionTime' => $durationMs,
 			'errors' => $errors,
 		];
+	}//end timedOutcome()
 
-	}//end evaluateChain()
+	/**
+	 * What the execution log records about the run itself.
+	 *
+	 * @param RuleSetEvaluation   $evaluation The rule set, payload and options.
+	 * @param array<string,mixed> $bundle     The RuleSet bundle.
+	 *
+	 * @return array{ruleSetSlug:string,version:string,payload:array<string,mixed>,maskPii:bool,callerApp:string}
+	 */
+	private function runRecord(RuleSetEvaluation $evaluation, array $bundle): array {
+		return [
+			'ruleSetSlug' => $evaluation->ruleSetSlug,
+			'version' => (string)($bundle['ruleSet']['version'] ?? ''),
+			'payload' => $evaluation->payload,
+			'maskPii' => $evaluation->options->maskPii,
+			'callerApp' => $evaluation->options->callerApp,
+		];
+	}//end runRecord()
 
 	/**
 	 * Load (and cache) a RuleSet bundle: the RuleSet plus its tables/rules.
 	 *
-	 * Resolution runs through OpenRegister `searchObjectsBySlug` (see
-	 * {@see findMany()}), which applies the schema's RBAC. IMPORTANT: `buildiq`
-	 * is a system-wide register (not org-scoped), so multitenancy is intentionally
-	 * bypassed and this is NOT per-owner or per-organisation read isolation — with
-	 * a read-open rule-set schema, any authenticated caller can resolve a rule-set
-	 * by slug. Write operations (create/update/delete) remain admin-gated at the
-	 * schema. (No false "foreign slug → 404 / no IDOR" guarantee is implied.)
+	 * Every read goes through {@see RuleObjectReader}, which applies the
+	 * schema's RBAC and the caller's organisation (REQ-BRE-007): a rule set
+	 * held by another organisation resolves to null, so the caller answers 404.
+	 * The decision table is then read from OpenRegister's decision-tables
+	 * register under a key derived from that resolved rule set, so it is only
+	 * reachable through a rule set the caller could already see.
+	 *
+	 * The rule set itself is read on every call, never from the cache. The
+	 * cache is distributed and shared by every caller, so a bundle keyed by
+	 * slug alone handed the first caller's rule set to everyone for the TTL.
+	 * The key now carries the resolved rule set's identity, and only its
+	 * tables and rules are served from it.
 	 *
 	 * @param string $slug The RuleSet slug.
 	 * @param string|null $version Optional pinned version.
 	 *
 	 * @return array{ruleSet:array<string,mixed>,decisionTables:array<int,mixed>,conditionRules:array<int,mixed>}|null
+	 *
+	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-007-per-tenant-isolation-and-multitenancy
 	 */
 	private function loadBundle(string $slug, ?string $version): ?array {
-		$cached = $this->cacheManager->get($slug, $version);
-		if ($cached !== null) {
-			return $cached;
-		}
-
 		$ruleSet = $this->findOne(schema: self::RULE_SET_SCHEMA, filters: ['slug' => $slug]);
 		if ($ruleSet === null) {
 			return null;
@@ -301,78 +551,100 @@ class RuleEngineService {
 			return null;
 		}
 
+		$cacheKey = $slug . '#' . $this->identityOf(ruleSet: $ruleSet);
+		$cached = $this->cacheManager->get($cacheKey, $version);
+		if ($cached !== null) {
+			$cached['ruleSet'] = $ruleSet;
+			return $cached;
+		}
+
 		$bundle = [
 			'ruleSet' => $ruleSet,
 			'ruleType' => (string)($ruleSet['ruleType'] ?? 'decision-table'),
-			'decisionTables' => $this->findMany(schema: self::DECISION_TABLE_SCHEMA, filters: ['ruleSetId' => $slug]),
+			'decisionTables' => $this->tables->forRuleSet(ruleSet: $ruleSet),
 			'conditionRules' => $this->findMany(schema: self::CONDITION_RULE_SCHEMA, filters: ['ruleSetId' => $slug]),
 		];
 
-		$this->cacheManager->set($slug, $bundle, $version);
+		$this->cacheManager->set($cacheKey, $bundle, $version);
 		return $bundle;
 	}//end loadBundle()
 
 	/**
+	 * What tells this rule set apart from another organisation's rule set with
+	 * the same slug: its object id, and its organisation and version.
+	 *
+	 * @param array<string,mixed> $ruleSet The resolved rule set.
+	 *
+	 * @return string
+	 */
+	private function identityOf(array $ruleSet): string {
+		$self = [];
+		if (is_array($ruleSet['@self'] ?? null) === true) {
+			$self = $ruleSet['@self'];
+		}
+
+		return implode(
+			'|',
+			[
+				(string)($ruleSet['id'] ?? ($self['id'] ?? ($self['uuid'] ?? ''))),
+				(string)($self['organisation'] ?? ''),
+				(string)($ruleSet['version'] ?? ''),
+			]
+		);
+	}//end identityOf()
+
+	/**
 	 * Persist a RuleExecutionLog audit record.
 	 *
-	 * @param string $ruleSetSlug The RuleSet slug.
-	 * @param string $version The evaluated version.
-	 * @param array<string,mixed> $payload The raw input payload.
-	 * @param array<string,mixed> $result The evaluation result.
-	 * @param array<int,mixed> $triggeredRules Triggered rule identifiers.
-	 * @param int $durationMs Execution duration.
-	 * @param array<int,string> $errors Any errors.
-	 * @param bool $maskPii Whether to mask PII in the logged input.
+	 * @param array{ruleSetSlug:string,version:string,payload:array<string,mixed>,maskPii:bool,callerApp:string} $run The run:
+	 *        the RuleSet slug and version, the raw input payload, whether to mask PII in the log,
+	 *        and the app that asked (empty for the API).
+	 * @param array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>} $outcome The answer.
 	 *
 	 * @return void
 	 */
-	private function persistLog(
-		string $ruleSetSlug,
-		string $version,
-		array $payload,
-		array $result,
-		array $triggeredRules,
-		int $durationMs,
-		array $errors,
-		bool $maskPii,
-	): void {
+	private function persistLog(array $run, array $outcome): void {
 		$user = $this->userSession->getUser();
 		$userId = '';
 		if ($user !== null) {
 			$userId = $user->getUID();
 		}
 
-		$loggedInput = $payload;
-		if ($maskPii === true) {
-			$loggedInput = $this->maskPii(payload: $payload);
+		$loggedInput = $run['payload'];
+		if ($run['maskPii'] === true) {
+			$loggedInput = $this->maskPii(payload: $run['payload']);
 		}
 
 		$log = [
-			'ruleSetId' => $ruleSetSlug,
-			'ruleSetVersion' => $version,
+			'ruleSetId' => $run['ruleSetSlug'],
+			'ruleSetVersion' => $run['version'],
 			'timestamp' => gmdate('Y-m-d\TH:i:s\Z'),
 			'triggerContext' => 'api',
 			'inputPayload' => $loggedInput,
-			'outputResult' => $result,
-			'triggeredRules' => array_map('strval', $triggeredRules),
-			'executionDurationMs' => $durationMs,
-			'errors' => $errors,
+			'outputResult' => $outcome['result'],
+			'triggeredRules' => array_map('strval', $outcome['triggeredRules']),
+			'executionDurationMs' => $outcome['executionTime'],
+			'errors' => $outcome['errors'],
 			'userId' => $userId,
 			'archived' => false,
 		];
+		if ($run['callerApp'] !== '') {
+			// REQ-BQRX-002: an auditor sees which app used which rule set version.
+			$log['triggerContext'] = 'app';
+			$log['callerApp'] = $run['callerApp'];
+		}
 
 		try {
 			$this->objectService->saveObject(
 				object: $log,
-				register: self::REGISTER_SLUG,
-				schema: self::EXECUTION_LOG_SCHEMA
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::EXECUTION_LOG_SCHEMA))
 			);
 		} catch (Throwable $e) {
 			// A failed audit write must not abort the evaluation response, but
 			// it is a compliance gap — log at error so ops alerting catches it.
 			$this->logger->error(
 				'Buildiq: failed to persist RuleExecutionLog',
-				['ruleSet' => $ruleSetSlug, 'exception' => $e->getMessage()]
+				['ruleSet' => $run['ruleSetSlug'], 'exception' => $e->getMessage()]
 			);
 		}
 
@@ -430,83 +702,18 @@ class RuleEngineService {
 	}//end findOne()
 
 	/**
-	 * Find objects by schema + filters in the shared register.
+	 * Find objects by schema + filters in the shared register, scoped to the
+	 * caller's organisation and the schema's RBAC (REQ-BRE-007).
 	 *
 	 * @param string $schema The schema slug.
 	 * @param array<string,mixed> $filters Equality filters.
 	 * @param int|null $limit Optional row limit.
 	 *
 	 * @return array<int,array<string,mixed>>
+	 *
+	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-007-per-tenant-isolation-and-multitenancy
 	 */
 	private function findMany(string $schema, array $filters, ?int $limit = null): array {
-		// Authorization-aware resolution (harden-rules-authz-and-audit-parity,
-		// M1): resolve through searchObjectsBySlug (which applies the schema's
-		// RBAC) rather than a raw findAll. `buildiq` is a SYSTEM-WIDE register
-		// (not org-scoped) — mirror ListAppsHandler and pass _multitenancy:false
-		// so cross-org callers still resolve it (a true org filter would make
-		// registerMapper->find() throw and break evaluation). Note: for a
-		// read-open rule-set schema this does not isolate reads per owner/org;
-		// write operations remain admin-gated at the schema.
-		try {
-			$results = $this->objectService->searchObjectsBySlug(
-				self::REGISTER_SLUG,
-				$schema,
-				$filters,
-				_rbac: true,
-				_multitenancy: false
-			);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'Buildiq: rule-engine searchObjects failed',
-				['schema' => $schema, 'exception' => $e->getMessage()]
-			);
-			return [];
-		}
-
-		if (is_array($results) === false) {
-			return [];
-		}
-
-		$normalised = [];
-		foreach ($results as $row) {
-			$normalised[] = $this->normalise(object: $row);
-		}
-
-		// The slug variant has no server-side limit param; apply the caller's
-		// cap (used by findOne) client-side.
-		if ($limit !== null && count($normalised) > $limit) {
-			$normalised = array_slice($normalised, 0, $limit);
-		}
-
-		return $normalised;
+		return $this->reader->findScoped(schema: $schema, filters: $filters, limit: $limit);
 	}//end findMany()
-
-	/**
-	 * Coerce an OR result entry to a plain array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normalise()
 }//end class

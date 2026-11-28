@@ -1,0 +1,433 @@
+<?php
+
+/**
+ * Unit tests for VersionMergeRunner: preview a version merge, then write it once.
+ *
+ * @category Test
+ * @package  OCA\Buildiq\Tests\Unit\Service\Branch
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ *
+ * @link https://conduction.nl
+ *
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/tasks.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\Buildiq\Tests\Unit\Service\Branch;
+
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Service\Branch\VersionBranchRefused;
+use OCA\Buildiq\Service\Branch\VersionBranchService;
+use OCA\Buildiq\Service\Branch\VersionMergeRunner;
+use OCA\Buildiq\Service\Branch\VersionSchemaWriter;
+use OCA\Buildiq\Service\Branch\VersionState;
+use OCA\Buildiq\Service\RegisterStore;
+use OCA\Buildiq\Service\VersionMergeService;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use PHPUnit\Framework\TestCase;
+
+/**
+ * A merge only writes a draft that is not production, has a common base with
+ * the source, has not moved since the preview, has every conflict decided and,
+ * when the merge breaks a schema, has that confirmed.
+ *
+ * @covers \OCA\Buildiq\Service\Branch\VersionMergeRunner
+ * @uses   \OCA\Buildiq\Service\Branch\VersionMergeRequest
+ * @uses   \OCA\Buildiq\Service\Branch\VersionBranchRefused
+ * @uses   \OCA\Buildiq\Service\Branch\VersionBranchService
+ * @uses   \OCA\Buildiq\Service\Branch\VersionSchemaWriter
+ * @uses   \OCA\Buildiq\Service\Branch\VersionState
+ * @uses   \OCA\Buildiq\Service\VersionMergeService
+ * @uses   \OCA\Buildiq\Service\VersionSchemaCarrier
+ * @uses   \OCA\Buildiq\Service\ApplicationVersionService
+ * @uses   \OCA\Buildiq\Service\RegisterStore
+ * @uses   \OCA\Buildiq\Support\ObjectRecord
+ *
+ * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-merge-only-writes-a-draft-that-has-not-moved-req-bqgb-004
+ */
+final class VersionMergeRunnerTest extends TestCase {
+
+	/**
+	 * The application: `shop`, with `v-prod` in production.
+	 *
+	 * @var array<string,mixed>
+	 */
+	private const APPLICATION = ['id' => 'app-1', 'slug' => 'shop', 'productionVersion' => 'v-prod'];
+
+	/**
+	 * The in-memory registers and schemas.
+	 *
+	 * @var BranchFixture
+	 */
+	private BranchFixture $fixture;
+
+	/**
+	 * Every object saved, with its options.
+	 *
+	 * @var list<array{object: array<string,mixed>, options: ObjectSaveOptions|null}>
+	 */
+	private array $saved = [];
+
+	/**
+	 * Set up `development` (target) and its branch `permit-fees` (source), each with its own `permit` schema.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->fixture = new BranchFixture();
+		$this->fixture->register(slug: 'openbuild-shop-development', schemas: ['shop-development-permit' => ['fee' => ['type' => 'number']]]);
+		$this->fixture->register(
+			slug: 'openbuild-shop-permit-fees',
+			schemas: ['shop-permit-fees-permit' => ['fee' => ['type' => 'number'], 'reason' => ['type' => 'string']]]
+		);
+	}//end setUp()
+
+	/**
+	 * The `development` version: the merge target.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private static function development(): array {
+		return [
+			'id' => 'v-dev',
+			'slug' => 'development',
+			'register' => 'openbuild-shop-development',
+			'status' => 'draft',
+			'semver' => '1.0.0',
+			'manifest' => [
+				'title' => 'Shop',
+				'pages' => [['id' => 'permits', 'config' => ['register' => 'openbuild-shop-development', 'schema' => 'shop-development-permit']]],
+			],
+		];
+	}//end development()
+
+	/**
+	 * The `permit-fees` branch of `development`: the merge source, with a new page and a new field.
+	 *
+	 * @param array<string,mixed> $baseSchemas The neutral schemas recorded as the branch's base.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private static function branch(
+		array $baseSchemas = ['permit' => ['title' => 'Permit', 'required' => [], 'properties' => ['fee' => ['type' => 'number']]]]
+	): array {
+		return [
+			'id' => 'v-fees',
+			'slug' => 'permit-fees',
+			'register' => 'openbuild-shop-permit-fees',
+			'status' => 'draft',
+			'manifest' => [
+				'title' => 'Shop',
+				'pages' => [
+					['id' => 'permits', 'config' => ['register' => 'openbuild-shop-permit-fees', 'schema' => 'shop-permit-fees-permit']],
+					['id' => 'fees', 'config' => ['register' => 'openbuild-shop-permit-fees', 'schema' => 'shop-permit-fees-permit']],
+				],
+			],
+			'branchBase' => [
+				'source' => 'development',
+				'manifestHash' => 'irrelevant',
+				'manifest' => ['title' => 'Shop', 'pages' => [['id' => 'permits', 'config' => ['register' => '@version', 'schema' => '@schema:permit']]]],
+				'schemas' => $baseSchemas,
+			],
+		];
+	}//end branch()
+
+	/**
+	 * The real version service over mocks.
+	 *
+	 * @return ApplicationVersionService
+	 */
+	private function versions(): ApplicationVersionService {
+		return BranchFixture::versions(mock: fn (string $class): object => $this->createMock(originalClassName: $class));
+	}//end versions()
+
+	/**
+	 * The runner over the fixture, recording every saved object.
+	 *
+	 * @return VersionMergeRunner
+	 */
+	private function runner(): VersionMergeRunner {
+		$registers = $this->fixture->registerMapper(mapper: $this->createMock(originalClassName: RegisterMapper::class));
+		$schemas   = $this->fixture->schemaMapper(mapper: $this->createMock(originalClassName: SchemaMapper::class));
+		$state     = new VersionState(registerMapper: $registers, schemaMapper: $schemas);
+		$writer    = new VersionSchemaWriter(registerMapper: $registers, schemaMapper: $schemas, state: $state);
+		$objects   = $this->createMock(originalClassName: ObjectServiceInterface::class);
+		$objects->method('saveObject')->willReturnCallback(
+			function (array $object, ?ObjectSaveOptions $options = null): ObjectEntityInterface {
+				$this->saved[] = ['object' => $object, 'options' => $options];
+				$entity        = $this->createMock(originalClassName: ObjectEntityInterface::class);
+				$entity->method('jsonSerialize')->willReturn($object + ['id' => 'v-saved']);
+				return $entity;
+			}
+		);
+
+		return new VersionMergeRunner(
+			merger: new VersionMergeService(),
+			schemas: $writer,
+			branches: new VersionBranchService(
+				store: new RegisterStore(objectService: $objects, registerMapper: $registers, schemaMapper: $schemas),
+				schemas: $writer,
+				state: $state,
+				versions: $this->versions()
+			),
+			objects: $objects
+		);
+	}//end runner()
+
+	/**
+	 * The properties of a stored schema, by slug.
+	 *
+	 * @param string $slug The schema slug.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function propertiesOf(string $slug): array {
+		foreach ($this->fixture->schemas as $schema) {
+			if ($schema->getSlug() === $slug) {
+				return $schema->getProperties();
+			}
+		}
+
+		$this->fail(message: 'No schema ' . $slug);
+	}//end propertiesOf()
+
+	/**
+	 * Assert that running the callable is refused with the given code and status, and nothing is saved.
+	 *
+	 * @param callable $run    The call.
+	 * @param string   $code   The expected error code.
+	 * @param int      $status The expected HTTP status.
+	 *
+	 * @return VersionBranchRefused
+	 */
+	private function assertRefused(callable $run, string $code, int $status): VersionBranchRefused {
+		try {
+			$run();
+		} catch (VersionBranchRefused $e) {
+			$this->assertSame(expected: $code, actual: $e->errorCode);
+			$this->assertSame(expected: $status, actual: $e->status);
+			$this->assertSame(expected: [], actual: $this->saved);
+			return $e;
+		}
+
+		$this->fail(message: 'Expected the refusal ' . $code);
+	}//end assertRefused()
+
+	/**
+	 * A preview returns the merged manifest and schemas and the target's hash, and writes nothing.
+	 *
+	 * @return void
+	 */
+	public function testAPreviewMergesWithoutWriting(): void {
+		$preview = $this->runner()->previewMerge(application: self::APPLICATION, source: self::branch(), target: self::development());
+
+		$this->assertSame(expected: [], actual: $preview['conflicts']);
+		$this->assertSame(expected: [], actual: $preview['breaking']);
+		$this->assertSame(expected: ['permits', 'fees'], actual: array_column($preview['manifest']['pages'], 'id'));
+		$this->assertSame(expected: ['register' => '@version', 'schema' => '@schema:permit'], actual: $preview['manifest']['pages'][1]['config']);
+		$this->assertSame(expected: ['fee' => ['type' => 'number'], 'reason' => ['type' => 'string']], actual: $preview['schemas']['permit']['properties']);
+		$this->assertSame(expected: $this->versions()->hashManifest(manifest: self::development()['manifest']), actual: $preview['targetHash']);
+
+		$this->assertSame(expected: [], actual: $this->saved);
+		$this->assertSame(expected: ['fee' => ['type' => 'number']], actual: $this->propertiesOf(slug: 'shop-development-permit'));
+	}//end testAPreviewMergesWithoutWriting()
+
+	/**
+	 * An apply writes the merged schema, restores the manifest into the target's slugs and moves its base.
+	 *
+	 * @return void
+	 */
+	public function testAnApplyWritesTheTargetOnce(): void {
+		$target = self::development();
+		$saved  = $this->runner()->applyMerge(
+			application: self::APPLICATION,
+			source: self::branch(),
+			target: $target,
+			resolution: ['targetHash' => $this->versions()->hashManifest(manifest: $target['manifest'])]
+		);
+
+		$this->assertSame(
+			expected: ['fee' => ['type' => 'number'], 'reason' => ['type' => 'string']],
+			actual: $this->propertiesOf(slug: 'shop-development-permit')
+		);
+
+		$this->assertCount(expectedCount: 1, haystack: $this->saved);
+		$object = $this->saved[0]['object'];
+		$this->assertSame(
+			expected: ['register' => 'openbuild-shop-development', 'schema' => 'shop-development-permit'],
+			actual: $object['manifest']['pages'][1]['config']
+		);
+		$this->assertSame(expected: 'permit-fees', actual: $object['branchBase']['source']);
+		$this->assertSame(expected: $this->versions()->hashManifest(manifest: self::branch()['manifest']), actual: $object['branchBase']['manifestHash']);
+		$this->assertSame(expected: $this->versions()->hashManifest(manifest: $object['manifest']), actual: $object['manifestHash']);
+		$this->assertSame(expected: '1.0.1', actual: $object['semver']);
+
+		$options = $this->saved[0]['options'];
+		$this->assertInstanceOf(expected: ObjectSaveOptions::class, actual: $options);
+		$this->assertSame(expected: 'v-dev', actual: $options->uuid);
+		$this->assertSame(expected: ApplicationVersionServiceInterface::REGISTER_SLUG, actual: $options->target->register);
+		$this->assertSame(expected: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA, actual: $options->target->schema);
+
+		$this->assertSame(expected: 'v-dev', actual: $saved['id']);
+	}//end testAnApplyWritesTheTargetOnce()
+
+	/**
+	 * A target whose manifest moved after the preview is refused and nothing is written.
+	 *
+	 * @return void
+	 */
+	public function testATargetThatMovedSinceThePreviewIsRefused(): void {
+		$runner = $this->runner();
+		$this->assertRefused(
+			run: fn () => $runner->applyMerge(
+				application: self::APPLICATION,
+				source: self::branch(),
+				target: self::development(),
+				resolution: ['targetHash' => 'a-hash-from-before']
+			),
+			code: 'target_changed',
+			status: 409
+		);
+
+		$this->assertSame(expected: ['fee' => ['type' => 'number']], actual: $this->propertiesOf(slug: 'shop-development-permit'));
+	}//end testATargetThatMovedSinceThePreviewIsRefused()
+
+	/**
+	 * The production version and a version that is not a draft take no merge.
+	 *
+	 * @return void
+	 */
+	public function testOnlyADraftThatIsNotProductionTakesAMerge(): void {
+		$runner     = $this->runner();
+		$production = ['id' => 'v-prod'] + self::development();
+		$this->assertRefused(
+			run: fn () => $runner->previewMerge(application: self::APPLICATION, source: self::branch(), target: $production),
+			code: 'target_is_production',
+			status: 422
+		);
+
+		$released = ['status' => 'released'] + self::development();
+		$this->assertRefused(
+			run: fn () => $runner->previewMerge(application: self::APPLICATION, source: self::branch(), target: $released),
+			code: 'target_not_draft',
+			status: 422
+		);
+	}//end testOnlyADraftThatIsNotProductionTakesAMerge()
+
+	/**
+	 * Two versions neither of which was branched from the other have no common base.
+	 *
+	 * @return void
+	 */
+	public function testVersionsWithoutACommonBaseAreRefused(): void {
+		$stranger = self::branch();
+		unset($stranger['branchBase']);
+		$runner = $this->runner();
+
+		$refusal = $this->assertRefused(
+			run: fn () => $runner->previewMerge(application: self::APPLICATION, source: $stranger, target: self::development()),
+			code: 'no_common_base',
+			status: 422
+		);
+		$this->assertStringContainsString(needle: '"permit-fees" and "development"', haystack: $refusal->getMessage());
+	}//end testVersionsWithoutACommonBaseAreRefused()
+
+	/**
+	 * A conflict without a chosen side is refused; with a side chosen the merge writes that side.
+	 *
+	 * @return void
+	 */
+	public function testAConflictMustHaveASideChosen(): void {
+		// Both versions changed the `fee` field since the base, each differently.
+		$this->fixture->register(
+			slug: 'openbuild-shop-permit-fees',
+			schemas: ['shop-permit-fees-permit' => ['fee' => ['type' => 'string'], 'reason' => ['type' => 'string']]]
+		);
+		$base   = ['permit' => ['title' => 'Permit', 'required' => [], 'properties' => ['fee' => ['type' => 'integer']]]];
+		$target = self::development();
+		$hash   = $this->versions()->hashManifest(manifest: $target['manifest']);
+
+		$preview = $this->runner()->previewMerge(application: self::APPLICATION, source: self::branch(baseSchemas: $base), target: $target);
+		$this->assertSame(expected: ['property:permit.fee'], actual: array_column($preview['conflicts'], 'unit'));
+
+		$runner = $this->runner();
+		$this->assertRefused(
+			run: fn () => $runner->applyMerge(
+				application: self::APPLICATION,
+				source: self::branch(baseSchemas: $base),
+				target: $target,
+				resolution: ['targetHash' => $hash]
+			),
+			code: 'unresolved_conflicts',
+			status: 409
+		);
+
+		$this->runner()->applyMerge(
+			application: self::APPLICATION,
+			source: self::branch(baseSchemas: $base),
+			target: $target,
+			resolution: ['targetHash' => $hash, 'choices' => ['property:permit.fee' => VersionMergeService::TAKE_TARGET]]
+		);
+		$this->assertCount(expectedCount: 1, haystack: $this->saved);
+		$this->assertSame(expected: ['type' => 'number'], actual: $this->propertiesOf(slug: 'shop-development-permit')['fee']);
+	}//end testAConflictMustHaveASideChosen()
+
+	/**
+	 * A merge that removes a field is refused until the breaking change is confirmed.
+	 *
+	 * @return void
+	 */
+	public function testABreakingMergeNeedsConfirmation(): void {
+		// The branch dropped `fee`; development kept it unchanged since the base.
+		$this->fixture->register(slug: 'openbuild-shop-permit-fees', schemas: ['shop-permit-fees-permit' => ['reason' => ['type' => 'string']]]);
+		$target = self::development();
+		$hash   = $this->versions()->hashManifest(manifest: $target['manifest']);
+
+		$preview = $this->runner()->previewMerge(application: self::APPLICATION, source: self::branch(), target: $target);
+		$this->assertSame(expected: ['The field "permit.fee" is removed.'], actual: $preview['breaking']);
+
+		$runner  = $this->runner();
+		$refusal = $this->assertRefused(
+			run: fn () => $runner->applyMerge(application: self::APPLICATION, source: self::branch(), target: $target, resolution: ['targetHash' => $hash]),
+			code: 'breaking_change',
+			status: 409
+		);
+		$this->assertStringContainsString(needle: 'The field "permit.fee" is removed.', haystack: $refusal->getMessage());
+
+		$this->runner()->applyMerge(
+			application: self::APPLICATION,
+			source: self::branch(),
+			target: $target,
+			resolution: ['targetHash' => $hash, 'acknowledgeBreaking' => 'true']
+		);
+		$this->assertCount(expectedCount: 1, haystack: $this->saved);
+		$this->assertSame(expected: ['reason' => ['type' => 'string']], actual: $this->propertiesOf(slug: 'shop-development-permit'));
+	}//end testABreakingMergeNeedsConfirmation()
+
+	/**
+	 * Starting a branch goes through the branch service: the new version gets its own register.
+	 *
+	 * @return void
+	 */
+	public function testStartBranchCreatesTheBranchThroughTheBranchService(): void {
+		$branch = $this->runner()->startBranch(application: self::APPLICATION, source: self::development(), name: 'zones');
+
+		$this->assertSame(expected: 'zones', actual: $branch['slug']);
+		$this->assertSame(expected: 'openbuild-shop-zones', actual: $branch['register']);
+		$this->assertSame(expected: 'development', actual: $branch['branchBase']['source']);
+		$this->assertArrayHasKey(key: 'openbuild-shop-zones', array: $this->fixture->registers);
+	}//end testStartBranchCreatesTheBranchThroughTheBranchService()
+}//end class

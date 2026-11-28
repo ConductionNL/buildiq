@@ -4,7 +4,7 @@ status: in-progress
 
 # application-versions Specification
 
-**OpenSpec changes**: [layered-versioned-app-deltas](../../changes/layered-versioned-app-deltas/), [version-lifecycle-and-switcher](../../changes/archive/2026-06-26-version-lifecycle-and-switcher/) _(archived 2026-06-26)_, [github-app-repo-format](../../changes/github-app-repo-format/)
+**OpenSpec changes**: [layered-versioned-app-deltas](../../changes/layered-versioned-app-deltas/), [version-lifecycle-and-switcher](../../changes/archive/2026-06-26-version-lifecycle-and-switcher/) _(archived 2026-06-26)_, [github-app-repo-format](../../changes/archive/2026-11-21-github-app-repo-format/) _(archived 2026-11-21)_
 
 ## Purpose
 
@@ -140,7 +140,7 @@ would create a cycle in the linear promotion chain. The check SHALL walk
 `promotesTo` forward from the proposed target up to a hard cap of 100 hops; if the
 current row's `uuid` is encountered along the walk, the save is rejected with a
 422 response naming the conflict. Self-loops (`promotesTo` equal to the current
-row's `uuid`) SHALL be rejected by an `x-openregister-validation` same-row check.
+row's `uuid`) SHALL be rejected by an `x-openregister-validations` same-row check.
 Broader cycle detection SHALL run as
 `ApplicationVersionService::guardNoCycle()` (per ADR-031 §Exceptions(1) —
 cross-row validation).
@@ -463,3 +463,95 @@ the shared-register constraint. The production version itself remains undeletabl
 - **WHEN** an owner sends `DELETE …/versions/<slug>?strategy=delete-now`
 - **THEN** that version's register is dropped and the version row removed (REQ-OBV-108
   behaviour unchanged)
+
+### Requirement: ApplicationVersion declares scope and owner for per-user deltas
+
+The system SHALL extend the `ApplicationVersion` schema in
+`lib/Settings/openbuild_register.json` with two optional properties that
+distinguish a shared admin delta from a per-user delta WITHOUT introducing a new
+OpenRegister schema:
+
+- `scope` (string, enum `admin | user`, default `admin`) — an
+  `ApplicationVersion` with no `scope` SHALL be treated as `admin` on read
+  (legacy default), preserving today's behaviour for every existing row.
+- `owner` (string) — the owning Nextcloud user UID, set ONLY on `scope: user`
+  rows.
+
+The schema SHALL declare an `x-openregister-validations` same-row rule asserting
+`owner != null` when `scope == 'user'`. The existing lifecycle, semver auto-bump,
+cycle guard, and CRUD contract (REQ-OBV-101 … REQ-OBV-108) SHALL be unchanged
+except that LIST and GET of `scope: user` rows SHALL be filtered to the owning
+caller (cross-user rows are never returned).
+
+@e2e exclude pure-backend schema/CRUD contract — the scope/owner fields, validation rule, and owner-filtered list are OR-REST + service-layer contracts verified by Newman/PHPUnit; consistent with this spec's existing backend-only posture
+
+**ID:** REQ-OBV-109
+
+#### Scenario: Legacy version with no scope reads as admin
+
+- **GIVEN** an existing `ApplicationVersion` row persisted before this change with
+  no `scope` field
+- **WHEN** the row is read
+- **THEN** it is treated as `scope: admin`
+- **AND** its lifecycle and semver behaviour are unchanged
+
+#### Scenario: User-scoped row requires an owner
+
+- **WHEN** a client POSTs an `ApplicationVersion` with `scope: user` and no
+  `owner`
+- **THEN** the create is rejected by the `user-scope-requires-owner` validation
+  rule
+
+#### Scenario: List of user-scoped versions is owner-filtered
+
+- **GIVEN** user A and user B each own a `scope: user` `ApplicationVersion` for
+  the same Application
+- **WHEN** user A lists the Application's versions
+- **THEN** user A sees the admin version(s) and their own user version, but NOT
+  user B's user version
+
+### Requirement: ApplicationVersion carries GitHub provenance fields
+
+The `ApplicationVersion` schema in `lib/Settings/openbuild_register.json` SHALL be
+extended with two optional, additive properties that record the exact GitHub
+provenance of a version:
+
+- `commitSha` — string, the exact Git commit a version was pushed to (on publish
+  to GitHub) or pulled from (on import). Optional.
+- `sourceRef` — string, the branch/tag/ref a *pulled* version was imported from
+  (e.g. `refs/heads/main` or a tag name). Optional.
+
+Both properties SHALL be omittable so that every existing `ApplicationVersion`
+object remains schema-valid without a data migration, and SHALL be absent on
+versions with no GitHub provenance. The properties are purely declarative per
+ADR-031 (stored provenance metadata, no state machine, no calculation) and SHALL
+NOT alter the existing lifecycle (REQ-OBV-106) or the manifest-content semver
+auto-bump (REQ-OBV-103) — a `commitSha` / `sourceRef` write is metadata and SHALL
+NOT by itself bump `semver`. The schema SHALL be re-imported via
+`ConfigurationService::importFromApp()`, gated by an `info.xml` + schema-version
+bump per the OpenRegister version-gate rule.
+
+**ID:** REQ-OBV-112
+
+#### Scenario: Schema declares the provenance fields after install
+
+- **WHEN** the Buildiq repair step runs (fresh install or upgrade)
+- **THEN** the `ApplicationVersion` schema exposes optional `commitSha` and
+  `sourceRef` properties
+- **AND** an ApplicationVersion object that omits both remains schema-valid
+
+#### Scenario: Saving provenance fields round-trips without bumping semver
+
+- **GIVEN** an ApplicationVersion with `semver: 0.3.0` and an unchanged `manifest`
+- **WHEN** a client saves the row with only `commitSha` and `sourceRef` set (the
+  `manifest` blob is byte-identical to the previously-saved one)
+- **THEN** OR persists the `commitSha` and `sourceRef` values
+- **AND** the persisted `semver` remains `0.3.0` (provenance metadata does not
+  trigger the manifest auto-bump)
+
+#### Scenario: Legacy ApplicationVersion without provenance stays valid
+
+- **GIVEN** an existing ApplicationVersion with no `commitSha` or `sourceRef`
+- **WHEN** this change's repair step re-imports the schema
+- **THEN** the version remains schema-valid and unmodified (the fields are
+  omittable; no migration back-fills them)

@@ -2,7 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change openconnector-api-sources. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: REQ-OCAS-001 Connector data-source form in the v2 manifest
 
 The system SHALL support a third `dataSource` form, `dataSource.connector`, carried inside the manifest v2 `dataSource` $def (which declares `additionalProperties: true`), with the shape:
@@ -114,7 +116,7 @@ When a virtual app contains at least one connector binding, the system SHALL ens
 
 ### Requirement: REQ-OCAS-006 Runtime fetch path with caching
 
-The system SHALL provide `useConnectorDataSource.js`, used by the virtual-app render path whenever a page or widget declares `dataSource.connector`. The composable SHALL: issue `GET /apps/openconnector/api/endpoint/{endpointPath}` with the binding's `query` parameters; apply `itemsPath` then the `fields` selectors to produce rows (index pages) or a value object (widgets); expose `loading | data | error | isStale` state; cache responses per binding key (`appId + endpointPath + query hash`) with the binding's `cacheTtl` (default 60 s); serve a stale cached entry (max 10× TTL old) with `isStale: true` when a refresh fails; and render an error state with a retry action when no cache entry exists. Selectors that resolve to no value SHALL yield `null` cells and log a single console warning per field per mount (no render crash).
+The system SHALL provide `useConnectorDataSource.js`, used by the virtual-app render path whenever a page or widget declares `dataSource.connector`. "The virtual-app render path" SHALL mean BOTH the published standalone runtime entry serving `/apps/buildiq/builder/{slug}` AND the in-SPA builder preview host; both mount `CnAppRoot` with the runtime registry that resolves the `connector-data` widget key (REQ-CWR-001), and a binding that renders in preview but not on the published route SHALL be treated as a defect. The composable SHALL: issue `GET /apps/openconnector/api/endpoint/{endpointPath}` with the binding's `query` parameters; apply `itemsPath` then the `fields` selectors to produce rows (index pages) or a value object (widgets); expose `loading | data | error | isStale` state; cache responses per binding key (`appId + endpointPath + query hash`) with the binding's `cacheTtl` (default 60 s); serve a stale cached entry (max 10× TTL old) with `isStale: true` when a refresh fails; and render an error state with a retry action when no cache entry exists. Selectors that resolve to no value SHALL yield `null` cells and log a single console warning per field per mount (no render crash).
 
 #### Scenario: Index page renders external rows
 
@@ -144,3 +146,9 @@ The system SHALL provide `useConnectorDataSource.js`, used by the virtual-app re
 - **THEN** the page/widget renders the standard error state with the endpoint path and a Retry button
 - **AND** no uncaught promise rejection reaches the console
 
+#### Scenario: The binding is exercised on the published route, not only in preview
+
+- **GIVEN** an app published with a `connector-data` widget
+- **WHEN** the composable's behaviour is verified
+- **THEN** the verification drives `/apps/buildiq/builder/{slug}` — the published standalone entry
+- **AND** a preview-only run does not satisfy the requirement

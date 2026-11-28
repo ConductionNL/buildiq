@@ -1,0 +1,661 @@
+<?php
+
+/**
+ * Page Layout Leaf Provider
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * `buildiq-page-layout`. A consuming app asks: what should this object's detail
+ * page show. Buildiq answers with at most ONE layout, and the app merges it
+ * over its own manifest config.
+ *
+ * AT MOST ONE, AND THE FALL-BACK IS THE WHOLE DESIGN
+ * --------------------------------------------------
+ * The type value's layout wins. Failing that, the schema-wide one. Failing
+ * that, nothing at all, and the app renders its manifest unchanged. That last
+ * case is what makes buildiq optional: an instance without it behaves exactly
+ * as it did before, and nobody has to install a builder to see a case.
+ *
+ * A type-specific header REPLACES the schema-wide header whole. Merging it
+ * field by field would leave a page showing four fields an administrator
+ * thought they had removed, with nothing on the page to say where they came
+ * from.
+ *
+ * A widget whose display conditions do not hold is NOT SENT. Sending it with a
+ * flag and asking the consumer to hide it would put the data on the page for
+ * anyone who opens the network tab, which is the same mistake as a hidden form
+ * field.
+ *
+ * Buildiq never writes the consuming app's object, and this leaf offers no
+ * create at all: a layout is authored in buildiq's own editor (ADR-066).
+ *
+ * @category Integration
+ * @package  OCA\Buildiq\Integration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://conduction.nl
+ *
+ * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-003, REQ-OBPL-006)
+ * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-007, REQ-OBPL-008, REQ-OBPL-009)
+ */
+
+declare(strict_types=1);
+
+namespace OCA\Buildiq\Integration;
+
+use OCA\Buildiq\Kernel\Contracts\LayoutDeltaServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\PageLayoutFrozenBaseInterface;
+use OCA\Buildiq\Kernel\Contracts\PageLayoutLayerStackInterface;
+use OCA\Buildiq\Kernel\Contracts\PageLayoutLeafProviderInterface;
+use OCA\Buildiq\Kernel\Contracts\PageLayoutPresenterInterface;
+use OCA\Buildiq\Service\PageLayoutParts;
+use OCA\Buildiq\Support\ObjectRecord;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCP\IAppConfig;
+use OCP\ICache;
+use OCP\ICacheFactory;
+use Psr\Log\LoggerInterface;
+use RuntimeException;
+
+/**
+ * Resolves and serves the detail-page layout for a host object.
+ *
+ * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Most of the count is OpenRegister's value objects and
+ *     the layout parts, which are injected; the class itself only reads and composes.
+ */
+final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageLayoutLeafProviderInterface {
+	/**
+	 * The leaf id, equal on both halves so gate-24 can pair them.
+	 *
+	 * @var string
+	 */
+	public const LEAF_ID = 'buildiq-page-layout';
+
+	/**
+	 * The schema holding layouts.
+	 *
+	 * @var string
+	 */
+	private const SCHEMA = 'pageLayout';
+
+	/**
+	 * The local cache the fold of the composing layers is kept in.
+	 *
+	 * @var string
+	 */
+	private const CACHE_PREFIX = 'buildiq-page-layout';
+
+	/**
+	 * How long a fold is kept, in seconds. The key changes with every layer
+	 * edit, so this only bounds how long an unused fold lingers.
+	 *
+	 * @var int
+	 */
+	private const CACHE_TTL = 300;
+
+	/**
+	 * The cache of folded layer stacks, or null without a cache.
+	 *
+	 * @var ICache|null
+	 */
+	private readonly ?ICache $cache;
+
+	/**
+	 * The keyed-delta merge and the base fingerprint.
+	 *
+	 * @var LayoutDeltaServiceInterface
+	 */
+	private readonly LayoutDeltaServiceInterface $deltas;
+
+	/**
+	 * Which layers apply to this caller and this object, and in which order.
+	 *
+	 * @var PageLayoutLayerStackInterface
+	 */
+	private readonly PageLayoutLayerStackInterface $layers;
+
+	/**
+	 * Which layers an override's base is frozen from.
+	 *
+	 * @var PageLayoutFrozenBaseInterface
+	 */
+	private readonly PageLayoutFrozenBaseInterface $frozenBase;
+
+	/**
+	 * The shape a resolved layout takes on its way out.
+	 *
+	 * @var PageLayoutPresenterInterface
+	 */
+	private readonly PageLayoutPresenterInterface $presenter;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param ObjectServiceInterface $objectService OpenRegister's object service.
+	 * @param IAppConfig $appConfig App config, for the register slug.
+	 * @param PageLayoutParts $parts The layer stack, frozen base, presenter and delta store of a page layout.
+	 * @param LoggerInterface $logger Logger.
+	 * @param ICacheFactory|null $cacheFactory Caches the fold of the composing layers.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly ObjectServiceInterface $objectService,
+		private readonly IAppConfig $appConfig,
+		PageLayoutParts $parts,
+		private readonly LoggerInterface $logger,
+		?ICacheFactory $cacheFactory = null,
+	) {
+		$this->deltas = $parts->deltas;
+		$this->layers = $parts->layers;
+		$this->frozenBase = $parts->frozenBase;
+		$this->presenter = $parts->presenter;
+		$this->cache = $cacheFactory?->createLocal(self::CACHE_PREFIX);
+	}//end __construct()
+
+	/**
+	 * The leaf id.
+	 *
+	 * @return string The id.
+	 */
+	#[\Override]
+	public function getId(): string {
+		return self::LEAF_ID;
+	}//end getId()
+
+	/**
+	 * The label shown on the leaf.
+	 *
+	 * @return string The label.
+	 */
+	#[\Override]
+	public function getLabel(): string {
+		return 'Page layout';
+	}//end getLabel()
+
+	/**
+	 * The MDI icon name.
+	 *
+	 * @return string The icon.
+	 */
+	#[\Override]
+	public function getIcon(): string {
+		return 'ViewDashboardOutline';
+	}//end getIcon()
+
+	/**
+	 * The group the leaf sorts under.
+	 *
+	 * @return string The group.
+	 */
+	#[\Override]
+	public function getGroup(): string {
+		return 'Design';
+	}//end getGroup()
+
+	/**
+	 * The one layout that applies to this host object, or nothing.
+	 *
+	 * @param string $register The host object's register.
+	 * @param string $schema The host object's schema.
+	 * @param string $objectId The host object's id.
+	 * @param array<string, mixed> $filters Optional `object`, the host object itself, so conditions can be evaluated without a second read.
+	 *
+	 * @return array<string, mixed> The `{items, total, nextCursor}` envelope, with at most one item.
+	 *
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-003, REQ-OBPL-006)
+	 */
+	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		// The host object comes with the call when the consumer already has it,
+		// and is read here only when it does not: this path runs on every detail
+		// page, and a second read of an object the caller just handed over is a
+		// query nobody asked for.
+		$object = ($filters['object'] ?? null);
+		if (is_array($object) === false) {
+			$object = $this->readHost(register: $register, schema: $schema, objectId: $objectId);
+		}
+
+		if ($object === null) {
+			return ['items' => [], 'total' => 0, 'nextCursor' => null, 'appliedLayers' => [], 'withheld' => []];
+		}
+
+		$published = $this->publishedLayoutsFor(register: $register, schema: $schema);
+		$stack = $this->layers->orderLayers(published: $published, object: $object);
+		$state = $this->foldCached(stack: $stack);
+
+		if ($state['composed'] === []) {
+			// Nothing answers, and the consumer renders its manifest unchanged.
+			// This is the path an instance without any layout takes, and it is
+			// the reason buildiq can be absent entirely.
+			return ['items' => [], 'total' => 0, 'nextCursor' => null, 'appliedLayers' => [], 'withheld' => $state['withheld']];
+		}
+
+		return [
+			'items' => [$this->presenter->serve(layout: $state['composed'], schemaWide: $this->layers->schemaWideOf(layers: $stack), object: $object)],
+			'total' => 1,
+			'nextCursor' => null,
+			// A handler who sees fewer tabs than a colleague has no way to learn
+			// why, and neither has the administrator who is asked about it. This
+			// is that answer. A consumer is never required to read it to render.
+			'appliedLayers' => $state['applied'],
+			'withheld' => $state['withheld'],
+		];
+	}//end list()
+
+	/**
+	 * The fold of a layer stack, from the cache when the same layers composed it before.
+	 *
+	 * The key is every composing layer's id with a hash of its content, so an
+	 * edit to any layer, or a different stack for another caller, is a
+	 * different key and is folded afresh. The host object is not part of the
+	 * fold: the presenter applies it afterwards.
+	 *
+	 * @param array<int, array<string, mixed>> $stack The ordered layers.
+	 *
+	 * @return array{composed: array<string, mixed>, applied: array<int, array<string, mixed>>, withheld: array<int, array<string, mixed>>} The fold.
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/tasks.md#task-2.6
+	 */
+	private function foldCached(array $stack): array {
+		if ($this->cache === null) {
+			return $this->composeStack(stack: $stack);
+		}
+
+		$key = self::foldKey(stack: $stack);
+		$cached = $this->cache->get($key);
+		if (is_array($cached) === true && is_array($cached['composed'] ?? null) === true
+			&& is_array($cached['applied'] ?? null) === true && is_array($cached['withheld'] ?? null) === true
+		) {
+			return $cached;
+		}
+
+		$fold = $this->composeStack(stack: $stack);
+		$this->cache->set($key, $fold, self::CACHE_TTL);
+
+		return $fold;
+	}//end foldCached()
+
+	/**
+	 * The cache key of a layer stack: its layers' ids and content hashes, in order.
+	 *
+	 * @param array<int, array<string, mixed>> $stack The ordered layers.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/tasks.md#task-2.6
+	 */
+	private static function foldKey(array $stack): string {
+		$parts = [];
+		foreach ($stack as $layer) {
+			$parts[] = (string)($layer['id'] ?? '') . ':' . hash('sha256', (string)json_encode($layer));
+		}
+
+		return 'fold-' . hash('sha256', implode('|', $parts));
+	}//end foldKey()
+
+	/**
+	 * Compose the ordered layers into the layout this caller is served.
+	 *
+	 * The base an override is cut against is the stack of WHOLE layouts
+	 * beneath it, frozen before the first patch lands. Checking each patch
+	 * against the running composition instead would make an override's base
+	 * depend on which OTHER overrides the caller happens to match, so the
+	 * same override would read as drifted for one colleague and current for
+	 * the next, and stacking two overrides could never work at all.
+	 *
+	 * @param array<int, array<string, mixed>> $stack The layers, lowest first.
+	 *
+	 * @return array<string, array<mixed>> The composition: composed, applied, withheld, overrideBase.
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002)
+	 */
+	private function composeStack(array $stack): array {
+		$state = ['composed' => [], 'applied' => [], 'withheld' => [], 'overrideBase' => []];
+		foreach ($stack as $layer) {
+			$state = $this->composeLayer(state: $state, layer: $layer);
+		}
+
+		return $state;
+	}//end composeStack()
+
+	/**
+	 * Add one layer to the composition: a whole layout, a current patch, or a drifted patch that is withheld.
+	 *
+	 * @param array<string, array<mixed>> $state The composition so far: composed, applied, withheld, overrideBase.
+	 * @param array<string, mixed>        $layer The layer.
+	 *
+	 * @return array<string, array<mixed>> The composition: composed, applied, withheld, overrideBase.
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002)
+	 */
+	private function composeLayer(array $state, array $layer): array {
+		$delta = ($layer['layoutDelta'] ?? null);
+
+		if (is_array($delta) === false || $delta === []) {
+			// A whole layout, not a patch: this is the pre-override shape and
+			// it keeps working exactly as it did.
+			return $this->composeWholeLayer(state: $state, layer: $layer);
+		}
+
+		if ($this->deltas->isCurrent($state['overrideBase'], (string)($layer['baseFingerprint'] ?? '')) === false) {
+			// Drift. The override is neither applied nor dropped: the base is
+			// served, the answer says so, and the stored patch survives so a
+			// maintainer can re-cut it.
+			$state['withheld'][] = [
+				'id' => (string)($layer['id'] ?? ''),
+				'name' => (string)($layer['name'] ?? ''),
+				'audience' => $this->layers->audienceOf(layout: $layer),
+				'reason' => 'drift',
+				'orphanedPaths' => $this->deltas->orphanedPaths($state['overrideBase'], $delta),
+			];
+
+			$this->flagForReview(layer: $layer);
+			return $state;
+		}
+
+		$state['composed'] = $this->deltas->merge($state['composed'], $delta);
+		$state['applied'][] = $this->layers->describeLayer(layer: $layer);
+		return $state;
+	}//end composeLayer()
+
+	/**
+	 * Compose a whole layout, and freeze it as the override base when it is for everyone.
+	 *
+	 * @param array<string, array<mixed>> $state The composition so far: composed, applied, withheld, overrideBase.
+	 * @param array<string, mixed>        $layer The whole layout.
+	 *
+	 * @return array<string, array<mixed>> The composition: composed, applied, withheld, overrideBase.
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002)
+	 */
+	private function composeWholeLayer(array $state, array $layer): array {
+		$state['composed'] = $this->composeWhole(composed: $state['composed'], layer: $layer);
+
+		// Only a layout for EVERYONE redefines the base an override is
+		// pinned to. A whole layout bound to one group still composes
+		// into what that group is served, but letting it move the frozen
+		// base would make the same override read as current for one
+		// colleague and drifted for the next, which is the caller
+		// dependence this design exists to remove.
+		if ((string)($this->layers->audienceOf(layout: $layer)['kind'] ?? 'everyone') === 'everyone') {
+			$state['overrideBase'] = $state['composed'];
+		}
+
+		$state['applied'][] = $this->layers->describeLayer(layer: $layer);
+		return $state;
+	}//end composeWholeLayer()
+
+	/**
+	 * The base an override is cut against, composed the way resolution composes
+	 * it.
+	 *
+	 * The save path has to stamp the fingerprint of exactly the stack the
+	 * resolver will later check against, and the honest way to guarantee that is
+	 * to compose it here, in the class that resolves. A second composition in
+	 * the authoring service would be a second notion of the base, and the first
+	 * override to disagree with it would be withheld from every caller for a
+	 * reason nobody could see.
+	 *
+	 * Whole layouts only, and only those for everyone: those are the layers that
+	 * are frozen before the first patch lands.
+	 *
+	 * @param array<string, mixed> $override The override about to be saved, for its register, schema, type scope and baseRef.
+	 *
+	 * @return array<string, mixed> The composed base, empty when nothing published applies.
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002)
+	 */
+	#[\Override]
+	public function baseForOverride(array $override): array {
+		$published = $this->publishedLayoutsFor(
+			register: (string)($override['register'] ?? ''),
+			schema: (string)($override['schema'] ?? '')
+		);
+
+		// Which layers are frozen, and in which order, is the collaborator's
+		// question: it is the same ranking resolution uses, asked of the
+		// published set rather than of this caller.
+		$layers = $this->frozenBase->layersFor(published: $published, override: $override);
+
+		$composed = [];
+		foreach ($layers as $layer) {
+			$composed = $this->composeWhole(composed: $composed, layer: $layer);
+		}
+
+		return $composed;
+	}//end baseForOverride()
+
+	/**
+	 * One whole layout composed onto what is already there.
+	 *
+	 * The first whole layout IS the composition; a later one merges its
+	 * patchable parts over what is already there, so a type-specific header
+	 * replaces the schema-wide one whole rather than field by field.
+	 *
+	 * @param array<string, mixed> $composed What is composed so far.
+	 * @param array<string, mixed> $layer The whole layout to compose on.
+	 *
+	 * @return array<string, mixed> The new composition.
+	 *
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-007)
+	 */
+	private function composeWhole(array $composed, array $layer): array {
+		if ($composed === []) {
+			return $layer;
+		}
+
+		return $this->deltas->merge($composed, $this->layers->patchableOf(layout: $layer));
+	}//end composeWhole()
+
+	/**
+	 * Move a drifted override to `needs-review`, which is what fires the
+	 * declarative notification to its maintainer.
+	 *
+	 * Idempotent: an override already in review is left alone, so a busy page
+	 * does not notify its maintainer once per request. A write that fails is
+	 * logged and swallowed, because a screen must not fail to render because an
+	 * override drifted (REQ-OBSO-003).
+	 *
+	 * @param array<string, mixed> $layer The drifted override.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-003)
+	 */
+	private function flagForReview(array $layer): void {
+		if ((string)($layer['status'] ?? '') !== 'published') {
+			return;
+		}
+
+		$layer['status'] = 'needs-review';
+
+		try {
+			$this->objectService->saveObject(
+				object: $layer,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->registerSlug(), schema: self::SCHEMA))
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'Buildiq: a drifted screen override could not be flagged for review',
+				['layout' => (string)($layer['id'] ?? ''), 'exception' => $e->getMessage()]
+			);
+		}
+	}//end flagForReview()
+
+	/**
+	 * One layout by id, scoped to the host object it applies to.
+	 *
+	 * @param string $register The host object's register.
+	 * @param string $schema The host object's schema.
+	 * @param string $objectId The host object's id.
+	 * @param string $entityId The layout id.
+	 *
+	 * @return array<string, mixed> The served layout.
+	 *
+	 * @throws RuntimeException When that layout does not apply here.
+	 */
+	public function get(string $register, string $schema, string $objectId, string $entityId): array {
+		$listed = $this->list(register: $register, schema: $schema, objectId: $objectId);
+		foreach ($listed['items'] as $layout) {
+			if ((string)$layout['id'] === $entityId) {
+				return $layout;
+			}
+		}
+
+		throw new RuntimeException('404 No published layout with that id applies to this object.');
+	}//end get()
+
+	/**
+	 * A layout is authored in buildiq's editor, never appended from a consumer.
+	 *
+	 * @param string $register The host object's register.
+	 * @param string $schema The host object's schema.
+	 * @param string $objectId The host object's id.
+	 * @param array<string, mixed> $payload Ignored.
+	 *
+	 * @return array<string, mixed> Never returns.
+	 *
+	 * @throws RuntimeException Always.
+	 *
+	 * @spec openspec/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The parameters are mandated by the
+	 *   IntegrationProvider interface; this method refuses the call, and a provider that
+	 *   dropped them could not be registered as a leaf at all.
+	 */
+	public function create(string $register, string $schema, string $objectId, array $payload): array {
+		throw new RuntimeException('A page layout is authored in buildiq; this leaf reads and never appends.');
+	}//end create()
+
+	/**
+	 * The same for an edit.
+	 *
+	 * @param string $register The host object's register.
+	 * @param string $schema The host object's schema.
+	 * @param string $objectId The host object's id.
+	 * @param string $entityId The layout id.
+	 * @param array<string, mixed> $payload Ignored.
+	 *
+	 * @return array<string, mixed> Never returns.
+	 *
+	 * @throws RuntimeException Always.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The parameters are mandated by the
+	 *   IntegrationProvider interface; this method refuses the call, and a provider that
+	 *   dropped them could not be registered as a leaf at all.
+	 */
+	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
+		throw new RuntimeException('A page layout is edited in buildiq, where the rules that validate it live.');
+	}//end update()
+
+	/**
+	 * The same for a delete.
+	 *
+	 * @param string $register The host object's register.
+	 * @param string $schema The host object's schema.
+	 * @param string $objectId The host object's id.
+	 * @param string $entityId The layout id.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException Always.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The parameters are mandated by the
+	 *   IntegrationProvider interface; this method refuses the call, and a provider that
+	 *   dropped them could not be registered as a leaf at all.
+	 */
+	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
+		throw new RuntimeException('A page layout is retired in buildiq, not deleted from a consuming app.');
+	}//end delete()
+
+	/**
+	 * Health of the leaf.
+	 *
+	 * @return array<string, mixed> The health report.
+	 */
+	#[\Override]
+	public function health(): array {
+		return ['status' => 'ok', 'leaf' => self::LEAF_ID];
+	}//end health()
+
+	/**
+	 * Read the host object, so its type value and its condition fields can be
+	 * looked at.
+	 *
+	 * @param string $register The register.
+	 * @param string $schema The schema.
+	 * @param string $objectId The object id.
+	 *
+	 * @return array<string, mixed>|null The object, or null.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function readHost(string $register, string $schema, string $objectId): ?array {
+		try {
+			$host = $this->objectService->find(
+				id: $objectId,
+				options: new ObjectFindOptions(register: $register, schema: $schema)
+			);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		if ($host === null) {
+			return null;
+		}
+
+		return ObjectRecord::toArray(object: $host);
+	}//end readHost()
+
+	/**
+	 * Every published layout for this register and schema.
+	 *
+	 * @param string $register The register.
+	 * @param string $schema The schema.
+	 *
+	 * @return array<int, array<string, mixed>> The layouts.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function publishedLayoutsFor(string $register, string $schema): array {
+		// No `register` filter: findAll() reads `filters.register` as the register
+		// to query, not as a property, so it would look for these rows in the
+		// host's register. The loop below matches the property instead.
+		$rows = $this->objectService
+			->setRegister($this->registerSlug())
+			->setSchema(self::SCHEMA)
+			->findAll(['limit' => 500]);
+
+		$mine = [];
+		foreach ($rows as $row) {
+			$row = ObjectRecord::toArray(object: $row);
+			if ((string)($row['status'] ?? '') !== 'published'
+				|| (string)($row['register'] ?? '') !== $register
+				|| (string)($row['schema'] ?? '') !== $schema
+			) {
+				continue;
+			}
+
+			$mine[] = $row;
+		}
+
+		return $mine;
+	}//end publishedLayoutsFor()
+
+	/**
+	 * The register slug holding buildiq's own objects.
+	 *
+	 * @return string The slug.
+	 */
+	private function registerSlug(): string {
+		return $this->appConfig->getValueString('buildiq', 'register', 'buildiq');
+	}//end registerSlug()
+}//end class

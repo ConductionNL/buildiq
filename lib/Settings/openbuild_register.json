@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenBuild Register",
     "description": "Citizen-developer app builder for Nextcloud: compose apps from registers, connectors, workflows, and documents without code.",
-    "version": "0.10.0"
+    "version": "0.15.0"
   },
   "x-openregister": {
     "type": "application",
@@ -20,16 +20,20 @@
         "description": "OpenBuild register namespace: holds the Application + ApplicationVersion + BuiltAppRoute control schemas, the ApplicationTemplate catalogue, the automation/rule-engine schemas and the seed hello-message schema for the canonical hello-world app.",
         "version": "0.9.0",
         "schemas": [
+          "app-health-sample",
+          "app-record-test",
+          "app-test-run",
           "buildAgent",
+          "agent-plan",
           "agent-run",
           "built-app",
           "application-template",
           "applicationVersion",
           "automation",
+          "automation-run",
           "built-app-route",
           "component-block",
           "condition-action-rule",
-          "decision-table",
           "export-job",
           "hello-message",
           "rule-execution-log",
@@ -40,10 +44,31 @@
     },
     "schemas": {
       "Application": {
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Find the virtual apps built with Buildiq in this organisation. Filter by status (draft, published, archived), by appType or by slug. Returns app metadata only: name, description, status and which version is in production.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": [
+                "status",
+                "appType",
+                "slug"
+              ]
+            },
+            "get": {
+              "description": "Read one Buildiq virtual app by id: its name, description, type, status, production version and linked GitHub repository.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-schema-org": "schema:SoftwareApplication",
+        "x-openregister-demo-data": "buildiq's own register of the apps it has built. A generated app has no version with pages behind it, so it lists on the dashboard and never opens.",
         "slug": "built-app",
         "icon": "AppsBox",
-        "version": "0.6.0",
+        "version": "0.7.0",
         "title": "Application",
         "description": "An app built or customized with OpenBuild (unify-apps-with-app-type). The `appType` discriminator distinguishes a `virtual` app (fully delivered by OpenBuild) from a `hybrid` app (a delta layered over an installed Nextcloud fleet app, linked via `baseRef`). Per ADR-002 the Application carries identity (slug, name, description, appType, baseRef, permissions) plus a productionVersion relation to the ApplicationVersion currently exposed at the canonical URL. Manifest, semver, and lifecycle live on ApplicationVersion. For a hybrid app the identity metadata (slug/name) mirrors the underlying NC app and is read-only after creation (enforced by HybridMetadataLockListener).",
         "authorization": {
@@ -151,10 +176,7 @@
             },
             "description": "Relation → ApplicationVersion currently exposed at the canonical /apps/openbuild/{slug} URL. READ-ONLY on a hybrid app (its production version is the admin-managed shared delta): enforced server-side + reflected by the data widget. Set explicitly by the admin (creation wizard, detail-page version switcher), not derived from chain terminality. The referenced ApplicationVersion's `application` relation MUST point back at this Application. Enforced server-side by ApplicationVersionService::guardProductionVersionOwnership() (ADR-031 §Exceptions(1) cross-row guard).",
             "x-relation-filter": { "application": "@objectId" },
-            "x-openregister-relation": {
-              "target": "openbuild/applicationVersion",
-              "type": "many-to-one"
-            }
+            "$ref": "ApplicationVersion"
           },
           "icon": {
             "title": "Light Mode Icon",
@@ -193,6 +215,29 @@
             "type": "boolean",
             "default": false,
             "description": "Per-app permission flag (layered-versioned-app-deltas). When true, users of this app MAY create/edit their own user-scoped manifest delta layered over the admin delta (base ⊕ admin ⊕ user). Default false (default-secure): an Application with no allowUserOverrides reads as false. Read directly by the override resolver, ApplicationVersionOwnerGuard, and the dashboard 'create override' affordance; purely declarative (no Service)."
+          },
+          "embed": {
+            "title": "Embedding",
+            "type": "object",
+            "description": "Whether this app may be shown inside another site its staff use, and which sites (apps-embed-in-other-sites D1). Off by default. An origin is an https scheme and host, optionally a port, without a path or a wildcard; anything else is refused on save. Embedding never makes the app public: the framed app is the same app, with the same access.",
+            "properties": {
+              "enabled": {
+                "title": "Embedding on",
+                "type": "boolean",
+                "default": false,
+                "description": "When true, the runtime answers `?embed=1` without the Nextcloud header and lets the listed origins frame it."
+              },
+              "origins": {
+                "title": "Allowed sites",
+                "type": "array",
+                "default": [],
+                "description": "The sites allowed to frame the app, each an https origin such as `https://intranet.example.nl`.",
+                "items": {
+                  "type": "string",
+                  "pattern": "^https://[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*(?::[0-9]{1,5})?$"
+                }
+              }
+            }
           },
           "permissions": {
             "title": "Access Permissions",
@@ -254,20 +299,39 @@
             "description": "Optional branch that push/pull operations target, resolved from the linked repo's default branch at link time and admin-overridable (github-app-repo-format). Omittable, and purely declarative."
           }
         },
-        "x-openregister-validation": {
-          "rules": [
-            {
-              "id": "hybrid-requires-baseRef",
-              "description": "A hybrid app MUST carry a baseRef.id naming the installed Nextcloud app it customizes (unify-apps-with-app-type). Same-row rule; the cross-row metadata-lock (slug/name immutable on hybrid) is enforced imperatively by HybridMetadataLockListener (ADR-031 §Exceptions(1) cross-row).",
-              "when": "appType == 'hybrid'",
-              "assert": "baseRef.id != null",
-              "message": "A hybrid app requires baseRef.id (the installed Nextcloud app it customizes)."
-            }
-          ]
+        "x-openregister-validations": {
+          "hybrid-requires-baseRef": {
+            "description": "A hybrid app MUST carry a baseRef.id naming the installed Nextcloud app it customizes (unify-apps-with-app-type). Same-row rule; the cross-row metadata-lock (slug/name immutable on hybrid) is enforced imperatively by HybridMetadataLockListener (ADR-031 §Exceptions(1) cross-row). A blank or whitespace-only id counts as missing. The condition names the violation.",
+            "condition": {"and": [{"==": [{"var": "appType"}, "hybrid"]}, {"==": [{"trim": {"var": "baseRef.id"}}, ""]}]},
+            "severity": "refuse",
+            "properties": ["appType", "baseRef"],
+            "message": "A hybrid app requires baseRef.id (the installed Nextcloud app it customizes)."
+          }
         }
       },
       "ApplicationTemplate": {
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Find the starter templates a new Buildiq app can be created from. Filter by category, useCase or slug.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": [
+                "category",
+                "useCase",
+                "slug"
+              ]
+            },
+            "get": {
+              "description": "Read one Buildiq app template by id: its title, description, use case, category and the manifest it starts from.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-schema-org": "schema:CreativeWork",
+        "x-openregister-demo-data": "The store's starter packs. A generated template stands beside the real built-in ones and clones into an app with no pages.",
         "slug": "application-template",
         "icon": "ViewGridOutline",
         "version": "0.1.0",
@@ -349,6 +413,13 @@
             "description": "Full app-manifest JSON blob (ADR-024) to be deep-copied on clone.",
             "additionalProperties": true
           },
+          "deviceFeatures": {
+            "title": "Device features",
+            "type": "array",
+            "items": { "type": "string", "enum": ["camera", "geolocation", "microphone"] },
+            "default": [],
+            "description": "The browser devices this version's manifest uses: microphone for an audio form field, geolocation for a location field or a map showing the user. Written by buildiq on save; the page serving the app allows exactly these (REQ-BQSA-004)."
+          },
           "companionSchemas": {
             "title": "Companion Schemas",
             "type": "array",
@@ -379,6 +450,7 @@
         }
       },
       "BuiltAppRoute": {
+        "x-openregister-demo-data": "An index the Application lifecycle upserts on publish and deletes on archive. A generated row routes a slug to an app nobody created.",
         "slug": "built-app-route",
         "icon": "RouterNetwork",
         "version": "0.1.0",
@@ -460,7 +532,28 @@
         }
       },
       "ApplicationVersion": {
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Find the versions of Buildiq apps. Filter by application (the app uuid), status (for example draft or production) or semver, to see what is live and what is still a draft.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": [
+                "application",
+                "status",
+                "semver"
+              ]
+            },
+            "get": {
+              "description": "Read one version of a Buildiq app by id, including its manifest: the pages, widgets and menu that version renders.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-schema-org": "schema:SoftwareApplication",
+        "x-openregister-demo-data": "Written by publish and promote. A generated version points at no application and carries a manifest with no pages, so the app it belongs to renders empty.",
         "x-openregister-notifications": {
           "version-published": {
             "trigger": {
@@ -505,7 +598,7 @@
         },
         "slug": "applicationVersion",
         "icon": "SourceBranch",
-        "version": "0.4.0",
+        "version": "0.4.3",
         "title": "Application Version",
         "description": "A deployable runtime for an Application (ADR-002). A VIRTUAL app's version carries a full `manifest` blob and owns its own per-version OpenRegister register so production and test data are physically isolated. A HYBRID app's version (unify-apps-with-app-type) instead carries a delta-only customization: `manifest` is an empty object `{}`, `baseRef.kind` is `fleet-app`, and `manifestDelta` holds the keyed structural diff served raw via GET /api/app-overrides/{appId} and merged client-side over the installed fleet app's bundled manifest (OpenBuild holds no fleet base). The admin-defined linear promotion chain reads via the optional `promotesTo` relation. Lifecycle (draft → published → archived) is per-version; the `draft → published` transition upserts the BuiltAppRoute slug index.",
         "authorization": {
@@ -546,10 +639,17 @@
             "maxLength": 48,
             "description": "URL-safe kebab-case slug for this version (e.g. `production`, `staging`, `development`)."
           },
+          "deviceFeatures": {
+            "title": "Device features",
+            "type": "array",
+            "items": {"type": "string", "enum": ["camera", "geolocation", "microphone"]},
+            "default": [],
+            "description": "Browser features the built app's pages use, derived from the manifest on every save (pages-qr-and-barcodes REQ-BQQR-004): `camera` when an index page scans or a form has a scan field, `microphone` for an audio form field, `geolocation` for a location field or a map showing the user. The pages allow these for the page itself only; never set by hand."
+          },
           "manifest": {
             "title": "App Manifest",
             "type": "object",
-            "description": "JSON manifest blob conforming to @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json (v1.4.0+). Per ADR-024, this is consumed by useAppManifest + CnAppRoot at runtime. Per ADR-002 the manifest now lives on ApplicationVersion (was on Application). For a HYBRID app's version this is an empty object `{}`: the customization lives in `manifestDelta` and is merged client-side over the installed fleet app's bundled manifest (unify-apps-with-app-type).",
+            "description": "JSON manifest blob conforming to @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json (v1.4.0+). Per ADR-024, this is consumed by useAppManifest + CnAppRoot at runtime. Per ADR-002 the manifest now lives on ApplicationVersion (was on Application). For a HYBRID app's version this is an empty object `{}`: the customization lives in `manifestDelta` and is merged client-side over the installed fleet app's bundled manifest (unify-apps-with-app-type). Backwards compatibility (app-delta-override): a version with this blob and no `baseRef` is a legacy or standalone app, and the blob IS its manifest, served unchanged.",
             "additionalProperties": true
           },
           "manifestDelta": {
@@ -566,17 +666,23 @@
               "kind": {
                 "title": "Base Kind",
                 "type": "string",
-                "description": "What kind of base the delta extends: `fleet-app` for a hybrid app's version."
+                "description": "What kind of base the delta extends: `template` (an ApplicationTemplate's manifest), `buildiq-app` (another Buildiq app's production manifest) or `fleet-app` (an installed Nextcloud app's bundled manifest; a hybrid app's version), or `application-version` (the admin version a user-layer delta sits on, layered-app-deltas).",
+                "enum": [
+                  "template",
+                  "buildiq-app",
+                  "fleet-app",
+                  "application-version"
+                ]
               },
               "id": {
                 "title": "Base Identifier",
                 "type": "string",
-                "description": "Identifier of the base: the installed Nextcloud app id for a hybrid app's version."
+                "description": "Identifier of the base: the template slug, the Buildiq app slug, the installed Nextcloud app id for a hybrid app's version, or the admin version's uuid for a user-layer delta."
               },
               "manifestVersion": {
                 "title": "Base Manifest Version",
                 "type": "string",
-                "description": "Optional version of the bundled base manifest the delta was authored against."
+                "description": "Optional pin: the version of the base manifest the delta was authored against. Absent follows the base's current manifest."
               }
             },
             "additionalProperties": false
@@ -610,10 +716,7 @@
             "type": "string",
             "format": "uuid",
             "description": "Relation → parent Application (required). Real first-class OR relation, not a UUID string (ADR-002 §Decision).",
-            "x-openregister-relation": {
-              "target": "openbuild/application",
-              "type": "many-to-one"
-            }
+            "$ref": "Application"
           },
           "promotesTo": {
             "title": "Promotes To",
@@ -621,10 +724,7 @@
             "format": "uuid",
             "description": "Optional relation → next ApplicationVersion in the linear promotion chain. Terminal versions have `promotesTo: null`. Cycle detection is enforced server-side by ApplicationVersionService::guardNoCycle() (ADR-031 §Exceptions(1) cross-row).",
             "x-relation-filter": { "application": "@object.application" },
-            "x-openregister-relation": {
-              "target": "openbuild/applicationVersion",
-              "type": "many-to-one"
-            }
+            "$ref": "ApplicationVersion"
           },
           "scope": {
             "title": "Delta Scope",
@@ -652,27 +752,26 @@
             "description": "Optional GitHub provenance (github-app-repo-format). The branch, tag or ref a pulled version was imported from, such as `refs/heads/main` or a tag name. Omittable, and absent on versions with no GitHub provenance. Purely declarative, with no lifecycle or semver effect."
           }
         },
-        "x-openregister-validation": {
-          "rules": [
-            {
-              "id": "promotesTo-no-self-loop",
-              "description": "Same-row self-loop guard: an ApplicationVersion cannot promote to itself. Broader cross-row cycle detection lives in ApplicationVersionService::guardNoCycle().",
-              "when": "promotesTo != null",
-              "assert": "promotesTo != self.uuid",
-              "message": "promotesTo cannot equal the version's own UUID (self-loop)."
-            },
-            {
-              "id": "user-scope-requires-owner",
-              "description": "A user-scoped delta MUST name its owner UID (layered-versioned-app-deltas). Same-row rule; the cross-row owner-vs-caller authorization is enforced imperatively by ApplicationVersionOwnerGuard + PermissionResolver (ADR-031 §Exceptions(1) cross-row).",
-              "when": "scope == 'user'",
-              "assert": "owner != null",
-              "message": "A user-scoped ApplicationVersion requires an owner UID."
-            }
-          ]
+        "x-openregister-validations": {
+          "promotesTo-no-self-loop": {
+            "description": "Same-row self-loop guard: an ApplicationVersion cannot promote to itself. Broader cross-row cycle detection lives in ApplicationVersionService::guardNoCycle(). The object's `id` is its UUID; the check ignores case and also refuses a promotesTo that wraps the UUID, such as its `urn:uuid:` or braced form. The condition names the violation.",
+            "condition": {"and": [{"!=": [{"trim": {"var": "id"}}, ""]}, {"in": [{"lower": {"var": "id"}}, {"lower": {"var": "promotesTo"}}]}]},
+            "severity": "refuse",
+            "properties": ["promotesTo"],
+            "message": "promotesTo cannot equal the version's own UUID (self-loop)."
+          },
+          "user-scope-requires-owner": {
+            "description": "A user-scoped delta MUST name its owner UID (layered-versioned-app-deltas). Same-row rule; the cross-row owner-vs-caller authorization is enforced imperatively by ApplicationVersionOwnerGuard + PermissionResolver (ADR-031 §Exceptions(1) cross-row). A blank or whitespace-only owner counts as missing. The condition names the violation.",
+            "condition": {"and": [{"==": [{"var": "scope"}, "user"]}, {"==": [{"trim": {"var": "owner"}}, ""]}]},
+            "severity": "refuse",
+            "properties": ["scope", "owner"],
+            "message": "A user-scoped ApplicationVersion requires an owner UID."
+          }
         },
         "x-openregister-lifecycle": {
           "field": "status",
           "initial": "draft",
+          "createStates": ["published"],
           "states": {
             "draft": {
               "description": "Editable working version, not exposed at the canonical `/apps/openbuild/{slug}` URL unless this version is the parent Application's productionVersion."
@@ -725,7 +824,28 @@
         }
       },
       "exportJob": {
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Find export jobs of Buildiq apps (zip download or push to GitHub). Filter by status, target or applicationUuid, to see whether an export finished and, if it failed, why (errorMessage).",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": [
+                "status",
+                "target",
+                "applicationUuid"
+              ]
+            },
+            "get": {
+              "description": "Read one export job by id: its target, status, error message, log and the download or GitHub URL it produced. githubCredentialId is a reference to a broker credential, never a token.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-schema-org": "schema:Action",
+        "x-openregister-demo-data": "Written by the export pipeline. A generated row reads as a finished export nobody ran.",
         "x-openregister-notifications": {
           "export-succeeded": {
             "trigger": {
@@ -770,7 +890,7 @@
         },
         "slug": "export-job",
         "icon": "PackageVariant",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "title": "Export Job",
         "description": "Asynchronous pipeline that turns a published Application into a standalone Nextcloud app: delivered as a ZIP download or pushed to GitHub. Lifecycle is declarative per ADR-031; the file-generation surface is an ADR-031 §Exceptions(3) imperative path.",
         "authorization": {
@@ -813,9 +933,10 @@
             "type": "string",
             "enum": [
               "zip",
+              "server",
               "github"
             ],
-            "description": "Delivery target: ZIP download or push to a new GitHub repository."
+            "description": "Delivery target: ZIP download, a ZIP to run on its own server (with the server bundle), or push to a new GitHub repository."
           },
           "status": {
             "title": "Job Status",

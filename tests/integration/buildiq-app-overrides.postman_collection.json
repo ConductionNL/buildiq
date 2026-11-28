@@ -1,0 +1,453 @@
+{
+	"info": {
+		"_postman_id": "buildiq-app-overrides-collection",
+		"name": "Buildiq — App overrides and capabilities (inline-edit persistence)",
+		"description": "Newman suite for openbuild-inline-edit-persistence tasks 6.1 and 6.3 (spec app-override-persistence): the capabilities document carries buildiq.enabled and a boolean buildiq.canEdit; the app-overrides endpoints store, return and clear a fleet app's manifest delta, record updatedBy, refuse a malformed or app-blanking delta with 422 and an anonymous write with 401.\n\nSelf-contained: setup picks a fresh fleet app id, so no other test's state is touched; the DELETE at the end removes the hybrid app the first PUT created.\n\nThe anonymous probe uses {{noAuthBase}} (the same server by its other name) so Newman's session cookie for {{base_url}} is not sent; see buildiq-application-versions.postman_collection.json for why.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{admin_user}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{admin_password}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "noAuthBase",
+			"value": "http://127.0.0.1:8080",
+			"type": "string"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "override_app_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "app-overrides",
+			"item": [
+				{
+					"name": "0. Setup: a fresh fleet app id",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/status.php"
+					},
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const id = 'newman-override-' + Math.random().toString(36).slice(2, 10);",
+									"pm.collectionVariables.set('override_app_id', id);"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Nextcloud is up', function () { pm.response.to.have.status(200); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "1. Capabilities carry buildiq.enabled and a boolean canEdit (6.3)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/ocs/v2.php/cloud/capabilities?format=json"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('capabilities answer 200', function () { pm.response.to.have.status(200); });",
+									"const caps = (pm.response.json().ocs || {}).data || {};",
+									"const buildiq = (caps.capabilities || {}).buildiq;",
+									"pm.test('buildiq.enabled is true', function () { pm.expect(buildiq).to.be.an('object'); pm.expect(buildiq.enabled).to.equal(true); });",
+									"pm.test('buildiq.canEdit is a boolean', function () { pm.expect(buildiq.canEdit).to.be.a('boolean'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "2. GET without an override answers an empty delta",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/app-overrides/{{override_app_id}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', function () { pm.response.to.have.status(200); });",
+									"pm.test('empty delta object', function () { const body = pm.response.json(); pm.expect(body).to.be.an('object'); pm.expect(Object.keys(body)).to.have.length(0); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "3. PUT a valid delta records updatedBy",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/app-overrides/{{override_app_id}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"title\": \"Newman override\"}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', function () { pm.response.to.have.status(200); });",
+									"const body = pm.response.json();",
+									"pm.test('echoes the app id', function () { pm.expect(body.appId).to.equal(pm.collectionVariables.get('override_app_id')); });",
+									"pm.test('updatedBy is the caller', function () { pm.expect(body.updatedBy).to.equal(pm.collectionVariables.get('admin_user')); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "4. GET returns the stored delta",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/app-overrides/{{override_app_id}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', function () { pm.response.to.have.status(200); });",
+									"pm.test('the stored title comes back', function () { pm.expect(pm.response.json().title).to.equal('Newman override'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "5. GET ?scope=admin returns the raw admin delta",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/app-overrides/{{override_app_id}}?scope=admin"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', function () { pm.response.to.have.status(200); });",
+									"pm.test('the stored title comes back', function () { pm.expect(pm.response.json().title).to.equal('Newman override'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "6. PUT a malformed delta is 422",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/app-overrides/{{override_app_id}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"$op\": \"bogus\"}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('422', function () { pm.response.to.have.status(422); });",
+									"pm.test('invalid_delta', function () { pm.expect(pm.response.json().error).to.equal('invalid_delta'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "7. PUT an app-blanking delta is 422",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/app-overrides/{{override_app_id}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"pages\": []}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('422', function () { pm.response.to.have.status(422); });",
+									"pm.test('app_blanking_delta', function () { pm.expect(pm.response.json().error).to.equal('app_blanking_delta'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "8. Anonymous PUT is rejected",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{noAuthBase}}/index.php/apps/buildiq/api/app-overrides/{{override_app_id}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"title\": \"anonymous\"}"
+						},
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('rejected with 401', function () { pm.response.to.have.status(401); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "9. The rejected writes left the stored delta as it was",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/app-overrides/{{override_app_id}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', function () { pm.response.to.have.status(200); });",
+									"pm.test('still the valid title', function () { pm.expect(pm.response.json().title).to.equal('Newman override'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "10. DELETE clears the override",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/app-overrides/{{override_app_id}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', function () { pm.response.to.have.status(200); });",
+									"pm.test('cleared', function () { pm.expect(pm.response.json().cleared).to.equal(true); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "11. GET after DELETE answers an empty delta",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/app-overrides/{{override_app_id}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', function () { pm.response.to.have.status(200); });",
+									"pm.test('empty delta object', function () { pm.expect(Object.keys(pm.response.json())).to.have.length(0); });"
+								]
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

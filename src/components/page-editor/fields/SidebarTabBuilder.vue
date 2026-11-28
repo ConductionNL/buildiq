@@ -75,7 +75,7 @@ export default {
 		/**
 		 * Observed behaviour of `localTabs` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		localTabs() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
@@ -91,7 +91,7 @@ export default {
 		 * @param {string} value - the input's new text. An empty value DELETES the
 		 *   key — unlike ActionBuilder this also applies to `id`, so clearing every
 		 *   input leaves the tab as an empty object.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
 			const next = this.localTabs.slice()
@@ -108,7 +108,7 @@ export default {
 		/**
 		 * Observed behaviour of `addTab` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		addTab() {
 			const next = this.localTabs.slice()
@@ -120,7 +120,7 @@ export default {
 		 * Observed behaviour of `removeTab` (retrofit annotation).
 		 *
 		 * @param {number} index - position of the tab to drop from the `tabs` array.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeTab(index) {
 			const next = this.localTabs.slice()
@@ -131,7 +131,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../assets/editor-controls.scss' as c;
+
 .sidebar-tab-builder {
 	display: flex;
 	flex-direction: column;
@@ -146,11 +148,7 @@ export default {
 
 .sidebar-tab-builder__field {
 	flex: 1 1 auto;
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .sidebar-tab-builder__field--narrow {
@@ -158,22 +156,12 @@ export default {
 }
 
 .sidebar-tab-builder__remove {
-	background: transparent;
-	border: 1px solid var(--color-border);
-	color: var(--color-error, var(--color-main-text));
-	padding: 4px 8px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.danger-button;
 }
 
 .sidebar-tab-builder__add {
 	align-self: flex-start;
-	background: var(--color-primary-element-light);
-	border: 1px solid var(--color-border);
-	color: var(--color-main-text);
-	padding: 4px 10px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.add-button;
 }
 
 .sidebar-tab-builder__hint {

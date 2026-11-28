@@ -3,6 +3,9 @@
 /**
  * Buildiq MCP Tool Provider
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Per-app implementation of OCA\OpenRegister\Mcp\IMcpToolProvider. Exposes the
  * full Buildiq authoring surface to an LLM via MCP: list/read apps, create
  * new apps, promote versions, and mutate a draft version's manifest (pages,
@@ -22,24 +25,25 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-42
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
- * @spec openspec/changes/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-1
- * @spec openspec/changes/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-3
- * @spec openspec/changes/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-4
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- * SPDX-License-Identifier: EUPL-1.2
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-42
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
+ * @spec openspec/changes/archive/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-1
+ * @spec openspec/changes/archive/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-2
+ * @spec openspec/changes/archive/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-3
+ * @spec openspec/changes/archive/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-4
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp;
 
-use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Kernel\Contracts\BuildiqToolProviderInterface;
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
+use OCA\Buildiq\Mcp\Handler\AddWidgetHandler;
+use OCA\Buildiq\Service\AgentPlanService;
+use OCA\Buildiq\Service\AgentPlanSteps;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
@@ -47,6 +51,7 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Buildiq MCP Tool Provider — thin dispatcher to per-tool handler classes.
@@ -68,7 +73,7 @@ use Psr\Log\LoggerInterface;
  * Authoring tools default to the `development` version so a misfired tool
  * call cannot mutate production. To promote the change use promoteVersion.
  */
-class BuildiqToolProvider implements IMcpToolProvider {
+class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterface {
 
 	/**
 	 * Tool catalogue.
@@ -119,6 +124,22 @@ class BuildiqToolProvider implements IMcpToolProvider {
 					'name' => ['type' => 'string', 'minLength' => 2, 'maxLength' => 80],
 					'description' => ['type' => 'string', 'maxLength' => 500],
 					'preset' => ['type' => 'string', 'enum' => ['single', 'dev-prod', 'dev-staging-prod'], 'default' => 'dev-prod'],
+					'stories' => [
+						'type' => 'array',
+						'maxItems' => 20,
+						'description' => 'User stories the app serves, kept on the Application. Filled in from the plan\'s stories; leave it out.',
+						'items' => [
+							'type' => 'object',
+							'required' => ['role', 'goal'],
+							'properties' => [
+								'id' => ['type' => 'string', 'maxLength' => 64],
+								'role' => ['type' => 'string', 'maxLength' => 120],
+								'goal' => ['type' => 'string', 'maxLength' => 300],
+								'benefit' => ['type' => 'string', 'maxLength' => 300],
+								'servedBy' => ['type' => 'array', 'items' => ['type' => 'object']],
+							],
+						],
+					],
 				],
 				'required' => ['slug', 'name'],
 			],
@@ -178,8 +199,15 @@ class BuildiqToolProvider implements IMcpToolProvider {
 			'description' => 'Create or update a page in the draft manifest.'
 				. ' pageId is the unique key; if it exists it is replaced.'
 				. ' Type is one of dashboard, index, detail, form.'
-				. ' config is page-type-specific (e.g. {register, schema, columns} for index pages,'
-				. ' {widgets, layout} for dashboards). Defaults versionSlug to "development".',
+				. ' config is page-type-specific, and each type has fields the manifest is invalid without:'
+				. ' index and detail take {register, schema} plus optional columns, where schema is the'
+				. ' short slug you gave upsertSchema (e.g. "loan") — Buildiq namespaces it onto this'
+				. " version's own register for you;"
+				. ' dashboard takes {widgets, layout}, or leave both out and use addWidget;'
+				. ' form MUST take a non-empty fields array, each entry {key, label, type} with type one of'
+				. ' boolean, number, string, enum, password, json, file, and exactly one of'
+				. ' submitHandler or submitEndpoint saying where the form posts.'
+				. ' Defaults versionSlug to "development".',
 			'inputSchema' => [
 				'type' => 'object',
 				'properties' => [
@@ -188,7 +216,12 @@ class BuildiqToolProvider implements IMcpToolProvider {
 					'pageId' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 64],
 					'title' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 80],
 					'type' => ['type' => 'string', 'enum' => ['dashboard', 'index', 'detail', 'form']],
-					'route' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 200],
+					'route' => [
+						'type' => 'string',
+						'minLength' => 1,
+						'maxLength' => 200,
+						'description' => 'A path starting with "/", e.g. "/tools" or "/tools/:id".',
+					],
 					'config' => ['type' => 'object'],
 				],
 				'required' => ['appSlug', 'pageId', 'title', 'type', 'route'],
@@ -199,8 +232,14 @@ class BuildiqToolProvider implements IMcpToolProvider {
 			'subject' => 'widget',
 			'action' => 'create',
 			'name' => 'Add a widget to a page',
-			'description' => 'Append a widget to a page\'s config.widgets array in the draft manifest.'
-				. ' widgetType is e.g. "stat", "chart", "table". widgetConfig is widget-type-specific.'
+			'description' => 'Append a widget to a page\'s config.widgets array in the draft manifest,'
+				. ' and place it on the page\'s grid. The target page must be type "dashboard".'
+				. ' widgetType MUST be one of the values in its enum below. widgetConfig is'
+				. ' widget-type-specific: a stat, gauge or delta tile takes {register, schema}'
+				. ' plus an aggregate; an object-list takes {register, schema} plus columns.'
+				. ' Give every widget a widgetId (kebab-case, unique within the page) and a title:'
+				. ' both are stored on the widget and the manifest is invalid without them.'
+				. ' Omit them only if you have nothing better, and one will be derived.'
 				. ' Defaults versionSlug to "development".',
 			'inputSchema' => [
 				'type' => 'object',
@@ -208,9 +247,27 @@ class BuildiqToolProvider implements IMcpToolProvider {
 					'appSlug' => ['type' => 'string', 'pattern' => '^[a-z0-9][a-z0-9-]*[a-z0-9]$', 'minLength' => 2, 'maxLength' => 48],
 					'versionSlug' => ['type' => 'string', 'pattern' => '^[a-z0-9][a-z0-9-]*[a-z0-9]$', 'default' => 'development'],
 					'pageId' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 64],
-					'widgetType' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 48],
+					// The enum is the handler's own allow-list, spelt out so the
+					// plan validator can refuse an unknown type at plan time
+					// instead of the executor refusing it after the reader has
+					// already clicked Confirm. Keep it in step with
+					// AddWidgetHandler::ALLOWED_WIDGET_TYPES; WidgetTypeParityTest
+					// fails when the two drift.
+					'widgetType' => [
+						'type' => 'string',
+						'enum' => AddWidgetHandler::ALLOWED_WIDGET_TYPES,
+						'minLength' => 1,
+						'maxLength' => 48,
+					],
+					'widgetId' => ['type' => 'string', 'pattern' => '^[a-z0-9][a-z0-9-]*[a-z0-9]$', 'minLength' => 2, 'maxLength' => 48],
+					'title' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 80],
 					'widgetConfig' => ['type' => 'object'],
 				],
+				// Note that widgetId and title stay OUT of `required` on purpose.
+				// The description asks for both, and the handler derives them
+				// when they are missing. Making them required would turn a model
+				// that forgot one into a rejected plan, which is the failure
+				// this change exists to remove.
 				'required' => ['appSlug', 'pageId', 'widgetType'],
 			],
 		],
@@ -220,7 +277,9 @@ class BuildiqToolProvider implements IMcpToolProvider {
 			'action' => 'upsert',
 			'name' => 'Create or update a menu item',
 			'description' => 'Create or update a top-level menu item in the draft manifest.'
-				. ' id is the unique key; if it exists it is replaced. route should match a page id.'
+				. ' id is the unique key; if it exists it is replaced.'
+				. ' route names the page this item opens: give that page\'s pageId (the page\'s own'
+				. ' route path works too). Never invent a route no page has.'
 				. ' order controls sort. icon is an MDI/standard icon name. Defaults versionSlug to "development".',
 			'inputSchema' => [
 				'type' => 'object',
@@ -230,7 +289,12 @@ class BuildiqToolProvider implements IMcpToolProvider {
 					'id' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 64],
 					'label' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 80],
 					'icon' => ['type' => 'string', 'maxLength' => 80],
-					'route' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 200],
+					'route' => [
+						'type' => 'string',
+						'minLength' => 1,
+						'maxLength' => 200,
+						'description' => 'The pageId of the page this item opens, e.g. "tools". A path works too.',
+					],
 					'order' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 999],
 				],
 				'required' => ['appSlug', 'id', 'label', 'route'],
@@ -246,7 +310,7 @@ class BuildiqToolProvider implements IMcpToolProvider {
 	 * @param ContainerInterface $container DI container used to resolve OpenRegister and Buildiq services lazily.
 	 * @param LoggerInterface $logger PSR logger used for non-fatal warnings and error logging.
 	 * @param ObjectServiceInterface $objectService OpenRegister's published object contract (ADR-084), threaded to every handler.
-	 * @param PermissionResolver|null $permissionResolver Shared permission-grammar resolver (H1 fix).
+	 * @param PermissionResolverInterface|null $permissionResolver Shared permission-grammar resolver (H1 fix).
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer threaded to handlers (L2).
 	 */
 	public function __construct(
@@ -255,7 +319,7 @@ class BuildiqToolProvider implements IMcpToolProvider {
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
 		private readonly ObjectServiceInterface $objectService,
-		private readonly ?PermissionResolver $permissionResolver = null,
+		private readonly ?PermissionResolverInterface $permissionResolver = null,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
 	) {
 	}//end __construct()
@@ -265,6 +329,7 @@ class BuildiqToolProvider implements IMcpToolProvider {
 	 *
 	 * @return string
 	 */
+	#[\Override]
 	public function getAppId(): string {
 		return 'buildiq';
 	}//end getAppId()
@@ -273,9 +338,27 @@ class BuildiqToolProvider implements IMcpToolProvider {
 	 * Return the catalogue of MCP tools exposed by this provider.
 	 *
 	 * @return array<int, array<string, mixed>>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AgentPlanSteps is pure step logic with no collaborators.
 	 */
+	#[\Override]
 	public function getTools(): array {
-		return self::TOOL_DESCRIPTORS;
+		$tools = [];
+		foreach (self::TOOL_DESCRIPTORS as $tool) {
+			if (AgentPlanSteps::isWriteTool(toolId: $tool['id']) === true) {
+				$tool['description'] .= ' Writes only under a plan a person approved: pass planId.'
+					. ' A call without planId writes nothing and submits this call as a plan for an owner or editor of the app to approve in Buildiq.';
+				$tool['inputSchema']['properties']['planId'] = [
+					'type' => 'string',
+					'maxLength' => 64,
+					'description' => 'The id of the approved plan this call is a step of.',
+				];
+			}
+
+			$tools[] = $tool;
+		}
+
+		return $tools;
 	}//end getTools()
 
 	/**
@@ -291,21 +374,168 @@ class BuildiqToolProvider implements IMcpToolProvider {
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
+	#[\Override]
 	public function getToolDescriptors(): array {
 		return self::TOOL_DESCRIPTORS;
 	}//end getToolDescriptors()
 
 	/**
-	 * Dispatch an MCP tool invocation to the matching handler.
+	 * Dispatch an MCP tool invocation from an outside agent.
+	 *
+	 * Reads run at once. A write runs only when `arguments.planId` names a plan
+	 * a person with a write role on the app approved, the caller is the user
+	 * who submitted it, and the call matches one of its unused steps. A write
+	 * without a planId writes nothing and is submitted as a one-step plan.
 	 *
 	 * @param string $toolId Fully qualified tool id (e.g. "buildiq.listApps").
 	 * @param array<string, mixed> $arguments Raw tool arguments as supplied by the MCP client.
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AgentPlanSteps is pure step logic with no collaborators.
 	 */
+	#[\Override]
 	public function invokeTool(string $toolId, array $arguments): array {
+		if (AgentPlanSteps::isWriteTool(toolId: $toolId) === false) {
+			return $this->dispatch(toolId: $toolId, arguments: $arguments);
+		}
+
+		$refusal = $this->planRefusal(toolId: $toolId, arguments: $arguments);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $this->dispatch(toolId: $toolId, arguments: AgentPlanSteps::withoutPlanId(arguments: $arguments));
+	}//end invokeTool()
+
+	/**
+	 * Dispatch a step of a plan the calling user approved in Buildiq itself.
+	 *
+	 * The AI Copilot's execute is that approval: the person reviewed the
+	 * predicted manifest and confirmed it. This entry is not reachable over
+	 * MCP; OpenRegister's MCP server calls {@see invokeTool()}.
+	 *
+	 * @param string $toolId Fully qualified tool id.
+	 * @param array<string, mixed> $arguments The step's arguments.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-openbuild-mcp-adoption/specs/ai-copilot/spec.md#requirement-an-approved-plan-executes-atomically-through-the-mcp-handler-layer
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AgentPlanSteps is pure step logic with no collaborators.
+	 */
+	#[\Override]
+	public function invokeApprovedTool(string $toolId, array $arguments): array {
+		return $this->dispatch(toolId: $toolId, arguments: AgentPlanSteps::withoutPlanId(arguments: $arguments));
+	}//end invokeApprovedTool()
+
+	/**
+	 * Why an outside agent's write call may not run, or null when it may.
+	 *
+	 * @param string $toolId The write tool.
+	 * @param array<string, mixed> $arguments The call's arguments.
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AgentPlanSteps is pure step logic with no collaborators.
+	 */
+	private function planRefusal(string $toolId, array $arguments): ?array {
+		$plans = $this->planService();
+		if ($plans === null) {
+			return [
+				'isError' => true,
+				'error' => 'plan_required',
+				'message' => 'Builder writes over MCP need an approved plan, and plan approval is not available on this instance.',
+			];
+		}
+
+		$planId = $arguments['planId'] ?? null;
+		if (is_string($planId) === false || $planId === '') {
+			return $this->submittedForApproval(toolId: $toolId, arguments: $arguments);
+		}
+
+		return $plans->authorizeStep(
+			planId: $planId,
+			toolId: $toolId,
+			arguments: AgentPlanSteps::withoutPlanId(arguments: $arguments),
+			userId: $this->userId()
+		);
+	}//end planRefusal()
+
+	/**
+	 * Submit a write call without a plan as a plan for approval, and refuse the call itself.
+	 *
+	 * @param string               $toolId    The write tool.
+	 * @param array<string, mixed> $arguments The call's arguments.
+	 *
+	 * @return array<string, mixed> The refusal, naming the submitted plan when there is one.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AgentPlanSteps is pure step logic with no collaborators.
+	 */
+	private function submittedForApproval(string $toolId, array $arguments): array {
+		$submitted = $this->planService()?->submit(
+			appSlug: AgentPlanSteps::targetApp(toolId: $toolId, arguments: $arguments),
+			steps: [['tool' => $toolId, 'arguments' => AgentPlanSteps::withoutPlanId(arguments: $arguments)]],
+			userId: $this->userId()
+		);
+		$planNote = '';
+		if (isset($submitted['planId']) === true) {
+			$planNote = ' This call was submitted as plan ' . $submitted['planId']
+				. '; once an owner or editor of the app approves it in Buildiq (the copilot panel, Plans from outside agents),'
+				. ' call again with the same arguments and planId.';
+		}
+
+		return [
+			'isError' => true,
+			'error' => 'plan_required',
+			'message' => 'This write needs a plan a person approved. Nothing was written.' . $planNote,
+			'planId' => ($submitted['planId'] ?? null),
+		];
+	}//end submittedForApproval()
+
+	/**
+	 * The signed-in user's id; '' when nobody is signed in.
+	 *
+	 * @return string
+	 */
+	private function userId(): string {
+		return (string)($this->userSession->getUser()?->getUID() ?? '');
+	}//end userId()
+
+	/**
+	 * The approved-plan store for outside agents' writes, from the container; null when it cannot be had.
+	 *
+	 * Null refuses every MCP write: without the store no write is authorised.
+	 *
+	 * @return AgentPlanService|null
+	 */
+	private function planService(): ?AgentPlanService {
+		try {
+			$plans = $this->container->get(AgentPlanService::class);
+		} catch (Throwable) {
+			return null;
+		}
+
+		if ($plans instanceof AgentPlanService === false) {
+			return null;
+		}
+
+		return $plans;
+	}//end planService()
+
+	/**
+	 * Run the handler for a tool.
+	 *
+	 * @param string $toolId Fully qualified tool id.
+	 * @param array<string, mixed> $arguments The arguments.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function dispatch(string $toolId, array $arguments): array {
 		// Handler class names are referenced as strings to keep the coupling
 		// count of this dispatcher class within the PHPMD threshold.
 		$handlerMap = [
@@ -330,7 +560,7 @@ class BuildiqToolProvider implements IMcpToolProvider {
 				. implode(separator: ', ', array: array_column(array: self::TOOL_DESCRIPTORS, column_key: 'id')) . '.',
 		];
 
-	}//end invokeTool()
+	}//end dispatch()
 
 	/**
 	 * Instantiate a handler class, injecting the shared collaborators.

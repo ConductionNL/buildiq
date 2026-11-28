@@ -16,7 +16,7 @@ scoping via OR's standard `organisation` field (ADR-022). Lifecycle relocates to
 
 **OpenSpec changes**: [unify-apps-with-app-type](../../changes/archive/2026-06-20-unify-apps-with-app-type/) _(archived 2026-06-20)_
 [data-registers-schema-declaration](../../changes/data-registers-schema-declaration/)
-[github-app-repo-format](../../changes/github-app-repo-format/)
+[github-app-repo-format](../../changes/archive/2026-11-21-github-app-repo-format/) _(archived 2026-11-21)_
 [apply-v2-channels](../../changes/apply-v2-channels/)
 
 **Status**: in-progress
@@ -325,3 +325,190 @@ Application — there is no legacy `AppOverride` read path.
 - **AND** every former override SHALL be readable as a hybrid `Application`
 - **AND** the `/api/app-overrides/{appId}` shim SHALL resolve its delta from the hybrid
   Application without any legacy fallback
+
+### Requirement: Application schema carries an optional dataRegisters binding array
+
+The system SHALL extend the `Application` schema in
+`lib/Settings/openbuild_register.json` (via a `register.d/` fragment per
+ADR-037 — see design.md Decision 2) with an optional `dataRegisters` array
+property, sibling to `baseRef`, of shape:
+
+```json
+{
+  "dataRegisters": {
+    "type": "array",
+    "default": [],
+    "items": {
+      "type": "object",
+      "required": ["register"],
+      "additionalProperties": false,
+      "properties": {
+        "register": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$" },
+        "label": { "type": "string" }
+      }
+    }
+  }
+}
+```
+
+Each entry names a shared, non-versioned OpenRegister register (by slug)
+that the `Application` binds to alongside its own per-version register
+(`ApplicationVersion.register`, ADR-002). `dataRegisters` is declarative
+schema metadata only (ADR-031) — this requirement introduces no service
+class, no route, and no validation that a referenced register slug exists in
+OpenRegister at save time (see design.md Non-Goals). This is the schema
+surface SPECTR-NEXTCLOUD-PLAN.md §4.2 / hydra ADR-050 decision #2 locks for
+Buildiq; the consumers (builder pickers, promotion-skip regression
+coverage, export inclusion, designer UI) are out of scope for this
+requirement and land in the follower spec `data-registers-runtime`.
+
+**ID:** REQ-OBA-010
+
+#### Scenario: Schema declares dataRegisters after install
+
+- **WHEN** the Buildiq app is installed (or upgraded) and its repair step
+  runs
+- **THEN** the `Application` schema in the `buildiq` register exposes the
+  `dataRegisters` property with the shape above
+- **AND** the property is omittable — existing Application objects created
+  before this change remain schema-valid
+
+#### Scenario: Saving an Application with a dataRegisters binding round-trips
+
+- **WHEN** a client PUTs an Application via OR REST with
+  `dataRegisters = [{ "register": "spectr", "label": "Spectr market intelligence data" }]`
+- **THEN** OR persists the object and a subsequent GET returns the same
+  `dataRegisters` array byte-for-byte
+
+#### Scenario: Saving an Application with multiple bindings round-trips
+
+- **WHEN** a client PUTs an Application via OR REST with
+  `dataRegisters = [{ "register": "brp-personen" }, { "register": "bag-adressen", "label": "BAG adressen" }]`
+- **THEN** OR persists the object and a subsequent GET returns both entries,
+  in order, byte-for-byte
+- **AND** the entry without a `label` round-trips with no `label` key present
+
+#### Scenario: Application without dataRegisters is still accepted
+
+- **WHEN** a client saves an Application that omits `dataRegisters` entirely
+- **THEN** OR persists the object and returns 2xx — the property is optional
+  and defaults to an empty array on read
+
+#### Scenario: Binding missing the required register slug is rejected
+
+- **WHEN** a client PUTs an Application with
+  `dataRegisters = [{ "label": "No slug given" }]` (missing the required
+  `register` key)
+- **THEN** OR rejects the save with a 4xx citing the missing `register`
+  property under the failing array index
+
+#### Scenario: Binding with an unrecognised sub-property is rejected
+
+- **WHEN** a client PUTs an Application with
+  `dataRegisters = [{ "register": "spectr", "readOnly": true }]` (note the
+  unknown `readOnly` key)
+- **THEN** OR rejects the save with a 4xx citing the unknown property under
+  the failing `dataRegisters` array entry
+
+#### Scenario: Register slug pattern is enforced
+
+- **WHEN** a client PUTs an Application with
+  `dataRegisters = [{ "register": "Not_A-Valid-Slug!" }]`
+- **THEN** OR rejects the save with a 4xx citing the `register` value as not
+  matching the kebab-case pattern
+
+### Requirement: Application schema carries GitHub linkage fields
+
+The `Application` schema in `lib/Settings/openbuild_register.json` SHALL be
+extended with two optional, additive top-level properties that record the app's
+GitHub home:
+
+- `githubRepo` — object `{ owner: string, name: string }` naming the GitHub
+  repository the app is linked to (its round-trip home). Optional.
+- `githubDefaultBranch` — string, the branch that push/pull operations target
+  (resolved from the repo's default branch at link time, admin-overridable).
+  Optional.
+
+Both properties SHALL be omittable so that every existing `Application` object
+(including the seeded `hello-world` app) remains schema-valid without a data
+migration. The properties are purely declarative (stored data, no state machine,
+no calculation) per ADR-031 — no service class is introduced by this requirement.
+They are set by the owner round-trip capability (`github-app-sync`) and read by
+the shop and sync surfaces; a runtime that never touches GitHub never populates
+them. The schema SHALL be re-imported via the existing repair step
+(`ConfigurationService::importFromApp()`), gated by an `info.xml` + schema-version
+bump per the OpenRegister version-gate rule.
+
+**ID:** REQ-OBA-011
+
+#### Scenario: Schema declares the GitHub linkage fields after install
+
+- **WHEN** the Buildiq repair step runs (fresh install or upgrade)
+- **THEN** the `Application` schema in the `buildiq` register exposes optional
+  `githubRepo` (`{ owner, name }`) and `githubDefaultBranch` properties
+- **AND** an Application object that omits both remains schema-valid
+
+#### Scenario: Saving an Application with a githubRepo round-trips
+
+- **WHEN** a client saves an Application with
+  `githubRepo = { owner: "conduction", name: "permit-tracker" }` and
+  `githubDefaultBranch = "main"`
+- **THEN** OR persists the object and a subsequent GET returns the same
+  `githubRepo` and `githubDefaultBranch` values
+
+#### Scenario: Legacy Application without linkage fields stays valid
+
+- **GIVEN** an existing Application (e.g. the seeded `hello-world`) with no
+  `githubRepo` or `githubDefaultBranch`
+- **WHEN** this change's repair step re-imports the schema
+- **THEN** the Application remains schema-valid and unmodified (the fields are
+  omittable; no migration back-fills them)
+
+### Requirement: Manifest-carrying schema declares optional baseRef and manifestDelta
+
+The system SHALL declare two optional, additive top-level properties, `baseRef` and
+`manifestDelta`, on the manifest-carrying schema (`ApplicationVersion` per ADR-002,
+where the `manifest` blob lives) in `lib/Settings/openbuild_register.json`. An object
+that omits both SHALL be valid, and the existing `manifest` blob property SHALL remain
+on the schema for legacy and standalone apps.
+
+#### Scenario: The two properties carry the delta contract's shape
+
+- **WHEN** the manifest-carrying schema in `lib/Settings/openbuild_register.json` is read
+- **THEN** `baseRef` SHALL be a structured reference identifying what the design extends (an OpenBuilt template, another OpenBuilt app, or a fleet app's bundled manifest), with an optional pin to a specific base version
+- **AND** `manifestDelta` SHALL be an object carrying the keyed structural delta (page entries keyed by `page.id`, widget entries keyed by `widget.id`, the `{ "$op": "remove" }` deletion marker and the optional `__order` reorder key) as defined by the `@conduction/nextcloud-vue` `manifest-delta-merge-and-flex-columns` contract
+
+#### Scenario: Object with baseRef and manifestDelta is accepted
+
+- **WHEN** a client saves a manifest-carrying object with a `baseRef` and a
+  `manifestDelta` (and no whole-manifest blob)
+- **THEN** OR persists the object and returns 2xx with no validation error
+
+#### Scenario: Object without delta fields is still accepted
+
+- **WHEN** a client saves a manifest-carrying object that omits both `baseRef` and
+  `manifestDelta` and carries only a `manifest` blob
+- **THEN** OR persists the object and returns 2xx — the new fields are optional and the
+  blob remains the resolution source
+
+#### Scenario: Resolved manifest validates against the canonical schema
+
+- **WHEN** a `baseRef` + `manifestDelta` object is resolved into a merged manifest
+- **THEN** the merged manifest SHALL validate against the canonical app-manifest schema
+  at `@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json`
+
+### Requirement: Delta storage replaces the whole-manifest blob for delta-mode apps
+
+For an app that extends a base, the manifest-carrying object SHALL store the
+`baseRef` + `manifestDelta` pair instead of a frozen whole-manifest blob. The stored
+`manifestDelta` SHALL be the minimal keyed diff between the resolved base and the edited
+manifest (the `diffManifest` output), so the stored object does not duplicate base
+content that is unchanged.
+
+#### Scenario: Editing one page stores a minimal delta, not a full blob
+
+- **WHEN** a delta-mode app changes one page and the change is persisted
+- **THEN** the stored `manifestDelta` SHALL contain only the changed entry keyed by its
+  id
+- **AND** the object SHALL NOT store a whole-manifest blob duplicating the unchanged base
+  pages

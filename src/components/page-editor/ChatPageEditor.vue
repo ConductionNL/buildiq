@@ -7,6 +7,11 @@
   - OR `postUrl` (the endpoint new messages are POSTed to) MUST be set;
   - `schema` is the optional message-record schema slug.
   -
+  - A third transport keeps the conversation as the records of a schema
+  - (REQ-BQCV-009): `{ register, schema, messageField?, postUrl }`, where
+  - `postUrl` is the schema's records address so a new message is a new
+  - record; the running app's BuildiqChatPage reads the thread from them.
+  -
   - The one-of is rendered as a radio pair; switching branches clears the
   - inactive key. `update(key, value)` clones `config` and only mutates
   - the one key so externally-authored extra keys round-trip losslessly.
@@ -36,9 +41,37 @@
 						@change="setTransportShape('postUrl')" />
 					{{ t('buildiq', 'postUrl (send endpoint)') }}
 				</label>
+				<label class="chat-page-editor__inline">
+					<input
+						type="radio"
+						:checked="transportShape === 'records'"
+						value="records"
+						@change="setTransportShape('records')" />
+					{{ t('buildiq', 'Messages kept as records of a schema') }}
+				</label>
 			</div>
+			<template v-if="transportShape === 'records'">
+				<label class="chat-page-editor__group-row">
+					{{ t('buildiq', 'Register slug') }}
+					<input
+						type="text"
+						class="chat-page-editor__register"
+						:value="config.register || ''"
+						:placeholder="t('buildiq', 'e.g. permits')"
+						@input="setRecords('register', $event.target.value)" />
+				</label>
+				<label class="chat-page-editor__group-row">
+					{{ t('buildiq', 'Message field') }}
+					<input
+						type="text"
+						class="chat-page-editor__message-field"
+						:value="config.messageField || ''"
+						:placeholder="t('buildiq', 'message')"
+						@input="setRecords('messageField', $event.target.value)" />
+				</label>
+			</template>
 			<label
-				v-if="transportShape === 'conversationSource'"
+				v-else-if="transportShape === 'conversationSource'"
 				class="chat-page-editor__group-row">
 				{{ t('buildiq', 'conversationSource') }}
 				<input
@@ -53,7 +86,7 @@
 					" />
 				<InlineFieldMark :error="markFor('conversationSource')" />
 			</label>
-			<label v-else class="chat-page-editor__group-row">
+			<label v-else-if="transportShape === 'postUrl'" class="chat-page-editor__group-row">
 				{{ t('buildiq', 'postUrl') }}
 				<input
 					type="text"
@@ -79,10 +112,11 @@
 				{{ t('buildiq', 'Schema slug') }}
 				<input
 					type="text"
+					class="chat-page-editor__schema"
 					:value="config.schema || ''"
 					:placeholder="t('buildiq', 'e.g. message')"
 					:aria-invalid="isInvalid('schema')"
-					@input="update('schema', $event.target.value)" />
+					@input="transportShape === 'records' ? setRecords('schema', $event.target.value) : update('schema', $event.target.value)" />
 				<InlineFieldMark :error="markFor('schema')" />
 			</label>
 		</fieldset>
@@ -91,40 +125,44 @@
 
 <script>
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import { pageEditorBaseMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
+import { messagesPath } from '../../services/messageThread.js'
+
+/**
+ * The records transport with `postUrl` on the schema's records address, or
+ * without one while the register or schema is not set.
+ *
+ * @param {object} config The page config.
+ * @return {object} The config.
+ * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-maker-adds-a-chat-page-req-bqcv-009
+ */
+function withRecordsPostUrl(config) {
+	const next = { ...config }
+	if (next.register && next.schema) {
+		next.postUrl = messagesPath(next.register, next.schema)
+	} else {
+		delete next.postUrl
+	}
+	return next
+}
 
 export default {
 	name: 'ChatPageEditor',
 	components: { InlineFieldMark },
-	mixins: [pageEditorValidationMixin],
+	mixins: [pageEditorBaseMixin, pageEditorValidationMixin],
 	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
-		},
-
 		pageType: {
 			type: String,
 			default: 'chat',
 		},
-
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
-		parentRoute: {
-			type: String,
-			default: '',
-		},
 	},
 
-	emits: ['update:config'],
 	computed: {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		validatedConfigKeys() {
 			return ['conversationSource', 'postUrl', 'schema']
@@ -133,9 +171,14 @@ export default {
 		/**
 		 * Observed behaviour of `transportShape` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		transportShape() {
+			// A present `register` (empty while the maker types) keeps the
+			// records branch open.
+			if (Object.hasOwn(this.config, 'register') && !this.config.conversationSource) {
+				return 'records'
+			}
 			if (this.config.postUrl && !this.config.conversationSource) {
 				return 'postUrl'
 			}
@@ -152,7 +195,7 @@ export default {
 		 *
 		 * @param {string} key - the config key being written; from the template only `schema`, the optional message-record schema slug.
 		 * @param {string} value - the new value from the bound input; `''` (or `null`) deletes the key.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
 			const next = { ...this.config }
@@ -171,10 +214,18 @@ export default {
 		 * is lost.
 		 *
 		 * @param {'conversationSource'|'postUrl'} shape - the radio's value: `postUrl` drops `conversationSource`, anything else drops `postUrl`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setTransportShape(shape) {
 			const next = { ...this.config }
+			if (shape === 'records') {
+				delete next.conversationSource
+				next.register = next.register || ''
+				this.$emit('update:config', withRecordsPostUrl(next))
+				return
+			}
+			delete next.register
+			delete next.messageField
 			if (shape === 'postUrl') {
 				delete next.conversationSource
 			} else {
@@ -184,13 +235,32 @@ export default {
 		},
 
 		/**
+		 * Write one key of the records transport and keep `postUrl` on the
+		 * schema's records address, so a new message is a new record.
+		 *
+		 * @param {'register'|'schema'|'messageField'} key - the key being typed into.
+		 * @param {string} value - the new value; `''` clears `schema` and `messageField`, and leaves `register` empty but present so the records branch stays open.
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-maker-adds-a-chat-page-req-bqcv-009
+		 */
+		setRecords(key, value) {
+			const next = { ...this.config }
+			delete next.conversationSource
+			if (value === '' && key !== 'register') {
+				delete next[key]
+			} else {
+				next[key] = value
+			}
+			this.$emit('update:config', withRecordsPostUrl(next))
+		},
+
+		/**
 		 * Write the active transport endpoint and clear its partner in the
 		 * same emit, so typing in one branch can never leave a stale value in
 		 * the other half of the one-of.
 		 *
 		 * @param {'conversationSource'|'postUrl'} key - which transport is being typed into; the other of the two is deleted.
 		 * @param {string} value - the endpoint / stream URL from the bound input; `''` deletes the key too, leaving neither branch set.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setTransport(key, value) {
 			const partner = key === 'postUrl' ? 'conversationSource' : 'postUrl'
@@ -207,7 +277,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .chat-page-editor {
 	display: flex;
 	flex-direction: column;
@@ -222,12 +294,7 @@ export default {
 }
 
 .chat-page-editor__fieldset {
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	padding: 8px;
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
+	@include c.fieldset;
 }
 
 .chat-page-editor__fieldset legend {
@@ -256,11 +323,7 @@ export default {
 }
 
 .chat-page-editor__group-row input {
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .chat-page-editor__hint {

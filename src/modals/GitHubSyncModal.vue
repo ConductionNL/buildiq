@@ -64,6 +64,18 @@
 								>{{ shortSha(status.lastPulledSha) }}</span
 							>
 						</p>
+						<!-- lifecycle-git-branches: each version pushes to its own branch. -->
+						<div v-if="versions.length" class="github-sync__branches" data-test="github-version-branches">
+							<span class="github-sync__label">{{
+								t('buildiq', 'Branch per version')
+							}}</span>
+							<ul class="github-sync__branch-list">
+								<li v-for="version in versions" :key="version.slug">
+									{{ version.name || version.slug }}:
+									<span class="github-sync__value--mono">{{ versionBranch(version) }}</span>
+								</li>
+							</ul>
+						</div>
 					</template>
 					<NcNoteCard v-else type="info">
 						{{
@@ -181,6 +193,50 @@ import {
 import LinkRepoDialog from './LinkRepoDialog.vue'
 import PublishConfirmDialog from './PublishConfirmDialog.vue'
 
+/**
+ * Whether a pull response reports a failure that created no draft version.
+ *
+ * @param {object} data The pull response body.
+ * @return {boolean}
+ */
+function isFailedPull(data) {
+	return Boolean(
+		data && data.outcome && data.outcome !== 'ok' && !data.versionUuid,
+	)
+}
+
+/**
+ * The message of a failed pull request, without the file it names.
+ *
+ * @param {Error} e The rejected request.
+ * @return {string}
+ */
+function pullFailureBase(e) {
+	const data = e?.response?.data
+	return (
+		data?.detail || data?.error || e?.message || t('buildiq', 'Pull failed.')
+	)
+}
+
+/**
+ * The message of a failed pull request, naming the offending file when the
+ * server reports one.
+ *
+ * @param {Error} e The rejected request.
+ * @return {string}
+ */
+function describePullFailure(e) {
+	const data = e?.response?.data
+	const file = data?.file || data?.path
+	const base = pullFailureBase(e)
+	return file
+		? t('buildiq', '{message} (in {file})', {
+				message: base,
+				file,
+			})
+		: base
+}
+
 export default {
 	name: 'GitHubSyncModal',
 	components: {
@@ -220,6 +276,25 @@ export default {
 
 	computed: {
 		/**
+		 * The branch a version pushes to: its own, or the default branch for
+		 * production and for a version without one (lifecycle-git-branches).
+		 *
+		 * @return {function(object): string}
+		 * @spec openspec/changes/archive/2026-11-24-lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-each-version-pushes-to-its-own-branch-req-bqgb-002
+		 */
+		versionBranch() {
+			const fallback = (this.status && this.status.githubDefaultBranch) || 'main'
+			const production = this.status && this.status.productionVersion
+			return (version) => {
+				const uuid = version.id || version.uuid
+				if (!version.githubBranch || (production && uuid === production)) {
+					return fallback
+				}
+				return version.githubBranch
+			}
+		},
+
+		/**
 		 * Whether the app is linked to a GitHub repository.
 		 *
 		 * @return {boolean}
@@ -235,7 +310,7 @@ export default {
 		 * pull-success note card rather than buried in `channels.<name>.reason`.
 		 *
 		 * @return {Array<{code: string, channel: string, message: string}>}
-		 * @spec openspec/changes/surface-hermiq-credential-scope-requirement/specs/app-channel-application/spec.md
+		 * @spec openspec/specs/app-channel-application/spec.md
 		 */
 		pullWarnings() {
 			return (this.pullResult && this.pullResult.warnings) || []
@@ -499,46 +574,59 @@ export default {
 			this.error = ''
 			this.pullResult = null
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/applications/{slug}/github/pull',
-					{ slug: this.slug },
-				)
-				const body = {
-					ref: (this.status && this.status.githubDefaultBranch) || 'main',
-				}
-				if (this.selectedCredentialId) {
-					body.credentialId = this.selectedCredentialId
-				}
-				const { data } = await axios.post(url, body)
-				if (
-					data
-					&& data.outcome
-					&& data.outcome !== 'ok'
-					&& !data.versionUuid
-				) {
-					this.error =
-						data.detail || data.error || t('buildiq', 'Pull failed.')
-					return
-				}
-				this.pullResult = data
-				this.loadStatus()
+				this.applyPullResponse(await this.requestPull())
 			} catch (e) {
-				const data = e?.response?.data
-				const file = data?.file || data?.path
-				const base =
-					data?.detail
-					|| data?.error
-					|| e?.message
-					|| t('buildiq', 'Pull failed.')
-				this.error = file
-					? t('buildiq', '{message} (in {file})', {
-							message: base,
-							file,
-						})
-					: base
+				this.error = describePullFailure(e)
 			} finally {
 				this.pulling = false
 			}
+		},
+
+		/**
+		 * POST the pull request for this app and return the response body.
+		 *
+		 * @return {Promise<object>}
+		 */
+		async requestPull() {
+			const url = generateUrl(
+				'/apps/buildiq/api/applications/{slug}/github/pull',
+				{ slug: this.slug },
+			)
+			const { data } = await axios.post(url, this.pullRequestBody())
+			return data
+		},
+
+		/**
+		 * Body of the pull request: the default branch and, when one is
+		 * chosen, the credential to pull with.
+		 *
+		 * @return {object}
+		 */
+		pullRequestBody() {
+			const body = {
+				ref: (this.status && this.status.githubDefaultBranch) || 'main',
+			}
+			if (this.selectedCredentialId) {
+				body.credentialId = this.selectedCredentialId
+			}
+			return body
+		},
+
+		/**
+		 * Show a failed pull outcome as an error, or keep the result and
+		 * refresh the status.
+		 *
+		 * @param {object} data The pull response body.
+		 * @return {void}
+		 */
+		applyPullResponse(data) {
+			if (isFailedPull(data)) {
+				this.error =
+					data.detail || data.error || t('buildiq', 'Pull failed.')
+				return
+			}
+			this.pullResult = data
+			this.loadStatus()
 		},
 	},
 }
@@ -596,5 +684,9 @@ export default {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px;
+}
+.github-sync__branch-list {
+	margin: 4px 0 0;
+	padding-inline-start: 16px;
 }
 </style>

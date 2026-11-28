@@ -126,6 +126,17 @@
 				@input="onDescriptionInput" />
 		</div>
 
+		<!-- Start from a database (data-external-database-sources REQ-BQDB-003):
+		     shows only when OpenRegister serves at least one connected database. -->
+		<StartFromDatabase
+			:payload="payload"
+			@update:payload="(partial) => $emit('update:payload', partial)" />
+
+		<!-- Start from a spreadsheet (capability-requirements-backfill REQ-BQCV-001). -->
+		<StartFromSpreadsheet
+			:payload="payload"
+			@update:payload="(partial) => $emit('update:payload', partial)" />
+
 		<!-- App icon (optional) — pick a Material or OpenGemeenten glyph, or
 		     upload your own SVG. A single pick yields a correct light/dark pair
 		     (white glyph for the dark app header, dark glyph for light bg);
@@ -226,6 +237,8 @@ import { CnIconPicker } from '@conduction/nextcloud-vue'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton } from '@nextcloud/vue'
 import CopilotGenerateDialog from '../CopilotGenerateDialog.vue'
+import StartFromDatabase from './StartFromDatabase.vue'
+import StartFromSpreadsheet from './StartFromSpreadsheet.vue'
 import { useCopilot } from '../../composables/useCopilot.js'
 import {
 	buildIconCatalogues,
@@ -241,6 +254,8 @@ export default {
 		CnIconPicker,
 		NcButton,
 		CopilotGenerateDialog,
+		StartFromDatabase,
+		StartFromSpreadsheet,
 	},
 
 	props: {
@@ -278,7 +293,7 @@ export default {
 		 * (spec ai-copilot REQ-OBAIC-001 — hidden entirely when unavailable).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		copilotAvailable() {
 			return this.copilot.isAvailable.value
@@ -289,7 +304,7 @@ export default {
 		 * only once the health probe has resolved to unavailable.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		showAdminHint() {
 			const isAdmin = !!(
@@ -337,7 +352,7 @@ export default {
 		/**
 		 * Observed behaviour of `slugError` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
 		 */
 		slugError() {
 			if (!this.payload.slug) return null
@@ -348,14 +363,44 @@ export default {
 		/**
 		 * Observed behaviour of `isValid` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
 		 */
 		isValid() {
 			return (
 				(this.payload.name || '').trim() !== ''
 				&& (this.payload.slug || '').trim() !== ''
 				&& this.slugError === null
+				&& this.databaseChoiceComplete
+				&& this.fileChoiceComplete
 			)
+		},
+
+		/**
+		 * Whether "Start from a database" is off, or has a database and at least one table.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+		 */
+		databaseChoiceComplete() {
+			const choice = this.payload.fromDatabase
+			if (!choice) {
+				return true
+			}
+			return (choice.register || '') !== '' && Array.isArray(choice.schemas) && choice.schemas.length > 0
+		},
+
+		/**
+		 * Whether "Start from a spreadsheet" is off, or has a readable file and no database beside it.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
+		 */
+		fileChoiceComplete() {
+			const choice = this.payload.fromFile
+			if (!choice) {
+				return true
+			}
+			return !this.payload.fromDatabase && (choice.content || '') !== ''
 		},
 	},
 
@@ -370,7 +415,7 @@ export default {
 	 * per session by `useCopilot`, so re-entering this step is cheap.
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
 	created() {
 		this.copilot.checkHealth()
@@ -383,7 +428,7 @@ export default {
 		 *
 		 * @param {string} appSlug - the newly-created app's slug.
 		 * @return {void}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		onAiAppCreated(appSlug) {
 			this.$emit('ai-app-created', appSlug)
@@ -398,7 +443,7 @@ export default {
 		 * @param {InputEvent} event - Native `input` event from the app-name field;
 		 *   `event.target.value` is the new display name (e.g. `Hello World`).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
 		 */
 		onNameInput(event) {
 			const name = event.target.value
@@ -422,7 +467,7 @@ export default {
 		 *   `event.target.value` is emitted verbatim (validated elsewhere, not
 		 *   kebab-cased here).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
 		 */
 		onSlugInput(event) {
 			this.slugManuallyEdited = true
@@ -435,7 +480,7 @@ export default {
 		 * @param {InputEvent} event - Native `input` event from the description
 		 *   textarea; `event.target.value` is emitted as the payload's `description`.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
 		 */
 		onDescriptionInput(event) {
 			this.$emit('update:payload', { description: event.target.value })

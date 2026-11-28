@@ -40,7 +40,7 @@
 				<router-link
 					class="page-designer-host__link"
 					:to="{ name: 'VirtualApps' }">
-					{{ t('buildiq', 'Back to Apps') }}
+					{{ t('buildiq', 'Back to apps') }}
 				</router-link>
 				<a
 					v-if="builderUrl"
@@ -76,6 +76,14 @@
 		<div v-if="error" class="page-designer-host__error">
 			{{ error }}
 		</div>
+		<!-- app-delta-override D5: base drift is shown, never blocking. -->
+		<NcNoteCard
+			v-if="deltaEditing.orphanedDeltaPaths.length > 0"
+			type="warning"
+			data-testid="orphaned-delta-paths">
+			{{ t('buildiq', 'Some changes of this version no longer match the app it extends, and are skipped:') }}
+			<code>{{ deltaEditing.orphanedDeltaPaths.join(', ') }}</code>
+		</NcNoteCard>
 
 		<!-- REQ-OBVR-009: version-not-found state — identical for both "doesn't exist" and "you can't see it" -->
 		<NcEmptyContent
@@ -103,8 +111,9 @@
 			:manifest="manifest"
 			:slug="routeSlug"
 			:sessionKey="sessionKey"
+			:destinationFindings="destinationFindings"
 			@update:manifest="onManifestUpdate"
-			@saveAndPreview="save" />
+			@saveAndPreview="saveAndPreview" />
 
 		<!-- REQ-PWA-002: Workflows section — attach Procest case types to the
 		     app's schemas. Soft-checks Procest availability for graceful absence. -->
@@ -113,8 +122,7 @@
 			:manifest="manifest"
 			:schemas="appSchemas"
 			:procestAvailable="procestAvailable"
-			@update:manifest="onManifestUpdate"
-			@createLinkProperty="onCreateLinkProperty" />
+			@update:manifest="onManifestUpdate" />
 
 		<!-- REQ-NTS-002: Theme section — pick an NL Design token set for this
 		     app. Soft-checks nldesign availability for graceful absence.
@@ -152,7 +160,12 @@
 		<aside
 			v-if="copilotToggleVisible && showCopilotPanel"
 			class="page-designer-host__copilot">
-			<CopilotPanel :appSlug="routeSlug" @executed="load" />
+			<CopilotPanel
+				:appSlug="routeSlug"
+				:versionSlug="versionSlug || ''"
+				closable
+				@close="showCopilotPanel = false"
+				@executed="load" />
 		</aside>
 	</div>
 </template>
@@ -160,7 +173,8 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import { NcButton, NcEmptyContent, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
+import { reactive } from 'vue'
 import CopilotPanel from '../components/copilot/CopilotPanel.vue'
 import DocumentAttachmentsSection from '../components/DocumentAttachmentsSection.vue'
 import SchedulesSection from '../components/SchedulesSection.vue'
@@ -171,6 +185,15 @@ import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { useAppStatus } from '../composables/useAppStatus.js'
 import { useCopilot } from '../composables/useCopilot.js'
 import { useLivePreview } from '../composables/useLivePreview.js'
+import builtAppHost, { failureText } from '../mixins/builtAppHost.js'
+import {
+	deltaOf,
+	deltaToSave,
+	editorManifest,
+	fetchDeltaBase,
+	isDeltaVersion,
+} from '../services/deltaEditing.js'
+import { checkFormDestinations } from '../services/formDestinationCheck.js'
 import {
 	reconcileConnectorDependency,
 	reconcileDocumentDependency,
@@ -178,8 +201,23 @@ import {
 	stripDependencyMarker,
 } from '../services/manifestDependencies.js'
 import { assignUnassignedFieldsToFinalStep } from '../services/manifestValidation/formLogic.js'
+import { mirrorVersionLoad } from '../utils/mirrorVersionLoad.js'
+import { navigateTo } from '../utils/navigate.js'
 
 const EMPTY_MANIFEST = { version: '1.0.0', menu: [], pages: [] }
+
+/**
+ * The uuid of an ApplicationVersion: its `@self` id, else its uuid, else its id.
+ *
+ * @param {object|null} version The version.
+ * @return {string|undefined|null} The uuid, or a falsy value without one.
+ */
+function versionUuidOf(version) {
+	return (
+		version
+		&& ((version['@self'] && version['@self'].id) || version.uuid || version.id)
+	)
+}
 
 export default {
 	name: 'PageDesignerHost',
@@ -188,6 +226,7 @@ export default {
 		NcButton,
 		NcEmptyContent,
 		NcLoadingIcon,
+		NcNoteCard,
 		PageDesigner,
 		WorkflowAttachmentsSection,
 		ThemeSection,
@@ -196,6 +235,8 @@ export default {
 		CopilotPanel,
 	},
 
+	mixins: [builtAppHost],
+
 	/**
 	 * REQ-NTS-002 (design.md OQ-1 / Decision 3): `livePreview` exposes the
 	 * same feature-detected `useLivePreview()` composable PageDesigner.vue's
@@ -203,11 +244,17 @@ export default {
 	 * computed can gate the theme dialog's preview toggle on whether that
 	 * pane is actually mounted.
 	 *
-	 * @return {{copilot: object, livePreview: object}}
+	 * `deltaEditing` holds the base a delta-mode version extends
+	 * (app-delta-override D6): the designer edits the merged manifest and
+	 * saves its difference from `base`.
+	 *
+	 * @return {{copilot: object, livePreview: object, deltaEditing: object}}
 	 * @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-5.1
 	 */
 	setup() {
-		return { copilot: useCopilot(), livePreview: useLivePreview() }
+		const deltaEditing = reactive({ base: null, orphanedDeltaPaths: [], failed: false })
+		return { copilot: useCopilot(), livePreview: useLivePreview(), deltaEditing }
 	},
 
 	data() {
@@ -235,6 +282,10 @@ export default {
 			docudeskAvailable: true,
 			// spec ai-copilot REQ-OBAIC-007: builder copilot panel toggle.
 			showCopilotPanel: false,
+			// Decision 179/189: destination findings on the form pages from
+			// the last save. The pages save as a draft with them; each is
+			// marked on its field, and publishing waits until none remain.
+			destinationFindings: [],
 			// REQ-BUR-004: incremented after each successful save; feeds
 			// `sessionKey` so a save re-baselines the designer's undo/redo
 			// history (design.md D3). A failed save does NOT increment this.
@@ -248,7 +299,7 @@ export default {
 		 * and hidden for hybrid apps (the copilot edits virtual apps only).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		copilotToggleVisible() {
 			const isHybrid = !!(
@@ -263,7 +314,7 @@ export default {
 		 * `schemas` (array or map); empty when none are embedded.
 		 *
 		 * @return {Array<{slug: string, title: string, properties: object}>}
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002
 		 */
 		appSchemas() {
 			const schemas = this.manifest && this.manifest.schemas
@@ -289,7 +340,7 @@ export default {
 		 * The virtual-app slug from the route (/builder/:slug/pages).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		routeSlug() {
 			return this.$route.params.slug || ''
@@ -300,7 +351,7 @@ export default {
 		 * The underscore-prefix form avoids colliding with user-defined `?version=` params.
 		 *
 		 * @return {string|undefined}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		versionSlug() {
 			return this.$route.query._version || undefined
@@ -312,7 +363,7 @@ export default {
 		 * identical for both "doesn't exist" and "you can't see it" cases.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		versionNotFound() {
 			return (
@@ -323,25 +374,10 @@ export default {
 		},
 
 		/**
-		 * The Application's canonical UUID (OR puts it at @self.id).
-		 *
-		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
-		 */
-		applicationUuid() {
-			const self = this.application && this.application['@self']
-			return (
-				(self && self.id)
-				|| (this.application && this.application.uuid)
-				|| ''
-			)
-		},
-
-		/**
 		 * Full-page link into the virtual app, if it has ever been published.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		builderUrl() {
 			if (!this.application) {
@@ -389,11 +425,12 @@ export default {
 		/**
 		 * Observed behaviour of `routeSlug` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		async routeSlug() {
 			await this.resolveVersion()
 			await this.load()
+			await this.loadDeltaBase()
 		},
 
 		/**
@@ -408,19 +445,20 @@ export default {
 		 * paper, since resolveVersion() returned while its fetch was still in
 		 * flight.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 * @spec openspec/specs/builder-undo-redo/spec.md#req-bur-004
 		 */
 		async versionSlug() {
 			await this.resolveVersion()
 			await this.load()
+			await this.loadDeltaBase()
 		},
 	},
 
 	/**
 	 * Observed behaviour of `created` (retrofit annotation).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 	 */
 	async created() {
 		// REQ-OBVR-004: resolve the active ApplicationVersion on created.
@@ -432,15 +470,16 @@ export default {
 		// until resolveVersion() has actually settled.
 		await this.resolveVersion()
 		await this.load()
+		await this.loadDeltaBase()
 		// REQ-PWA-006: soft-check Procest so the Workflows section degrades
 		// gracefully when it is absent.
-		const status = useAppStatus('procest')
+		const status = useAppStatus('dossiq')
 		status.check().then(() => {
 			this.procestAvailable = status.available.value
 		})
 		// REQ-NTS-005: soft-check nldesign so the Theme section degrades
 		// gracefully when it is absent.
-		const nldesignStatus = useAppStatus('nldesign')
+		const nldesignStatus = useAppStatus('thematiq')
 		nldesignStatus.check().then(() => {
 			this.nldesignAvailable = nldesignStatus.available.value
 		})
@@ -528,35 +567,11 @@ export default {
 		},
 
 		/**
-		 * Delegate one-click link-property creation to the schema designer.
-		 * Emitted up from the Workflows dialog; opens the schema designer for
-		 * the chosen schema so the builder adds the `zaakUrl` string property
-		 * with the designer's own field validation (REQ-PWA-002).
-		 *
-		 * @param {string} schemaSlug - the schema to add the property to.
-		 * @return {void}
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
-		 */
-		onCreateLinkProperty(schemaSlug) {
-			if (!schemaSlug) {
-				return
-			}
-			// Navigate to the app's schema designer (manifest-driven route at
-			// /builder/:slug/schemas) with the target schema + the property to
-			// add pre-seeded; the designer adds the string property with its own
-			// field validation.
-			const base = generateUrl(
-				`/apps/buildiq/builder/${this.routeSlug}/schemas`,
-			)
-			window.location.href = `${base}?schema=${encodeURIComponent(schemaSlug)}&addProperty=zaakUrl`
-		},
-
-		/**
 		 * Resolve the active ApplicationVersion via useApplicationVersion composable
 		 * (REQ-OBVR-004 / REQ-OBVR-005). Called on created and when slug/versionSlug change.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		async resolveVersion() {
 			this.versionError = null
@@ -564,23 +579,7 @@ export default {
 				useApplicationVersion(this.routeSlug, this.versionSlug)
 			this.applicationVersion = applicationVersion.value
 			this.versionLoading = loading.value
-			const unwatch = this.$watch(
-				() => applicationVersion.value,
-				(v) => {
-					this.applicationVersion = v
-				},
-			)
-			const unwatchLoading = this.$watch(
-				() => loading.value,
-				(v) => {
-					this.versionLoading = v
-					if (!v) {
-						unwatch()
-						unwatchLoading()
-						this.versionError = error.value
-					}
-				},
-			)
+			mirrorVersionLoad(this, { applicationVersion, loading, error })
 			// AWAIT the in-flight fetch (#174). Every caller pairs this with load(),
 			// which seeds the editor manifest FROM `applicationVersion` exactly once
 			// — so returning before it settles left the designer showing "No pages
@@ -594,54 +593,40 @@ export default {
 		},
 
 		/**
-		 * Fetch the Application for the current slug and seed the editor manifest.
+		 * For a version that extends a base, load the base and edit the delta
+		 * merged over it (app-delta-override D6). A base that cannot be loaded
+		 * turns saving off, so the stored delta is never replaced by a guess.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/app-delta-override/tasks.md#task-5.1
 		 */
-		async load() {
-			this.loading = true
-			this.error = ''
-			this.toast = ''
-			try {
-				const url = generateUrl(
-					'/apps/openregister/api/objects/buildiq/built-app',
-				)
-				const { data } = await axios.get(url, { params: { _limit: 100 } })
-				const apps =
-					data && data.results
-						? data.results
-						: Array.isArray(data)
-							? data
-							: []
-				const app = apps.find((a) => a && a.slug === this.routeSlug) || null
-				this.application = app
-				// ADR-002 / REQ-OBPD-009: the manifest now lives on the active
-				// ApplicationVersion. Seed from the resolved version's manifest when
-				// available, falling back to the Application's manifest for apps that
-				// have not yet been migrated to the versioned model.
-				const versionManifest =
-					this.applicationVersion
-					&& this.applicationVersion.manifest
-					&& typeof this.applicationVersion.manifest === 'object'
-						? this.applicationVersion.manifest
-						: null
-				const seed =
-					versionManifest
-					|| (app && app.manifest && typeof app.manifest === 'object'
-						? app.manifest
-						: null)
-				this.manifest = seed
-					? JSON.parse(JSON.stringify(seed))
-					: { ...EMPTY_MANIFEST }
-			} catch (e) {
-				this.application = null
-				this.error = t('buildiq', 'Failed to load the app: {error}', {
-					error: (e && e.message) || String(e),
-				})
-			} finally {
-				this.loading = false
+		async loadDeltaBase() {
+			Object.assign(this.deltaEditing, { base: null, orphanedDeltaPaths: [], failed: false })
+			if (!this.application || !isDeltaVersion(this.applicationVersion)) {
+				return
 			}
+			try {
+				const { base, orphanedDeltaPaths } = await fetchDeltaBase(this.routeSlug, this.versionSlug || '')
+				if (base) {
+					Object.assign(this.deltaEditing, { base, orphanedDeltaPaths })
+					this.manifest = editorManifest(base, deltaOf(this.applicationVersion))
+				}
+			} catch (e) {
+				this.deltaEditing.failed = true
+				this.error = t('buildiq', 'The app this version extends could not be loaded, so it cannot be saved now: {error}', {
+					error: failureText(e),
+				})
+			}
+		},
+
+		/**
+		 * A fresh empty manifest, seeded when neither the version nor the
+		 * Application carries one.
+		 *
+		 * @return {object}
+		 */
+		emptyManifest() {
+			return { ...EMPTY_MANIFEST }
 		},
 
 		/**
@@ -649,31 +634,152 @@ export default {
 		 *
 		 * @param {object} next The new manifest.
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		onManifestUpdate(next) {
 			this.manifest = next
 		},
 
 		/**
-		 * Persist the edited manifest onto the Application object.
+		 * The running app's URL for the version being edited. Carries
+		 * `?_version=` so the preview shows the version on screen, not
+		 * whichever version the plain URL resolves to. Unlike `builderUrl`
+		 * this does not wait for a publish: previewing is how you check a
+		 * version before publishing it.
+		 *
+		 * @return {string} URL, or '' when there is no app.
+		 * @spec openspec/specs/page-designer-ui/spec.md#requirement-route-hosts-resolve-slug-plus-version-and-persist-the-manifest
+		 */
+		previewUrl() {
+			if (!this.application || !this.application.slug) {
+				return ''
+			}
+			const base = generateUrl(
+				`/apps/buildiq/builder/${this.application.slug}`,
+			)
+			const version = this.applicationVersion
+			const versionSlug =
+				(version
+					&& ((version['@self'] && version['@self'].slug) || version.slug))
+				|| this.versionSlug
+				|| ''
+			return versionSlug
+				? `${base}?_version=${encodeURIComponent(versionSlug)}`
+				: base
+		},
+
+		/**
+		 * "Save & open preview": save, then open the running app on the
+		 * version that was just saved. A failed save stays on the designer so
+		 * the error is visible and nothing unsaved is lost.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/specs/page-designer-ui/spec.md#requirement-route-hosts-resolve-slug-plus-version-and-persist-the-manifest
+		 */
+		async saveAndPreview() {
+			const saved = await this.save()
+			if (!saved) {
+				return
+			}
+			const url = this.previewUrl()
+			if (url) {
+				navigateTo(url)
+			}
+		},
+
+		/**
+		 * Ask which form pages of the saved manifest their destination refuses.
+		 * The save already happened: the pages are a draft (decision 189). A
+		 * check that cannot run says so, because silence would read as a pass.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-a-draft-form-saves-with-its-findings
+		 */
+		async refreshDestinationFindings() {
+			try {
+				const { findings } = await checkFormDestinations(
+					this.manifest,
+					this.routeSlug,
+				)
+				this.destinationFindings = findings
+				if (findings.length) {
+					this.toast = n(
+						'buildiq',
+						'Pages saved as a draft. A form has %n point its destination refuses; it is marked on its field, and the app can be published once it is fixed.',
+						'Pages saved as a draft. Forms have %n points their destination refuses; each is marked on its field, and the app can be published once they are fixed.',
+						findings.length,
+					)
+				}
+			} catch {
+				this.destinationFindings = []
+				this.error = t(
+					'buildiq',
+					'Pages saved, but the forms could not be checked against where they save to. Save again to retry.',
+				)
+			}
+		},
+
+		/**
+		 * Persist the edited manifest onto the Application object.
+		 *
+		 * @return {Promise<boolean>} true when the manifest was saved.
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		async save() {
-			if (!this.application || !this.applicationUuid || this.saving) {
-				return
+			if (!this.application || !this.applicationUuid || this.saving || this.deltaEditing.failed) {
+				return false
 			}
 			this.saving = true
 			this.error = ''
 			this.toast = ''
-			// REQ-PWA-006 / REQ-OCAS-005 / REQ-DDT-005: auto-manage the `procest`
-			// dependency against the manifest's workflow attachments, the
-			// `openconnector` dependency against its connector bindings, and the
-			// `docudesk` dependency against its document attachments, then strip
-			// the internal auto-dep marker so it never lands in the persisted
-			// manifest.
+			this.prepareManifestForSave()
+			try {
+				await this.persistManifest()
+				await this.closeSaveSession()
+				return true
+			} catch (e) {
+				this.error = t('buildiq', 'Failed to save: {error}', {
+					error: failureText(e),
+				})
+				return false
+			} finally {
+				this.saving = false
+			}
+		},
+
+		/**
+		 * Say the pages were saved, re-check the forms against where they save
+		 * to, and close the editing session. REQ-BUR-004: a successful save is a
+		 * session boundary — bump the counter so `sessionKey` changes and the
+		 * designer resets its undo/redo history to the just-saved manifest.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async closeSaveSession() {
+			this.toast = t('buildiq', 'Pages saved.')
+			await this.refreshDestinationFindings()
+			this.saveCounter += 1
+		},
+
+		/**
+		 * Bring the manifest into the shape it is persisted in.
+		 *
+		 * REQ-PWA-006 / REQ-OCAS-005 / REQ-DDT-005: auto-manage the `procest`
+		 * dependency against the manifest's workflow attachments, the
+		 * `openconnector` dependency against its connector bindings, and the
+		 * `docudesk` dependency against its document attachments, then strip
+		 * the internal auto-dep marker so it never lands in the persisted
+		 * manifest.
+		 *
+		 * REQ-OBFEL-001: the unassigned-fields pool is transient editor
+		 * state — any form-page field key still unassigned to a step at
+		 * save time is appended to that page's FINAL step so the written
+		 * manifest always satisfies the leaf validator's complete-partition
+		 * rule (no renderer fail-safe exists for an incomplete partition).
+		 *
+		 * @return {void}
+		 */
+		prepareManifestForSave() {
 			this.manifest = stripDependencyMarker(
 				reconcileDocumentDependency(
 					reconcileConnectorDependency(
@@ -681,65 +787,55 @@ export default {
 					),
 				),
 			)
-			// REQ-OBFEL-001: the unassigned-fields pool is transient editor
-			// state — any form-page field key still unassigned to a step at
-			// save time is appended to that page's FINAL step so the written
-			// manifest always satisfies the leaf validator's complete-partition
-			// rule (no renderer fail-safe exists for an incomplete partition).
 			this.manifest = assignUnassignedFieldsToFinalStep(this.manifest)
-			try {
-				// ADR-002 / REQ-OBPD-009 (design.md Decision 6): persist the manifest
-				// onto the active ApplicationVersion when one is resolved. Use a
-				// PATCH of just the `manifest` field — a full-object PUT re-validates
-				// the whole ApplicationVersion, and its `register` property (the
-				// per-version data-register slug, e.g. `buildiq-…`) collides with
-				// OpenRegister's reserved `register` routing metadata, so a
-				// `{ ...version, manifest }` PUT is rejected ("required property
-				// (register) is missing"). PATCH merges the new manifest into the
-				// stored object server-side, leaving every untouched field intact —
-				// losslessly and without tripping the collision.
-				const version = this.applicationVersion
-				const versionUuid =
-					version
-					&& ((version['@self'] && version['@self'].id)
-						|| version.uuid
-						|| version.id)
-				if (version && versionUuid) {
-					const url = generateUrl(
-						`/apps/openregister/api/objects/buildiq/applicationVersion/${versionUuid}`,
-					)
-					const { data } = await axios.patch(url, {
-						manifest: this.manifest,
-					})
-					if (data && typeof data === 'object') {
-						this.applicationVersion = data
-					}
-					this.toast = t('buildiq', 'Pages saved.')
-					// REQ-BUR-004: a successful save is a session boundary — bump
-					// the counter so `sessionKey` changes and the designer resets
-					// its undo/redo history to the just-saved manifest.
-					this.saveCounter += 1
-					return
-				}
-				const url = generateUrl(
-					`/apps/openregister/api/objects/buildiq/built-app/${this.applicationUuid}`,
-				)
-				const { data } = await axios.put(url, {
-					...this.application,
-					manifest: this.manifest,
-				})
-				if (data && typeof data === 'object') {
-					this.application = data
-				}
-				this.toast = t('buildiq', 'Pages saved.')
-				// REQ-BUR-004: see the PATCH branch above — same session-boundary bump.
-				this.saveCounter += 1
-			} catch (e) {
-				this.error = t('buildiq', 'Failed to save: {error}', {
-					error: (e && e.message) || String(e),
-				})
-			} finally {
-				this.saving = false
+		},
+
+		/**
+		 * Persist onto the active ApplicationVersion when one is resolved,
+		 * else onto the Application object.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async persistManifest() {
+			const versionUuid = versionUuidOf(this.applicationVersion)
+			if (versionUuid) {
+				await this.saveOntoVersion(versionUuid)
+				return
+			}
+			await this.saveOntoApplication()
+		},
+
+		/**
+		 * ADR-002 / REQ-OBPD-009 (design.md Decision 6): persist the manifest
+		 * onto the active ApplicationVersion. Use a PATCH of just the
+		 * `manifest` field — a full-object PUT re-validates the whole
+		 * ApplicationVersion, and its `register` property (the per-version
+		 * data-register slug, e.g. `buildiq-…`) collides with OpenRegister's
+		 * reserved `register` routing metadata, so a `{ ...version, manifest }`
+		 * PUT is rejected ("required property (register) is missing"). PATCH
+		 * merges the new manifest into the stored object server-side, leaving
+		 * every untouched field intact — losslessly and without tripping the
+		 * collision.
+		 *
+		 * A version that extends a base stores only its difference from that
+		 * base (app-delta-override D6).
+		 *
+		 * @param {string} versionUuid The active version's uuid.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/app-delta-override/tasks.md#task-5.1
+		 */
+		async saveOntoVersion(versionUuid) {
+			const url = generateUrl(
+				`/apps/openregister/api/objects/buildiq/applicationVersion/${versionUuid}`,
+			)
+			// A delta-mode version stores only its difference from its base
+			// (app-delta-override D6); every other version stores its manifest.
+			const body = this.deltaEditing.base
+				? { manifestDelta: deltaToSave(this.deltaEditing.base, this.manifest) }
+				: { manifest: this.manifest }
+			const { data } = await axios.patch(url, body)
+			if (data && typeof data === 'object') {
+				this.applicationVersion = data
 			}
 		},
 	},
@@ -801,14 +897,20 @@ export default {
 
 .page-designer-host__copilot {
 	position: fixed;
-	top: 0;
+	top: var(--header-height, 50px);
 	right: 0;
 	bottom: 0;
 	width: 360px;
 	max-width: 100%;
 	background: var(--color-main-background);
 	border-left: 1px solid var(--color-border);
-	padding: 12px;
+	/*
+	 * The bottom padding keeps the send row clear of the AI chat companion's
+	 * hex, which is position:fixed in this same corner. Without it the hex sits
+	 * on top of the Send button, and the one thing the panel needs is the one
+	 * thing you cannot click.
+	 */
+	padding: 12px 12px 72px;
 	z-index: 50;
 	box-sizing: border-box;
 }

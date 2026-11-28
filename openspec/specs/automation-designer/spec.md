@@ -6,7 +6,9 @@
 
 ## Purpose
 TBD - created by archiving change automation-designer. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Automations page lists automations per application version (REQ-AUTD-001)
 
 The system SHALL render an **Automations** page
@@ -170,117 +172,6 @@ or partially compile an unsupported automation. `approval` and
 - **THEN** the editor blocks the combination with a message stating
   document-generation actions are only supported on object-event and
   lifecycle-transition triggers in v1
-
-### Requirement: Automations compile deterministically to existing declarative primitives (REQ-AUTD-004)
-
-The system SHALL compile a saved automation (`AutomationCompilerService`)
-exclusively to existing declarative primitives or a listener-backed external
-integration per the matrix: event/transition + `send-notification` → an
-`x-openregister-notifications` entry on the target schema keyed
-`aut-<slug>-<n>`; lifecycle transition + `object-op`/`webhook` → typed
-`related-object-upsert`/`webhook-dispatch` records appended to that
-transition's `x-openregister-lifecycle` actions, tagged with an `aut-<slug>`
-marker; schedule + `run-synchronization` → a `manifest.schedules[]` entry
-with id `aut-<slug>-<n>` and action `openconnector:synchronization`, valid
-against the existing schedules validator; manual → a namespaced RuleSet
-(`aut-<uuid8>`) plus ConditionActionRule evaluated by the existing rules
-engine; event/lifecycle-transition + `approval` → an OpenRegister
-`ApprovalChain` named `aut-<slug>` (one step, `role` = the assignee group),
-upserted via OR's approval-chains API and instantiated against the trigger
-object's uuid via `ApprovalService::initializeChain()` at trigger-fire time;
-on-approve/on-reject follow-up actions dispatch through a typed listener on
-OR's `ApprovalStepApprovedEvent`/`ApprovalStepRejectedEvent`, never a new
-approval engine; event/lifecycle-transition + `generateDocument` → a
-validated action config (no compile-time Docudesk-side artifact — Docudesk's
-`correspondence/generate` call is stateless) dispatched at trigger-fire time
-by `DocumentGenerationListener` through `DocumentGenerationService`, which
-calls Docudesk's existing `POST /apps/docudesk/api/correspondence/generate`
-route impersonating the Application owner's session — never a Docudesk PHP
-class import (see `automation-document-action` and the modified
-`docudesk-document-templates` REQ-DDT-006). Compilation SHALL be
-deterministic (identical automation → identical artifacts) and idempotent
-(recompiling an unchanged automation changes nothing). No new imperative
-execution engine is introduced in buildiq.
-
-@e2e exclude backend compilation contract — artifact shapes are asserted by
-PHPUnit against `AutomationCompilerService` (unit) and the OR round-trip
-(integration); the user-visible halves are covered by REQ-AUTD-001/002/005
-Playwright scenarios, and the schedules artifact is additionally visible in
-the existing SchedulesSection e2e surface
-
-**ID:** REQ-AUTD-004
-
-#### Scenario: Event notification compiles to the notifications dialect
-
-- **WHEN** an enabled automation with trigger "object created" on `permit`
-  and one `send-notification` action is compiled
-- **THEN** the `permit` schema in the version's register carries an
-  `x-openregister-notifications` entry keyed `aut-<slug>-1` with
-  `trigger.type: "created"`, the mapped channels/recipients/subject and
-  `enabled: true`
-
-#### Scenario: Scheduled sync compiles to a schedules entry
-
-- **WHEN** an enabled automation with a Daily schedule trigger and a
-  `run-synchronization` action is compiled
-- **THEN** the version's `manifest.schedules[]` contains an entry
-  `{id: "aut-<slug>-1", enabled: true, interval: 86400, action:
-  "openconnector:synchronization", arguments: {synchronizationId}}` that
-  passes `validateSchedules`
-
-#### Scenario: Manual automation compiles to a namespaced rule set
-
-- **WHEN** a manual automation with a FEEL condition and an `object-op`
-  action is compiled
-- **THEN** a RuleSet with slug `aut-<uuid8>` and one ConditionActionRule
-  (condition in `conditie`, the typed action in `acties`) exist in the
-  shared register, and the automation's `provenance.ruleSetSlug` names it
-
-#### Scenario: Recompilation is idempotent
-
-- **WHEN** an unchanged automation is compiled twice
-- **THEN** the second compile produces byte-identical artifacts and the
-  `provenance.compiledHash` is unchanged
-
-#### Scenario: Approval action compiles to an OR approval chain
-
-- **WHEN** an enabled automation with trigger "object created" on
-  `permit-application` and one `approval` action assigned to group
-  `permit-reviewers` is compiled
-- **THEN** an OR `ApprovalChain` named `aut-<slug>` exists with one step
-  `{order: 1, role: "permit-reviewers"}`
-- **AND** the automation's `provenance.approvalChainName` names it
-
-#### Scenario: Trigger firing initialises an approval step
-
-- **WHEN** an object is created that matches an enabled automation's
-  `approval` action trigger
-- **THEN** `ApprovalService::initializeChain()` is called for that object's
-  uuid against the compiled chain, creating a `pending` `ApprovalStep`
-
-#### Scenario: Approval outcome dispatches the configured follow-up
-
-- **WHEN** an `ApprovalStep` compiled from an automation's `approval` action
-  is approved
-- **THEN** the automation's on-approve follow-up actions are dispatched
-- **AND** no on-reject follow-up action is dispatched
-
-#### Scenario: Document-generation action fires via the pinned Docudesk route
-
-- **WHEN** an object matching an enabled automation's `generateDocument`
-  trigger is created/transitioned
-- **THEN** `DocumentGenerationService` calls
-  `POST /apps/docudesk/api/correspondence/generate` with `dataRefs` naming
-  that object, impersonating the Application owner
-- **AND** no Docudesk PHP class is imported anywhere in the call path
-
-#### Scenario: Missing Docudesk fails the compile, not the runtime
-
-- **WHEN** an automation carrying a `generateDocument` action is compiled on
-  an instance where Docudesk is absent
-- **THEN** `AutomationCompilerService` throws
-  `UnsupportedAutomationCombinationException` naming the missing `docudesk`
-  dependency
 
 ### Requirement: An automation is managed as one unit with provenance (REQ-AUTD-005)
 
@@ -479,3 +370,438 @@ covered by the REQ-AUTD-007 dry-run Playwright scenarios
 - **THEN** exactly one object is created in that schema via
   `ObjectService::saveObject` with the mapped fields
 
+### Requirement: Automations compile deterministically to declarative primitives or one OpenRegister flow (REQ-BQAR-001)
+
+The system SHALL compile a saved automation (`AutomationCompilerService`)
+only to existing declarative primitives, a listener-backed integration or one
+OpenRegister flow (REQ-BQAR-001a to 001d), deterministically and idempotently.
+No new imperative execution engine is introduced in buildiq.
+
+@e2e exclude backend compilation contract, asserted by PHPUnit; the user-visible
+halves are REQ-AUTD-001/002/005's Playwright scenarios
+
+**ID:** REQ-BQAR-001 (replaces REQ-AUTD-004)
+
+#### Scenario: Recompilation is idempotent
+
+- **WHEN** an unchanged automation is compiled twice
+- **THEN** the second compile produces byte-identical artifacts and the
+  `provenance.compiledHash` is unchanged
+
+### Requirement: Notifications and scheduled syncs compile to their dialects (REQ-BQAR-001a)
+
+The system SHALL compile event/transition + `send-notification` to an
+`x-openregister-notifications` entry on the target schema keyed
+`aut-<slug>-<n>`, and schedule + `run-synchronization` to a
+`manifest.schedules[]` entry with id `aut-<slug>-<n>` and action
+`openconnector:synchronization`, valid against the existing schedules validator.
+
+#### Scenario: Event notification compiles to the notifications dialect
+
+@e2e exclude backend compilation contract, asserted by PHPUnit (see REQ-BQAR-001)
+
+- **WHEN** an enabled automation with trigger "object created" on `permit`
+  and one `send-notification` action is compiled
+- **THEN** the `permit` schema in the version's register carries an
+  `x-openregister-notifications` entry keyed `aut-<slug>-1` with
+  `trigger.type: "created"`, the mapped channels/recipients/subject and
+  `enabled: true`
+
+#### Scenario: Scheduled sync compiles to a schedules entry
+
+@e2e exclude backend compilation contract, asserted by PHPUnit (see REQ-BQAR-001)
+
+- **WHEN** an enabled automation with a Daily schedule trigger and a
+  `run-synchronization` action is compiled
+- **THEN** the version's `manifest.schedules[]` contains an entry
+  `{id: "aut-<slug>-1", enabled: true, interval: 86400, action:
+  "openconnector:synchronization", arguments: {synchronizationId}}` that
+  passes `validateSchedules`
+
+### Requirement: Flow actions compile to one OpenRegister flow (REQ-BQAR-001b)
+
+The system SHALL compile an automation with a `manual` trigger, or holding a flow
+action (`object-op` or `webhook` outside an approval, or `rule-decision`), to one
+OpenRegister flow named `aut-<slug>`, saved through OpenRegister's
+`FlowService::save()`, bound in `Application.flows`, and named in
+`provenance.flowUuid`. A lifecycle transition + a flow action SHALL be refused
+with the combination named, until OpenRegister can start a flow on a transition.
+
+#### Scenario: Manual automation compiles to an OpenRegister flow
+
+@e2e exclude backend compilation contract, asserted by PHPUnit (see REQ-BQAR-001)
+
+- **WHEN** a manual automation with a FEEL condition and an `object-op`
+  action is compiled
+- **THEN** an OpenRegister flow named `aut-<slug>` exists with an
+  `openregister.trigger-manual` node, an `openregister.filter` node holding
+  the condition as JSONLogic and an `openregister.object-write` node, it is
+  bound in the app's `Application.flows`, and the automation's
+  `provenance.flowUuid` names it
+
+#### Scenario: A record step on a lifecycle transition is refused
+
+@e2e exclude backend compilation contract, asserted by PHPUnit (see REQ-BQAR-001)
+
+- **WHEN** an automation with trigger "lifecycle transition" and an
+  `object-op` action is compiled
+- **THEN** `AutomationCompilerService` throws
+  `UnsupportedAutomationCombinationException` naming the combination, and no
+  lifecycle action record is written
+
+### Requirement: Approval actions compile to an OpenRegister approval chain (REQ-BQAR-001c)
+
+The system SHALL compile event/lifecycle-transition + `approval` to an
+OpenRegister `ApprovalChain` named `aut-<slug>` (one step, `role` = the assignee
+group), upserted via OR's approval-chains API and instantiated against the
+trigger object's uuid via `ApprovalService::initializeChain()` at trigger-fire
+time. On-approve/on-reject follow-up actions SHALL dispatch through a typed
+listener on OR's `ApprovalStepApprovedEvent`/`ApprovalStepRejectedEvent`, never
+a new approval engine.
+
+#### Scenario: Approval action compiles to an OR approval chain
+
+@e2e exclude backend compilation contract, asserted by PHPUnit (see REQ-BQAR-001)
+
+- **WHEN** an enabled automation with trigger "object created" on
+  `permit-application` and one `approval` action assigned to group
+  `permit-reviewers` is compiled
+- **THEN** an OR `ApprovalChain` named `aut-<slug>` exists with one step
+  `{order: 1, role: "permit-reviewers"}`
+- **AND** the automation's `provenance.approvalChainName` names it
+
+#### Scenario: Trigger firing initialises an approval step
+
+@e2e exclude backend compilation contract, asserted by PHPUnit (see REQ-BQAR-001)
+
+- **WHEN** an object is created that matches an enabled automation's
+  `approval` action trigger
+- **THEN** `ApprovalService::initializeChain()` is called for that object's
+  uuid against the compiled chain, creating a `pending` `ApprovalStep`
+
+#### Scenario: Approval outcome dispatches the configured follow-up
+
+@e2e exclude backend compilation contract, asserted by PHPUnit (see REQ-BQAR-001)
+
+- **WHEN** an `ApprovalStep` compiled from an automation's `approval` action
+  is approved
+- **THEN** the automation's on-approve follow-up actions are dispatched
+- **AND** no on-reject follow-up action is dispatched
+
+### Requirement: Document generation runs through Docudesk's route (REQ-BQAR-001d)
+
+The system SHALL compile event/lifecycle-transition + `generateDocument` to a
+validated action config, dispatched at trigger-fire time by
+`DocumentGenerationListener` through `DocumentGenerationService`, which calls
+Docudesk's `POST /apps/docudesk/api/correspondence/generate` route impersonating
+the Application owner's session, never a Docudesk PHP class import (see
+`automation-document-action` and `docudesk-document-templates` REQ-DDT-006).
+
+#### Scenario: Document-generation action fires via the pinned Docudesk route
+
+@e2e exclude backend compilation contract, asserted by PHPUnit (see REQ-BQAR-001)
+
+- **WHEN** an object matching an enabled automation's `generateDocument`
+  trigger is created/transitioned
+- **THEN** `DocumentGenerationService` calls
+  `POST /apps/docudesk/api/correspondence/generate` with `dataRefs` naming
+  that object, impersonating the Application owner
+- **AND** no Docudesk PHP class is imported anywhere in the call path
+
+#### Scenario: Missing Docudesk fails the compile, not the runtime
+
+@e2e exclude backend compilation contract, asserted by PHPUnit (see REQ-BQAR-001)
+
+- **WHEN** an automation carrying a `generateDocument` action is compiled on
+  an instance where Docudesk is absent
+- **THEN** `AutomationCompilerService` throws
+  `UnsupportedAutomationCombinationException` naming the missing `docudesk`
+  dependency
+
+### Requirement: A record step runs outside an approval (REQ-BQAR-002)
+
+An automation with an `object-op` action on an object or manual trigger SHALL
+compile the action to `openregister.object-write` in its flow. The target schema
+SHALL be one of the schemas of the automation's app version, and a target outside
+it SHALL be refused at compile.
+
+#### Scenario: A new permit creates an inspection record
+
+- **GIVEN** a maker's automation on `vergunning` with trigger "Object created" and a record step that creates an `inspectie` with `vergunning` set to the new record's id
+- **WHEN** an app user creates a `vergunning`
+- **THEN** an `inspectie` record exists that points at it, and the flow's run log shows the write
+
+#### Scenario: A target schema from another app is refused
+
+- **GIVEN** a record step whose target schema slug belongs to a different app
+- **WHEN** the maker saves the automation
+- **THEN** the save fails and names the schema as outside this app
+
+### Requirement: A webhook step calls a configured source (REQ-BQAR-003)
+
+The webhook step SHALL name an integriq source and a path instead of a URL, and
+SHALL compile to `openconnector.source-call` with method POST and the payload
+template as body. A webhook step without a source SHALL be refused on save.
+Without integriq the webhook kind SHALL be disabled with the reason.
+
+#### Scenario: A maker posts new requests to the planning system
+
+- **GIVEN** an integriq source `planning` the maker may use
+- **WHEN** they add a webhook step with source `planning`, path `/intake` and a payload template, and save
+- **THEN** the compiled flow holds an `openconnector.source-call` node with source `planning` and endpoint `/intake`
+
+### Requirement: A condition gates the actions (REQ-BQAR-004)
+
+A FEEL condition SHALL compile to an `openregister.filter` node holding the
+JSONLogic translation of the expression, and an expression the translator cannot
+express SHALL be refused at compile with the part named. A rule-set condition
+SHALL compile to an `openregister.decision-table` node and a filter on its
+result, so the actions run only when the rule set says so.
+
+#### Scenario: Only large claims start the step
+
+- **GIVEN** a manual automation with condition `bedrag > 1000` and a record step
+- **WHEN** an app user runs it on a claim of 500
+- **THEN** the run stops at the filter and no record is written
+
+### Requirement: A step decides with a rule set (REQ-BQAR-005)
+
+The composer SHALL offer "Decide with a rule set": a decision table rule set, an
+input mapping from record fields to its columns, and an output field. It SHALL
+compile to `openregister.decision-table` with the table translated as the rules
+engine translates it, and `openregister.object-write` of the result onto the
+record. A condition-action rule set SHALL be refused. Activating a new version
+of a referenced rule set SHALL recompile the automations that copy it.
+
+#### Scenario: The fee category is decided on creation
+
+- **GIVEN** an active decision table `leges-categorie` with inputs `oppervlakte` and `type`
+- **WHEN** a maker adds "Decide with a rule set" on `aanvraag` created, mapping both fields and writing to `categorie`, and an app user creates an `aanvraag`
+- **THEN** the record's `categorie` holds the table's decision
+
+#### Scenario: A new rule version reaches the flow
+
+- **GIVEN** an automation that copies `leges-categorie` version 1.0.0
+- **WHEN** an administrator activates version 1.0.1
+- **THEN** the automation recompiles and its provenance names version 1.0.1
+
+### Requirement: App users run manual automations from a record (REQ-BQAR-006)
+
+A built app SHALL offer a runtime action on detail pages that lists the app's
+enabled manual automations for the record's schema. `POST
+/api/automations/{uuid}/run` SHALL refuse a caller without a use role on the
+app, a caller who cannot read the record, and an automation that is not manual
+and enabled.
+
+#### Scenario: A clerk runs an automation on one record
+
+- **GIVEN** an app user with the use role on app `permits` viewing `vergunning` 42
+- **WHEN** they open the actions menu and choose "Send to inspection"
+- **THEN** the automation's flow starts for record 42 and the menu confirms it started
+
+#### Scenario: A user of another app cannot run it
+
+- **GIVEN** a signed-in colleague without a role on app `permits`
+- **WHEN** they call `POST /api/automations/{uuid}/run` for that app's automation
+- **THEN** the route answers 403 and no flow run starts
+
+### Requirement: Stuck automations are moved or disabled with a reason (REQ-BQAR-007)
+
+A repair step SHALL remove the `related-object-upsert` and `webhook-dispatch`
+lifecycle records and the manual-trigger rule sets that earlier compiles wrote,
+recompile each affected automation to a flow, and disable any it cannot compile
+with the reason recorded and shown on the automations page.
+
+#### Scenario: A transition webhook is disabled and says why
+
+- **GIVEN** an automation compiled before this change with a lifecycle transition trigger and a webhook step
+- **WHEN** the app upgrades
+- **THEN** its lifecycle record is gone, the automation is disabled, and the automations page says "Record and webhook steps cannot run on a lifecycle transition yet."
+
+### Requirement: The app leads to its business rules (REQ-BQAR-008)
+
+The actions menu of the app detail page SHALL offer "Business rules" next to
+"Automations", opening the business rules page with the app preselected, and
+that page SHALL list the rule sets owned by the app and the global ones.
+
+#### Scenario: A maker finds the app's rule sets
+
+- **GIVEN** a maker on the detail page of app `permits`
+- **WHEN** they choose "Business rules" in the actions menu
+- **THEN** the business rules page lists the rule sets owned by `permits` and the global rule sets
+
+### Requirement: Every run of an automation that buildiq dispatches is recorded (REQ-BQRL-001)
+
+The system SHALL write one `automation-run` record per run of one automation on
+one subject at every point where buildiq dispatches an automation: the `manual`
+trigger evaluated by `RuleEngineService`, `AutomationApprovalTriggerListener`,
+`ApprovalOutcomeListener` and `DocumentGenerationListener`. The record MUST
+carry the automation uuid, the version uuid, the compiled hash, the trigger,
+the subject, the start time, the duration, the outcome (`succeeded`, `failed`,
+`skipped`, `waiting`), a reason for `failed` and `skipped`, and one step per
+action with its own outcome and message. The record MUST NOT carry the input
+payload. A failure to write the record SHALL be logged at error level and MUST
+NOT abort the automation.
+
+@e2e tests/e2e/automation-runs.spec.ts
+
+#### Scenario: A manual run with a failing action is recorded with the failure
+
+- **GIVEN** an automation "Nieuw ticket melden" with the `manual` trigger and two actions
+- **WHEN** a maker runs it on ticket T-1 and the second action fails with "Webhook answered 500"
+- **THEN** one `automation-run` record exists for that automation and subject T-1
+- **AND** its outcome is `failed`
+- **AND** its first step has outcome `succeeded` and its second step has outcome `failed` with message "Webhook answered 500"
+
+#### Scenario: A false condition is a skipped run with its reason
+
+- **GIVEN** an automation with the condition `prioriteit = "hoog"`
+- **WHEN** it is triggered on a ticket whose `prioriteit` is "laag"
+- **THEN** the run is recorded with outcome `skipped`
+- **AND** its reason names the condition that was false
+
+#### Scenario: An approval run waits and is completed by the decision
+
+- **GIVEN** an automation "Klacht ter goedkeuring" with an approval action and a document action on approve
+- **WHEN** complaint C-2026-0412 takes the transition `indienen`
+- **THEN** a run is recorded with outcome `waiting` and the step "approval requested"
+- **WHEN** a team lead approves the task
+- **THEN** the same run is updated with the decision step and the document step, and its outcome becomes `succeeded`
+
+#### Scenario: A recorder failure does not stop the automation
+
+- **GIVEN** the `automation-run` schema cannot be written
+- **WHEN** an automation runs
+- **THEN** its actions still run
+- **AND** an error is logged naming the automation
+
+### Requirement: A maker reads the runs of an automation they may edit (REQ-BQRL-002)
+
+The system SHALL expose `GET /api/automations/{uuid}/runs` with the filters
+`outcome`, `since`, `until`, `limit` (default 25) and `offset`, newest first,
+and a `summary` with `lastRunAt`, `lastOutcome` and `lastError`. The endpoint
+MUST apply the same authorization as `GET /api/automations/{uuid}/status`: a
+caller who may not edit the automation's application receives the same refusal
+the status endpoint gives. The `automation-run` schema MUST NOT be readable by
+non-admins through OpenRegister's object API.
+
+@e2e tests/e2e/automation-runs.spec.ts
+
+#### Scenario: An editor reads the runs
+
+- **GIVEN** a user who is an editor of the application Pipelinq
+- **WHEN** they request the runs of an automation in that application
+- **THEN** they receive its runs, newest first, with the summary
+
+#### Scenario: A user who may not edit the application reads nothing
+
+- **GIVEN** a signed-in user with no role on the application Pipelinq
+- **WHEN** they request the runs of one of its automations
+- **THEN** the response is the refusal `status` gives for that user
+- **AND** no run is returned
+
+#### Scenario: Filtering on failures
+
+- **WHEN** an editor requests the runs with `outcome=failed`
+- **THEN** only runs with outcome `failed` are returned
+
+### Requirement: The Automations page shows the last run and opens the run log (REQ-BQRL-003)
+
+Each automation row on the Automations page SHALL show a last-run line under
+its action summary ("Last run 7 Oct 14:02, succeeded", "Last run failed: Webhook
+answered 500", or "No run in the last 90 days") and SHALL offer a "Runs" button
+between "Test" and "Edit". The button SHALL open a runs dialog in `src/modals/`
+with a table of runs (time, trigger, object, outcome, duration), an outcome
+filter, and per run the table "Action | Outcome" that the test panel uses. The
+object cell SHALL link to the object.
+
+@e2e tests/e2e/automation-runs.spec.ts
+
+#### Scenario: A failed last run is visible on the list
+
+- **GIVEN** the last run of "Nieuw ticket melden" failed with "Webhook answered 500"
+- **WHEN** a maker opens the Automations page
+- **THEN** that row shows "Last run failed: Webhook answered 500"
+
+#### Scenario: The run detail reads like a test result
+
+- **WHEN** a maker opens "Runs" on an automation and expands a run
+- **THEN** a table with the columns "Action" and "Outcome" lists each action of that run
+- **AND** the run's duration shows under the table
+
+#### Scenario: An automation that never ran says so
+
+- **GIVEN** an automation with no run record
+- **WHEN** a maker opens its runs dialog
+- **THEN** the dialog says "No run in the last 90 days"
+- **AND** shows no empty table
+
+### Requirement: A step that OpenRegister executes is labelled, never invented (REQ-BQRL-004)
+
+For an action that compiles to an artifact OpenRegister or integriq executes
+without buildiq (a notification, a typed lifecycle action, a schedule), the
+runs dialog MUST NOT show a success or failure that OpenRegister did not
+record. The compiler SHALL give each compiled notification the key
+`aut-<automation uuid>-<position>` and each typed lifecycle action the key
+`aut-<automation uuid>`, and the runs endpoint SHALL read OpenRegister's
+outcome records under that key (`GET /api/automation-outcomes`, under the
+caller's own access) and answer each as a run of its own with
+`source: openregister`, one step, the outcome (`sent` and `done` as succeeded,
+`partial` and `failed` as failed, `skipped` as skipped), the reason, and for a
+notification the number of people it reached. An outcome whose key belongs to
+another automation MUST NOT be shown. An action OpenRegister keeps no record of
+SHALL be listed with the outcome "Runs in OpenRegister. No per-run record
+yet." When every action of an automation runs outside buildiq and none leaves
+a record, the dialog SHALL say "This automation runs entirely in OpenRegister"
+and show no run rows. A schedule action SHALL link to the synchronization log
+in integriq.
+
+@e2e tests/e2e/automation-runs.spec.ts
+
+#### Scenario: A notification's runs come from OpenRegister's record
+
+- **GIVEN** an automation on object creation whose only action is "Send notification"
+- **AND** OpenRegister recorded that notification as sent to 2 people for object `T-7`
+- **WHEN** a maker opens its runs dialog
+- **THEN** a run row for `T-7` shows the outcome "succeeded" and no duration
+- **AND** its detail lists the step "send-notification" as "succeeded: Sent to 2 people"
+- **AND** the last-run line on the Automations page counts that run
+
+#### Scenario: An automation with no record anywhere does not fake a log
+
+- **GIVEN** an automation on object creation whose only action is a webhook
+- **WHEN** a maker opens its runs dialog
+- **THEN** the dialog says "This automation runs entirely in OpenRegister"
+- **AND** no run row is shown
+
+#### Scenario: Another automation's outcomes are not shown
+
+- **GIVEN** two automations whose uuids start with the same characters
+- **WHEN** a maker opens the runs of one of them
+- **THEN** no outcome recorded under the other automation's key is shown
+
+#### Scenario: A mixed automation labels the OpenRegister step
+
+- **GIVEN** an approval automation that also calls a webhook OpenRegister executes
+- **WHEN** a maker expands a run
+- **THEN** the webhook step shows "Runs in OpenRegister. No per-run record yet."
+
+### Requirement: Old runs are pruned and the last run stays (REQ-BQRL-005)
+
+A daily background job SHALL delete `automation-run` records older than 90
+days. The summary of REQ-BQRL-002 MUST be computed from the newest remaining
+record. Run records MUST NOT be copied when an application version is branched,
+and MUST stay when their automation is deleted, until the prune job removes them.
+
+@e2e exclude a 90-day retention cannot be driven in a browser run; covered by PHPUnit on AutomationRunPruneJob with a fixed clock
+
+#### Scenario: A run older than 90 days is removed
+
+- **GIVEN** a run record started 91 days ago and one started yesterday
+- **WHEN** the prune job runs
+- **THEN** the old record is deleted and the one from yesterday stays
+
+#### Scenario: Deleting an automation keeps its runs
+
+- **WHEN** a maker deletes an automation that ran yesterday
+- **THEN** its run record from yesterday still exists

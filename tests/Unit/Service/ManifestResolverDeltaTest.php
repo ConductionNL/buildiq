@@ -1,0 +1,336 @@
+<?php
+
+/**
+ * ManifestResolverService serves a delta-mode version merged over its base.
+ *
+ * The production version (inline) and a named version both go through
+ * ManifestBaseResolver; a legacy blob is served as stored; a base app of
+ * another organisation is not read for a caller who may not see it.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Test
+ * @package  OCA\Buildiq\Tests\Unit\Service
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://conduction.nl
+ */
+
+declare(strict_types=1);
+
+namespace OCA\Buildiq\Tests\Unit\Service;
+
+use OCA\Buildiq\Exception\InvalidServedManifestException;
+use OCA\Buildiq\Service\AppVisibilityResolver;
+use OCA\Buildiq\Service\ManifestBaseResolver;
+use OCA\Buildiq\Service\RegisterRecordLookup;
+use OCA\Buildiq\Service\ManifestResolverService;
+use OCA\Buildiq\Service\ManifestWidgetRoleFilter;
+use OCA\Buildiq\Service\PermissionResolver;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCP\IGroupManager;
+use OCP\IUser;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
+
+/**
+ * @covers \OCA\Buildiq\Service\ManifestResolverService
+ *
+ * @spec openspec/changes/app-delta-override/tasks.md#task-4.1
+ * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
+ */
+final class ManifestResolverDeltaTest extends TestCase {
+
+	private const TEMPLATE = [
+		'uuid' => 't-1',
+		'slug' => 'permits',
+		'version' => '1.0.0',
+		'manifest' => ['version' => '1.0.0', 'menu' => [], 'pages' => [['id' => 'home', 'title' => 'Home'], ['id' => 'list', 'title' => 'List']]],
+	];
+
+	private const RENDERABLE_TEMPLATE = [
+		'uuid' => 't-2',
+		'slug' => 'tickets',
+		'version' => '1.0.0',
+		'manifest' => [
+			'version' => '1.0.0',
+			'menu' => [],
+			'pages' => [
+				['id' => 'home', 'route' => '/', 'type' => 'dashboard', 'title' => 'Home'],
+				['id' => 'list', 'route' => '/list', 'type' => 'index', 'title' => 'List'],
+			],
+		],
+	];
+
+	/**
+	 * The resolver over one application, its named versions and Buildiq's base rows.
+	 *
+	 * @param array<string, mixed>                      $application The application found by slug.
+	 * @param array<int, array<string, mixed>>          $versions    Versions found by slug + application.
+	 * @param array<string, list<array<string, mixed>>> $baseRows    Rows the base resolver reads, per schema.
+	 *
+	 * @return ManifestResolverService
+	 */
+	private function service(array $application, array $versions = [], array $baseRows = []): ManifestResolverService {
+		$objects = $this->createMock(originalClassName: ObjectServiceInterface::class);
+		$objects->method('searchObjects')->willReturnCallback(
+			static function (array $query) use ($application, $versions): array {
+				if (isset($query['application']) === true) {
+					return $versions;
+				}
+				return [$application];
+			}
+		);
+		$objects->method('searchObjectsBySlug')->willReturnCallback(
+			static function (string $register, string $schema, array $filters = []) use ($baseRows): array {
+				return array_values(array_filter(
+					$baseRows[$schema] ?? [],
+					static fn (array $row): bool => ($row['slug'] ?? null) === ($filters['slug'] ?? null)
+						|| ($row['uuid'] ?? null) === ($filters['@self']['uuid'] ?? null)
+				));
+			}
+		);
+
+		$register = $this->getMockBuilder(className: Register::class)->onlyMethods(['getId'])->getMock();
+		$register->method('getId')->willReturn(1);
+		$registerMapper = $this->createMock(originalClassName: RegisterMapper::class);
+		$registerMapper->method('find')->willReturn($register);
+		$schema = $this->getMockBuilder(className: Schema::class)->onlyMethods(['getId'])->getMock();
+		$schema->method('getId')->willReturn(2);
+		$schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
+		$schemaMapper->method('find')->willReturn($schema);
+		$groupManager = $this->createMock(originalClassName: IGroupManager::class);
+		$groupManager->method('getUserGroups')->willReturn([]);
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
+
+		return new ManifestResolverService(
+			objectService: $objects,
+			registerMapper: $registerMapper,
+			schemaMapper: $schemaMapper,
+			logger: $logger,
+			permissionResolver: new PermissionResolver(groupManager: $groupManager, logger: $logger),
+			widgetRoleFilter: new ManifestWidgetRoleFilter(visibility: new AppVisibilityResolver(), groupManager: $groupManager),
+			baseResolver: new ManifestBaseResolver(records: new RegisterRecordLookup(objectService: $objects, logger: $logger), logger: $logger),
+		);
+	}//end service()
+
+	/**
+	 * A caller with the given uid.
+	 *
+	 * @param string $uid The uid.
+	 *
+	 * @return IUser
+	 */
+	private function user(string $uid): IUser {
+		$user = $this->createMock(originalClassName: IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		return $user;
+	}//end user()
+
+	/**
+	 * The production version's delta is merged over its template; no baseRef or delta reaches the caller.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.1
+	 */
+	public function testTheProductionVersionServesItsDeltaOverItsBase(): void {
+		$service = $this->service(
+			application: ['uuid' => 'app-1', 'slug' => 'crm', 'productionVersion' => [
+				'uuid' => 'v-1',
+				'manifest' => (object)[],
+				'baseRef' => ['kind' => 'template', 'id' => 'permits'],
+				'manifestDelta' => ['pages' => [['id' => 'list', 'title' => 'Permits']]],
+			]],
+			baseRows: ['application-template' => [self::TEMPLATE]]
+		);
+
+		$manifest = $service->resolve('crm', null, null);
+
+		$this->assertSame(expected: ['Home', 'Permits'], actual: array_column($manifest['pages'], 'title'));
+		$this->assertArrayNotHasKey(key: 'baseRef', array: $manifest);
+		$this->assertArrayNotHasKey(key: 'manifestDelta', array: $manifest);
+	}//end testTheProductionVersionServesItsDeltaOverItsBase()
+
+	/**
+	 * A named version an owner opens is merged too, and a legacy production blob is served as stored.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.1
+	 */
+	public function testANamedVersionIsMergedAndALegacyBlobIsNot(): void {
+		$application = [
+			'uuid' => 'app-1',
+			'slug' => 'crm',
+			'productionVersion' => ['uuid' => 'v-1', 'manifest' => ['pages' => [['id' => 'legacy']]]],
+			'permissions' => ['owners' => ['user:alice'], 'editors' => []],
+		];
+		$draft = [
+			'uuid' => 'v-2',
+			'slug' => 'next',
+			'application' => 'app-1',
+			'manifest' => (object)[],
+			'baseRef' => ['kind' => 'template', 'id' => 'permits'],
+			'manifestDelta' => ['pages' => [['id' => 'home', '$op' => 'remove']]],
+		];
+		$service = $this->service(application: $application, versions: [$draft], baseRows: ['application-template' => [self::TEMPLATE]]);
+
+		$this->assertSame(expected: ['pages' => [['id' => 'legacy']]], actual: $service->resolve('crm', null, null));
+		$this->assertSame(expected: ['List'], actual: array_column($service->resolve('crm', 'next', $this->user(uid: 'alice'))['pages'], 'title'));
+	}//end testANamedVersionIsMergedAndALegacyBlobIsNot()
+
+	/**
+	 * A base app scoped to an organisation the caller cannot see is not read; the stored blob is served.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.1
+	 */
+	public function testABaseAppTheCallerCannotSeeIsNotRead(): void {
+		$service = $this->service(
+			application: ['uuid' => 'app-1', 'slug' => 'crm', 'productionVersion' => [
+				'uuid' => 'v-1',
+				'manifest' => ['pages' => [['id' => 'own']]],
+				'baseRef' => ['kind' => 'buildiq-app', 'id' => 'secret'],
+			]],
+			baseRows: [
+				'built-app' => [['uuid' => 'app-2', 'slug' => 'secret', 'organisationScope' => 'holder', 'productionVersion' => 'v-9']],
+				'applicationVersion' => [['uuid' => 'v-9', 'application' => 'app-2', 'manifest' => ['pages' => [['id' => 'theirs']]]]],
+			]
+		);
+
+		$this->assertSame(expected: ['pages' => [['id' => 'own']]], actual: $service->resolve('crm', null, $this->user(uid: 'bob')));
+	}//end testABaseAppTheCallerCannotSeeIsNotRead()
+
+	/**
+	 * servedManifest merges a version handed in by a caller that authorised it already.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.2
+	 */
+	public function testServedManifestMergesAVersionDirectly(): void {
+		$service = $this->service(application: [], baseRows: ['application-template' => [self::TEMPLATE]]);
+		$version = [
+			'manifest' => [],
+			'baseRef' => ['kind' => 'template', 'id' => 'permits'],
+			'manifestDelta' => ['pages' => [['id' => 'home', '$op' => 'remove']]],
+		];
+
+		$this->assertSame(expected: ['List'], actual: array_column($service->servedManifest(version: $version, caller: null)['pages'], 'title'));
+		$this->assertSame(expected: ['pages' => []], actual: $service->servedManifest(version: ['manifest' => ['pages' => []]], caller: null));
+	}//end testServedManifestMergesAVersionDirectly()
+
+	/**
+	 * An application whose inline production version extends the renderable template with a delta.
+	 *
+	 * @param array<string, mixed> $delta The version's manifestDelta.
+	 *
+	 * @return ManifestResolverService
+	 */
+	private function servedService(array $delta): ManifestResolverService {
+		return $this->service(
+			application: ['uuid' => 'app-1', 'slug' => 'crm', 'productionVersion' => [
+				'uuid' => 'v-1',
+				'manifest' => (object)[],
+				'baseRef' => ['kind' => 'template', 'id' => 'tickets'],
+				'manifestDelta' => $delta,
+			]],
+			baseRows: ['application-template' => [self::RENDERABLE_TEMPLATE]]
+		);
+	}//end servedService()
+
+	/**
+	 * The serving path hands out a merged manifest that has what the renderer needs.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
+	 */
+	public function testTheServingPathServesASoundMergedManifest(): void {
+		$manifest = $this->servedService(delta: ['pages' => [['id' => 'list', 'title' => 'Tickets']]])->resolveServed('crm', null, null);
+
+		$this->assertSame(expected: ['Home', 'Tickets'], actual: array_column($manifest['pages'], 'title'));
+	}//end testTheServingPathServesASoundMergedManifest()
+
+	/**
+	 * A delta that blanks a page key the renderer needs is refused on the serving path, and only there.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
+	 */
+	public function testTheServingPathRefusesAMergedManifestTheRendererCannotDraw(): void {
+		$service = $this->servedService(delta: ['pages' => [['id' => 'list', 'route' => null]]]);
+
+		// The editor and the other read paths still see the merged manifest.
+		$this->assertSame(expected: 'list', actual: $service->resolve('crm', null, null)['pages'][1]['id']);
+
+		$this->expectException(exception: InvalidServedManifestException::class);
+		$this->expectExceptionMessage(message: '`pages[1].route` is not a string');
+		$service->resolveServed('crm', null, null);
+	}//end testTheServingPathRefusesAMergedManifestTheRendererCannotDraw()
+
+	/**
+	 * A named version is checked on the serving path too.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
+	 */
+	public function testTheServingPathChecksANamedVersion(): void {
+		$application = [
+			'uuid' => 'app-1',
+			'slug' => 'crm',
+			'productionVersion' => ['uuid' => 'v-1', 'manifest' => ['pages' => [['id' => 'legacy']]]],
+			'permissions' => ['owners' => ['user:alice'], 'editors' => []],
+		];
+		$draft = [
+			'uuid' => 'v-2',
+			'slug' => 'next',
+			'application' => 'app-1',
+			'manifest' => (object)[],
+			'baseRef' => ['kind' => 'template', 'id' => 'tickets'],
+			'manifestDelta' => ['pages' => [['id' => 'extra', 'title' => 'Extra']]],
+		];
+		$service = $this->service(application: $application, versions: [$draft], baseRows: ['application-template' => [self::RENDERABLE_TEMPLATE]]);
+
+		$this->expectException(exception: InvalidServedManifestException::class);
+		$this->expectExceptionMessage(message: '`pages[2].route` is not a string');
+		$service->resolveServed('crm', 'next', $this->user(uid: 'alice'));
+	}//end testTheServingPathChecksANamedVersion()
+
+	/**
+	 * A stored blob is served as stored on the serving path: a legacy version, and the
+	 * fallback when a delta version's base cannot be read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
+	 */
+	public function testTheServingPathLeavesAStoredBlobAlone(): void {
+		$legacy = $this->service(application: ['uuid' => 'app-1', 'slug' => 'crm', 'productionVersion' => [
+			'uuid' => 'v-1',
+			'manifest' => ['pages' => [['id' => 'legacy']]],
+		]]);
+		$this->assertSame(expected: ['pages' => [['id' => 'legacy']]], actual: $legacy->resolveServed('crm', null, null));
+
+		$unreadableBase = $this->service(application: ['uuid' => 'app-1', 'slug' => 'crm', 'productionVersion' => [
+			'uuid' => 'v-1',
+			'manifest' => ['pages' => [['id' => 'own']]],
+			'baseRef' => ['kind' => 'template', 'id' => 'gone'],
+		]]);
+		$this->assertSame(expected: ['pages' => [['id' => 'own']]], actual: $unreadableBase->resolveServed('crm', null, null));
+	}//end testTheServingPathLeavesAStoredBlobAlone()
+}//end class

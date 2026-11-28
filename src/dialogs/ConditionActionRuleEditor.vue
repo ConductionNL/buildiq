@@ -33,10 +33,17 @@
 					:label="t('buildiq', 'Salience')" />
 			</div>
 
-			<NcTextArea
-				v-model="staged.condition"
-				:label="t('buildiq', 'Condition (FEEL)')"
-				data-testid="rule-condition" />
+			<div class="condition-action-editor__assisted">
+				<NcTextArea
+					v-model="staged.condition"
+					:label="t('buildiq', 'Condition (FEEL)')"
+					data-testid="rule-condition" />
+				<CopilotAssistButton
+					target="feel-condition"
+					:appSlug="ruleSet.ownerApp || ''"
+					:current="staged.condition"
+					@accept="staged.condition = $event" />
+			</div>
 
 			<h4>{{ t('buildiq', 'Actions') }}</h4>
 			<div
@@ -67,12 +74,10 @@
 		</div>
 
 		<template #actions>
-			<NcButton @click="$emit('close')">
-				{{ t('buildiq', 'Cancel') }}
-			</NcButton>
-			<NcButton variant="primary" :disabled="saving" @click="save">
-				{{ saving ? t('buildiq', 'Saving…') : t('buildiq', 'Save') }}
-			</NcButton>
+			<SaveCancelActions
+				:saving="saving"
+				@cancel="$emit('close')"
+				@save="save" />
 		</template>
 	</NcDialog>
 </template>
@@ -89,10 +94,14 @@ import {
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
+import CopilotAssistButton from '../components/copilot/CopilotAssistButton.vue'
+import SaveCancelActions from '../components/SaveCancelActions.vue'
+import { saveRuleSetRecord } from './ruleSetRecords.js'
 
 export default {
 	name: 'ConditionActionRuleEditor',
 	components: {
+		CopilotAssistButton,
 		NcButton,
 		NcCheckboxRadioSwitch,
 		NcDialog,
@@ -100,6 +109,7 @@ export default {
 		NcSelect,
 		NcTextArea,
 		NcTextField,
+		SaveCancelActions,
 	},
 
 	props: {
@@ -170,10 +180,7 @@ export default {
 			this.saving = true
 			this.errorMessage = ''
 			try {
-				const ruleSetUrl = generateUrl(
-					'/apps/openregister/api/objects/buildiq/rule-set',
-				)
-				await axios.post(ruleSetUrl, {
+				await saveRuleSetRecord({
 					slug: this.staged.slug,
 					name: this.staged.name,
 					ruleType: 'condition-action',
@@ -214,5 +221,15 @@ export default {
 	gap: 8px;
 	align-items: flex-end;
 	margin-bottom: 8px;
+}
+
+.condition-action-editor__assisted {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--default-grid-baseline);
+}
+
+.condition-action-editor__assisted > :first-child {
+	flex: 1;
 }
 </style>

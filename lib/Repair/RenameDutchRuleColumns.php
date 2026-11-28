@@ -3,6 +3,9 @@
 /**
  * Buildiq RenameDutchRuleColumns Repair Step
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Moves the stored data of the business-rules schemas from their Dutch column
  * names to the English ones the register now declares.
  *
@@ -37,9 +40,6 @@
  * than one register has one shard table per register and all of them are
  * migrated — buildiq's are in two (observed: registers 206 and 2421), so
  * handling only the first would migrate half the data.
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Repair
  * @package  OCA\Buildiq\Repair
@@ -139,6 +139,7 @@ class RenameDutchRuleColumns implements IRepairStep {
 	 *
 	 * @spec openspec/specs/business-rules-engine/spec.md
 	 */
+	#[\Override]
 	public function getName(): string {
 		return 'Move business-rules data from the Dutch columns to the English ones';
 	}//end getName()
@@ -152,6 +153,7 @@ class RenameDutchRuleColumns implements IRepairStep {
 	 *
 	 * @spec openspec/specs/business-rules-engine/spec.md
 	 */
+	#[\Override]
 	public function run(IOutput $output): void {
 		$tables = $this->shardTables();
 		if ($tables === []) {

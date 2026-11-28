@@ -1,0 +1,15 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`DashboardIndex KPI tiles > renders the three tiles and opens the Apps index from each 1`] = `
+[
+  "<div class="ob-kpi-link" role="button" tabindex="0">
+  <cn-stats-block-stub horizontal="" icon="[object Object]" title="Apps" count="5" countlabel="apps" variant="primary" showzerocount=""></cn-stats-block-stub>
+</div>",
+  "<div class="ob-kpi-link" role="button" tabindex="0">
+  <cn-stats-block-stub horizontal="" icon="[object Object]" title="Hybrid apps" count="2" countlabel="hybrid" variant="default" showzerocount=""></cn-stats-block-stub>
+</div>",
+  "<div class="ob-kpi-link" role="button" tabindex="0">
+  <cn-stats-block-stub horizontal="" icon="[object Object]" title="Published versions" count="9" countlabel="versions" variant="success" showzerocount=""></cn-stats-block-stub>
+</div>",
+]
+`;

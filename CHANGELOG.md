@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Outside AI agents may build apps through the eight builder tools over MCP,
+  under the app's roles and a plan a person approved (openbuild-mcp-adoption).
+  A write over MCP without an approved plan writes nothing and is stored as a
+  pending `agent-plan`; an owner or editor approves or rejects it through
+  `/api/agent-plans/{id}`. The copilot's own plan, preview, execute and
+  rollback are unchanged.
+- A read-only `x-openregister-mcp` dialect (`search` + `get`) on Application,
+  ApplicationVersion, ApplicationTemplate, exportJob and Automation.
+- "Run another automation": an automation step that runs another automation
+  of the same app, or a shared automation of another app, and waits for its
+  result (logic-shared-flows-and-automations). An app's flow picker lists other
+  apps' shared automations under "Shared automations".
+- "Fill with demo records" on the create-app wizard and the app detail page:
+  three records per schema, made from the schema so each validates against it,
+  and "Remove demo records" to delete exactly those again
+  (capability-requirements-backfill, REQ-BQCV-030).
+
+### Changed
+- A registration form now lists only the fields an admin put on it, in the
+  order and sections the form sets (forms-per-case-type). Before, a form showed
+  every property of its target schema in the order the schema returned them.
+  A field added to the schema no longer appears on a form until an admin puts
+  it there.
+
+### Security
+- Another organisation's scoped app now gets the built-in icon, as an unknown
+  slug does, and offers no Nextcloud dashboard widgets, whatever its
+  permissions name (operate-organisation-scoped-apps, REQ-BQOS-002).
+
 ## [0.10.0] - 2026-08-05
 
 ### Added

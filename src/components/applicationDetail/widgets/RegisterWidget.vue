@@ -18,7 +18,7 @@
 			<h3 class="ob-register-widget__title">
 				{{ t('buildiq', 'Register') }}
 			</h3>
-			<p class="ob-register-widget__slug">
+			<p v-if="registerSlug" class="ob-register-widget__slug">
 				<code>{{ registerSlug }}</code>
 			</p>
 		</header>
@@ -72,7 +72,12 @@
 				@click="$emit('import-data', { registerSlug, schemas })">
 				{{ t('buildiq', 'Import data') }}
 			</NcButton>
-			<NcButton variant="primary" @click="openInOpenRegister">
+			<!-- NcButton renders an anchor when given an href, so this keeps the
+			     button styling and gains the browser's link behaviour. -->
+			<NcButton
+				variant="primary"
+				:href="openRegisterUrl"
+				:disabled="!registerSlug">
 				{{ t('buildiq', 'Open in OpenRegister') }}
 			</NcButton>
 		</footer>
@@ -84,6 +89,58 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
+
+/**
+ * The `results` array of an OpenRegister list response, or an empty list.
+ *
+ * @param {object|null} data The response body.
+ * @return {Array<object>}
+ */
+function resultsOf(data) {
+	return data && Array.isArray(data.results) ? data.results : []
+}
+
+/**
+ * A schema's id as a string, preferring `@self.id`; '' when it has none.
+ *
+ * @param {object} schema A schema from the schemas list.
+ * @return {string}
+ */
+function schemaIdOf(schema) {
+	return String((schema['@self'] && schema['@self'].id) || schema.id || '')
+}
+
+/**
+ * Whether an empty schemas read should be re-attempted: a cold page load can
+ * see the register before OpenRegister populated its schemas, so an empty
+ * result is retried a bounded number of times.
+ *
+ * @param {Array} result The rows the read produced.
+ * @param {number} attempt The 0-based attempt index.
+ * @return {boolean}
+ */
+function shouldRetryEmptyRead(result, attempt) {
+	return result.length === 0 && attempt < 3
+}
+
+/**
+ * Map every schema id OpenRegister knows to its display title.
+ *
+ * @return {Promise<Map<string, string>>}
+ */
+async function readSchemaTitles() {
+	const schemasUrl = generateUrl('/apps/openregister/api/schemas')
+	const { data } = await axios.get(schemasUrl, {
+		params: { _limit: 10000 },
+		headers: { 'OCS-APIREQUEST': 'true' },
+	})
+	const byId = new Map()
+	resultsOf(data).forEach((s) => {
+		const id = schemaIdOf(s)
+		if (id) byId.set(id, s.title || s.slug || id)
+	})
+	return byId
+}
 
 export default {
 	name: 'RegisterWidget',
@@ -136,12 +193,48 @@ export default {
 		 * `buildiq-{appSlug}-{versionSlug}` (ADR-002 / buildiq-versioning-model).
 		 *
 		 * @return {string}
+		 * @spec openspec/specs/application-detail-overview/spec.md
 		 */
 		registerSlug() {
 			if (this.registerSlugOverride) return this.registerSlugOverride
-			return this.isHybrid
-				? this.appSlug
-				: `openbuild-${this.appSlug}-${this.versionSlug}`
+			if (this.isHybrid) return this.appSlug
+			// Until the app and its version are known there is no register to
+			// name. Building the slug anyway showed "openbuild-{slug}-" while
+			// the page loaded.
+			if (!this.appSlug || !this.versionSlug) return ''
+			return `openbuild-${this.appSlug}-${this.versionSlug}`
+		},
+
+		/**
+		 * OpenRegister's register detail page — a top-level Nextcloud URL, not a
+		 * Vue Router route, so it is an href rather than a router push. Carries
+		 * `?_version=` (same convention as the Schemas/Pages/Menu widgets'
+		 * `buildVersionedRoute` links) so a non-production version stays
+		 * identifiable even when it SHARES production's register and the slug
+		 * itself carries no version marker.
+		 *
+		 * @return {string}
+		 * @spec openspec/specs/application-detail-overview/spec.md#requirement-register-widget-renders-read-only-with-an-open-in-openregister-deep-link
+		 */
+		openRegisterUrl() {
+			if (!this.registerSlug) {
+				return undefined
+			}
+			const base = generateUrl(
+				`/apps/openregister/registers/${encodeURIComponent(this.registerSlug)}`,
+			)
+			return this.versionSlug
+				? `${base}?_version=${encodeURIComponent(this.versionSlug)}`
+				: base
+		},
+
+		/**
+		 * Whether both the app slug and the version slug are known yet.
+		 *
+		 * @return {boolean}
+		 */
+		slugsKnown() {
+			return Boolean(this.appSlug && this.versionSlug)
 		},
 
 		/**
@@ -179,55 +272,13 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async loadSchemas(attempt = 0) {
-			if (!this.appSlug || !this.versionSlug) return
+			if (!this.slugsKnown) return
 			if (attempt === 0) this.loading = true
 
-			let result = []
-			try {
-				const registersUrl = generateUrl('/apps/openregister/api/registers')
-				const { data: regData } = await axios.get(registersUrl, {
-					params: { _limit: 1000 },
-					headers: { 'OCS-APIREQUEST': 'true' },
-				})
-				const registers =
-					regData && Array.isArray(regData.results) ? regData.results : []
-				const register = registers.find((r) => r.slug === this.registerSlug)
-				const schemaIds =
-					register && Array.isArray(register.schemas)
-						? register.schemas.map(String)
-						: []
-
-				if (schemaIds.length > 0) {
-					const schemasUrl = generateUrl('/apps/openregister/api/schemas')
-					const { data: schData } = await axios.get(schemasUrl, {
-						params: { _limit: 10000 },
-						headers: { 'OCS-APIREQUEST': 'true' },
-					})
-					const allSchemas =
-						schData && Array.isArray(schData.results)
-							? schData.results
-							: []
-					const byId = new Map()
-					allSchemas.forEach((s) => {
-						const id = String(
-							(s['@self'] && s['@self'].id) || s.id || '',
-						)
-						if (id) byId.set(id, s.title || s.slug || id)
-					})
-
-					result = schemaIds
-						.map((id) =>
-							byId.has(id) ? { id, name: byId.get(id) } : null,
-						)
-						.filter(Boolean)
-						.sort((a, b) => String(a.name).localeCompare(String(b.name)))
-				}
-			} catch (e) {
-				result = []
-			}
+			const result = await this.readRegisterSchemasOrEmpty()
 
 			// Self-heal a cold-load race: re-attempt while empty (bounded).
-			if (result.length === 0 && attempt < 3) {
+			if (shouldRetryEmptyRead(result, attempt)) {
 				setTimeout(() => this.loadSchemas(attempt + 1), 1200)
 				return
 			}
@@ -237,16 +288,51 @@ export default {
 		},
 
 		/**
-		 * Deep-link to OpenRegister's register detail page (top-level Nextcloud
-		 * URL, not a Vue Router internal route).
+		 * Read this register's schemas, treating any failed read as "none yet".
 		 *
-		 * @return {void}
+		 * @return {Promise<Array<{id: string, name: string}>>}
 		 */
-		openInOpenRegister() {
-			const url = generateUrl(
-				`/apps/openregister/registers/${encodeURIComponent(this.registerSlug)}`,
-			)
-			window.location.href = url
+		async readRegisterSchemasOrEmpty() {
+			try {
+				return await this.readRegisterSchemas()
+			} catch (e) {
+				return []
+			}
+		},
+
+		/**
+		 * The register's schemas as `{id, name}` rows sorted by name; ids the
+		 * schemas list does not know are dropped.
+		 *
+		 * @return {Promise<Array<{id: string, name: string}>>}
+		 */
+		async readRegisterSchemas() {
+			const schemaIds = await this.readRegisterSchemaIds()
+			if (schemaIds.length === 0) return []
+
+			const titles = await readSchemaTitles()
+			return schemaIds
+				.map((id) => (titles.has(id) ? { id, name: titles.get(id) } : null))
+				.filter(Boolean)
+				.sort((a, b) => String(a.name).localeCompare(String(b.name)))
+		},
+
+		/**
+		 * Find this register in OpenRegister's registers list and return its
+		 * schema ids as strings.
+		 *
+		 * @return {Promise<Array<string>>}
+		 */
+		async readRegisterSchemaIds() {
+			const registersUrl = generateUrl('/apps/openregister/api/registers')
+			const { data } = await axios.get(registersUrl, {
+				params: { _limit: 1000 },
+				headers: { 'OCS-APIREQUEST': 'true' },
+			})
+			const register = resultsOf(data).find((r) => r.slug === this.registerSlug)
+			return register && Array.isArray(register.schemas)
+				? register.schemas.map(String)
+				: []
 		},
 	},
 }

@@ -47,6 +47,8 @@ const baseStubs = {
 		template:
 			'<input type="checkbox" :checked="modelValue" :disabled="disabled" @change="$emit(\'update:modelValue\', $event.target.checked)" />',
 	},
+	// The database picker (REQ-BQDB-001) is not under test here.
+	NcSelect: { name: 'NcSelect', template: '<div />' },
 	NcTextField: {
 		name: 'NcTextField',
 		props: ['modelValue', 'label', 'disabled'],
@@ -146,5 +148,152 @@ describe('AppSettingsModal — Data registers section (data-registers-runtime ta
 		await wrapper.vm.$nextTick()
 		const last = wrapper.emitted('update:data-registers').pop()[0]
 		expect(last).toEqual([{ register: 'spectr' }])
+	})
+})
+
+describe('AppSettingsModal — Installable section (pages-installable-offline-and-mobile T02)', () => {
+	it('shows the stored short name and theme colour', () => {
+		const wrapper = mountModal({ shortName: 'Vergun', themeColor: '#1f6feb' })
+		const section = wrapper.find('[data-test="app-settings-installable"]')
+		expect(section.exists()).toBe(true)
+		expect(section.find('.nc-textfield-stub').element.value).toBe('Vergun')
+		expect(section.find('[data-test="app-settings-theme-color"]').element.value).toBe('#1f6feb')
+	})
+
+	it('emits a trimmed short name cut to 12 characters with the colour it holds', () => {
+		const wrapper = mountModal({ themeColor: '#1F6FEB' })
+		wrapper.vm.installShortName = '  Vergunningen aanvragen  '
+		wrapper.vm.emitInstallable()
+		expect(wrapper.emitted('update:installable')[0][0]).toEqual({ shortName: 'Vergunningen', themeColor: '#1f6feb' })
+	})
+
+	it('saves a picked colour, and sends no colour for one that is not six-digit hex', async () => {
+		const wrapper = mountModal({ shortName: 'Vergun' })
+		const input = wrapper.find('[data-test="app-settings-theme-color"]')
+		input.element.value = '#00aa55'
+		await input.trigger('change')
+		wrapper.vm.onThemeColor('red')
+		const emitted = wrapper.emitted('update:installable').map((call) => call[0])
+		expect(emitted).toEqual([
+			{ shortName: 'Vergun', themeColor: '#00aa55' },
+			{ shortName: 'Vergun', themeColor: '' },
+		])
+	})
+
+	it('offers "Use the browser colour" only while a colour is set, and clears it', async () => {
+		const wrapper = mountModal({ themeColor: '#123456' })
+		const clear = wrapper.findAll('button').filter((button) => button.text() === 'Use the browser colour')
+		expect(clear).toHaveLength(1)
+		await clear.at(0).trigger('click')
+		expect(wrapper.emitted('update:installable')[0][0]).toEqual({ shortName: '', themeColor: '' })
+		await wrapper.vm.$nextTick()
+		expect(wrapper.findAll('button').filter((button) => button.text() === 'Use the browser colour')).toHaveLength(0)
+	})
+})
+
+describe('AppSettingsModal — Offline section (pages-installable-offline-and-mobile T04)', () => {
+	const offline = {
+		takeAlong: [{ schema: 'inspection', filter: { assignee: '@me' }, limit: 50, ttlHours: 12 }],
+		forms: ['report'],
+	}
+
+	it('is hidden while the instance does not let apps work offline', () => {
+		const wrapper = mountModal({ offline })
+		expect(wrapper.find('[data-test="app-settings-offline"]').exists()).toBe(false)
+	})
+
+	it('shows one row per take-along, with the filter as JSON', () => {
+		const wrapper = mountModal({ offlineAllowed: true, offline })
+		const rows = wrapper.findAll('[data-test="app-settings-take-along-row"]')
+		expect(rows).toHaveLength(1)
+		const fields = rows.at(0).findAll('.nc-textfield-stub')
+		expect(fields.at(0).element.value).toBe('inspection')
+		expect(fields.at(1).element.value).toBe('{"assignee":"@me"}')
+		expect(fields.at(2).element.value).toBe('50')
+		expect(fields.at(3).element.value).toBe('12')
+	})
+
+	it('emits the block capped at 500 records and 72 hours, keeping the offline forms', () => {
+		const wrapper = mountModal({ offlineAllowed: true, offline })
+		wrapper.vm.takeAlongRows[0].limit = '900'
+		wrapper.vm.takeAlongRows[0].ttlHours = '100'
+		wrapper.vm.emitOffline()
+		expect(wrapper.emitted('update:offline')[0][0]).toEqual({
+			takeAlong: [{ schema: 'inspection', filter: { assignee: '@me' }, limit: 500, ttlHours: 72 }],
+			forms: ['report'],
+		})
+	})
+
+	it('adds a row with the defaults, and does not emit one without a schema', async () => {
+		const wrapper = mountModal({ offlineAllowed: true })
+		await wrapper.find('[data-test="app-settings-add-take-along"]').trigger('click')
+		expect(wrapper.vm.takeAlongRows).toEqual([{ schema: '', filter: '', filterInvalid: false, limit: 50, ttlHours: 24 }])
+		wrapper.vm.emitOffline()
+		expect(wrapper.emitted('update:offline')[0][0]).toBeNull()
+	})
+
+	it('marks a filter that is not a JSON object and saves nothing', () => {
+		const wrapper = mountModal({ offlineAllowed: true, offline })
+		wrapper.vm.takeAlongRows[0].filter = '["not", "an object"]'
+		wrapper.vm.emitOffline()
+		expect(wrapper.vm.takeAlongRows[0].filterInvalid).toBe(true)
+		expect(wrapper.emitted('update:offline')).toBeUndefined()
+	})
+
+	it('removes a row and saves the rest', () => {
+		const wrapper = mountModal({ offlineAllowed: true, offline })
+		wrapper.vm.removeTakeAlong(0)
+		expect(wrapper.emitted('update:offline')[0][0]).toEqual({ takeAlong: [], forms: ['report'] })
+	})
+})
+
+describe('AppSettingsModal — organisation scope (operate-organisation-scoped-apps T07)', () => {
+	const scopeSwitch = (wrapper) => wrapper.find('[data-testid="organisation-scope"] input')
+
+	it('is not offered while multitenancy is off', () => {
+		const wrapper = mountModal({ organisationScopeAvailable: false, isOwner: true, organisationScope: 'holder' })
+		expect(wrapper.find('[data-testid="organisation-scope"]').exists()).toBe(false)
+	})
+
+	it('is not offered to a non-owner', () => {
+		const wrapper = mountModal({ organisationScopeAvailable: true, isOwner: false, organisationScope: 'holder' })
+		expect(wrapper.find('[data-testid="organisation-scope"]').exists()).toBe(false)
+	})
+
+	it('shows a scoped app as "This organisation only"', () => {
+		const wrapper = mountModal({ organisationScopeAvailable: true, isOwner: true, organisationScope: 'holder' })
+		expect(scopeSwitch(wrapper).element.checked).toBe(true)
+		expect(wrapper.find('[data-testid="organisation-scope"]').text()).toContain('Only members of the organisation that holds this app see it')
+	})
+
+	it('keeps a shared app to the organisation at once', async () => {
+		const wrapper = mountModal({ organisationScopeAvailable: true, isOwner: true, organisationScope: 'all' })
+		expect(scopeSwitch(wrapper).element.checked).toBe(false)
+		scopeSwitch(wrapper).element.checked = true
+		await scopeSwitch(wrapper).trigger('change')
+		expect(wrapper.emitted('update:organisationScope')).toEqual([['holder']])
+		expect(wrapper.find('[data-testid="organisation-scope-confirm"]').exists()).toBe(false)
+	})
+
+	it('asks before sharing a scoped app with every organisation', async () => {
+		const wrapper = mountModal({ organisationScopeAvailable: true, isOwner: true, organisationScope: 'holder' })
+		scopeSwitch(wrapper).element.checked = false
+		await scopeSwitch(wrapper).trigger('change')
+		expect(wrapper.emitted('update:organisationScope')).toBeUndefined()
+		const confirm = wrapper.find('[data-testid="organisation-scope-confirm"]')
+		expect(confirm.text()).toContain('Every organisation will see this app.')
+
+		await wrapper.find('[data-testid="organisation-scope-share"]').trigger('click')
+		expect(wrapper.emitted('update:organisationScope')).toEqual([['all']])
+		expect(wrapper.find('[data-testid="organisation-scope-confirm"]').exists()).toBe(false)
+	})
+
+	it('keeps the scope when the confirmation is declined', async () => {
+		const wrapper = mountModal({ organisationScopeAvailable: true, isOwner: true, organisationScope: 'holder' })
+		scopeSwitch(wrapper).element.checked = false
+		await scopeSwitch(wrapper).trigger('change')
+		await wrapper.find('[data-testid="organisation-scope-keep"]').trigger('click')
+		expect(wrapper.emitted('update:organisationScope')).toBeUndefined()
+		expect(wrapper.find('[data-testid="organisation-scope-confirm"]').exists()).toBe(false)
 	})
 })

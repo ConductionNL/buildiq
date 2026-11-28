@@ -25,10 +25,13 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp\Handler;
 
+
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\Buildiq\Support\SlugSearch;
 /**
  * Handles the buildiq.getAppManifest tool invocation.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
  */
 class GetAppManifestHandler extends AbstractToolHandler {
 	/**
@@ -38,14 +41,12 @@ class GetAppManifestHandler extends AbstractToolHandler {
 	 *
 	 * @return array<string, mixed>
 	 */
+	#[\Override]
 	public function handle(array $args): array {
 		$slug = $args['slug'] ?? null;
-		if ($slug === null || $slug === '') {
-			return $this->errorResult(error: 'invalid_arguments', message: 'Required argument slug is missing.');
-		}
-
-		if ($this->isValidSlug(candidate: (string)$slug) === false) {
-			return $this->errorResult(error: 'invalid_arguments', message: "Invalid slug '{$slug}'.");
+		$invalid = $this->invalidSlugResult(slug: $slug);
+		if ($invalid !== null) {
+			return $invalid;
 		}
 
 		if ($this->requireAuthenticatedUser() === null) {
@@ -53,39 +54,7 @@ class GetAppManifestHandler extends AbstractToolHandler {
 		}
 
 		try {
-			// ADR-083 rule 1 / ADR-084: use the constructor-injected contract
-			// rather than reaching into the container by string name.
-			$objectService = $this->objectService;
-			$resolved = $this->resolveApplicationBySlug(objectService: $objectService, slug: (string)$slug);
-			if (isset($resolved['error']) === true) {
-				return $this->errorResult(error: $resolved['error'], message: $resolved['message']);
-			}
-
-			$application = $resolved['application'];
-
-			// C2 fix: per-app RBAC gate — caller must hold at least one role.
-			$rbacError = $this->requireAnyRoleOnApp(app: $application);
-			if ($rbacError !== null) {
-				return $rbacError;
-			}
-
-			$manifest = ($application['manifest'] ?? null);
-			if (is_array(value: $manifest) === false) {
-				return $this->errorResult(error: 'no_manifest', message: 'Application has no manifest.');
-			}
-
-			// C2 fix: strip the permissions roster before returning to the caller.
-			// The internal access-control block MUST NOT leak to MCP consumers.
-			unset($manifest['permissions']);
-
-			$name = (string)($application['name'] ?? $slug);
-			return [
-				'success' => true,
-				'slug' => (string)$slug,
-				'name' => $name,
-				'manifest' => $manifest,
-				'sources' => [$this->sourceDescriptor(uuid: $this->extractUuid(item: $application), slug: (string)$slug, label: $name)],
-			];
+			return $this->manifestFor(slug: (string)$slug);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				'Buildiq MCP: getAppManifest failed',
@@ -97,6 +66,68 @@ class GetAppManifestHandler extends AbstractToolHandler {
 	}//end handle()
 
 	/**
+	 * The invalid-arguments result for a missing or malformed slug, or null when it is usable.
+	 *
+	 * @param mixed $slug The slug argument.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function invalidSlugResult(mixed $slug): array|null {
+		if ($slug === null || $slug === '') {
+			return $this->errorResult(error: 'invalid_arguments', message: 'Required argument slug is missing.');
+		}
+
+		if ($this->isValidSlug(candidate: (string)$slug) === false) {
+			return $this->errorResult(error: 'invalid_arguments', message: "Invalid slug '{$slug}'.");
+		}
+
+		return null;
+	}//end invalidSlugResult()
+
+	/**
+	 * The manifest of a virtual app the caller holds a role on, without its permissions roster.
+	 *
+	 * @param string $slug The app slug.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function manifestFor(string $slug): array {
+		// ADR-083 rule 1 / ADR-084: use the constructor-injected contract
+		// rather than reaching into the container by string name.
+		$objectService = $this->objectService;
+		$resolved = $this->resolveApplicationBySlug(objectService: $objectService, slug: $slug);
+		if (isset($resolved['error']) === true) {
+			return $this->errorResult(error: $resolved['error'], message: $resolved['message']);
+		}
+
+		$application = $resolved['application'];
+
+		// C2 fix: per-app RBAC gate — caller must hold at least one role.
+		$rbacError = $this->requireAnyRoleOnApp(app: $application);
+		if ($rbacError !== null) {
+			return $rbacError;
+		}
+
+		$manifest = ($application['manifest'] ?? null);
+		if (is_array(value: $manifest) === false) {
+			return $this->errorResult(error: 'no_manifest', message: 'Application has no manifest.');
+		}
+
+		// C2 fix: strip the permissions roster before returning to the caller.
+		// The internal access-control block MUST NOT leak to MCP consumers.
+		unset($manifest['permissions']);
+
+		$name = (string)($application['name'] ?? $slug);
+		return [
+			'success' => true,
+			'slug' => $slug,
+			'name' => $name,
+			'manifest' => $manifest,
+			'sources' => [$this->sourceDescriptor(uuid: $this->extractUuid(item: $application), slug: $slug, label: $name)],
+		];
+	}//end manifestFor()
+
+	/**
 	 * Resolve a published-app slug to its underlying Application object via the built-app-route schema.
 	 *
 	 * @param object $objectService OpenRegister ObjectService instance used for slug lookups.
@@ -105,12 +136,11 @@ class GetAppManifestHandler extends AbstractToolHandler {
 	 * @return array{application?: array<string, mixed>, error?: string, message?: string}
 	 */
 	private function resolveApplicationBySlug(object $objectService, string $slug): array {
-		$routeResults = $objectService->searchObjectsBySlug(
-			self::REGISTER_SLUG,
-			'built-app-route',
-			['slug' => $slug],
-			_rbac: true,
-			_multitenancy: false
+		$routeResults = (new SlugSearch(register: self::REGISTER_SLUG, schema: 'built-app-route'))->run(
+			objectService: $objectService,
+			filters: ['slug' => $slug],
+			rbac: true,
+			multitenancy: false
 		);
 		if (is_array($routeResults) === false || $routeResults === []) {
 			return ['error' => 'not_found', 'message' => "No published virtual app found for slug '{$slug}'."];
@@ -122,7 +152,10 @@ class GetAppManifestHandler extends AbstractToolHandler {
 			return ['error' => 'inconsistent_state', 'message' => 'Route exists but has no applicationUuid.'];
 		}
 
-		$application = $objectService->find(id: (string)$applicationUuid, register: self::REGISTER_SLUG, schema: 'built-app');
+		$application = $objectService->find(
+			id: (string)$applicationUuid,
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: 'built-app')
+		);
 		if ($application === null) {
 			return ['error' => 'inconsistent_state', 'message' => 'Route points to an Application that does not exist.'];
 		}

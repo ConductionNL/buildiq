@@ -50,6 +50,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for {@see AutomationWriteService}.
@@ -177,7 +178,7 @@ final class AutomationWriteServiceTest extends TestCase {
 	 * @return int
 	 */
 	private function argumentIndex(string $method, string $name): int {
-		$parameters = (new ReflectionMethod(ObjectService::class, $method))->getParameters();
+		$parameters = LegacyObjectArgs::parameters(ObjectService::class, $method);
 		foreach ($parameters as $index => $parameter) {
 			if ($parameter->getName() === $name) {
 				return $index;
@@ -267,6 +268,7 @@ final class AutomationWriteServiceTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(function (...$arguments) use (&$captured): ObjectEntity {
+				$arguments = LegacyObjectArgs::positional(method: 'saveObject', args: $arguments);
 				$captured = $arguments;
 				return $this->buildEntity(['id' => 'a-new', 'slug' => 'nag']);
 			});
@@ -302,6 +304,7 @@ final class AutomationWriteServiceTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(function (...$arguments) use (&$captured): ObjectEntity {
+				$arguments = LegacyObjectArgs::positional(method: 'saveObject', args: $arguments);
 				$captured = $arguments;
 				return $this->buildEntity(['id' => 'a-1']);
 			});
@@ -356,6 +359,7 @@ final class AutomationWriteServiceTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('deleteObject')
 			->willReturnCallback(function (...$arguments) use (&$order, &$captured): bool {
+				$arguments = LegacyObjectArgs::positional(method: 'deleteObject', args: $arguments);
 				$order[] = 'deleteObject';
 				$captured = $arguments;
 				return true;
@@ -506,4 +510,287 @@ final class AutomationWriteServiceTest extends TestCase {
 		$this->assertSame('nag', $body['slug']);
 
 	}//end testRequestBodyStripsCallerSuppliedIdentity()
+
+	/**
+	 * Run `update()` as `$uid` on a stored automation of `permit-tracker`.
+	 *
+	 * @param string              $uid     The caller.
+	 * @param array<string,mixed> $payload The body.
+	 * @param array<string,mixed> $stored  Stored fields beyond the scope.
+	 * @param array|null          $written Receives the saved object, when saved.
+	 *
+	 * @return \OCP\AppFramework\Http\JSONResponse The response.
+	 */
+	private function updateAs(string $uid, array $payload, array $stored, ?array &$written = null): \OCP\AppFramework\Http\JSONResponse {
+		$this->wireUser(uid: $uid);
+		$this->objectService->method('find')->willReturn($this->buildEntity(self::APPLICATION));
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (...$arguments) use (&$written): ObjectEntity {
+				$written = $arguments[$this->argumentIndex(method: 'saveObject', name: 'object')];
+				return $this->buildEntity(['id' => 'a-1']);
+			}
+		);
+
+		return $this->service->update(
+			uuid: 'a-1',
+			payload: $payload,
+			automation: array_merge(['id' => 'a-1', 'applicationSlug' => 'permit-tracker', 'versionUuid' => 'draft-version'], $stored)
+		);
+
+	}//end updateAs()
+
+	/**
+	 * REQ-BQSF-003: an editor cannot share; the save is refused and nothing is written.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+	 */
+	public function testAnEditorCannotShareOrUnshare(): void {
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$response = $this->updateAs(uid: 'bob', payload: ['slug' => 'nag', 'shared' => true], stored: []);
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		$this->assertSame('insufficient_permission', $response->getData()['error']);
+
+		$response = $this->updateAs(uid: 'bob', payload: ['slug' => 'nag', 'shared' => false], stored: ['shared' => true]);
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+
+	}//end testAnEditorCannotShareOrUnshare()
+
+	/**
+	 * REQ-BQSF-003: an owner shares; an editor's later edit without `shared` keeps it shared.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+	 */
+	public function testAnOwnerSharesAndAnEditorsEditKeepsItShared(): void {
+		$written = null;
+		$response = $this->updateAs(uid: 'alice', payload: ['slug' => 'nag', 'shared' => true], stored: [], written: $written);
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertTrue($written['shared']);
+
+		$this->setUp();
+		$written = null;
+		$response = $this->updateAs(uid: 'bob', payload: ['slug' => 'renamed'], stored: ['shared' => true], written: $written);
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertTrue($written['shared'], 'An edit that does not mention shared keeps the stored value.');
+		$this->assertSame('renamed', $written['slug']);
+
+	}//end testAnOwnerSharesAndAnEditorsEditKeepsItShared()
+
+	/**
+	 * REQ-BQSF-003: a shared automation may not write a record of its own app, and the refusal names the step.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+	 */
+	public function testASharedAutomationMayNotWriteItsOwnRecords(): void {
+		$this->objectService->expects($this->never())->method('saveObject');
+		$actions = [['type' => 'send-notification'], ['type' => 'object-op', 'operation' => 'update', 'schema' => 'vergunning']];
+
+		$response = $this->updateAs(uid: 'alice', payload: ['slug' => 'nag', 'shared' => true, 'actions' => $actions], stored: []);
+
+		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+		$this->assertSame('automation_not_shareable', $response->getData()['error']);
+		$this->assertStringContainsString('Step 2 writes vergunning', $response->getData()['detail']);
+
+	}//end testASharedAutomationMayNotWriteItsOwnRecords()
+
+	/**
+	 * REQ-BQSF-003: on create, only an owner may start an automation shared, and an unshared one may write records.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+	 */
+	public function testCreatingASharedAutomationTakesAnOwner(): void {
+		$this->wireUser(uid: 'bob');
+		$this->objectService->method('find')->willReturn($this->buildEntity(self::APPLICATION));
+		$this->objectService->expects($this->once())->method('saveObject')->willReturn($this->buildEntity(['id' => 'a-new']));
+		$base = ['applicationSlug' => 'permit-tracker', 'versionUuid' => 'draft-version', 'slug' => 'nag'];
+
+		$refused = $this->service->create(payload: $base + ['shared' => true], roles: ['owners', 'editors']);
+		$this->assertSame(Http::STATUS_FORBIDDEN, $refused->getStatus());
+
+		$allowed = $this->service->create(
+			payload: $base + ['actions' => [['type' => 'object-op', 'schema' => 'vergunning']]],
+			roles: ['owners', 'editors']
+		);
+		$this->assertSame(Http::STATUS_CREATED, $allowed->getStatus());
+
+	}//end testCreatingASharedAutomationTakesAnOwner()
+
+	/**
+	 * The step finder counts from one and only reports an object-op.
+	 *
+	 * @return void
+	 */
+	public function testTheStepWritingOwnRecords(): void {
+		$this->assertNull(AutomationWriteService::stepWritingOwnRecords([['type' => 'webhook'], 'junk']));
+		$this->assertSame(
+			['number' => 3, 'schema' => 'zaak'],
+			AutomationWriteService::stepWritingOwnRecords(['junk', ['type' => 'approval'], ['type' => 'object-op', 'schema' => 'zaak']])
+		);
+
+	}//end testTheStepWritingOwnRecords()
+	/**
+	 * A script step joining two names into one.
+	 *
+	 * @param string $code The script.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private static function scriptActions(string $code = 'return items;'): array {
+		return [['type' => 'script-step', 'code' => $code, 'timeoutSeconds' => 10, 'note' => 'Join the names']];
+	}//end scriptActions()
+
+	/**
+	 * REQ-BQSS-002: an editor who changes the code is refused and nothing is written.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
+	 */
+	public function testAnEditorCannotChangeAScriptStep(): void {
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$response = $this->updateAs(
+			uid: 'bob',
+			payload: ['slug' => 'nag', 'actions' => self::scriptActions(code: 'return [];')],
+			stored: ['actions' => self::scriptActions()]
+		);
+
+		$this->assertSame(expected: Http::STATUS_FORBIDDEN, actual: $response->getStatus());
+		$this->assertSame(expected: 'Only app owners can change a script step.', actual: $response->getData()['detail']);
+	}//end testAnEditorCannotChangeAScriptStep()
+
+	/**
+	 * REQ-BQSS-002: an editor may neither add nor remove a script step.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
+	 */
+	public function testAnEditorCannotAddOrRemoveAScriptStep(): void {
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$added = $this->updateAs(uid: 'bob', payload: ['slug' => 'nag', 'actions' => self::scriptActions()], stored: ['actions' => []]);
+		$this->assertSame(expected: Http::STATUS_FORBIDDEN, actual: $added->getStatus());
+
+		$removed = $this->updateAs(uid: 'bob', payload: ['slug' => 'nag', 'actions' => []], stored: ['actions' => self::scriptActions()]);
+		$this->assertSame(expected: Http::STATUS_FORBIDDEN, actual: $removed->getStatus());
+	}//end testAnEditorCannotAddOrRemoveAScriptStep()
+
+	/**
+	 * REQ-BQSS-002 and D6: an owner changes the code and is recorded as its author.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 */
+	public function testAnOwnerChangesAScriptStepAndIsRecordedAsItsAuthor(): void {
+		$written  = null;
+		$response = $this->updateAs(
+			uid: 'alice',
+			payload: ['slug' => 'nag', 'actions' => self::scriptActions(code: 'return [];'), 'provenance' => ['compiledHash' => 'h1']],
+			stored: ['actions' => self::scriptActions(), 'provenance' => ['scriptAuthor' => 'carol']],
+			written: $written
+		);
+
+		$this->assertSame(expected: Http::STATUS_OK, actual: $response->getStatus());
+		$this->assertSame(expected: ['compiledHash' => 'h1', 'scriptAuthor' => 'alice'], actual: $written['provenance']);
+	}//end testAnOwnerChangesAScriptStepAndIsRecordedAsItsAuthor()
+
+	/**
+	 * REQ-BQSS-002 and D6: an editor's edit that leaves the script alone is
+	 * saved, keeps the stored author and cannot claim another one.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 */
+	public function testAnEditorsOtherEditKeepsTheScriptAuthor(): void {
+		$written  = null;
+		$response = $this->updateAs(
+			uid: 'bob',
+			payload: ['slug' => 'renamed', 'actions' => self::scriptActions(), 'provenance' => ['scriptAuthor' => 'bob']],
+			stored: ['actions' => self::scriptActions(), 'provenance' => ['scriptAuthor' => 'alice']],
+			written: $written
+		);
+
+		$this->assertSame(expected: Http::STATUS_OK, actual: $response->getStatus());
+		$this->assertSame(expected: 'renamed', actual: $written['slug']);
+		$this->assertSame(expected: 'alice', actual: $written['provenance']['scriptAuthor']);
+	}//end testAnEditorsOtherEditKeepsTheScriptAuthor()
+
+	/**
+	 * REQ-BQSS-002: creating an automation with a script step takes an owner, and names them.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
+	 */
+	public function testCreatingAScriptStepTakesAnOwner(): void {
+		$base = ['applicationSlug' => 'permit-tracker', 'versionUuid' => 'draft-version', 'slug' => 'join', 'actions' => self::scriptActions()];
+
+		$this->wireUser(uid: 'bob');
+		$this->objectService->method('find')->willReturn($this->buildEntity(payload: self::APPLICATION));
+		$this->objectService->expects($this->never())->method('saveObject');
+		$refused = $this->service->create(payload: $base, roles: ['owners', 'editors']);
+		$this->assertSame(expected: Http::STATUS_FORBIDDEN, actual: $refused->getStatus());
+
+		$this->setUp();
+		$written = null;
+		$this->wireUser(uid: 'alice');
+		$this->objectService->method('find')->willReturn($this->buildEntity(payload: self::APPLICATION));
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (...$arguments) use (&$written): ObjectEntity {
+				$written = $arguments[$this->argumentIndex(method: 'saveObject', name: 'object')];
+				return $this->buildEntity(payload: ['id' => 'a-new']);
+			}
+		);
+		$allowed = $this->service->create(payload: $base, roles: ['owners', 'editors']);
+		$this->assertSame(expected: Http::STATUS_CREATED, actual: $allowed->getStatus());
+		$this->assertSame(expected: 'alice', actual: $written['provenance']['scriptAuthor']);
+	}//end testCreatingAScriptStepTakesAnOwner()
+
+	/**
+	 * An automation without a script step keeps its provenance untouched.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 */
+	public function testAnAutomationWithoutAScriptKeepsItsProvenance(): void {
+		$written = null;
+		$this->updateAs(uid: 'bob', payload: ['slug' => 'nag'], stored: [], written: $written);
+		$this->assertArrayNotHasKey(key: 'provenance', array: $written);
+	}//end testAnAutomationWithoutAScriptKeepsItsProvenance()
+
+	/**
+	 * REQ-BQSS-002: compiling or enabling an automation that holds a script takes an owner.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
+	 */
+	public function testCompilingAScriptStepTakesAnOwner(): void {
+		$this->objectService->method('find')->willReturn($this->buildEntity(payload: self::APPLICATION));
+		$stored = ['applicationSlug' => 'permit-tracker', 'actions' => self::scriptActions()];
+
+		$this->wireUser(uid: 'bob');
+		$refusal = $this->service->compileRefusal(automation: $stored);
+		$this->assertSame(expected: Http::STATUS_FORBIDDEN, actual: $refusal?->getStatus());
+		$this->assertNull(actual: $this->service->compileRefusal(automation: ['applicationSlug' => 'permit-tracker', 'actions' => []]));
+
+		$this->setUp();
+		$this->objectService->method('find')->willReturn($this->buildEntity(payload: self::APPLICATION));
+		$this->wireUser(uid: 'alice');
+		$this->assertNull(actual: $this->service->compileRefusal(automation: $stored));
+	}//end testCompilingAScriptStepTakesAnOwner()
 }//end class

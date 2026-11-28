@@ -27,7 +27,10 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
+use OCA\Buildiq\Exception\ReleaseTestsFailedException;
 use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Service\ReleaseTestGate;
+use OCA\Buildiq\Support\ReleaseOverride;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -37,6 +40,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for ApplicationVersionService.
@@ -71,6 +75,13 @@ class ApplicationVersionServiceTest extends TestCase {
 	private RegisterMapper&MockObject $registerMapper;
 
 	/**
+	 * Mock test gate (lifecycle-release-test-gate).
+	 *
+	 * @var ReleaseTestGate&MockObject
+	 */
+	private ReleaseTestGate&MockObject $testGate;
+
+	/**
 	 * Service under test.
 	 */
 	private ApplicationVersionService $service;
@@ -87,6 +98,7 @@ class ApplicationVersionServiceTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->registerService = $this->createMock(RegisterService::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
+		$this->testGate = $this->createMock(ReleaseTestGate::class);
 
 		$this->service = new ApplicationVersionService(
 			logger: $this->logger,
@@ -94,6 +106,7 @@ class ApplicationVersionServiceTest extends TestCase {
 			registerService: $this->registerService,
 			registerMapper: $this->registerMapper,
 			automationCompiler: $this->createMock(\OCA\Buildiq\Service\AutomationCompilerService::class),
+			testGate: $this->testGate,
 		);
 	}//end setUp()
 
@@ -204,6 +217,37 @@ class ApplicationVersionServiceTest extends TestCase {
 		$this->expectExceptionMessageMatches('/promotesTo/');
 		$this->service->guardNoCycle(currentUuid: 'uuid-a', proposedTargetUuid: 'uuid-a');
 	}//end testGuardNoCycleRejectsSelfLoop()
+
+	/**
+	 * Cycle guard rejects a self-loop written in another case or form of the same uuid.
+	 *
+	 * @return void
+	 */
+	public function testGuardNoCycleRejectsASelfLoopInAnotherForm(): void {
+		$uuid = '0b7d1f2e-4a5c-4e8f-9a1b-2c3d4e5f6a7b';
+		foreach (['0B7D1F2E-4A5C-4E8F-9A1B-2C3D4E5F6A7B', '0b7d1f2e4a5c4e8f9a1b2c3d4e5f6a7b', 'urn:uuid:' . $uuid, '{' . $uuid . '}'] as $variant) {
+			try {
+				$this->service->guardNoCycle(currentUuid: $uuid, proposedTargetUuid: $variant);
+				self::fail($variant . ' must be refused as a self-loop');
+			} catch (RuntimeException $e) {
+				self::assertStringContainsString('cannot promote to itself', $e->getMessage());
+			}
+		}
+	}//end testGuardNoCycleRejectsASelfLoopInAnotherForm()
+
+	/**
+	 * Cycle guard catches an indirect cycle that comes back in another case.
+	 *
+	 * @return void
+	 */
+	public function testGuardNoCycleDetectsAnIndirectCycleInAnotherCase(): void {
+		$aEntity = $this->mockVersion(promotesTo: 'UUID-C');
+		$this->objectService->method('find')
+			->willReturnCallback(static fn (string|int $id): ?ObjectEntity => $id === 'uuid-a' ? $aEntity : null);
+
+		$this->expectException(RuntimeException::class);
+		$this->service->guardNoCycle(currentUuid: 'uuid-c', proposedTargetUuid: 'uuid-a');
+	}//end testGuardNoCycleDetectsAnIndirectCycleInAnotherCase()
 
 	/**
 	 * Cycle guard accepts a null target (terminal version).
@@ -353,7 +397,9 @@ class ApplicationVersionServiceTest extends TestCase {
 		$this->registerMapper->method('find')->with('openbuild-foo-staging')->willReturn($register);
 
 		$this->registerService->expects(self::once())->method('delete')->with($register);
-		$this->objectService->expects(self::once())->method('deleteObject')->with('uuid-v');
+		$this->objectService->expects(self::once())->method('deleteObject')->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => 'uuid-v',
+			]));
 
 		$this->service->deleteVersion(
 			versionUuid: 'uuid-v',
@@ -380,13 +426,49 @@ class ApplicationVersionServiceTest extends TestCase {
 			});
 
 		$this->registerService->expects(self::never())->method('delete');
-		$this->objectService->expects(self::once())->method('deleteObject')->with('uuid-v');
+		$this->objectService->expects(self::once())->method('deleteObject')->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => 'uuid-v',
+			]));
 
 		$this->service->deleteVersion(
 			versionUuid: 'uuid-v',
 			strategy: ApplicationVersionService::STRATEGY_KEEP_REGISTER
 		);
 	}//end testDeleteVersionKeepRegisterDoesNotDropRegister()
+
+	/**
+	 * orphan-grace stamps `orphanedAt` into the register's configuration and keeps the register.
+	 *
+	 * @return void
+	 */
+	public function testDeleteVersionOrphanGraceStampsRegisterConfiguration(): void {
+		$version = $this->mockVersion(application: 'uuid-app', register: 'openbuild-foo-staging', uuid: 'uuid-v');
+		$application = $this->mockApplication(productionVersion: 'uuid-prod');
+
+		$this->objectService->method('find')
+			->willReturnCallback(static function (string|int $id) use ($version, $application): ?ObjectEntity {
+				return match ($id) {
+					'uuid-v' => $version,
+					'uuid-app' => $application,
+					default => null,
+				};
+			});
+
+		$register = new Register();
+		$register->setConfiguration(['schemas' => ['7' => ['magicMapping' => true]]]);
+		$this->registerMapper->method('find')->with('openbuild-foo-staging')->willReturn($register);
+		$this->registerMapper->expects(self::once())->method('update')->with($register);
+		$this->registerService->expects(self::never())->method('delete');
+
+		$this->service->deleteVersion(
+			versionUuid: 'uuid-v',
+			strategy: ApplicationVersionService::STRATEGY_ORPHAN_GRACE
+		);
+
+		$configuration = $register->getConfiguration();
+		self::assertSame(expected: ['7' => ['magicMapping' => true]], actual: $configuration['schemas']);
+		self::assertMatchesRegularExpression(pattern: '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/', string: (string)($configuration['orphanedAt'] ?? ''));
+	}//end testDeleteVersionOrphanGraceStampsRegisterConfiguration()
 
 	/**
 	 * release() publishes the chosen version, moves the production pointer, and
@@ -441,6 +523,80 @@ class ApplicationVersionServiceTest extends TestCase {
 	}//end testReleaseVersionRejectsForeignVersion()
 
 	/**
+	 * release() runs the app's test suite on the chosen version before it writes,
+	 * as a release, and hands the owner's override through (REQ-BQRT-004).
+	 *
+	 * @return void
+	 */
+	public function testReleaseRunsTheTestSuiteFirstAndPassesTheOverride(): void {
+		$newVersion = $this->mockVersion(application: 'uuid-app', register: 'openbuild-foo-prod', uuid: 'uuid-new');
+		$application = $this->mockApplication(productionVersion: '');
+		$this->objectService->method('find')
+			->willReturnCallback(
+				static fn (string|int $id): ?ObjectEntity => match ($id) {
+					'uuid-new' => $newVersion,
+					'uuid-app' => $application,
+					default => null,
+				}
+			);
+
+		$override = new ReleaseOverride(reason: 'Column removed on purpose', userId: 'alice', byOwner: true);
+		$order = [];
+		$this->testGate->expects(self::once())->method('guard')
+			->with(
+				self::callback(static fn (array $app): bool => $app['id'] === 'uuid-app'),
+				self::callback(static fn (array $version): bool => $version['id'] === 'uuid-new' && ($version['status'] ?? null) !== 'published'),
+				ReleaseTestGate::TRIGGER_RELEASE,
+				$override
+			)
+			->willReturnCallback(
+				static function () use (&$order): array {
+					$order[] = 'gate';
+					return ['id' => 'run-1', 'failed' => 1, 'override' => ['user' => 'alice', 'reason' => 'Column removed on purpose']];
+				}
+			);
+		$this->objectService->expects(self::exactly(2))->method('saveObject')
+			->willReturnCallback(
+				function () use (&$order): ObjectEntity {
+					$order[] = 'save';
+					return $this->createMock(ObjectEntity::class);
+				}
+			);
+
+		$result = $this->service->releaseVersion(applicationUuid: 'uuid-app', versionUuid: 'uuid-new', override: $override);
+
+		self::assertSame(['gate', 'save', 'save'], $order);
+		self::assertSame('uuid-new', $result['productionVersion']);
+		self::assertSame('run-1', $result['testRun']['id']);
+	}//end testReleaseRunsTheTestSuiteFirstAndPassesTheOverride()
+
+	/**
+	 * A failing suite stops the release before anything is written: the version
+	 * stays a draft and the production pointer does not move (REQ-BQRT-004).
+	 *
+	 * @return void
+	 */
+	public function testAFailingSuiteStopsTheReleaseAndWritesNothing(): void {
+		$newVersion = $this->mockVersion(application: 'uuid-app', register: 'openbuild-foo-prod', uuid: 'uuid-new');
+		$application = $this->mockApplication(productionVersion: 'uuid-old');
+		$this->objectService->method('find')
+			->willReturnCallback(
+				static fn (string|int $id): ?ObjectEntity => match ($id) {
+					'uuid-new' => $newVersion,
+					'uuid-app' => $application,
+					default => null,
+				}
+			);
+		$this->testGate->method('guard')
+			->willThrowException(new ReleaseTestsFailedException(run: ['id' => 'run-2', 'failed' => 1, 'report' => []]));
+
+		$this->objectService->expects(self::never())->method('saveObject');
+
+		$this->expectException(ReleaseTestsFailedException::class);
+		$this->service->releaseVersion(applicationUuid: 'uuid-app', versionUuid: 'uuid-new');
+	}//end testAFailingSuiteStopsTheReleaseAndWritesNothing()
+
+	/**
 	 * delete-now on a draft whose register is SHARED with production must NOT drop
 	 * the register (REQ-OBV-111) — it is downgraded to keep-register semantics.
 	 *
@@ -465,7 +621,9 @@ class ApplicationVersionServiceTest extends TestCase {
 
 		// Shared register → delete-now downgraded → register is NOT dropped.
 		$this->registerService->expects(self::never())->method('delete');
-		$this->objectService->expects(self::once())->method('deleteObject')->with('uuid-v');
+		$this->objectService->expects(self::once())->method('deleteObject')->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => 'uuid-v',
+			]));
 
 		$this->service->deleteVersion(
 			versionUuid: 'uuid-v',

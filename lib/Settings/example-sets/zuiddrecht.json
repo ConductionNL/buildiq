@@ -1,0 +1,154 @@
+{
+	"set": "zuiddrecht",
+	"$comment": "buildiq's part of the Zuiddrecht example set: an app the demo employee Pieter owns, so the owner-only actions of the app page (settings, rights, publishing, versions, delete) can be shown and measured. It is the hybrid Pipelinq app as the BqApp boards draw it: published, production 1.1.0, development 1.1.1 waiting to be promoted, and an older 1.0.4 to roll back to. The production layer is empty, so the installed Pipelinq looks the same for everybody; the change lives in the development layer. One automation sits on the development version, switched off until it is compiled, so its test run can be opened. The production version is linked to the app by a change, after the versions exist. Install with `occ openregister:example-set:install zuiddrecht`.",
+	"objects": [
+		{
+			"key": "app-pipelinq",
+			"register": "buildiq",
+			"schema": "built-app",
+			"data": {
+				"slug": "pipelinq",
+				"name": "Pipelinq",
+				"description": "De klantcontactapp van Zuiddrecht, met de schermen en het menu die het KCC gebruikt.",
+				"appType": "hybrid",
+				"status": "published",
+				"baseRef": {
+					"kind": "fleet-app",
+					"id": "pipelinq"
+				},
+				"allowUserOverrides": false,
+				"permissions": {
+					"owners": [
+						"user:{{cast:pieter.uid}}"
+					],
+					"editors": [],
+					"viewers": []
+				}
+			}
+		},
+		{
+			"key": "version-pipelinq-1-0-4",
+			"register": "buildiq",
+			"schema": "applicationVersion",
+			"data": {
+				"name": "1.0.4",
+				"slug": "release-1-0-4",
+				"semver": "1.0.4",
+				"status": "published",
+				"scope": "admin",
+				"register": "openbuild-pipelinq",
+				"manifest": {
+					"version": "1.0.4",
+					"menu": [],
+					"pages": []
+				},
+				"manifestDelta": {},
+				"baseRef": {
+					"kind": "fleet-app",
+					"id": "pipelinq"
+				},
+				"application": "{{object:app-pipelinq.id}}"
+			}
+		},
+		{
+			"key": "version-pipelinq-1-1-0",
+			"register": "buildiq",
+			"schema": "applicationVersion",
+			"data": {
+				"name": "Productie",
+				"slug": "production",
+				"semver": "1.1.0",
+				"status": "published",
+				"scope": "admin",
+				"register": "openbuild-pipelinq",
+				"manifest": {
+					"version": "1.1.0",
+					"menu": [],
+					"pages": []
+				},
+				"manifestDelta": {},
+				"baseRef": {
+					"kind": "fleet-app",
+					"id": "pipelinq"
+				},
+				"application": "{{object:app-pipelinq.id}}"
+			}
+		},
+		{
+			"key": "version-pipelinq-1-1-1",
+			"register": "buildiq",
+			"schema": "applicationVersion",
+			"data": {
+				"name": "Ontwikkeling",
+				"slug": "development",
+				"semver": "1.1.1",
+				"status": "draft",
+				"scope": "admin",
+				"register": "openbuild-pipelinq",
+				"manifest": {
+					"version": "1.1.1",
+					"menu": [],
+					"pages": []
+				},
+				"manifestDelta": {
+					"pages": {
+						"Tickets": {
+							"title": "Meldingen"
+						}
+					}
+				},
+				"baseRef": {
+					"kind": "fleet-app",
+					"id": "pipelinq"
+				},
+				"promotesTo": "{{object:version-pipelinq-1-1-0.id}}",
+				"application": "{{object:app-pipelinq.id}}"
+			}
+		},
+		{
+			"key": "automation-pipelinq-new-lead",
+			"register": "buildiq",
+			"schema": "automation",
+			"data": {
+				"slug": "pipelinq-notify-new-lead",
+				"name": "Melding bij een nieuwe lead",
+				"description": "Stuurt de eigenaar van de app een melding zodra er een lead binnenkomt.",
+				"applicationSlug": "pipelinq",
+				"versionUuid": "{{object:version-pipelinq-1-1-1.id}}",
+				"enabled": false,
+				"trigger": {
+					"type": "manual"
+				},
+				"actions": [
+					{
+						"type": "send-notification",
+						"subject": {
+							"nl": "Er is een nieuwe lead binnengekomen",
+							"en": "A new lead came in"
+						},
+						"channels": [
+							"nc-notification"
+						],
+						"recipients": [
+							{
+								"kind": "object-acl",
+								"permission": "manage"
+							}
+						]
+					}
+				]
+			}
+		}
+	],
+	"changes": [
+		{
+			"key": "pipelinq-production-version",
+			"register": "buildiq",
+			"schema": "built-app",
+			"object": "app-pipelinq",
+			"set": {
+				"productionVersion": "{{object:version-pipelinq-1-1-0.id}}"
+			}
+		}
+	]
+}

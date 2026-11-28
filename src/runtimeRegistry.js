@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: EUPL-1.2
 /**
- * Runtime registry — components that BUILT (virtual) apps resolve at runtime,
- * passed as the `registry` prop to the NESTED CnAppRoot in BuilderHost.
+ * Runtime registry — components that BUILT (virtual) apps resolve at runtime.
+ *
+ * Every host that mounts a virtual app's CnAppRoot — the published standalone
+ * entry `src/builder.js` and the preview host `src/views/BuilderHost.vue` —
+ * MUST pass `getRuntimeRegistry()` as CnAppRoot's `registry` prop. A host that
+ * omits it renders every registry-only widget key (e.g. `connector-data`) as
+ * CnUnknownWidget with nothing but a console warning
+ * (connector-widget-runtime REQ-CWR-001).
  *
  * Kept separate from the shell `registry.js` (which the manifest test guards
  * as "every entry referenced by buildiq's own manifest") because these
@@ -9,14 +15,22 @@
  * Self-contained (no import from `registry.js`) to avoid the
  * registry → BuilderHost → runtimeRegistry import cycle.
  *
- * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004
- * @spec openspec/changes/openconnector-api-sources/tasks.md#task-4.3
- * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-004
+ * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-004
+ * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-4.3
+ * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-004
+ * @spec openspec/changes/archive/2026-11-24-pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-offer-a-board-or-a-date-axis-view-req-pec-010
+ * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t03
  */
 
+// Library page — the "Waiting to sync" page an app with offline forms gets
+// (pages-installable-offline-and-mobile, REQ-BQOM-005).
+import { CnOfflineQueue } from '@conduction/nextcloud-vue'
 // Runtime widget — renders an OpenConnector-bound data source for a manifest
 // page/widget that declares `dataSource.connector` (REQ-OCAS-006).
 import ConnectorDataView from './components/runtime/ConnectorDataView.vue'
+// Runtime page — the list page a connector-bound index page renders as
+// (integrations-connector-bound-pages, REQ-BQCB-002).
+import ConnectorListPage from './components/runtime/ConnectorListPage.vue'
 // Runtime surface — generate-and-download buttons for the Docudesk document
 // templates attached to the current object's schema (sidebar tab / detail
 // action group `docudesk-document-actions`, REQ-DDT-004).
@@ -28,6 +42,12 @@ import MyApprovalsWidget from './components/runtime/MyApprovalsWidget.vue'
 // Runtime panel — renders the linked Procest case for the current object on a
 // detail page (sidebar tab `procest-case-status`).
 import ProcestCaseStatusPanel from './components/runtime/ProcestCaseStatusPanel.vue'
+// Runtime page — a "Grid" page (`type: "custom"`, `component: "record-grid"`)
+// that edits one schema's records cell by cell (REQ-BQIX-001/002).
+import RecordGridPage from './components/runtime/RecordGridPage.vue'
+// Detail-page action that runs the app's manual automations on the record
+// (logic-automation-actions-that-run D8).
+import RunAutomationAction from './components/runtime/RunAutomationAction.vue'
 // Runtime action — Detail-page `actionsComponent` letting staff mint a
 // "track your case" link for the object they are viewing
 // (external-form-provisioning REQ-EFP-006). Owner-context only; self-gates
@@ -35,6 +55,9 @@ import ProcestCaseStatusPanel from './components/runtime/ProcestCaseStatusPanel.
 // injection CnAppRoot provides, rendering nothing when not enabled for the
 // object's schema.
 import TrackLinkAction from './components/runtime/TrackLinkAction.vue'
+// Board move handler — saves a dropped card's column into its record, so the
+// board of a built index page is not read-only (REQ-PEC-010).
+import { BOARD_MOVE_HANDLER, moveCardOnBoard } from './services/boardMove.js'
 
 /**
  * Build a slot-override registry entry (CnPageRenderer resolves any `kind`
@@ -83,11 +106,34 @@ function actions(component) {
 	return { kind: 'actions', component }
 }
 
+/**
+ * Build a `kind: "page"` registry entry: the body of a `type: "custom"` page
+ * whose `component` names it (CnPageRenderer resolves a custom page with
+ * `requireKind = 'page'`).
+ *
+ * @param {object} component - Vue component options.
+ * @param {string} note - ADR-049 `_note` justifying a custom page when no
+ *   built-in page type expresses the surface.
+ * @return {object} - the registry entry.
+ * @spec openspec/changes/archive/2026-11-24-data-index-grid-and-saved-views/tasks.md#t03
+ */
+function page(component, note) {
+	return { kind: 'page', component, _note: note }
+}
+
 export const runtimeRegistry = {
 	// Sidebar-tab widgetKey for a detail page's `sidebarProps.tabs`.
 	'procest-case-status': tab(ProcestCaseStatusPanel),
 	// Manifest widgetKey "connector-data" for a connector-bound page/widget.
 	'connector-data': widget(ConnectorDataView, ['body', 'sidebar']),
+	// @custom-widget-ratchet exclude integrations-connector-bound-pages: the
+	// page an index page bound to an integriq endpoint renders as. No built-in
+	// page type reads `dataSource.connector` (CnIndexPage binds register and
+	// schema only), so no built-in fits (ADR-049 Decision 1).
+	'connector-list': page(
+		ConnectorListPage,
+		'No built-in page type can bind a connector: CnIndexPage reads register and schema only, never dataSource.connector.',
+	),
 	// Sidebar-tab / detail action group for Docudesk document generation.
 	'docudesk-document-actions': tab(DocumentActions),
 	// @custom-widget-ratchet exclude automation-approval-steps: "My approvals"
@@ -104,4 +150,43 @@ export const runtimeRegistry = {
 	// Detail-page `config.actionsComponent: "TrackLinkAction"` — mint a
 	// "track your case" link (external-form-provisioning REQ-EFP-006).
 	TrackLinkAction: actions(TrackLinkAction),
+	// Detail-page `config.actionsComponent: "RunAutomationAction"` — run one of
+	// the app's manual automations on the record (REQ-BQAR-006).
+	RunAutomationAction: actions(RunAutomationAction),
+	// @custom-widget-ratchet exclude data-index-grid-and-saved-views: a grid
+	// page edits records cell by cell, which no built-in page type does.
+	// @custom-widget-ratchet exclude pages-installable-offline-and-mobile: the
+	// "Waiting to sync" page lists the submissions still on the device from
+	// the offline queue in IndexedDB, which no built-in page type reads.
+	'offline-queue': page(
+		CnOfflineQueue,
+		'No built-in page type reads the device-side offline queue; CnOfflineQueue is the library surface for it (REQ-BQOM-005).',
+	),
+	// `config.board.moveHandler: "board-move"` — a built app has no host
+	// code to hand the board a transition, so this one saves the field
+	// through OpenRegister, which runs the schema's guards (REQ-PEC-010).
+	[BOARD_MOVE_HANDLER]: { kind: 'handler', handler: moveCardOnBoard },
+	'record-grid': page(
+		RecordGridPage,
+		'No built-in page type edits records in a grid: index pages edit one record at a time in a form, so a spreadsheet-like page over CnDataMatrix is a custom page (ADR-049).',
+	),
+}
+
+/**
+ * The canonical runtime registry every virtual-app host passes as its
+ * CnAppRoot `registry` prop.
+ *
+ * Returns a fresh shallow copy on each call so a host can never mutate the
+ * shared entries into a host-specific variant; the entries themselves are the
+ * same objects, so every host resolves the same widget keys to the same
+ * components. Hosts must use this instead of importing `runtimeRegistry` and
+ * wiring it by hand, so the set of keys a virtual app can render is identical
+ * on the published and the preview path.
+ *
+ * @spec openspec/changes/archive/2026-11-25-openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-001-single-runtime-registry-seam-for-every-virtual-app-host
+ * @spec openspec/changes/archive/2026-11-24-integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-preview-and-published-app-render-the-same-pages-req-bqcb-004
+ * @return {object} the full runtime registry, keyed by widget key.
+ */
+export function getRuntimeRegistry() {
+	return { ...runtimeRegistry }
 }

@@ -1,0 +1,17 @@
+{
+	"_comment": "ADR-037 register fragment, apps-standalone-deploy (board BqExporterenZelfstandig). Declares exportJob.includeServerBundle, set by ExportJobService::queue() for the `server` target. OpenRegister drops a property a schema does not declare, so without this the flag never reaches RunExportJob. The exportJob schema version and the register version in openbuild_register.json are bumped with it, because OpenRegister skips an import whose version is not newer.",
+	"components": {
+		"schemas": {
+			"exportJob": {
+				"properties": {
+					"includeServerBundle": {
+						"title": "Include server bundle",
+						"type": "boolean",
+						"default": false,
+						"description": "Whether the exported tree gets deploy/: the Dockerfile, compose.yaml, .env.example and README that run the app on its own Nextcloud with OpenRegister. Only an export with the target `server` sets it."
+					}
+				}
+			}
+		}
+	}
+}

@@ -52,8 +52,8 @@
 			<Step3Custom :payload="stepData" @update:payload="setStepData" />
 		</template>
 
-		<template #step-review="{ stepData }">
-			<Step4Review :payload="stepData" />
+		<template #step-review="{ stepData, setStepData }">
+			<Step4Review :payload="stepData" @update:payload="setStepData" />
 		</template>
 	</CnWizardDialog>
 </template>
@@ -66,7 +66,76 @@ import Step1Basics from './CreateApplicationWizard/Step1Basics.vue'
 import Step2Preset from './CreateApplicationWizard/Step2Preset.vue'
 import Step3Custom from './CreateApplicationWizard/Step3Custom.vue'
 import Step4Review from './CreateApplicationWizard/Step4Review.vue'
+import { fillDemoRecords } from '../services/demoRecords.js'
 import { resolveAppIcon } from '../utils/iconCatalogues.js'
+
+/**
+ * Per-step validity flag and the message shown when it is not set. Steps
+ * without an entry always advance.
+ */
+const STEP_CHECKS = new Map([
+	['basics', ['_step1Valid', () => t('buildiq', 'Enter a name and a valid slug.')]],
+	['preset', ['_step2Valid', () => t('buildiq', 'Choose a version preset.')]],
+	[
+		'custom',
+		['_step3Valid', () => t('buildiq', 'Complete the custom version chain.')],
+	],
+])
+
+/**
+ * The message of a failed create: a taken slug in the user's language, else
+ * the API's message or detail, else the error's message, else a generic one.
+ *
+ * @param {object} data The error payload from the API.
+ * @param {Error} [err] The original error, for a message fallback.
+ * @return {string}
+ */
+function createFailureMessage(data, err) {
+	if (data.code === 'app_slug_conflict') {
+		return t('buildiq', 'This slug is taken. Choose another.')
+	}
+	const message = data.message || data.detail || (err && err.message)
+	return message || t('buildiq', 'Failed to create the application.')
+}
+
+/**
+ * The note listing resources a failed create left behind, or `''`.
+ *
+ * @param {object} data The error payload from the API.
+ * @return {string}
+ */
+function orphanNote(data) {
+	if (
+		!Array.isArray(data.orphanedResources)
+		|| data.orphanedResources.length === 0
+	) {
+		return ''
+	}
+	return (
+		' '
+		+ t('buildiq', 'Some resources need manual cleanup: {list}', {
+			list: data.orphanedResources.join(', '),
+		})
+	)
+}
+
+/**
+ * The icons to attach for the wizard's picks: a light glyph, and a dark one
+ * that defaults to the primary pick. Variants that resolve to nothing are
+ * left out.
+ *
+ * @param {object} stepData The accumulated wizard data.
+ * @return {Array<{field: string, filename: string, svg: string}>}
+ */
+function appIconVariants(stepData) {
+	const lightSvg = resolveAppIcon(stepData.iconValue, { dark: false })
+	const darkSource = stepData.iconDarkValue || stepData.iconValue
+	const darkSvg = resolveAppIcon(darkSource, { dark: true })
+	return [
+		{ field: 'icon', filename: 'app-icon.svg', svg: lightSvg },
+		{ field: 'iconDark', filename: 'app-icon-dark.svg', svg: darkSvg },
+	].filter((icon) => icon.svg)
+}
 
 export default {
 	name: 'CreateApplicationWizard',
@@ -102,6 +171,8 @@ export default {
 		 * Seed values for the wizard's shared stepData.
 		 *
 		 * @return {object}
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+		 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
 		 */
 		defaults() {
 			return {
@@ -112,6 +183,9 @@ export default {
 				iconDarkValue: null,
 				preset: '',
 				versions: [],
+				fromDatabase: null,
+				fromFile: null,
+				demoRecords: false,
 				_step1Valid: false,
 				_step2Valid: false,
 				_step3Valid: true,
@@ -167,22 +241,12 @@ export default {
 		 * @spec openspec/specs/application-creation-wizard/spec.md
 		 */
 		validateStep(stepId, stepData) {
-			if (stepId === 'basics') {
-				return stepData._step1Valid
-					? true
-					: t('buildiq', 'Enter a name and a valid slug.')
+			const check = STEP_CHECKS.get(stepId)
+			if (!check) {
+				return true
 			}
-			if (stepId === 'preset') {
-				return stepData._step2Valid
-					? true
-					: t('buildiq', 'Choose a version preset.')
-			}
-			if (stepId === 'custom') {
-				return stepData._step3Valid
-					? true
-					: t('buildiq', 'Complete the custom version chain.')
-			}
-			return true
+			const [flag, message] = check
+			return stepData[flag] ? true : message()
 		},
 
 		/**
@@ -194,6 +258,7 @@ export default {
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/application-creation-wizard/spec.md
+		 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-creates-a-new-app-from-an-uploaded-spreadsheet-req-bqcv-001
 		 */
 		async onSubmit(stepData) {
 			const body = {
@@ -202,6 +267,21 @@ export default {
 				description: stepData.description,
 				preset: stepData.preset,
 				versions: stepData.versions,
+			}
+			// REQ-BQDB-003: the server checks the database and tables again.
+			if (stepData.fromDatabase && stepData.fromDatabase.register) {
+				body.fromDatabase = {
+					register: stepData.fromDatabase.register,
+					schemas: stepData.fromDatabase.schemas || [],
+				}
+			}
+			// REQ-BQCV-001: the server reads and imports the file, and rolls back on failure.
+			if (stepData.fromFile && stepData.fromFile.content) {
+				body.fromFile = {
+					name: stepData.fromFile.name,
+					mime: stepData.fromFile.mime,
+					content: stepData.fromFile.content,
+				}
 			}
 
 			try {
@@ -212,6 +292,7 @@ export default {
 					// Attach the chosen icon (best-effort — the app already exists,
 					// so a failure here is recoverable on the detail page).
 					await this.uploadIcons(data.applicationUuid, stepData)
+					await this.fillDemoRecordsIfAsked(data.applicationUuid, stepData)
 					this.$emit('created', data.applicationUuid)
 					this.$emit('update:show', false)
 				} else {
@@ -219,6 +300,27 @@ export default {
 				}
 			} catch (err) {
 				this.reportError(err.response?.data || {}, err)
+			}
+		},
+
+		/**
+		 * Fill the new app with demo records when the maker switched it on
+		 * (REQ-BQCV-030). Best-effort, like the icons: the app already exists,
+		 * and the detail page offers the same action again.
+		 *
+		 * @param {string} uuid The created Application UUID.
+		 * @param {object} stepData The accumulated wizard data.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/application-creation-wizard/spec.md#requirement-a-maker-fills-a-new-app-with-demo-records-req-bqcv-030
+		 */
+		async fillDemoRecordsIfAsked(uuid, stepData) {
+			if (!stepData.demoRecords) {
+				return
+			}
+			try {
+				await fillDemoRecords(uuid)
+			} catch {
+				// Not fatal: the app exists, and its detail page offers the fill again.
 			}
 		},
 
@@ -237,23 +339,13 @@ export default {
 		 * @spec openspec/specs/application-creation-wizard/spec.md
 		 */
 		async uploadIcons(uuid, stepData) {
-			const lightSvg = resolveAppIcon(stepData.iconValue, { dark: false })
-			const darkSource = stepData.iconDarkValue || stepData.iconValue
-			const darkSvg = resolveAppIcon(darkSource, { dark: true })
-			if (!lightSvg && !darkSvg) {
+			const icons = appIconVariants(stepData)
+			if (icons.length === 0) {
 				return
 			}
 			try {
-				if (lightSvg) {
-					await this.attachIcon(uuid, 'icon', 'app-icon.svg', lightSvg)
-				}
-				if (darkSvg) {
-					await this.attachIcon(
-						uuid,
-						'iconDark',
-						'app-icon-dark.svg',
-						darkSvg,
-					)
+				for (const icon of icons) {
+					await this.attachIcon(uuid, icon.field, icon.filename, icon.svg)
 				}
 			} catch (err) {
 				console.error('Buildiq: failed to attach app icon', err)
@@ -299,19 +391,7 @@ export default {
 		 * @spec openspec/specs/application-creation-wizard/spec.md
 		 */
 		reportError(data, err) {
-			let message = data.message || data.detail
-			if (!message && err) message = err.message
-			if (!message) message = t('buildiq', 'Failed to create the application.')
-			if (
-				Array.isArray(data.orphanedResources)
-				&& data.orphanedResources.length > 0
-			) {
-				message +=
-					' '
-					+ t('buildiq', 'Some resources need manual cleanup: {list}', {
-						list: data.orphanedResources.join(', '),
-					})
-			}
+			const message = createFailureMessage(data, err) + orphanNote(data)
 			if (this.$refs.wizard) {
 				this.$refs.wizard.setError(message)
 			}
@@ -334,7 +414,7 @@ export default {
 		 *
 		 * @param {string} appSlug - the newly-created app's slug.
 		 * @return {void}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		onAiAppCreated(appSlug) {
 			this.onClose()

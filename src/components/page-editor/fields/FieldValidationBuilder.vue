@@ -43,13 +43,44 @@
 			:aria-label="t('buildiq', 'Maximum')"
 			:value="maxDisplay"
 			@input="onMaxInput($event.target.value)" />
+		<!-- Form-dutch-field-formats D1/D2: a Dutch format checks the field the
+		     same way here and on the portal; with one set, no pattern. -->
+		<label class="field-validation-builder__format">
+			<span>{{ t('buildiq', 'Format') }}</span>
+			<select
+				class="field-validation-builder__field"
+				data-testid="field-validation-format"
+				:value="formatDisplay"
+				:disabled="!!inheritedFormat"
+				:aria-describedby="formatHint ? formatHintId : undefined"
+				@change="onFormatChange($event.target.value)">
+				<option value="">
+					{{ t('buildiq', 'None') }}
+				</option>
+				<option
+					v-for="option in formatOptions"
+					:key="option.id"
+					:value="option.id">
+					{{ option.label }}
+				</option>
+			</select>
+		</label>
+		<span
+			v-if="formatHint"
+			:id="formatHintId"
+			class="field-validation-builder__hint"
+			data-testid="field-validation-format-hint">
+			{{ formatHint }}
+		</span>
 		<input
 			type="text"
 			class="field-validation-builder__field"
-			:placeholder="t('buildiq', 'Pattern (regex)')"
+			data-testid="field-validation-pattern"
+			:placeholder="formatDisplay ? t('buildiq', 'The format already checks this field.') : t('buildiq', 'Pattern (regex)')"
 			:aria-label="t('buildiq', 'Pattern')"
 			:aria-invalid="patternError"
-			:value="patternDisplayValue"
+			:disabled="!!formatDisplay"
+			:value="formatDisplay ? '' : patternDisplayValue"
 			@input="onPatternInput($event.target.value)" />
 		<input
 			type="text"
@@ -68,6 +99,37 @@
 </template>
 
 <script>
+import { dutchFormatOptions, isDutchFormat } from '../../../services/dutchFormats.js'
+
+let hintCounter = 0
+
+/**
+ * Copy an object without its `undefined` entries, keeping key order.
+ *
+ * @param {object} source - Any plain object.
+ * @return {object}
+ */
+function definedEntries(source) {
+	return Object.fromEntries(
+		Object.entries(source).filter(([, value]) => value !== undefined),
+	)
+}
+
+/**
+ * Read a min/max input as a number, or `undefined` when it is blank or not
+ * numeric.
+ *
+ * @param {string|number|null|undefined} raw - The raw input value.
+ * @return {number|undefined}
+ */
+function toBound(raw) {
+	if (raw === '' || raw === null || raw === undefined) {
+		return undefined
+	}
+	const value = Number(raw)
+	return Number.isNaN(value) ? undefined : value
+}
+
 export default {
 	name: 'FieldValidationBuilder',
 	props: {
@@ -85,11 +147,26 @@ export default {
 			type: String,
 			default: '',
 		},
+
+		// The field's own Dutch `format` (form-dutch-field-formats D1), '' for none.
+		format: {
+			type: String,
+			default: '',
+		},
+
+		// The Dutch format of the schema property the field is bound to (D2):
+		// shown, and not changeable here.
+		inheritedFormat: {
+			type: String,
+			default: '',
+		},
 	},
 
-	emits: ['update:modelValue'],
+	emits: ['update:modelValue', 'update:format'],
 	data() {
+		hintCounter += 1
 		return {
+			formatHintId: `field-validation-format-hint-${hintCounter}`,
 			// Live-typed pattern buffer — kept separate from `modelValue` so
 			// an invalid, not-yet-committed pattern still displays (and marks
 			// invalid) without ever being written (REQ-OBFEL-003).
@@ -98,6 +175,44 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The Dutch formats, labelled.
+		 *
+		 * @return {Array<{id: string, label: string, hint: string}>}
+		 * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 */
+		formatOptions() {
+			return dutchFormatOptions()
+		},
+
+		/**
+		 * The format in force: the schema's, else the field's own Dutch format.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 */
+		formatDisplay() {
+			if (isDutchFormat(this.inheritedFormat)) {
+				return this.inheritedFormat
+			}
+			return isDutchFormat(this.format) ? this.format : ''
+		},
+
+		/**
+		 * The line under the select: where an inherited format comes from, or the format's hint.
+		 *
+		 * @return {string}
+		 *
+		 * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 */
+		formatHint() {
+			if (isDutchFormat(this.inheritedFormat)) {
+				return this.t('buildiq', 'Comes from the schema')
+			}
+			const option = this.formatOptions.find((entry) => entry.id === this.formatDisplay)
+			return option ? option.hint : ''
+		},
+
 		/**
 		 * `required`, prefilled from the legacy flat key when no structured
 		 * `validation` object exists yet.
@@ -148,6 +263,21 @@ export default {
 		},
 
 		/**
+		 * The validation fields as currently shown in the inputs.
+		 *
+		 * @return {object}
+		 */
+		displayedValidation() {
+			return {
+				required: this.requiredDisplay,
+				min: this.minDisplay,
+				max: this.maxDisplay,
+				pattern: this.patternDisplayValue,
+				message: this.messageDisplay,
+			}
+		},
+
+		/**
 		 * Whether the currently displayed pattern fails to compile.
 		 *
 		 * @return {boolean}
@@ -184,49 +314,17 @@ export default {
 		 * @return {object}
 		 */
 		buildValidation(overrides) {
-			const required =
-				overrides.required !== undefined
-					? overrides.required
-					: this.requiredDisplay
-			const minRaw =
-				overrides.min !== undefined ? overrides.min : this.minDisplay
-			const maxRaw =
-				overrides.max !== undefined ? overrides.max : this.maxDisplay
-			const pattern =
-				overrides.pattern !== undefined
-					? overrides.pattern
-					: this.patternDisplayValue
-			const message =
-				overrides.message !== undefined
-					? overrides.message
-					: this.messageDisplay
-			const next = {}
-			if (required) {
-				next.required = true
+			const values = {
+				...this.displayedValidation,
+				...definedEntries(overrides),
 			}
-			if (
-				minRaw !== ''
-				&& minRaw !== null
-				&& minRaw !== undefined
-				&& !Number.isNaN(Number(minRaw))
-			) {
-				next.min = Number(minRaw)
-			}
-			if (
-				maxRaw !== ''
-				&& maxRaw !== null
-				&& maxRaw !== undefined
-				&& !Number.isNaN(Number(maxRaw))
-			) {
-				next.max = Number(maxRaw)
-			}
-			if (pattern) {
-				next.pattern = pattern
-			}
-			if (message) {
-				next.message = message
-			}
-			return next
+			return definedEntries({
+				required: values.required ? true : undefined,
+				min: toBound(values.min),
+				max: toBound(values.max),
+				pattern: values.pattern || undefined,
+				message: values.message || undefined,
+			})
 		},
 
 		/**
@@ -265,7 +363,37 @@ export default {
 		 * @param {string} value - the typed pattern.
 		 * @return {void}
 		 */
+		/**
+		 * Set or clear the field's Dutch format. Setting one drops a pattern,
+		 * because a field is checked by one or the other (REQ-BQDF-001).
+		 *
+		 * @param {string} value The format, or '' for none.
+		 * @return {void}
+		 * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 */
+		onFormatChange(value) {
+			if (this.inheritedFormat) {
+				return
+			}
+			const format = isDutchFormat(value) ? value : ''
+			this.$emit('update:format', format)
+			if (format !== '' && this.patternDisplayValue !== '') {
+				this.patternDraft = null
+				this.commit({ pattern: '' })
+			}
+		},
+
+		/**
+		 * Takes a typed pattern, unless a Dutch format already decides the field's check.
+		 *
+		 * @param {string} value The pattern as typed.
+		 *
+		 * @spec openspec/changes/archive/2026-11-24-form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 */
 		onPatternInput(value) {
+			if (this.formatDisplay) {
+				return
+			}
 			this.patternDraft = value
 			if (value !== '') {
 				try {
@@ -280,7 +408,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../assets/editor-controls.scss' as c;
+
 .field-validation-builder {
 	display: flex;
 	flex-wrap: wrap;
@@ -296,15 +426,24 @@ export default {
 
 .field-validation-builder__field {
 	flex: 1 1 140px;
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .field-validation-builder__field--narrow {
 	flex: 0 0 80px;
+}
+
+.field-validation-builder__format {
+	display: inline-flex;
+	gap: 4px;
+	align-items: center;
+	flex: 1 1 180px;
+}
+
+.field-validation-builder__hint {
+	flex-basis: 100%;
+	font-size: 11px;
+	color: var(--color-text-maxcontrast);
 }
 
 .field-validation-builder__pattern-error {

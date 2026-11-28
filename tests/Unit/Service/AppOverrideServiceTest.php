@@ -33,9 +33,12 @@ use OCA\Buildiq\Service\AppOverrideService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\App\IAppManager;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Tests for AppOverrideService on the unified app model.
@@ -115,6 +118,11 @@ class AppOverrideServiceTest extends TestCase {
 		self::assertSame('opencatalogi', $result['appId']);
 		self::assertSame('alice', $result['updatedBy']);
 		self::assertSame('app-1', $result['applicationUuid']);
+		// The save time is an ISO-8601 timestamp with its offset.
+		self::assertMatchesRegularExpression(
+			pattern: '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/',
+			string: (string)$result['updatedAt']
+		);
 
 	}//end testUpsertCreatesHybridAppWhenNone()
 
@@ -173,11 +181,13 @@ class AppOverrideServiceTest extends TestCase {
 		$this->objectService->method('find')->willReturn($existingVersion);
 
 		// Exactly one saveObject — the version delta update (uuid reused). The
-		// uuid is the 5th positional arg of OR's saveObject signature
-		// (object, extend, register, schema, uuid, …); match it there.
+		// uuid travels in the ObjectSaveOptions; match it there.
 		$this->objectService->expects(self::once())
 			->method('saveObject')
-			->with(self::anything(), self::anything(), self::anything(), self::anything(), 'ver-1')
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => self::anything(),
+					'uuid' => 'ver-1',
+				]))
 			->willReturn($existingVersion);
 
 		$result = $this->service->upsert(
@@ -224,7 +234,8 @@ class AppOverrideServiceTest extends TestCase {
 		$deleted = [];
 		$this->objectService->expects(self::exactly(2))
 			->method('deleteObject')
-			->willReturnCallback(static function ($uuid) use (&$deleted): void {
+			->willReturnCallback(static function (ObjectDeletion $deletion) use (&$deleted): void {
+				$uuid = $deletion->uuid;
 				$deleted[] = $uuid;
 			});
 
@@ -335,6 +346,56 @@ class AppOverrideServiceTest extends TestCase {
 		self::assertTrue($this->service->wouldBlankApp(delta: $delta));
 
 	}//end testWouldBlankAppTrueWhenAllPagesRemovedAndMenuEmptied()
+
+	/**
+	 * A new hybrid app keeps a caller baseRef only when it names a non-blank id;
+	 * otherwise it links the fleet app itself, so the Application never breaks
+	 * the register's `hybrid-requires-baseRef` validation.
+	 *
+	 * @param string|null $baseRef The caller's JSON-encoded baseRef.
+	 * @param array<string,mixed> $expected The baseRef stored on the Application.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('baseRefs')]
+	public function testCreatedHybridAppCarriesABaseRefId(?string $baseRef, array $expected): void {
+		$this->objectService->method('searchObjectsBySlug')->willReturn([]);
+		$this->appManager->method('getAppInfo')->willReturn(['name' => 'OpenCatalogi']);
+
+		$saved = [];
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (array $object) use (&$saved): ObjectEntity {
+				$saved[] = $object;
+				return $this->mockEntity(['id' => 'row-' . count($saved)]);
+			}
+		);
+
+		$this->service->upsert(appId: 'opencatalogi', delta: [], baseRef: $baseRef, updatedBy: 'alice');
+
+		self::assertSame($expected, $saved[0]['baseRef']);
+	}//end testCreatedHybridAppCarriesABaseRefId()
+
+	/**
+	 * Caller baseRefs and the baseRef the new Application gets.
+	 *
+	 * @return array<string, array{0: string|null, 1: array<string,mixed>}>
+	 */
+	public static function baseRefs(): array {
+		$fleet = ['kind' => 'fleet-app', 'id' => 'opencatalogi'];
+
+		return [
+			'none' => [null, $fleet],
+			'empty string' => ['', $fleet],
+			'not json' => ['files', $fleet],
+			'kind only' => ['{"kind":"fleet-app"}', $fleet],
+			'id null' => ['{"id":null}', $fleet],
+			'id empty' => ['{"kind":"fleet-app","id":""}', $fleet],
+			'id whitespace' => ['{"id":"  "}', $fleet],
+			'id not a string' => ['{"id":5}', $fleet],
+			'id set, kind defaulted' => ['{"id":"files","version":"1.2"}', ['id' => 'files', 'version' => '1.2', 'kind' => 'fleet-app']],
+			'id and kind set' => ['{"kind":"fleet-app","id":"files"}', ['kind' => 'fleet-app', 'id' => 'files']],
+		];
+	}//end baseRefs()
 
 	/**
 	 * Build a mock ObjectEntity whose jsonSerialize returns the given array.

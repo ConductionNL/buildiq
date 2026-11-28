@@ -1,0 +1,45 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`readThrough golden > pins cleared while in flight, then fails 1`] = `"a ok {"data":"old","isStale":false} | b err gone | c ok {"data":"after","isStale":false} || calls=3 reads=5"`;
+
+exports[`readThrough golden > pins cleared while in flight, then succeeds 1`] = `"a ok {"data":"kept","isStale":false} | b ok {"data":"kept","isStale":false} || calls=1 reads=3"`;
+
+exports[`readThrough golden > pins cleared, re-read with another ttl, first fails 1`] = `"a ok {"data":"old","isStale":false} | b err first | c ok {"data":"second","isStale":false} | d ok {"data":"second","isStale":false} || calls=3 reads=6"`;
+
+exports[`readThrough golden > pins concurrent reads share one failure 1`] = `"a err down | b err down || calls=1 reads=2"`;
+
+exports[`readThrough golden > pins concurrent reads share one load 1`] = `"a ok {"data":"shared","isStale":false} | b ok {"data":"shared","isStale":false} | c ok {"data":"shared","isStale":false} || calls=1 reads=4"`;
+
+exports[`readThrough golden > pins default clock 1`] = `"a ok {"data":"d","isStale":false} | b ok {"data":"d","isStale":false} || calls=1 reads=0"`;
+
+exports[`readThrough golden > pins expired entry with an in-flight reload is awaited 1`] = `"a ok {"data":"old","isStale":false} | b ok {"data":"new","isStale":false} | c ok {"data":"new","isStale":false} | d ok {"data":"new","isStale":false} || calls=2 reads=6"`;
+
+exports[`readThrough golden > pins failure with no previous entry throws 1`] = `"a err boom | b ok {"data":"ok","isStale":false} || calls=2 reads=3"`;
+
+exports[`readThrough golden > pins falsy data still hits 1`] = `"a ok {"data":0,"isStale":false} | b ok {"data":0,"isStale":false} || calls=1 reads=3"`;
+
+exports[`readThrough golden > pins fresh check uses the stored ttl, not the new one 1`] = `"a ok {"data":1,"isStale":false} | b ok {"data":1,"isStale":false} | c ok {"data":1,"isStale":false} || calls=1 reads=4"`;
+
+exports[`readThrough golden > pins interleaved settle order 1`] = `"b ok {"data":"two","isStale":false} | d ok {"data":"two","isStale":false} | a ok {"data":"one","isStale":false} | c ok {"data":"one","isStale":false} || calls=2 reads=6"`;
+
+exports[`readThrough golden > pins miss, fresh hit, expiry 1`] = `"a ok {"data":{"v":1},"isStale":false} | b ok {"data":{"v":1},"isStale":false} | c ok {"data":{"v":3},"isStale":false} || calls=2 reads=5"`;
+
+exports[`readThrough golden > pins plain loader value 1`] = `"a ok {"data":"raw","isStale":false} | b ok {"data":"raw","isStale":false} || calls=1 reads=3"`;
+
+exports[`readThrough golden > pins separate keys do not share 1`] = `"a ok {"data":1,"isStale":false} | b ok {"data":2,"isStale":false} | c ok {"data":1,"isStale":false} || calls=2 reads=5"`;
+
+exports[`readThrough golden > pins stale age is read after the load fails 1`] = `"a ok {"data":"old","isStale":false} | b err late || calls=2 reads=4"`;
+
+exports[`readThrough golden > pins stale inside the 10x window 1`] = `"a ok {"data":"old","isStale":false} | b ok {"data":"old","isStale":true} | c ok {"data":"old","isStale":true} | d err boom | e ok {"data":"fresh","isStale":false} || calls=5 reads=10"`;
+
+exports[`readThrough golden > pins stale window uses the new ttl 1`] = `"a ok {"data":"old","isStale":false} | b ok {"data":"old","isStale":true} | c err boom || calls=3 reads=6"`;
+
+exports[`readThrough golden > pins stale with undefined previous data throws 1`] = `"a ok {"isStale":false} | b err boom || calls=2 reads=3"`;
+
+exports[`readThrough golden > pins synchronous loader throw 1`] = `"a err sync | b ok {"data":"after","isStale":false} || calls=2 reads=3"`;
+
+exports[`readThrough golden > pins synchronous throw with a previous entry 1`] = `"a ok {"data":"old","isStale":false} | b err sync | c ok {"data":"old","isStale":true} || calls=3 reads=5"`;
+
+exports[`readThrough golden > pins ttl zero never hits 1`] = `"a ok {"data":"x","isStale":false} | b ok {"data":"y","isStale":false} || calls=2 reads=4"`;
+
+exports[`readThrough golden > pins undefined data never hits 1`] = `"a ok {"isStale":false} | b ok {"data":null,"isStale":false} | c ok {"data":null,"isStale":false} || calls=2 reads=5"`;

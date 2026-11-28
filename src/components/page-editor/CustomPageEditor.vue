@@ -23,6 +23,37 @@
 		</h3>
 
 		<fieldset class="custom-page-editor__fieldset">
+			<legend>{{ t('buildiq', 'What the page shows') }}</legend>
+			<label class="custom-page-editor__mode">
+				<input
+type="radio"
+					name="custom-page-editor-mode"
+					:checked="mode === 'component'"
+					@change="setMode('component')">
+				{{ t('buildiq', 'Registered component') }}
+			</label>
+			<label class="custom-page-editor__mode">
+				<input
+type="radio"
+					name="custom-page-editor-mode"
+					:checked="mode === 'code'"
+					@change="setMode('code')">
+				{{ t('buildiq', 'Write your own') }}
+			</label>
+		</fieldset>
+
+		<fieldset v-if="mode === 'code'" class="custom-page-editor__fieldset">
+			<legend>{{ t('buildiq', 'Your code') }}</legend>
+			<p class="custom-page-editor__hint">
+				{{ t('buildiq', 'The code runs in a sandbox with no network access. Only app owners may save it, and only when an administrator allows code on pages.') }}
+			</p>
+			<CodeComponentEditor
+				:modelValue="config.code || {}"
+				@update:modelValue="update('code', $event)" />
+			<InlineFieldMark :error="markFor('code')" />
+		</fieldset>
+
+		<fieldset v-if="mode === 'component'" class="custom-page-editor__fieldset">
 			<legend>{{ t('buildiq', 'Component') }}</legend>
 			<label class="custom-page-editor__group-row">
 				{{ t('buildiq', 'customComponents registry key') }}
@@ -48,7 +79,7 @@
 			</p>
 		</fieldset>
 
-		<fieldset class="custom-page-editor__fieldset">
+		<fieldset v-if="mode === 'component'" class="custom-page-editor__fieldset">
 			<legend>{{ t('buildiq', 'Props (JSON, optional)') }}</legend>
 			<textarea
 				class="custom-page-editor__textarea"
@@ -71,41 +102,38 @@
 </template>
 
 <script>
+import CodeComponentEditor from './fields/CodeComponentEditor.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import { useLivePreview } from '../../composables/useLivePreview.js'
+import { pageEditorBaseMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'CustomPageEditor',
-	components: { InlineFieldMark },
-	mixins: [pageEditorValidationMixin],
+	components: { CodeComponentEditor, InlineFieldMark },
+	mixins: [pageEditorBaseMixin, pageEditorValidationMixin],
 	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
-		},
-
 		pageType: {
 			type: String,
 			default: 'custom',
 		},
 
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
-		parentRoute: {
-			type: String,
-			default: '',
+		/**
+		 * The keys of the registry the live preview resolves custom pages
+		 * against, passed by PageDesigner while its preview pane is mounted
+		 * (REQ-OBPD-007). Empty without a live preview: the key is then
+		 * entered free-form.
+		 */
+		componentKeys: {
+			type: Array,
+			default: () => [],
 		},
 	},
 
-	emits: ['update:config'],
 	/**
 	 * Observed behaviour of `setup` (retrofit annotation).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 	 */
 	setup() {
 		// When chain spec #2's in-memory preview is wired AND it exposes a
@@ -119,6 +147,10 @@ export default {
 		return {
 			propsDraft: this.stringifyProps(this.config && this.config.props),
 			propsError: '',
+			// What the other mode held when the maker switched away, so switching
+			// back within the session does not lose it. `component` and `code`
+			// exclude each other in the manifest (D1), so only one is saved.
+			stash: {},
 		}
 	},
 
@@ -126,18 +158,32 @@ export default {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		validatedConfigKeys() {
-			return ['component', 'props']
+			return ['component', 'props', 'code']
+		},
+
+		/**
+		 * Which kind of custom page this is: a registered component, or the
+		 * maker's own code (`config.code`).
+		 *
+		 * @return {string} `component` or `code`.
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t04
+		 */
+		mode() {
+			return this.config && this.config.code !== undefined ? 'code' : 'component'
 		},
 
 		/**
 		 * Observed behaviour of `registryKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		registryKeys() {
+			if (this.componentKeys.length > 0) {
+				return this.componentKeys
+			}
 			const reg = this.preview && this.preview.componentRegistry
 			if (Array.isArray(reg)) {
 				return reg
@@ -151,11 +197,11 @@ export default {
 		/**
 		 * Observed behaviour of `otherKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		otherKeys() {
 			return Object.keys(this.config || {}).filter(
-				(k) => k !== 'component' && k !== 'props',
+				(k) => k !== 'component' && k !== 'props' && k !== 'code',
 			)
 		},
 	},
@@ -169,7 +215,7 @@ export default {
 			 * caret and half-typed JSON survive their own keystrokes.
 			 *
 			 * @param {?object} val - the new `config.props` prop bag; `null`/`undefined` empties the textarea.
-			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+			 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 			 */
 			handler(val) {
 				const fresh = this.stringifyProps(val)
@@ -187,7 +233,7 @@ export default {
 		 *
 		 * @param {?object} value - the `config.props` prop bag; `null`/`undefined` (or anything JSON.stringify chokes on, e.g. a cyclic object) yields an empty textarea rather than throwing.
 		 * @return {string} - the indented JSON, or `''`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		stringifyProps(value) {
 			if (value === undefined || value === null) {
@@ -201,13 +247,49 @@ export default {
 		},
 
 		/**
+		 * Switch between a registered component and the maker's own code. The
+		 * keys of the mode left behind are taken out of the config and kept in
+		 * `stash`, and the keys of the mode chosen come back from it.
+		 *
+		 * @param {string} mode - `component` or `code`.
+		 * @spec openspec/changes/archive/2026-11-24-pages-custom-code/tasks.md#t04
+		 */
+		setMode(mode) {
+			if (mode === this.mode) {
+				return
+			}
+			const next = { ...this.config }
+			const leaving = mode === 'code' ? ['component', 'props'] : ['code']
+			const stash = { ...this.stash }
+			for (const key of leaving) {
+				if (next[key] !== undefined) {
+					stash[key] = next[key]
+				}
+				delete next[key]
+			}
+			if (mode === 'code') {
+				next.code = stash.code !== undefined ? stash.code : {}
+				delete stash.code
+			} else {
+				for (const key of ['component', 'props']) {
+					if (stash[key] !== undefined) {
+						next[key] = stash[key]
+						delete stash[key]
+					}
+				}
+			}
+			this.stash = stash
+			this.$emit('update:config', next)
+		},
+
+		/**
 		 * Write one key on the page's `config` block. Only the named key is
 		 * touched, which is what lets the arbitrary extra keys a custom page
 		 * carries (listed read-only under "Other config keys") survive.
 		 *
 		 * @param {string} key - the config key being written: `component` (the customComponents registry key) or `props`.
 		 * @param {string|object|undefined} value - the new value: the registry key from the text input, or the parsed prop bag from the JSON textarea. `''`, `null` and `undefined` delete the key — that is how an emptied textarea removes `props`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		update(key, value) {
 			const next = { ...this.config }
@@ -225,7 +307,7 @@ export default {
 		 * blank the live page; the last valid parse stays in the manifest.
 		 *
 		 * @param {string} value - the raw textarea contents. Blank/whitespace-only clears the error and removes `config.props` entirely.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		onPropsInput(value) {
 			this.propsDraft = value
@@ -247,7 +329,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .custom-page-editor {
 	display: flex;
 	flex-direction: column;
@@ -262,17 +346,19 @@ export default {
 }
 
 .custom-page-editor__fieldset {
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	padding: 8px;
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
+	@include c.fieldset;
 }
 
 .custom-page-editor__fieldset legend {
 	padding: 0 6px;
 	font-weight: 600;
+	font-size: 13px;
+}
+
+.custom-page-editor__mode {
+	display: flex;
+	align-items: center;
+	gap: 6px;
 	font-size: 13px;
 }
 
@@ -284,11 +370,7 @@ export default {
 }
 
 .custom-page-editor__group-row input {
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .custom-page-editor__textarea {

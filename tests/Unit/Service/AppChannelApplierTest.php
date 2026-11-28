@@ -37,10 +37,15 @@ use OCA\Buildiq\Service\AgentChannelProvisioner;
 use OCA\Buildiq\Service\AppChannelApplier;
 use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\ChannelApplyReport;
+use OCA\Buildiq\Service\ChannelProvisioners;
+use OCA\Buildiq\Service\ConnectorRegisterAvailability;
 use OCA\Buildiq\Service\ContainerLocator;
 use OCA\Buildiq\Service\DataRegisterProvisioner;
 use OCA\Buildiq\Service\FlowChannelProvisioner;
+use OCA\Buildiq\Kernel\Values\LocalApplicationRef;
+use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCA\Buildiq\Service\SkillChannelDelegate;
+use OCA\Buildiq\Tests\Unit\Support\FakeSlugResolver;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Flow;
@@ -53,6 +58,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for the v2 channel applier.
@@ -118,6 +124,10 @@ class AppChannelApplierTest extends TestCase {
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->appManager = $this->createMock(IAppManager::class);
+		// FleetAppId::resolve() asks isInstalled() before isEnabledForUser(),
+		// so the id resolves to 'integriq' and the per-test isEnabledForUser
+		// stub stays the thing under test.
+		$this->appManager->method('isInstalled')->willReturn(true);
 		$this->locator = $this->createMock(ContainerLocator::class);
 		$this->flowService = $this->createMock(FlowService::class);
 
@@ -130,41 +140,37 @@ class AppChannelApplierTest extends TestCase {
 	 */
 	private function applier(): AppChannelApplier {
 		return new AppChannelApplier(
-			$this->objectService,
-			// A REAL provisioner over mocked mappers: its declareChannel call is
-			// what keeps the dataRegisters channel present in every report, so a
-			// mock here would quietly remove an assertion this file depends on.
-			new DataRegisterProvisioner(
-				$this->registerMapper,
-				$this->schemaMapper,
-				$this->createMock(LoggerInterface::class)
-			),
-			// A REAL delegate over the mocked app-manager and locator: the skills
-			// channel's degradation and count-adoption behaviour is exactly what
-			// several tests in this file assert, so a mock would gut them.
-			new SkillChannelDelegate(
+			objectService: $this->objectService,
+			// A MIGRATED instance, which is what every existing test in this file
+			// assumes without ever having said so. `ConnectorRegisterResolutionTest`
+			// is where the migrated and unmigrated cases are told apart.
+			connectorRegister: new ConnectorRegisterAvailability(
+				new FakeSlugResolver(['integriq']),
 				$this->appManager,
-				$this->locator,
 				$this->createMock(LoggerInterface::class)
 			),
-			// A REAL provisioner over a mocked FlowService and the shared
-			// mocked objectService: the flows channel's declared-count and
-			// degradation behaviour is asserted below, same reasoning as the
-			// two providers/delegates above.
-			new FlowChannelProvisioner(
-				$this->flowService,
-				$this->objectService,
-				$this->createMock(LoggerInterface::class)
+			provisioners: new ChannelProvisioners(
+				registerProvisioner: new DataRegisterProvisioner(
+					$this->registerMapper,
+					$this->schemaMapper,
+					$this->createMock(LoggerInterface::class)
+				),
+				skillDelegate: new SkillChannelDelegate(
+					$this->appManager,
+					$this->locator,
+					$this->createMock(LoggerInterface::class)
+				),
+				flowProvisioner: new FlowChannelProvisioner(
+					$this->flowService,
+					$this->objectService,
+					$this->createMock(LoggerInterface::class)
+				),
+				agentProvisioner: new AgentChannelProvisioner(
+					$this->objectService,
+					$this->createMock(LoggerInterface::class)
+				)
 			),
-			// A REAL provisioner over the shared mocked objectService: the
-			// agents channel's tagging and skip-if-exists behaviour is
-			// asserted below, same reasoning as the two providers above.
-			new AgentChannelProvisioner(
-				$this->objectService,
-				$this->createMock(LoggerInterface::class)
-			),
-			$this->appManager,
-			$this->createMock(LoggerInterface::class),
+			logger: $this->createMock(LoggerInterface::class),
 		);
 
 	}//end applier()
@@ -300,27 +306,33 @@ class AppChannelApplierTest extends TestCase {
 
 		$this->objectService->expects(self::once())
 			->method('saveObject')
-			// Positional, because that is how the mock reports a named-argument
-			// call. The list must name EVERY parameter of
-			// ObjectServiceInterface::saveObject — the contract carries a
-			// `$_validation` parameter between `$silent` and `$uploadedFiles`
-			// that the pre-contract signature did not, and a list one short
-			// silently shifts `failIfExists` onto `$currentUser`, so the
-			// expectation never matches and the never-overwrite guarantee below
-			// stops being asserted.
+			// The release's argument names, matched against main's option
+			// objects. `failIfExists` is the never-overwrite guarantee asserted
+			// below.
 			->with(
-				self::anything(), // object
-				self::anything(), // extend
-				'openconnector',  // register
-				'source',         // schema
-				self::NIL_UUID,   // uuid
-				false,            // _rbac
-				false,            // _multitenancy
-				false,            // silent
-				true,             // _validation (contract default)
-				null,             // uploadedFiles
-				null,             // currentUser
-				true              // failIfExists — the never-overwrite guarantee
+				...LegacyObjectArgs::with(
+					method: 'saveObject',
+					expected: [
+						'object' => self::anything(),
+						'extend' => self::anything(),
+						// The RESOLVED slug, not a literal. This assertion used to read
+						// 'openconnector' and passed for as long as the code pinned the
+						// same word, which is what an assertion that copies the
+						// implementation buys you. The applier is now built with a
+						// migrated instance, so this is the one that reddens if the
+						// resolution is dropped.
+						'register' => 'integriq',
+						'schema' => 'source',
+						'uuid' => self::NIL_UUID,
+						'_rbac' => false,
+						'_multitenancy' => false,
+						'silent' => false,
+						'_validation' => true,
+						'uploadedFiles' => null,
+						'currentUser' => null,
+						'failIfExists' => true,
+					]
+				)
 			);
 
 		$report = $this->applier()->apply(
@@ -395,6 +407,90 @@ class AppChannelApplierTest extends TestCase {
 		self::assertSame('openconnector-unavailable', $report['channels']['connectors']['reason']);
 
 	}//end testConnectorsDegradeWhenOpenConnectorIsAbsent()
+
+	/**
+	 * The connectors channel applies on an instance that runs integriq.
+	 *
+	 * THE DEFECT THIS PINS. The guard used to read
+	 * `isEnabledForUser('openconnector')`. Integriq is that app renamed, and
+	 * an instance on any current release registers only `integriq`, so the
+	 * guard answered false and every declared connector was skipped. Nothing
+	 * errored: the report said `openconnector-unavailable`, which reads as
+	 * "the admin has not installed it" rather than "we asked for a name
+	 * nothing answers to".
+	 *
+	 * @return void
+	 */
+	public function testConnectorsApplyOnAnInstanceRunningIntegriq(): void {
+		$this->appManager = $this->appManagerWithOnly(installed: 'integriq');
+		$this->objectService->expects(self::once())->method('saveObject');
+
+		$report = $this->applier()->apply(
+			template: $this->templateWithConnector(kind: 'source', uuid: self::NIL_UUID)
+		);
+
+		self::assertSame(1, $report['channels']['connectors']['declared']);
+		self::assertSame(0, $report['channels']['connectors']['skipped']);
+		// `reason` is always present and null by default, so the discriminating
+		// assertion is that it is NOT the degradation code.
+		self::assertNotSame(
+			'openconnector-unavailable',
+			$report['channels']['connectors']['reason']
+		);
+
+	}//end testConnectorsApplyOnAnInstanceRunningIntegriq()
+
+	/**
+	 * The connectors channel still applies on a pre-rename instance.
+	 *
+	 * The mirror of the case above, and the reason the fix is a resolver
+	 * rather than a swapped literal: an instance pinned to the published
+	 * `openconnector` release registers only that id, so hardcoding `integriq`
+	 * would move the identical silent skip onto it.
+	 *
+	 * @return void
+	 */
+	public function testConnectorsApplyOnAPreRenameInstance(): void {
+		$this->appManager = $this->appManagerWithOnly(installed: 'openconnector');
+		$this->objectService->expects(self::once())->method('saveObject');
+
+		$report = $this->applier()->apply(
+			template: $this->templateWithConnector(kind: 'source', uuid: self::NIL_UUID)
+		);
+
+		self::assertSame(1, $report['channels']['connectors']['declared']);
+		self::assertSame(0, $report['channels']['connectors']['skipped']);
+		// `reason` is always present and null by default, so the discriminating
+		// assertion is that it is NOT the degradation code.
+		self::assertNotSame(
+			'openconnector-unavailable',
+			$report['channels']['connectors']['reason']
+		);
+
+	}//end testConnectorsApplyOnAPreRenameInstance()
+
+	/**
+	 * An app manager that knows exactly one installed app id.
+	 *
+	 * A fresh mock rather than a reconfiguration of `$this->appManager`:
+	 * `setUp()` already answers `isInstalled` unconditionally, and PHPUnit
+	 * keeps the first stub for a method.
+	 *
+	 * @param string $installed The one app id this fake instance registered.
+	 *
+	 * @return IAppManager&MockObject The stubbed app manager.
+	 */
+	private function appManagerWithOnly(string $installed): IAppManager {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isInstalled')->willReturnCallback(
+			static fn (string $id): bool => $id === $installed
+		);
+		$appManager->method('isEnabledForUser')->willReturnCallback(
+			static fn (string $id): bool => $id === $installed
+		);
+
+		return $appManager;
+	}//end appManagerWithOnly()
 
 	/**
 	 * Skills degrade when hermiq is absent, keeping the declared count so the
@@ -491,7 +587,7 @@ class AppChannelApplierTest extends TestCase {
 					],
 				],
 			],
-			credentialId: 'a-github-credential-uuid'
+			source: new RepoSource(owner: '', repo: '', ref: null, credentialId: 'a-github-credential-uuid')
 		);
 
 		$skills = $report['channels']['skills'];
@@ -549,7 +645,7 @@ class AppChannelApplierTest extends TestCase {
 					],
 				],
 			],
-			credentialId: 'a-github-credential-uuid'
+			source: new RepoSource(owner: '', repo: '', ref: null, credentialId: 'a-github-credential-uuid')
 		);
 
 		self::assertSame(2, $report['channels']['skills']['created']);
@@ -601,7 +697,7 @@ class AppChannelApplierTest extends TestCase {
 					],
 				],
 			],
-			credentialId: 'a-github-credential-uuid'
+			source: new RepoSource(owner: '', repo: '', ref: null, credentialId: 'a-github-credential-uuid')
 		);
 
 		self::assertSame(2, $report['channels']['skills']['created']);
@@ -753,8 +849,8 @@ class AppChannelApplierTest extends TestCase {
 			->willReturn($this->mockedFlow(uuid: $mintedUuid));
 
 		$this->objectService->expects(self::once())->method('saveObject')
-			->with(
-				self::callback(
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => self::callback(
 					static function (array $object) use ($mintedUuid, $sourceUuid): bool {
 						$bindings = ($object['flows'] ?? []);
 						return count($bindings) === 1
@@ -762,26 +858,25 @@ class AppChannelApplierTest extends TestCase {
 							&& $bindings[0]['sourceUuid'] === $sourceUuid;
 					}
 				),
-				self::anything(),
-				'buildiq',
-				'built-app',
-				$applicationUuid,
-				false,
-				false,
-				false,
-				true,
-				null,
-				null,
-				false
-			);
+				'extend' => self::anything(),
+				'register' => 'buildiq',
+				'schema' => 'built-app',
+				'uuid' => $applicationUuid,
+				'_rbac' => false,
+				'_multitenancy' => false,
+				'silent' => false,
+				'_validation' => true,
+				'uploadedFiles' => null,
+				'currentUser' => null,
+				'failIfExists' => false,
+			]));
 
 		$report = $this->applier()->apply(
 			template: [
 				'templateOrigin' => ['repo' => 'ConductionNL/example-app'],
 				'channels' => ['flows' => [$sourceUuid => ['name' => 'Sequencer']]],
 			],
-			applicationUuid: $applicationUuid,
-			applicationSlug: 'hydra-console'
+			local: new LocalApplicationRef(uuid: $applicationUuid, slug: 'hydra-console')
 		);
 
 		self::assertSame(1, $report['channels']['flows']['created']);
@@ -810,8 +905,7 @@ class AppChannelApplierTest extends TestCase {
 				'templateOrigin' => ['repo' => 'ConductionNL/example-app'],
 				'channels' => ['flows' => [$sourceUuid => ['name' => 'Sequencer']]],
 			],
-			applicationUuid: $applicationUuid,
-			applicationSlug: 'hydra-console'
+			local: new LocalApplicationRef(uuid: $applicationUuid, slug: 'hydra-console')
 		);
 
 		self::assertSame(0, $report['channels']['flows']['created']);
@@ -835,20 +929,20 @@ class AppChannelApplierTest extends TestCase {
 		$uuid = self::NIL_UUID;
 
 		$this->objectService->expects(self::once())->method('saveObject')
-			->with(
-				self::callback(static fn (array $object): bool => ($object['applicationSlug'] ?? null) === 'local-app'),
-				self::anything(),
-				'buildiq',
-				'buildAgent',
-				$uuid,
-				false,
-				false,
-				false,
-				true,
-				null,
-				null,
-				true
-			);
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => self::callback(static fn (array $object): bool => ($object['applicationSlug'] ?? null) === 'local-app'),
+				'extend' => self::anything(),
+				'register' => 'buildiq',
+				'schema' => 'buildAgent',
+				'uuid' => $uuid,
+				'_rbac' => false,
+				'_multitenancy' => false,
+				'silent' => false,
+				'_validation' => true,
+				'uploadedFiles' => null,
+				'currentUser' => null,
+				'failIfExists' => true,
+			]));
 
 		$report = $this->applier()->apply(
 			template: [
@@ -857,8 +951,7 @@ class AppChannelApplierTest extends TestCase {
 					'agents' => [$uuid => ['name' => 'Reviewer', 'applicationSlug' => 'source-instance-app']],
 				],
 			],
-			applicationUuid: '33333333-3333-4333-8333-333333333333',
-			applicationSlug: 'local-app'
+			local: new LocalApplicationRef(uuid: '33333333-3333-4333-8333-333333333333', slug: 'local-app')
 		);
 
 		self::assertSame(1, $report['channels']['agents']['created']);
@@ -879,8 +972,7 @@ class AppChannelApplierTest extends TestCase {
 				'templateOrigin' => ['repo' => 'ConductionNL/example-app'],
 				'channels' => ['agents' => [self::NIL_UUID => ['name' => 'Reviewer']]],
 			],
-			applicationUuid: '33333333-3333-4333-8333-333333333333',
-			applicationSlug: 'local-app'
+			local: new LocalApplicationRef(uuid: '33333333-3333-4333-8333-333333333333', slug: 'local-app')
 		);
 
 		self::assertSame(0, $report['channels']['agents']['created']);

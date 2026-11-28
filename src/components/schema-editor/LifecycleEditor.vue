@@ -15,7 +15,7 @@
 				{{
 					t(
 						'buildiq',
-						'Declare states and transitions. Every action is a typed declarative record per ADR-031 — no free-text code.',
+						'Declare states and transitions. You pick each action from a fixed list, so no code is needed.',
 					)
 				}}
 			</p>
@@ -276,7 +276,7 @@ export default {
 		/**
 		 * Count how many states are flagged initial.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
 		 * @return {number} Initial-state count.
 		 */
 		initialCount() {
@@ -286,7 +286,7 @@ export default {
 		/**
 		 * Build state picker options from named states.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
 		 * @return {Array} Option objects.
 		 */
 		stateOptions() {
@@ -298,7 +298,7 @@ export default {
 		/**
 		 * Build transition-action-type picker options.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
 		 * @return {Array} Option objects.
 		 */
 		actionOptions() {
@@ -313,7 +313,7 @@ export default {
 		/**
 		 * Resolve the selected state option.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
 		 * @param {string} value State name.
 		 * @return {object|null} Matching option.
 		 */
@@ -324,7 +324,7 @@ export default {
 		/**
 		 * Resolve the selected action-type option.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
 		 * @param {string} value Action type.
 		 * @return {object} Matching option.
 		 */
@@ -338,7 +338,7 @@ export default {
 		/**
 		 * Validate a state name: pattern and uniqueness.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
 		 * @param {object} state State row.
 		 * @param {number} index Row index.
 		 * @return {boolean} True when valid.
@@ -357,7 +357,7 @@ export default {
 		/**
 		 * Emit the updated states array.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
 		 * @param {Array} next Next states array.
 		 * @return {void}
 		 */
@@ -368,7 +368,7 @@ export default {
 		/**
 		 * Emit the updated transitions array.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
 		 * @param {Array} next Next transitions array.
 		 * @return {void}
 		 */
@@ -379,7 +379,7 @@ export default {
 		/**
 		 * Append a new state (first state defaults to initial).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
 		 * @return {void}
 		 */
 		addState() {
@@ -396,7 +396,7 @@ export default {
 		/**
 		 * Update a single field of a state row.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
 		 * @param {number} index Row index.
 		 * @param {string} key Field key.
 		 * @param {*} value New value.
@@ -411,7 +411,7 @@ export default {
 		/**
 		 * Mark a single state as the initial one (clears the others).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
 		 * @param {number} index Row index.
 		 * @return {void}
 		 */
@@ -423,7 +423,7 @@ export default {
 		/**
 		 * Remove a state row by index.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
 		 * @param {number} index Row index.
 		 * @return {void}
 		 */
@@ -436,7 +436,7 @@ export default {
 		/**
 		 * Append a new transition between the first two states.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
 		 * @return {void}
 		 */
 		addTransition() {
@@ -456,7 +456,7 @@ export default {
 		/**
 		 * Update a single field of a transition row.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
 		 * @param {number} index Row index.
 		 * @param {string} key Field key.
 		 * @param {*} value New value.
@@ -471,7 +471,7 @@ export default {
 		/**
 		 * Remove a transition row by index.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
 		 * @param {number} index Row index.
 		 * @return {void}
 		 */
@@ -484,7 +484,7 @@ export default {
 		/**
 		 * Append a new action to a transition.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
 		 * @param {number} tIndex Transition index.
 		 * @return {void}
 		 */
@@ -505,7 +505,7 @@ export default {
 		/**
 		 * Update a single field of a transition action.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
 		 * @param {number} tIndex Transition index.
 		 * @param {number} aIndex Action index.
 		 * @param {string} key Field key.
@@ -525,7 +525,7 @@ export default {
 		/**
 		 * Remove an action from a transition.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
 		 * @param {number} tIndex Transition index.
 		 * @param {number} aIndex Action index.
 		 * @return {void}
@@ -564,22 +564,59 @@ export function lifecycleToEditor(lifecycle) {
 			initial: name === initial,
 		}
 	})
-	const transitions = (lifecycle.transitions || []).map((tr) => ({
+	const transitions = (lifecycle.transitions || []).map(toEditorTransition)
+	return { states, transitions }
+}
+
+/**
+ * A lifecycle transition as an editor row; missing fields become ''.
+ *
+ * @param {object} tr A transition of the lifecycle block.
+ * @return {object} The editor transition row.
+ */
+function toEditorTransition(tr) {
+	return {
 		_key: nextKey(),
 		from: tr.from || '',
 		to: tr.to || '',
 		label: tr.label || '',
-		actions: (
-			(tr.on_transition && tr.on_transition.actions)
-			|| tr.actions
-			|| []
-		).map((a) => ({
-			_key: nextKey(),
-			type: a.type || 'audit-event-emit',
-			payload: a.payload || a.event || a.template || a.url || '',
-		})),
-	}))
-	return { states, transitions }
+		actions: transitionActions(tr).map(toEditorAction),
+	}
+}
+
+/**
+ * The actions of a transition: its `on_transition` actions, else its flat
+ * `actions` list, else none.
+ *
+ * @param {object} tr A transition of the lifecycle block.
+ * @return {Array<object>} The raw actions.
+ */
+function transitionActions(tr) {
+	return (tr.on_transition && tr.on_transition.actions) || tr.actions || []
+}
+
+/**
+ * A transition action as an editor row, defaulting to an audit event.
+ *
+ * @param {object} a A raw transition action.
+ * @return {object} The editor action row.
+ */
+function toEditorAction(a) {
+	return {
+		_key: nextKey(),
+		type: a.type || 'audit-event-emit',
+		payload: actionPayload(a),
+	}
+}
+
+/**
+ * The payload of an action: its payload, event, template or url.
+ *
+ * @param {object} a A raw transition action.
+ * @return {string} The payload, or ''.
+ */
+function actionPayload(a) {
+	return a.payload || a.event || a.template || a.url || ''
 }
 
 /**
@@ -624,7 +661,9 @@ export function editorToLifecycle(states, transitions) {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .buildiq-lifecycle-editor {
 	display: flex;
 	flex-direction: column;
@@ -665,12 +704,7 @@ export function editorToLifecycle(states, transitions) {
 }
 
 .buildiq-lifecycle-editor__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
+	@include c.plain-list(8px);
 }
 
 .buildiq-lifecycle-editor__state-row,

@@ -3,6 +3,9 @@
 /**
  * Buildiq Flag Registry Token Sensitive Repair Step
  *
+ * SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Retro-flags an already-stored `registry_token` as sensitive.
  *
  * SettingsService always kept the token write-only — it is never returned to the
@@ -28,16 +31,13 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
- *
- * @SPDX-License-Identifier: EUPL-1.2
- * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Repair;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -72,6 +72,7 @@ class FlagRegistryTokenSensitive implements IRepairStep {
 	 *
 	 * @return string
 	 */
+	#[\Override]
 	public function getName(): string {
 		return 'Flag the Buildiq registry token as sensitive';
 	}//end getName()
@@ -83,11 +84,12 @@ class FlagRegistryTokenSensitive implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/export-github-broker/tasks.md#task-6-registry-token-stored-sensitive
+	 * @spec openspec/changes/archive/2026-11-24-export-github-broker/tasks.md#task-6-registry-token-stored-sensitive
 	 */
+	#[\Override]
 	public function run(IOutput $output): void {
 		$token = $this->appConfig->getValueString(
-			Application::APP_ID,
+			AppIdentity::APP_ID,
 			self::REGISTRY_TOKEN_KEY,
 			''
 		);
@@ -99,7 +101,7 @@ class FlagRegistryTokenSensitive implements IRepairStep {
 
 		try {
 			$this->appConfig->updateSensitive(
-				Application::APP_ID,
+				AppIdentity::APP_ID,
 				self::REGISTRY_TOKEN_KEY,
 				true
 			);

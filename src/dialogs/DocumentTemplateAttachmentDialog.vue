@@ -19,7 +19,7 @@
 		:name="
 			editing
 				? t('buildiq', 'Edit document attachment')
-				: t('buildiq', 'Attach a Docudesk template')
+				: t('buildiq', 'Attach a Filinq template')
 		"
 		size="normal"
 		@update:open="$emit('update:open', $event)"
@@ -167,33 +167,19 @@ import {
 	fetchDocudeskTemplates,
 	templateToOption,
 } from '../composables/useDocudeskTemplates.js'
+import { attachmentDialogMixin } from '../mixins/attachmentDialog.js'
 import { DOCUMENT_FORMATS } from '../services/manifestValidation/documentAttachments.js'
 
 export default {
 	name: 'DocumentTemplateAttachmentDialog',
 	components: { NcDialog, NcButton, NcSelect, NcTextField },
+	mixins: [attachmentDialogMixin],
+
 	props: {
-		open: {
-			type: Boolean,
-			default: false,
-		},
-
-		// The app's schemas as `[{ slug, title, properties }]`.
-		schemas: {
-			type: Array,
-			default: () => [],
-		},
-
 		// Existing attachments (for the (schema,label) uniqueness check).
 		attachments: {
 			type: Array,
 			default: () => [],
-		},
-
-		// Existing attachment when editing (null when adding).
-		attachment: {
-			type: Object,
-			default: null,
 		},
 
 		// Soft capability flag for Docudesk.
@@ -222,20 +208,15 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
-		editing() {
-			return !!this.attachment
-		},
-
 		/**
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
-		 * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 * @spec openspec/specs/automation-document-action/spec.md
 		 */
 		templateOptions() {
 			return this.templates.map(templateToOption)
 		},
 
-		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
+		/** @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		schemaOptions() {
 			return this.schemas.map((s) => ({
 				label: s.title || s.slug,
@@ -243,24 +224,24 @@ export default {
 			}))
 		},
 
-		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-001 */
+		/** @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-001 */
 		formatOptions() {
 			return [{ label: t('buildiq', 'Template default'), value: '' }].concat(
 				DOCUMENT_FORMATS.map((f) => ({ label: f.toUpperCase(), value: f })),
 			)
 		},
 
-		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
+		/** @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		selectedSchemaSlug() {
 			return this.schemaOption ? this.schemaOption.slug : ''
 		},
 
-		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
+		/** @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		selectedTemplateId() {
 			return this.templateOption ? this.templateOption.uuid : ''
 		},
 
-		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
+		/** @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		canPreview() {
 			return this.docudeskAvailable && !!this.selectedTemplateId
 		},
@@ -270,7 +251,7 @@ export default {
 		 * attachment (REQ-DDT-001 uniqueness, surfaced before save).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-001
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-001
 		 */
 		duplicateLabel() {
 			const schema = this.selectedSchemaSlug
@@ -288,7 +269,7 @@ export default {
 			)
 		},
 
-		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
+		/** @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		canSave() {
 			return !!(
 				this.templateOption
@@ -305,7 +286,7 @@ export default {
 		 *   form from the attachment being edited and (when Docudesk is installed)
 		 *   refetches the template list, so a template renamed or deleted since the
 		 *   last open is reflected. Closing is not acted on.
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002
 		 */
 		open(isOpen) {
 			if (isOpen) {
@@ -324,7 +305,7 @@ export default {
 		/**
 		 * Seed the form from an existing attachment when editing.
 		 *
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002
 		 */
 		hydrate() {
 			this.previewContent = ''
@@ -368,8 +349,8 @@ export default {
 		 * picker (automation-document-action).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
-		 * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 * @spec openspec/specs/automation-document-action/spec.md
 		 */
 		async fetchTemplates() {
 			this.loadingTemplates = true
@@ -382,7 +363,7 @@ export default {
 		 * flag a missing template (404).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002
 		 */
 		async refreshTemplateSnapshot() {
 			const id = this.attachment && this.attachment.templateId
@@ -409,7 +390,7 @@ export default {
 		 * Render a preview of the selected template without saving.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002
 		 */
 		async onPreview() {
 			if (!this.canPreview) {
@@ -439,15 +420,13 @@ export default {
 		/**
 		 * Assemble + emit the document-attachment entry.
 		 *
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002
 		 */
 		onSave() {
 			if (!this.canSave) {
 				return
 			}
-			const id =
-				(this.attachment && this.attachment.id)
-				|| `doc-${this.schemaOption.slug}-${Date.now()}`
+			const id = this.entryId('doc')
 			const entry = {
 				id,
 				schema: this.schemaOption.slug,
@@ -463,11 +442,6 @@ export default {
 				entry.filenameTemplate = this.filenameTemplate.trim()
 			}
 			this.$emit('save', { entry, addActionsTab: this.addActionsTab })
-			this.$emit('update:open', false)
-		},
-
-		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
-		onClose() {
 			this.$emit('update:open', false)
 		},
 	},

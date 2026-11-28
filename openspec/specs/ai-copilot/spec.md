@@ -192,14 +192,23 @@ touches, and dispatch each step in order through
 `BuildiqToolProvider::invokeTool()` — the same handler classes, RBAC
 checks, OR object locks and caps as the MCP surface, with no duplicated
 builder logic. On any step failure the service SHALL restore all snapshotted
-manifests, delete an application created by this plan (via
-`ApplicationDeletionService`), and return **422** with the failed step index
-and the handler's error envelope — a failed plan leaves no plan-created
-state behind. On success it SHALL return the ordered per-step results. When
+manifests, delete an application created by this plan **with its data**
+(`ApplicationDeletionService` with `deleteData: true`, so the per-version
+registers and the schemas inside them go too: this plan created them
+moments earlier, so no user data is at risk), and return **422** with the
+failed step index, the handler's error envelope, and a `rollback` report
+naming the app it removed and any resource it could not. A failed plan
+leaves no plan-created state behind. On success it SHALL return the
+ordered per-step results. When
 `agentId` is present, the service SHALL persist an `AgentRun` record (see
 `agent-workspace`) capturing the prompt, plan, each tool call's arguments and
 result, and the final outcome, regardless of success, rollback, or
 plan-rejection.
+
+Outside MCP agents reach the same handlers through `BuildiqToolProvider`, and SHALL write only
+under a plan a person approved, as `openbuild-mcp-surface` says. The Copilot and an outside agent
+therefore share one approval rule: `plan()` performs zero writes and returns a predicted manifest
+for review, and only an explicitly approved plan may be executed.
 
 **ID:** REQ-OBAIC-004
 
@@ -221,8 +230,10 @@ Playwright specs under REQ-OBAIC-006/007, which create and mutate real apps.
 
 - **WHEN** step 4 of a 5-step plan returns `isError` from its handler
 - **THEN** the manifests of all touched versions are restored to their
-  pre-plan snapshots, an app created in step 1 is deleted, and the response
-  is 422 carrying the failed step index and the handler's error message
+  pre-plan snapshots, an app created in step 1 is deleted along with its
+  registers and schemas, and the response is 422 carrying the failed step
+  index, the handler's error message, and a `rollback` report naming what
+  was removed and what was not
 
 #### Scenario: Execution reuses the handlers, not a copy
 
@@ -230,6 +241,12 @@ Playwright specs under REQ-OBAIC-006/007, which create and mutate real apps.
 - **THEN** it is rejected by `UpsertPageHandler`'s own route-injection guard
   (issue #167) — proving the copilot path runs the identical handler
   validation
+
+#### Scenario: An outside agent's write needs the same approval
+
+- **WHEN** an MCP client calls `buildiq.upsertPage` without an approved plan
+- **THEN** the call is refused
+- **AND** the same call inside an approved plan runs `UpsertPageHandler` as the Copilot does
 
 #### Scenario: An agent-scoped execute persists a transparent run record
 
@@ -344,3 +361,66 @@ Discarded proposal SHALL leave no trace in the app.
 - **THEN** no request to `/api/copilot/execute` (nor any manifest PUT) has
   been issued since the proposal was requested
 
+### Requirement: The wizard reads a document from Files (REQ-BQCH-005)
+
+"Generate with AI" SHALL offer "Add a document", which opens the Nextcloud file
+picker. The plan request SHALL carry the picked file id. The server SHALL open
+the file as the requesting user and SHALL answer 404 when that user cannot read
+it.
+
+#### Scenario: A maker generates an app from a requirements file
+
+- **GIVEN** a maker with `Eisen tuinvergunning.md` in their Files
+- **WHEN** they open "Generate with AI", click "Add a document", pick the file and click Generate
+- **THEN** the review shows schemas and pages drawn from the document, and the file name under the brief
+
+#### Scenario: Someone else's file is not read
+
+- **GIVEN** a file id that belongs to another user and is not shared with the maker
+- **WHEN** the maker's plan request carries that id
+- **THEN** the endpoint answers 404 and no text task is scheduled
+
+### Requirement: A document is read whole, in a type the server can read (REQ-BQCH-008)
+
+Plain text and Markdown SHALL be accepted. Other types SHALL be accepted only
+once OpenRegister serves their text; until then the dialog SHALL say which types
+work. A document over 60,000 characters SHALL be refused with a message that
+names the limit, and SHALL NOT be cut.
+
+#### Scenario: A long document is refused, not cut
+
+- **GIVEN** a maker with a 70,000 character Markdown file in their Files
+- **WHEN** they pick it in "Generate with AI" and click Generate
+- **THEN** the dialog says the document is longer than 60,000 characters and no text task is scheduled
+
+#### Scenario: A PDF is refused naming the types that work
+
+- **GIVEN** OpenRegister does not yet serve the text of a PDF
+- **WHEN** a maker picks a PDF and clicks Generate
+- **THEN** the dialog says plain text (.txt) and Markdown (.md) files can be read
+
+### Requirement: The plan carries user stories (REQ-BQCH-006)
+
+A plan SHALL carry `stories[]`, each with a role, a goal, an optional benefit and
+`servedBy[]` indexes into the plan's steps. The plan validator SHALL refuse a
+story without a role or goal, and a `servedBy` index that does not point at a
+schema or page step. The review SHALL list the stories before the schemas, each
+with the names of the schemas and pages that serve it.
+
+#### Scenario: The review shows stories first
+
+- **GIVEN** a maker who generated a plan from a requirements document
+- **WHEN** the review opens
+- **THEN** a "User stories" group comes first, and the story "As an applicant I want to track my permit" shows the page `Mijn aanvragen` under it
+
+### Requirement: The created app keeps its stories (REQ-BQCH-007)
+
+Executing a plan SHALL save its stories on the created `Application` as
+`stories[]`. The app detail page SHALL list them with the pages and schemas that
+serve each one.
+
+#### Scenario: A colleague reads why a page exists
+
+- **GIVEN** an app created from a plan with three stories
+- **WHEN** a colleague opens the app detail page
+- **THEN** a stories widget lists the three stories and the pages each one led to

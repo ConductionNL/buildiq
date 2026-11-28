@@ -65,7 +65,7 @@ test.describe('app chrome (ADR-114)', () => {
 		await dismissSetupWizard(page)
 	})
 
-	test('the footer reads Documentation, Store, Reports, Features & roadmap, each with a glyph', async ({
+	test('the footer reads Documentation, Marketplace, Features & roadmap, each with a glyph', async ({
 		page,
 	}) => {
 		const footer = page.locator(
@@ -80,14 +80,15 @@ test.describe('app chrome (ADR-114)', () => {
 
 		// ORDER is the rule, not the numbers: ADR-114 fixes the sequence and
 		// openregister runs its footer at 1/2 while pipelinq runs 160/200/230.
+		// The Store entry reads "Marketplace" / "Marktplaats" to the user
+		// (decision 280); its id and route stay `Store`.
 		const seen = texts.filter((t) =>
-			/Documentation|Store|Reports|roadmap/i.test(t),
+			/Documentation|Store|Marketplace|Marktplaats|Reports|roadmap/i.test(t),
 		)
-		expect(seen.length).toBe(4)
+		expect(seen.length).toBe(3)
 		expect(seen[0]).toMatch(/Documentation/i)
-		expect(seen[1]).toMatch(/Store/i)
-		expect(seen[2]).toMatch(/Reports/i)
-		expect(seen[3]).toMatch(/roadmap/i)
+		expect(seen[1]).toMatch(/Store|Marketplace|Marktplaats/i)
+		expect(seen[2]).toMatch(/roadmap/i)
 
 		for (const row of await rows.all()) {
 			await expect(
@@ -98,6 +99,8 @@ test.describe('app chrome (ADR-114)', () => {
 
 	test('Reports lists both reports', async ({ page }) => {
 		const nav = page.locator('[data-testid="cn-nav"]')
+		// Reports sits in the Advanced foldout, so open it first.
+		await nav.locator('[data-testid="cn-nav-settings"]').click()
 		await nav
 			.locator('[data-testid="cn-nav-entry-ReportsMenu"] a')
 			.first()

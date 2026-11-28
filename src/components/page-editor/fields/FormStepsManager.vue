@@ -34,7 +34,9 @@
 				class="form-steps-manager__pool-key"
 				>{{ key }}</span
 			>
-			<p v-if="localSteps.length" class="form-steps-manager__pool-note">
+			<p
+				v-if="localSteps.length && !leavesUnassigned"
+				class="form-steps-manager__pool-note">
 				{{
 					t(
 						'buildiq',
@@ -96,6 +98,15 @@
 					✕
 				</button>
 			</div>
+			<input
+				v-if="withPhase"
+				:value="step.phase || ''"
+				type="text"
+				class="form-steps-manager__field form-steps-manager__phase"
+				:placeholder="t('buildiq', 'Phase, shown as the group heading')"
+				:aria-label="t('buildiq', 'Phase')"
+				data-testid="form-step-phase"
+				@input="updatePhase(index, $event.target.value)" />
 			<input
 				:value="step.description || ''"
 				type="text"
@@ -208,6 +219,20 @@ export default {
 		fields: {
 			type: Array,
 			default: () => [],
+		},
+
+		// Show a phase label per step (a registration form groups its steps
+		// per phase). Off for a plain form page, whose steps carry no phase.
+		withPhase: {
+			type: Boolean,
+			default: false,
+		},
+
+		// Set by a caller that does NOT fold unassigned fields into the last
+		// step on save (FormPageEditor does), so the note does not promise it.
+		leavesUnassigned: {
+			type: Boolean,
+			default: false,
 		},
 	},
 
@@ -347,6 +372,27 @@ export default {
 		},
 
 		/**
+		 * Write a step's phase label. An empty label removes the key, so a
+		 * step without a phase is stored the way it was before it had one.
+		 *
+		 * @param {number} index - the step index.
+		 * @param {string} value - the new phase label.
+		 * @return {void}
+		 * @spec openspec/changes/registration-form-builder
+		 */
+		updatePhase(index, value) {
+			const next = this.localSteps.slice()
+			const updated = { ...next[index] }
+			if (value.trim() === '') {
+				delete updated.phase
+			} else {
+				updated.phase = value
+			}
+			next[index] = updated
+			this.emitSteps(next)
+		},
+
+		/**
 		 * Title input handler — re-derives the id from the new title as
 		 * long as the id still looks auto-derived (i.e. the developer has
 		 * not diverged from the auto-slug), matching the schedules-editor
@@ -461,7 +507,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../assets/editor-controls.scss' as c;
+
 .form-steps-manager {
 	display: flex;
 	flex-direction: column;
@@ -521,29 +569,21 @@ export default {
 .form-steps-manager__field,
 .form-steps-manager__select {
 	flex: 1 1 auto;
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .form-steps-manager__field--narrow {
 	flex: 0 0 140px;
 }
 
-.form-steps-manager__description {
+.form-steps-manager__description,
+.form-steps-manager__phase {
 	width: 100%;
 }
 
 .form-steps-manager__icon-button,
 .form-steps-manager__remove {
-	background: transparent;
-	border: 1px solid var(--color-border);
-	color: var(--color-main-text);
-	padding: 4px 8px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.ghost-button;
 }
 
 .form-steps-manager__remove {
@@ -592,21 +632,11 @@ export default {
 }
 
 .form-steps-manager__assign button {
-	background: var(--color-primary-element-light);
-	border: 1px solid var(--color-border);
-	color: var(--color-main-text);
-	padding: 4px 10px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.add-button;
 }
 
 .form-steps-manager__add {
 	align-self: flex-start;
-	background: var(--color-primary-element-light);
-	border: 1px solid var(--color-border);
-	color: var(--color-main-text);
-	padding: 4px 10px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.add-button;
 }
 </style>

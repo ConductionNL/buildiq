@@ -40,6 +40,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Local double contract for OR's `TransitionEngine`. Production code
@@ -366,6 +367,103 @@ final class ExportJobServiceTest extends TestCase {
 	}//end testQueueDefaultsDataRegistersToEmptyArrayWhenOmitted()
 
 	/**
+	 * Only the own-server target carries the server bundle, on unless the
+	 * caller switches it off (REQ-BQSD-001).
+	 *
+	 * @return void
+	 */
+	public function testQueueSetsTheServerBundleOnlyForTheServerTarget(): void {
+		$container = $this->createMock(ContainerInterface::class);
+		$objectService = $this->createMock(ObjectServiceInterface::class);
+		$container->method('has')->willReturn(true);
+		$container->method('get')->willReturn($objectService);
+
+		$captured = [];
+		$objectService
+			->method('saveObject')
+			->willReturnCallback(function ($job) use (&$captured): ObjectEntity {
+				$captured[] = $job;
+				return new ObjectEntity();
+			});
+
+		$service = new ExportJobService(
+			$container,
+			$this->jobList,
+			new NullLogger(),
+			$this->jobOwnerImpersonator
+		);
+
+		$payloads = [
+			['target' => 'server', 'applicationVersion' => '1.0.0'],
+			['target' => 'server', 'applicationVersion' => '1.0.0', 'includeServerBundle' => false],
+			['target' => 'zip', 'applicationVersion' => '1.0.0', 'includeServerBundle' => true],
+		];
+		foreach ($payloads as $payload) {
+			$service->queue(applicationSlug: 'hello-world', payload: $payload, requestedBy: null);
+		}
+
+		self::assertSame([true, false, false], array_column($captured, 'includeServerBundle'));
+		self::assertSame('server', $captured[0]['target']);
+	}//end testQueueSetsTheServerBundleOnlyForTheServerTarget()
+
+	/**
+	 * The mobile app project is recorded for any target, only on a literal true, with its trimmed
+	 * bundle id; an invalid bundle id is refused before anything is recorded (REQ-BQOM-006).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T08
+	 */
+	public function testQueueRecordsTheMobileProjectChoiceForAnyTarget(): void {
+		$container = $this->createMock(ContainerInterface::class);
+		$objectService = $this->createMock(ObjectServiceInterface::class);
+		$container->method('has')->willReturn(true);
+		$container->method('get')->willReturn($objectService);
+
+		$captured = [];
+		$objectService
+			->method('saveObject')
+			->willReturnCallback(function ($job) use (&$captured): ObjectEntity {
+				$captured[] = $job;
+				return new ObjectEntity();
+			});
+
+		$service = new ExportJobService(
+			$container,
+			$this->jobList,
+			new NullLogger(),
+			$this->jobOwnerImpersonator
+		);
+
+		$payloads = [
+			['target' => 'zip', 'applicationVersion' => '1.0.0'],
+			['target' => 'zip', 'applicationVersion' => '1.0.0', 'includeMobileProject' => true],
+			['target' => 'github', 'applicationVersion' => '1.0.0', 'includeMobileProject' => true, 'mobileBundleId' => ' nl.gemeente.toezicht '],
+			['target' => 'zip', 'applicationVersion' => '1.0.0', 'includeMobileProject' => 1, 'mobileBundleId' => 'nl.gemeente.toezicht'],
+			['target' => 'zip', 'applicationVersion' => '1.0.0', 'includeMobileProject' => false, 'mobileBundleId' => 'not valid'],
+		];
+		foreach ($payloads as $payload) {
+			$service->queue(applicationSlug: 'hello-world', payload: $payload, requestedBy: null);
+		}
+
+		self::assertSame([false, true, true, false, false], array_column($captured, 'includeMobileProject'));
+		self::assertSame(['', '', 'nl.gemeente.toezicht', '', ''], array_column($captured, 'mobileBundleId'));
+
+		try {
+			$service->queue(
+				applicationSlug: 'hello-world',
+				payload: ['target' => 'zip', 'applicationVersion' => '1.0.0', 'includeMobileProject' => true, 'mobileBundleId' => 'toezicht'],
+				requestedBy: null
+			);
+			self::fail('An invalid bundle id was queued.');
+		} catch (\InvalidArgumentException $e) {
+			self::assertSame('The bundle id "toezicht" is not valid: use parts like nl.example.app.', $e->getMessage());
+		}
+
+		self::assertCount(5, $captured);
+	}//end testQueueRecordsTheMobileProjectChoiceForAnyTarget()
+
+	/**
 	 * uuid4() emits a canonical RFC 4122 v4 UUID for every call — regression
 	 * guard for #104's malformed 5x4-char grouping bug (vsprintf silently
 	 * dropping 3 of 8 hex groups). Runs several iterations since the value
@@ -411,7 +509,11 @@ final class ExportJobServiceTest extends TestCase {
 		$objectService
 			->expects(self::once())
 			->method('saveObject')
-			->willReturnCallback(function ($job, $extend = [], $register = null, $schema = null, $uuid = null) use (&$capturedArgs): ObjectEntity {
+			->willReturnCallback(function ($job, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$capturedArgs): ObjectEntity {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$capturedArgs = ['job' => $job, 'register' => $register, 'schema' => $schema, 'uuid' => $uuid];
 				return new ObjectEntity();
 			});
@@ -469,7 +571,11 @@ final class ExportJobServiceTest extends TestCase {
 		$objectService
 			->expects(self::once())
 			->method('saveObject')
-			->willReturnCallback(function ($job, $extend = [], $register = null, $schema = null, $uuid = null) use (&$capturedArgs): ObjectEntity {
+			->willReturnCallback(function ($job, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$capturedArgs): ObjectEntity {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$capturedArgs = ['job' => $job, 'register' => $register, 'schema' => $schema, 'uuid' => $uuid];
 				return new ObjectEntity();
 			});
@@ -638,4 +744,36 @@ final class ExportJobServiceTest extends TestCase {
 
 		self::assertFalse($result, 'transitionJob() must return false when the impersonated work throws');
 	}//end testTransitionJobReturnsFalseWhenTheImpersonatedWorkThrows()
+
+	/**
+	 * runNow() starts a job that is still in the job list, which removes it
+	 * from the list so cron cannot run it again.
+	 *
+	 * @return void
+	 */
+	public function testRunNowStartsAJobThatIsStillQueued(): void {
+		$argument = ['jobUuid' => 'job-1'];
+		$this->jobList->method('has')->with(\OCA\Buildiq\BackgroundJob\RunExportJob::class, $argument)->willReturn(true);
+
+		$this->jobList->expects(self::once())->method('remove')->with(\OCA\Buildiq\BackgroundJob\RunExportJob::class, $argument);
+
+		$job = $this->createMock(\OCA\Buildiq\BackgroundJob\RunExportJob::class);
+		$job->expects(self::once())->method('runFor')->with('job-1');
+		$this->container->method('get')->with(\OCA\Buildiq\BackgroundJob\RunExportJob::class)->willReturn($job);
+
+		self::assertTrue($this->service->runNow(jobUuid: 'job-1'));
+	}//end testRunNowStartsAJobThatIsStillQueued()
+
+	/**
+	 * runNow() leaves a job alone once it has left the job list.
+	 *
+	 * @return void
+	 */
+	public function testRunNowSkipsAJobThatWasAlreadyPickedUp(): void {
+		$this->jobList->method('has')->willReturn(false);
+		$this->jobList->expects(self::never())->method('remove');
+		$this->container->expects(self::never())->method('get');
+
+		self::assertFalse($this->service->runNow(jobUuid: 'job-2'));
+	}//end testRunNowSkipsAJobThatWasAlreadyPickedUp()
 }//end class

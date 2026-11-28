@@ -5,7 +5,8 @@
  * Vitest spec for `useRegisterPicker` composable.
  *
  * Covers REQ-OBFFUI-001 (retrofit-2026-05-26-frontend-foundation):
- *  - resolveAppRegister: returns 'buildiq-{slug}' when slug set, '' otherwise.
+ *  - resolveAppRegister: returns the register the caller read off the
+ *    app's version, never one rebuilt from the slug.
  *  - fetchRegisters: returns array of registers; per-app register sorted first.
  *  - fetchRegisters: returns [] on HTTP error or network failure.
  *  - fetchSchemas: returns schemas for a given register.
@@ -45,9 +46,31 @@ describe('useRegisterPicker — REQ-OBFFUI-001', () => {
 	// ------------------------------------------------------------------ //
 
 	describe('resolveAppRegister', () => {
-		it("returns 'buildiq-{slug}' when appSlug is set", () => {
+		it('never rebuilds the register from the slug alone', () => {
+			// Regression: `openbuild-{slug}` is not a register for apps made by
+			// the creation wizard (theirs are `openbuild-{slug}-{version}`), so
+			// every request built on it 404'd.
 			const { resolveAppRegister } = useRegisterPicker({ appSlug: 'my-app' })
-			expect(resolveAppRegister()).toBe('openbuild-my-app')
+			expect(resolveAppRegister()).toBe('')
+		})
+
+		it('returns the register handed in by the caller', () => {
+			const { resolveAppRegister } = useRegisterPicker({
+				appSlug: 'my-app',
+				appRegister: 'openbuild-my-app-development',
+			})
+			expect(resolveAppRegister()).toBe('openbuild-my-app-development')
+		})
+
+		it('reads a register getter at call time', () => {
+			let register = ''
+			const { resolveAppRegister } = useRegisterPicker({
+				appSlug: 'my-app',
+				appRegister: () => register,
+			})
+			expect(resolveAppRegister()).toBe('')
+			register = 'openbuild-my-app-production'
+			expect(resolveAppRegister()).toBe('openbuild-my-app-production')
 		})
 
 		it("returns '' when appSlug is not provided", () => {
@@ -91,7 +114,10 @@ describe('useRegisterPicker — REQ-OBFFUI-001', () => {
 				json: async () => ({ results: registers }),
 			})
 
-			const { fetchRegisters } = useRegisterPicker({ appSlug: 'my-app' })
+			const { fetchRegisters } = useRegisterPicker({
+				appSlug: 'my-app',
+				appRegister: 'openbuild-my-app',
+			})
 			const result = await fetchRegisters()
 			expect(result[0].slug).toBe('openbuild-my-app')
 		})
@@ -179,6 +205,7 @@ describe('useRegisterPicker — REQ-OBFFUI-001', () => {
 
 			const { fetchRegisters } = useRegisterPicker({
 				appSlug: 'my-app',
+				appRegister: 'openbuild-my-app',
 				dataRegisters: [
 					{ register: 'brp-personen', label: 'BRP personen' },
 					{ register: 'bag-adressen', label: 'BAG adressen' },
@@ -203,7 +230,10 @@ describe('useRegisterPicker — REQ-OBFFUI-001', () => {
 				json: async () => ({ results: registers }),
 			})
 
-			const { fetchRegisters } = useRegisterPicker({ appSlug: 'my-app' })
+			const { fetchRegisters } = useRegisterPicker({
+				appSlug: 'my-app',
+				appRegister: 'openbuild-my-app',
+			})
 			const result = await fetchRegisters()
 			expect(result).toEqual([
 				{ id: 'r2', slug: 'openbuild-my-app' },
