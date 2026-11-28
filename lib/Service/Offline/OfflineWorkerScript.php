@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ namespace OCA\Buildiq\Service\Offline;
  * the app shell and the bundle and never an object read. The version is a
  * hash of the bundle, so a new build replaces the cached shell on the device.
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
  */
 class OfflineWorkerScript {
 
@@ -47,7 +47,7 @@ class OfflineWorkerScript {
 	 *
 	 * @param string $path The bundle's path; the app's own build when empty.
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+	 * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
 	 */
 	public function __construct(
 		private readonly string $path='',
@@ -59,7 +59,7 @@ class OfflineWorkerScript {
 	 *
 	 * @return string|null The script.
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+	 * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
 	 */
 	public function script(): ?string {
 		$path = $this->path;

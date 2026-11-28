@@ -376,7 +376,7 @@ final class ExportJobPipeline {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T08
 	 */
 	private function mobileBundleId(array $job): ?string {
 		if (($job['includeMobileProject'] ?? false) !== true) {

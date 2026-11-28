@@ -299,7 +299,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return TemplateResponse
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -439,7 +439,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
+	 * @spec openspec/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
 	 */
 	private function publishOfflineAllowed(): void {
 		$allowed = false;

@@ -8,7 +8,7 @@
  * form pages of this manifest. Errors are `<pointer>: <code>` strings, like the
  * sibling validators, so the page designer marks the offending entry.
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
  */
 
 import { OFFLINE_LIMIT_MAX, OFFLINE_TAKE_ALONG_MAX, OFFLINE_TTL_MAX } from '../offlineManifest.js'
@@ -102,7 +102,7 @@ function listErrors(list, pointer, itemErrors) {
  * @param {unknown} list - the take-along list.
  * @return {string[]}
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
  */
 function takeAlongCountErrors(list) {
 	return Array.isArray(list) && list.length > OFFLINE_TAKE_ALONG_MAX
@@ -133,7 +133,7 @@ function formPageIds(manifest) {
  * @param {object} manifest - the manifest.
  * @return {string[]}
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
  */
 export function validateOffline(manifest) {
 	const block = manifest && manifest.offline

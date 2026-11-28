@@ -169,7 +169,7 @@ class IconController extends Controller {
 	 *
 	 * @return Response
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T02
 	 * @no-admin-idor-exempt The caller-supplied slug only picks an icon: the service gets the caller's
 	 *                        organisation check (`seesApplication`) and answers an app the caller may not
 	 *                        see with the built-in icon, as it answers an unknown slug (REQ-BQOS-002).
@@ -216,7 +216,7 @@ class IconController extends Controller {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T02
 	 */
 	private function pngOf(mixed $stream, string $mimeType): ?string {
 		if (is_resource($stream) === false) {

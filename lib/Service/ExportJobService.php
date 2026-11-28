@@ -121,7 +121,7 @@ class ExportJobService implements ExportJobServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
 	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.3
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T08
 	 */
 	#[\Override]
 	public function queue(
@@ -194,7 +194,7 @@ class ExportJobService implements ExportJobServiceInterface {
 	 *
 	 * @throws \InvalidArgumentException When a bundle id is given in a shape the app stores refuse.
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T08
 	 */
 	private function mobileProjectChoice(array $payload): array {
 		$include = ($payload['includeMobileProject'] ?? false) === true;

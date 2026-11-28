@@ -567,7 +567,7 @@ export default {
 		 * The manifest's offline form page ids (REQ-BQOM-003).
 		 *
 		 * @return {Array<string>}
-		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T04
 		 */
 		offlineFormIds() {
 			return offlineForms(this.manifest)
@@ -1303,7 +1303,7 @@ export default {
 		 *
 		 * @param {Array<string>} forms The offline form page ids.
 		 * @return {void}
-		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T04
 		 */
 		onOfflineFormsUpdate(forms) {
 			const current = (this.manifest && this.manifest.offline) || {}
