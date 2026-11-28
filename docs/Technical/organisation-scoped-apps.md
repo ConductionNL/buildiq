@@ -57,3 +57,11 @@ Application. Every class that reads the Application schema is listed in
 `tests/Unit/Service/AppOrganisationGuardCoverageTest.php` as a guarded door, as
 no door for a user (such as the `occ` commands), or as still to be reviewed; a
 new reader on none of those lists fails the test.
+
+The app list page and the dashboard read Application objects through
+OpenRegister's objects API, where the guard cannot run. There OpenRegister's
+organisation filter hides an Application held by another organisation.
+`tests/Unit/Service/AppListOrganisationScopeTest.php` keeps it that way: the
+Application schema may share rows across organisations only for apps whose
+scope is `all` (or absent), and no manifest page or frontend file that reads
+Application objects may drop OpenRegister's organisation filter or access rules.
