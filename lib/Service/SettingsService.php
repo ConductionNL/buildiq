@@ -161,7 +161,7 @@ class SettingsService implements SettingsServiceInterface {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
+	 * @spec openspec/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
 	 */
 	#[\Override]
 	public function offlineAppsAllowed(): bool {

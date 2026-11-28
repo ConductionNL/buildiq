@@ -1490,7 +1490,7 @@ export default {
 		 *
 		 * @param {{shortName: string, themeColor: string}} installable The section's values.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+		 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T02
 		 */
 		async setInstallable(installable) {
 			if (this.obAppRole !== 'owner' || !this.obApp) {
@@ -1515,7 +1515,7 @@ export default {
 		 * Read the active version's offline block for the settings' Offline section.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T04
 		 */
 		async loadOfflineBlock() {
 			if (!this.obApp || !this.obApp.slug) {
@@ -1541,7 +1541,7 @@ export default {
 		 *
 		 * @param {object|null} offline The new offline block, or null for none.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T04
 		 */
 		async setOffline(offline) {
 			if (!this.obApp || !this.obApp.slug || !this.offlineAllowed) {

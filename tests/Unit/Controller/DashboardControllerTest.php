@@ -235,7 +235,7 @@ class DashboardControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
 	 */
 	public function testRunServesTheRuntimeAndLinksTheManifest(): void {
 		$published = $this->captureInitialState();
@@ -253,7 +253,7 @@ class DashboardControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T02
 	 */
 	public function testRunOffersTheTouchIconWhenTheServerCanRasterise(): void {
 		$this->captureInitialState();
@@ -266,7 +266,7 @@ class DashboardControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
 	 */
 	public function testTheRunRoutesAreNotPublic(): void {
 		$routes = require __DIR__ . '/../../../appinfo/routes.php';
@@ -348,7 +348,7 @@ class DashboardControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
+	 * @spec openspec/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
 	 */
 	public function testTheOfflineSettingIsPublished(): void {
 		$published = $this->captureInitialState();
@@ -378,7 +378,7 @@ class DashboardControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
+	 * @spec openspec/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
 	 */
 	public function testOfflineIsPublishedOffWhenTheSettingCannotBeRead(): void {
 		$published = $this->captureInitialState();

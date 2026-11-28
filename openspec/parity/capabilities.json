@@ -3490,12 +3490,13 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "grep for capacitor/cordova/react-native/ios/android across src/ and package.json: no genuine hits (the few 'ios'/'android' string matches were substrings of unrelated words like 'axios'). No native mobile build tooling anywhere in the repo.",
+				"state": "built",
+				"evidence": "Built by change pages-installable-offline-and-mobile (archived 2026-11-28): the export's \"Mobile app project\" option writes mobile/ with a Capacitor project, name, editable bundle id, icons, splash, the run URL, outside links to the system browser and a README on build and signing (lib/Service/MobileProjectWriter.php; PHPUnit tests/Unit/Service/MobileProjectWriterTest.php, ExportServiceTest). The store build and signing are done by the maker outside buildiq.",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/pages-installable-offline-and-mobile (OpenSpec pass 2026-09-27).",
+				"note": "Specified in pages-installable-offline-and-mobile (OpenSpec pass 2026-09-27), built and archived 2026-11-28.",
+				"readOn": "2026-11-28",
 				"change": "pages-installable-offline-and-mobile",
-				"requirement": "openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps :: The export writes a mobile app project (REQ-BQOM-006)"
+				"requirement": "openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/specs/installable-offline-apps :: The export writes a mobile app project (REQ-BQOM-006)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3525,12 +3526,13 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "grep for serviceWorker/offline/workbox/indexedDB across src/: only hits are in src/composables/useDataImport.js and src/dialogs/ImportDataWizard.vue, an 'offline import template' -- a CSV/spreadsheet TEMPLATE users download, fill in offline, and re-upload later for bulk data import. This is unrelated to running a built app while offline with sync; no service worker, no offline cache, no local-first storage for the running app anywhere in the repo.",
+				"state": "built",
+				"evidence": "Built by change pages-installable-offline-and-mobile (archived 2026-11-28): the run path serves a web app manifest and an offline worker (ApplicationsController::webManifest() and ::offlineWorker(), lib/Service/Offline/OfflineWorkerScript.php, src/offlineWorker.js), gated by the instance setting; the maker declares the manifest's offline block (src/services/offlineManifest.js, validated in src/services/manifestValidation/offline.js), which @conduction/nextcloud-vue 2.233.0 reads in CnFormPage, CnDetailPage, CnIndexPage and CnAppRoot; src/services/offlineRuntime.js wires it into the runtime and the generated \"Waiting to sync\" page shows CnOfflineQueue. tests/e2e/offline-app.spec.ts is written, not yet verified live.",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/pages-installable-offline-and-mobile (OpenSpec pass 2026-09-27).",
+				"note": "Specified in pages-installable-offline-and-mobile (OpenSpec pass 2026-09-27), built and archived 2026-11-28.",
+				"readOn": "2026-11-28",
 				"change": "pages-installable-offline-and-mobile",
-				"requirement": "openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps :: App users work offline and sync later (REQ-BQOM-004)"
+				"requirement": "openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/specs/installable-offline-apps :: App users work offline and sync later (REQ-BQOM-004)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",

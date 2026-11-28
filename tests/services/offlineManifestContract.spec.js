@@ -8,7 +8,7 @@
  * normaliser, caps and validator to that schema, so a later pin move that
  * changes the schema fails here first.
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
  */
 
 import Ajv2020 from 'ajv/dist/2020.js'

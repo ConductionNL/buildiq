@@ -11,7 +11,7 @@
  * written here because the library marks itself side-effect free, so a bare
  * import of its worker module bundles to nothing.
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
  */
 import { cacheNameFor, respondTo, staleCacheNames } from '@conduction/nextcloud-vue/src/offline/serviceWorker.js'
 

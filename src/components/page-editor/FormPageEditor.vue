@@ -459,7 +459,7 @@ export default {
 		 * Whether this form page is one of the manifest's offline forms.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T04
 		 */
 		worksOffline() {
 			return this.offlineForms.includes(this.pageId)
@@ -715,7 +715,7 @@ export default {
 		 *
 		 * @param {boolean} on Whether the page works offline.
 		 * @return {void}
-		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T04
 		 */
 		onWorksOffline(on) {
 			const forms = this.offlineForms.filter((id) => id !== this.pageId)

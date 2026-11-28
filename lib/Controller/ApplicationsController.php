@@ -312,7 +312,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 *
 	 * @return JSONResponse `application/manifest+json`.
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -342,7 +342,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
 	 */
 	private function webManifestBody(array $application, string $slug): array {
 		$name      = self::textOr(value: $application['name'] ?? '', fallback: $slug);
@@ -390,7 +390,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 *
 	 * @return array<int, array<string, string>>
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
 	 */
 	private function webManifestIcons(string $slug): array {
 		$icons = [['src' => '../../icons/' . $slug . '.svg', 'type' => 'image/svg+xml', 'sizes' => 'any', 'purpose' => 'any']];
@@ -415,7 +415,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 *
 	 * @return DataDisplayResponse|JSONResponse The script, or 404.
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+	 * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -448,7 +448,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+	 * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
 	 */
 	private function offlineWorkerScript(string $slug): ?string {
 		if ($this->settings?->offlineAppsAllowed() !== true) {
@@ -473,7 +473,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+	 * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
 	 */
 	private function declaresOffline(string $slug): bool {
 		$manifest = $this->manifestResolver->resolve(

@@ -755,7 +755,7 @@ final class ExportServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T08
 	 */
 	public function testTheMobileAppProjectLandsInMobileWithThisInstanceAsItsOnlyOrigin(): void {
 		$entries = $this->export(service: $this->buildService(mobileProjectWriter: $this->mobileWriter()), mobileBundleId: '');
@@ -779,7 +779,7 @@ final class ExportServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T08
 	 */
 	public function testExportWithoutTheMobileProjectHasNoMobileFolder(): void {
 		$entries = $this->export(service: $this->buildService(mobileProjectWriter: $this->mobileWriter()));

@@ -32,7 +32,7 @@ use Throwable;
  * navigation to this instance only, so every other link opens in the system
  * browser. Buildiq builds, signs and publishes nothing (design D6).
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-the-export-writes-a-mobile-app-project-req-bqom-006
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-the-export-writes-a-mobile-app-project-req-bqom-006
  */
 class MobileProjectWriter {
 
@@ -84,7 +84,7 @@ class MobileProjectWriter {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T08
 	 */
 	public static function isValidBundleId(string $bundleId): bool {
 		return preg_match(self::BUNDLE_ID_PATTERN, $bundleId) === 1;
@@ -98,7 +98,7 @@ class MobileProjectWriter {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T08
 	 */
 	public static function defaultBundleId(string $host, string $slug): string {
 		return 'nl.' . self::bundleIdPart(raw: $host, fallback: 'instance') . '.' . self::bundleIdPart(raw: $slug, fallback: 'app');
@@ -138,7 +138,7 @@ class MobileProjectWriter {
 	 *
 	 * @throws InvalidArgumentException When the bundle id has a shape the stores refuse.
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T08
 	 */
 	public function write(string $rootDir, string $slug, string $appName, string $bundleId=''): array {
 		$runUrl   = $this->urlGenerator->linkToRouteAbsolute('buildiq.dashboard.run', ['slug' => $slug]);
@@ -175,7 +175,7 @@ class MobileProjectWriter {
 	 *
 	 * @throws InvalidArgumentException When the bundle id has a shape the stores refuse.
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T08
 	 */
 	private static function resolveBundleId(string $bundleId, string $host, string $slug): string {
 		if ($bundleId === '') {
@@ -196,7 +196,7 @@ class MobileProjectWriter {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T08
 	 */
 	private static function makeDirectories(string $dir): void {
 		foreach (['', '/www', '/resources'] as $sub) {
@@ -312,7 +312,7 @@ class MobileProjectWriter {
 	 *
 	 * @return array{0: string, 1: string}|null
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T08
 	 */
 	private function readIcon(string $slug): ?array {
 		try {
@@ -336,7 +336,7 @@ class MobileProjectWriter {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T08
 	 */
 	private static function streamBytes(mixed $stream): ?string {
 		$bytes = null;
@@ -359,7 +359,7 @@ class MobileProjectWriter {
 	 *
 	 * @return bool Whether the PNG icon and splash image were written.
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T08
 	 */
 	private function writeSvgImages(string $dir, string $svg): bool {
 		$icon   = $this->rasteriser->toPng(svg: $svg, size: self::ICON_SIZE);

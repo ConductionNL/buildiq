@@ -591,7 +591,7 @@ export default {
 		 * The take-along filter's helper text.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T04
 		 */
 		filterHelp() {
 			return t('buildiq', 'As JSON, for example {example}. Empty takes along every record up to the limit.', { example: '{"assignee": "@me"}' })
@@ -709,7 +709,7 @@ export default {
 		 * @param {string} next The new short name.
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+		 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T02
 		 */
 		shortName(next) {
 			this.installShortName = next
@@ -721,7 +721,7 @@ export default {
 		 * @param {string} next The new theme colour.
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+		 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T02
 		 */
 		themeColor(next) {
 			this.installThemeColor = next
@@ -735,7 +735,7 @@ export default {
 			 * @param {object|null} next The new offline block.
 			 * @return {void}
 			 *
-			 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+			 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T04
 			 */
 			handler(next) {
 				this.takeAlongRows = this.toTakeAlongRows(next)
@@ -1083,7 +1083,7 @@ export default {
 		 *
 		 * @param {string} value A `#rrggbb` colour, or ''.
 		 * @return {void}
-		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+		 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T02
 		 */
 		onThemeColor(value) {
 			this.installThemeColor = value
@@ -1096,7 +1096,7 @@ export default {
 		 * only when it is a six-digit hex colour.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+		 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T02
 		 */
 		emitInstallable() {
 			const shortName = String(this.installShortName || '').trim().slice(0, 12)
@@ -1112,7 +1112,7 @@ export default {
 		 *
 		 * @param {object|null} offline The offline block.
 		 * @return {Array<object>} Rows.
-		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T04
 		 */
 		toTakeAlongRows(offline) {
 			const entries = (offline && Array.isArray(offline.takeAlong)) ? offline.takeAlong : []
@@ -1129,7 +1129,7 @@ export default {
 		 * Add an empty take-along row with the default limit and lifetime.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T04
 		 */
 		addTakeAlong() {
 			this.takeAlongRows.push({ schema: '', filter: '', filterInvalid: false, limit: OFFLINE_LIMIT_DEFAULT, ttlHours: OFFLINE_TTL_DEFAULT })
@@ -1140,7 +1140,7 @@ export default {
 		 *
 		 * @param {number} index The row.
 		 * @return {void}
-		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T04
 		 */
 		removeTakeAlong(index) {
 			this.takeAlongRows.splice(index, 1)
@@ -1155,7 +1155,7 @@ export default {
 		 * are kept from the saved block: they are switched in the page designer.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T04
 		 */
 		emitOffline() {
 			let invalid = false

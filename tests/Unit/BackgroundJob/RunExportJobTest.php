@@ -338,7 +338,7 @@ final class RunExportJobTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T08
 	 */
 	public function testHandsTheMobileProjectChoiceToTheExporter(): void {
 		$cases = [

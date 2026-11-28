@@ -13,7 +13,7 @@
  * forms by `withSyncQueuePage()`: added when a form works offline, removed
  * when none does.
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
  */
 
 /** The most records one take-along may download. */
@@ -92,7 +92,7 @@ function plainCopy(value) {
  * @param {object} entry - the entry as entered.
  * @return {{schema: string, filter: object, limit: number, ttlHours: number}|null}
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
  */
 export function normaliseTakeAlong(entry) {
 	const schema = trimmed(entry && entry.schema)
@@ -115,7 +115,7 @@ export function normaliseTakeAlong(entry) {
  * @param {object|null} block - the block as entered.
  * @return {{takeAlong: Array<object>, forms: Array<string>}|null}
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
  */
 export function normaliseOffline(block) {
 	if (!block || typeof block !== 'object') {
@@ -137,7 +137,7 @@ export function normaliseOffline(block) {
  * @param {object} manifest - the manifest.
  * @return {Array<string>}
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
  */
 export function offlineForms(manifest) {
 	const forms = manifest && manifest.offline && manifest.offline.forms
@@ -151,7 +151,7 @@ export function offlineForms(manifest) {
  * @param {object|null} block - the new offline block; null removes it.
  * @return {object} The new manifest.
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
  */
 export function withOffline(manifest, block) {
 	const next = { ...(manifest || {}) }
@@ -183,7 +183,7 @@ function currentTakeAlong(manifest) {
  * @param {boolean} on - whether the page works offline.
  * @return {object} The new manifest.
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
  */
 export function withFormOffline(manifest, pageId, on) {
 	const id = trimmed(pageId)
@@ -207,7 +207,7 @@ export function withFormOffline(manifest, pageId, on) {
  * @param {object} manifest - the manifest.
  * @return {object} The new manifest.
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-app-users-see-what-is-still-on-the-device-req-bqom-005
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-app-users-see-what-is-still-on-the-device-req-bqom-005
  */
 export function withSyncQueuePage(manifest) {
 	const next = { ...(manifest || {}) }

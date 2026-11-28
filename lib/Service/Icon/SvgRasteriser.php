@@ -33,7 +33,7 @@ use Throwable;
 /**
  * Rasterises SVG to PNG through Imagick, when the server has it.
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+ * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T02
  */
 class SvgRasteriser {
 
@@ -49,7 +49,7 @@ class SvgRasteriser {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T02
 	 */
 	public function available(): bool {
 		if (class_exists('Imagick') === false) {
@@ -71,7 +71,7 @@ class SvgRasteriser {
 	 *
 	 * @return string|null The PNG bytes.
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T02
 	 */
 	public function toPng(string $svg, int $size=self::TOUCH_ICON_SIZE): ?string {
 		if (trim($svg) === '' || $size < 1 || $this->available() === false) {

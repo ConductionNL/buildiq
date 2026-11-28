@@ -16,7 +16,7 @@ export const OWN_MANIFEST_HREF = 'manifest.webmanifest'
  * @param {Document} doc The document.
  * @return {number} How many other manifest links were removed.
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
  */
 export function keepOwnManifestLink(doc) {
 	const links = Array.from(doc?.querySelectorAll?.('link[rel~="manifest"]') ?? [])

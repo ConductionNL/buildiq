@@ -110,7 +110,7 @@ class ApplicationsControllerWebManifestTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
 	 */
 	public function testAViewerGetsTheManifestScopedToTheRunPath(): void {
 		$this->resolvable(caller: 'vera', admin: false);
@@ -142,7 +142,7 @@ class ApplicationsControllerWebManifestTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T02
 	 */
 	public function testTheInstallableSettingsAndAPngIconReachTheManifest(): void {
 		$this->resolvable(caller: 'vera', admin: false);
@@ -165,7 +165,7 @@ class ApplicationsControllerWebManifestTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T02
 	 */
 	public function testANonHexThemeColourIsLeftOut(): void {
 		$this->resolvable(caller: 'vera', admin: false);
@@ -179,7 +179,7 @@ class ApplicationsControllerWebManifestTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
 	 */
 	public function testAStrangerGets404(): void {
 		$this->resolvable(caller: 'carol', admin: false);

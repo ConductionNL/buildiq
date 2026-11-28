@@ -24,7 +24,7 @@ use RuntimeException;
  *
  * The project's place in the export archive is asserted in ExportServiceTest.
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+ * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T08
  */
 #[CoversClass(MobileProjectWriter::class)]
 final class MobileProjectWriterTest extends TestCase {

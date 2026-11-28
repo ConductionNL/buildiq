@@ -159,7 +159,7 @@ class ExportService implements ExportServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
 	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.2
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T08
 	 */
 	#[\Override]
 	public function generateAppZip(
@@ -245,7 +245,7 @@ class ExportService implements ExportServiceInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 * @spec openspec/changes/archive/2026-11-28-pages-installable-offline-and-mobile/tasks.md#T08
 	 */
 	private function writeMobileProject(string $rootDir, ExportTarget $target, ExportContents $contents, ?string $bundleId): void {
 		if ($bundleId === null || $this->bundlers->mobileProjectWriter === null) {

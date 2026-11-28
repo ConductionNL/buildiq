@@ -13,7 +13,7 @@
  * The library calls are injected so the boot path is tested with a fake
  * worker container and a fake cache.
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
  */
 
 import { normaliseOffline } from './offlineManifest.js'
@@ -27,7 +27,7 @@ export const COLLECTION_PREFIX = 'buildiq:'
  * @param {string} slug - the app slug.
  * @return {string}
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-app-users-work-offline-and-sync-later-req-bqom-004
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-app-users-work-offline-and-sync-later-req-bqom-004
  */
 export function collectionFor(slug) {
 	return COLLECTION_PREFIX + slug
@@ -40,7 +40,7 @@ export function collectionFor(slug) {
  * @param {(path: string) => string} generateUrl - Nextcloud's URL builder.
  * @return {{scriptUrl: string, scope: string}}
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-app-users-work-offline-and-sync-later-req-bqom-004
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-app-users-work-offline-and-sync-later-req-bqom-004
  */
 export function workerUrls(slug, generateUrl) {
 	const base = generateUrl(`/apps/buildiq/run/${encodeURIComponent(slug)}/`)
@@ -53,7 +53,7 @@ export function workerUrls(slug, generateUrl) {
  * @param {{schema: string, filter: object, limit: number}} entry - the take-along.
  * @return {object}
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-app-users-work-offline-and-sync-later-req-bqom-004
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-app-users-work-offline-and-sync-later-req-bqom-004
  */
 export function takeAlongQuery(entry) {
 	return { ...entry.filter, _limit: entry.limit }
@@ -92,7 +92,7 @@ function activeOffline(slug, manifest, allowed) {
  * @param {Function} args.clearCollection - removes one collection from the cache.
  * @return {Promise<{registered: boolean, stored: number, cleared: boolean}>}
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-app-users-work-offline-and-sync-later-req-bqom-004
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-app-users-work-offline-and-sync-later-req-bqom-004
  */
 export async function startOffline({
 	slug,

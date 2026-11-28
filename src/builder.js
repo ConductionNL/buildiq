@@ -445,7 +445,7 @@ function navSlots(manifest, router) {
  * @param {object} manifest The app's manifest.
  * @return {Promise<void>}
  *
- * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-app-users-work-offline-and-sync-later-req-bqom-004
+ * @spec openspec/specs/installable-offline-apps/spec.md#requirement-app-users-work-offline-and-sync-later-req-bqom-004
  */
 async function bootOffline(manifest) {
 	const allowed = loadState('buildiq', 'offlineAppsAllowed', false) === true
